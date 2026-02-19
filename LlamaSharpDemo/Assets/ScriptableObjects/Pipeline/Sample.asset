@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
+  m_Name: Sample
+  m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
+  displayName: New Prompt Pipeline
+  description: 
+  steps:
+  - stepName: Step 1
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 84801d43b9f1d3943ba362bcf9f3309e, type: 2}
+    userPromptTemplate: '{{Name}}'
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: -1281, y: 343}
+    guid: c4e3e025-a098-430b-9200-0288546dbe3b
+    nextStepGuid: c4c9348e-61e7-4592-944e-f30ddde4ea00
+  - stepName: Step 2
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 1f25e6887e6af4144a0454ea5ef79e19, type: 2}
+    userPromptTemplate: '{{response}}'
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: -719, y: 343}
+    guid: c4c9348e-61e7-4592-944e-f30ddde4ea00
+    nextStepGuid: f22136ed-78d5-4ce1-aace-2d366c33d24c
+  - stepName: Step 3
+    stepKind: 2
+    llmProfile: {fileID: 0}
+    userPromptTemplate: 
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: -126, y: 341}
+    guid: f22136ed-78d5-4ce1-aace-2d366c33d24c
+    nextStepGuid: 
+  layoutSettings:
+    inputNodePosition: {x: -1538, y: 382}
+    outputNodePosition: {x: 736, y: 364}
+    inputPositionInitialized: 1
+    outputPositionInitialized: 1
+    viewPosition: {x: 1602, y: -125, z: 0}
+    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
+    viewInitialized: 1
+    snapshotPositions:
+    - {x: -924, y: 454}
+    - {x: -345, y: 440}
+    - {x: 316, y: 379}
+    snapshotPositionsInitialized: 1

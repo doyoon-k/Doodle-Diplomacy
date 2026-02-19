@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: NewSkillGeneration
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  model: Models/gemma-3-4b-it-q4_k_m.gguf
+  format: '{"type":"object","properties":{"NewSkill":{"type":"object","properties":{"abilityName":{"type":"string"},"primitiveActions":{"type":"array","items":{"type":"object","properties":{"primitiveId":{"type":"string","enum":["FireProjectile","ExplosiveProjectile","PiercingProjectile","MeleeStrike","GroundSlam","Dash","MultiJump","Blink","ShieldBuff","InstantHeal","Invincible","DamageReductionBuff","Stun","Slow","Airborne"]}},"required":["primitiveId"],"additionalProperties":false}},"abilityDescription":{"type":"string"}},"required":["abilityName","primitiveActions","abilityDescription"],"additionalProperties":false}},"required":["NewSkill"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: "You are a game design assistant. Design ONE active ability
+    based on the character and absorbed item.\n\n[PRIMITIVES LIST]\n- FireProjectile,
+    ExplosiveProjectile, PiercingProjectile\n- MeleeStrike, GroundSlam\n- Dash, MultiJump,
+    Blink\n- ShieldBuff, DamageReductionBuff, InstantHeal, Invincible\n- Stun, Slow,
+    Airborne\n\n[RULES]\n1. Theme: Combine Item + Character themes.\n2. Primitives:
+    Select 2-4 IDs from the list above. Order them logically (Setup -> Strike ->
+    Effect).\n3. Output:\n   - abilityName: 1-3 words, playful.\n   - primitiveActions:
+    The ordered list of IDs.\n   - abilityDescription: 1-2 sentences (max 30 words),
+    explaining the feel. No numbers.\n4. Format: Return ONLY valid JSON matching
+    the schema."
+  jsonFields:
+  - fieldName: NewSkill
+    fieldType: 4
+    arrayElementType: 0
+    children:
+    - fieldName: abilityName
+      fieldType: 0
+      arrayElementType: 0
+      children: []
+      enumOptions: []
+      minValue: 
+      maxValue: 
+    - fieldName: primitiveActions
+      fieldType: 5
+      arrayElementType: 4
+      children:
+      - fieldName: primitiveId
+        fieldType: 0
+        arrayElementType: 0
+        children: []
+        enumOptions:
+        - FireProjectile
+        - ExplosiveProjectile
+        - PiercingProjectile
+        - MeleeStrike
+        - GroundSlam
+        - Dash
+        - MultiJump
+        - Blink
+        - ShieldBuff
+        - InstantHeal
+        - Invincible
+        - DamageReductionBuff
+        - Stun
+        - Slow
+        - Airborne
+        minValue: 
+        maxValue: 
+      enumOptions: []
+      minValue: 
+      maxValue: 
+    - fieldName: abilityDescription
+      fieldType: 0
+      arrayElementType: 0
+      children: []
+      enumOptions: []
+      minValue: 
+      maxValue: 
+    enumOptions: []
+    minValue: 
+    maxValue: 
+  modelParams:
+    temperature: 0.7
+    top_p: 0.9
+    top_k: 40
+    num_predict: 128
+    repeat_penalty: 1.1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 4

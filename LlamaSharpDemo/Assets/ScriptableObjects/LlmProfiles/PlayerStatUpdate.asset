@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: PlayerStatUpdate
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  model: Models/gemma-3-4b-it-q4_k_m.gguf
+  format: '{"type":"object","properties":{"character_description":{"type":"string"},"statChanges":{"type":"array","items":{"type":"object","properties":{"stat":{"type":"string","enum":["AttackPower","AttackSpeed","ProjectileRange","MovementSpeed","MaxHealth","Defense","JumpPower","CooldownHaste"]},"changeType":{"type":"string","enum":["additive","multiplicative"]},"value":{"type":"number"}},"required":["stat","changeType","value"],"additionalProperties":false}}},"required":["character_description","statChanges"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: "You are a game design assistant for a roguelike action game.
+    Your task is to update the player's stats and description after absorbing an
+    item.\n\n[CONTEXT]\nItem and current character description are provided by the
+    user.\n\n[RULES]\n1. Description: Create a SHORT evolution (max 40 words) merging
+    the item theme into the current description. Maintain the core identity but evolve
+    it. Do not mention numbers.\n2. Stats: Choose 1-3 appropriate stats to strictly
+    modify.\n   - Options: AttackPower, AttackSpeed, ProjectileRange, MovementSpeed,
+    MaxHealth, Defense, JumpPower, CooldownHaste.\n   - ChangeType: \"additive\"
+    (-5.0 to 5.0) OR \"multiplicative\" (0.5 to 1.1).\n3. Output: Provide ONLY the
+    strict JSON object matching the schema. No explanation."
+  jsonFields:
+  - fieldName: character_description
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+  - fieldName: statChanges
+    fieldType: 5
+    arrayElementType: 4
+    children:
+    - fieldName: stat
+      fieldType: 0
+      arrayElementType: 0
+      children: []
+      enumOptions:
+      - AttackPower
+      - AttackSpeed
+      - ProjectileRange
+      - MovementSpeed
+      - MaxHealth
+      - Defense
+      - JumpPower
+      - CooldownHaste
+      minValue: 
+      maxValue: 
+    - fieldName: changeType
+      fieldType: 0
+      arrayElementType: 0
+      children: []
+      enumOptions:
+      - additive
+      - multiplicative
+      minValue: 
+      maxValue: 
+    - fieldName: value
+      fieldType: 1
+      arrayElementType: 0
+      children: []
+      enumOptions: []
+      minValue: 
+      maxValue: 
+    enumOptions: []
+    minValue: 
+    maxValue: 
+  modelParams:
+    temperature: 0.7
+    top_p: 0.9
+    top_k: 40
+    num_predict: 128
+    repeat_penalty: 1.1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 4

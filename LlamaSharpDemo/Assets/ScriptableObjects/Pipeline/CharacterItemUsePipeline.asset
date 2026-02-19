@@ -1,0 +1,109 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
+  m_Name: CharacterItemUsePipeline
+  m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
+  displayName: CharacterItemUsePipeline
+  description: 
+  steps:
+  - stepName: StatAndDescriptionChange
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: f223fef346f752e4d8c7cb70dfa28e2d, type: 2}
+    userPromptTemplate: '[CONTEXT]
+
+      Item: {{item_name}}
+
+      Item Desc: {{item_description}}
+
+      Current
+      Character: "{{character_description}}"
+
+
+      [INSTRUCTION]
+
+      Update
+      the character description and stats based on this new item absorption.
+
+      Stat
+      changes must fit the theme:
+
+      - additive: -5.0 to 5.0
+
+      - multiplicative:
+      0.5 to 1.1
+
+
+      Return JSON. '
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: -594, y: -130}
+    guid: 8950e9c5-5547-4e15-b5a8-f76ac47ae410
+    nextStepGuid: d62a622c-3398-47df-a9c7-2e5812fb4ad9
+  - stepName: SkillGeneration
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 943b4e34f94c7cd46991bc6d70dce1b6, type: 2}
+    userPromptTemplate: '[CONTEXT]
+
+      Item: {{item_name}}
+
+      Item Desc: {{item_description}}
+
+      Current
+      Character: "{{character_description}}"
+
+
+      [INSTRUCTION]
+
+      Design
+      a new ability that suits this character''s evolution.
+
+      Combine 2-4 primitives
+      into a cohesive move.
+
+      Return JSON.'
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: 79, y: -128}
+    guid: d62a622c-3398-47df-a9c7-2e5812fb4ad9
+    nextStepGuid: 
+  layoutSettings:
+    inputNodePosition: {x: -777, y: -130}
+    outputNodePosition: {x: 701, y: -153}
+    inputPositionInitialized: 1
+    outputPositionInitialized: 1
+    viewPosition: {x: 1336, y: 287, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
+    viewInitialized: 1
+    snapshotPositions:
+    - {x: -151, y: -47}
+    - {x: 485, y: -104}
+    snapshotPositionsInitialized: 1

@@ -9,6 +9,12 @@ This project includes:
 - Unity editor tools for dependency/backend setup and packaging
 - A gameplay demo: adaptive stat + skill evolution from absorbed items
 
+### Pipeline editor example pictures
+#### Node based pipeline editor that defines the data processing flow using LLM.
+![alt text](image-1.png)
+#### You can also simulate the pipeline in the editor with example input.
+![alt text](image.png)
+
 ## Demo Media
 
 ### Demo Video
@@ -17,7 +23,7 @@ This project includes:
 - Evaluates how the Item will affect the player stats 
 - Generates a new skill that matches the item effect and player stat by combining the pre-defined skill effects in order that makes the most sense and give name and description to the new skill.
 
-[Watch demo video (MP4)](Docs/llm%20demo.mp4)
+[Watch demo video (Google Drive)](https://drive.google.com/file/d/1lVmrjelVQk4QazHObGEMpEyvTqLnsWqG/view?usp=sharing)
 
 ## Setup Instructions
 

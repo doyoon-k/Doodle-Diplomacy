@@ -61,3 +61,7 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+
+LlamaSharpDemo/Assets/StreamingAssets/Models/gemma-3-4b-it-q4_k_m.gguf
+
+LlamaSharpDemo/Assets/StreamingAssets/Models/gemma-3-4b-it-q4_k_m.gguf.meta

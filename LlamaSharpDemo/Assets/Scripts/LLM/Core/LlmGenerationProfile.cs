@@ -19,6 +19,9 @@ public class LlmGenerationProfile : ScriptableObject
     [Tooltip("System prompt template; supports {{varName}} placeholders.")]
     public string systemPromptTemplate;
 
+    [Tooltip("How JSON schema constraints are delivered to the model: strict grammar decoding, prompt append fallback, or automatic mode.")]
+    public JsonSchemaDeliveryMode jsonSchemaDeliveryMode = JsonSchemaDeliveryMode.Auto;
+
     [SerializeField]
     [Tooltip("Structured definition that drives the JSON format enforced at runtime.")]
     private List<JsonFieldDefinition> jsonFields = new();
@@ -91,6 +94,13 @@ public class LlmGenerationProfile : ScriptableObject
     }
 }
 
+public enum JsonSchemaDeliveryMode
+{
+    Auto = 0,
+    GrammarOnly = 1,
+    PromptAppendOnly = 2
+}
+
 [Serializable]
 public class JsonFieldDefinition
 {
@@ -105,6 +115,14 @@ public class JsonFieldDefinition
     public string minValue;
     [SerializeField]
     public string maxValue;
+    [SerializeField]
+    public string minLength;
+    [SerializeField]
+    public string maxLength;
+    [SerializeField]
+    public string minItems;
+    [SerializeField]
+    public string maxItems;
 
     public static string BuildSchema(List<JsonFieldDefinition> fields)
     {
@@ -163,6 +181,7 @@ public class JsonFieldDefinition
     private static Dictionary<string, object> BuildSchemaForField(JsonFieldDefinition field)
     {
         Dictionary<string, object> schema;
+        Dictionary<string, object> arrayItemSchema = null;
         switch (field.fieldType)
         {
             case JsonFieldType.Object:
@@ -174,7 +193,10 @@ public class JsonFieldDefinition
                 schema["items"] = field.arrayElementType == JsonArrayElementType.Object
                     ? (object)(BuildObjectSchema(field.children) ??
                                new Dictionary<string, object>(StringComparer.Ordinal) { ["type"] = "object" })
-                    : new Dictionary<string, object>(StringComparer.Ordinal) { ["type"] = field.GetArrayItemKeyword() };
+                    : (arrayItemSchema = new Dictionary<string, object>(StringComparer.Ordinal)
+                    {
+                        ["type"] = field.GetArrayItemKeyword()
+                    });
                 break;
             default:
                 schema = new Dictionary<string, object>(StringComparer.Ordinal) { ["type"] = field.GetTypeKeyword() };
@@ -182,7 +204,11 @@ public class JsonFieldDefinition
         }
 
         var enums = NormalizeEnums(field.enumOptions);
-        if (enums.Count > 0)
+        if (enums.Count > 0 && field.fieldType == JsonFieldType.Array && arrayItemSchema != null)
+        {
+            arrayItemSchema["enum"] = enums;
+        }
+        else if (enums.Count > 0)
         {
             schema["enum"] = enums;
         }
@@ -192,6 +218,8 @@ public class JsonFieldDefinition
         }
 
         AppendNumericBounds(schema, field);
+        AppendStringLengthBounds(schema, field);
+        AppendArrayItemBounds(schema, field);
 
         return schema;
     }
@@ -259,6 +287,63 @@ public class JsonFieldDefinition
         {
             schema["maximum"] = max;
         }
+    }
+
+    private static void AppendStringLengthBounds(Dictionary<string, object> schema, JsonFieldDefinition field)
+    {
+        if (schema == null || field == null || field.fieldType != JsonFieldType.String)
+        {
+            return;
+        }
+
+        int? min = TryParseNonNegativeInt(field.minLength);
+        int? max = TryParseNonNegativeInt(field.maxLength);
+
+        if (min.HasValue)
+        {
+            schema["minLength"] = min.Value;
+        }
+
+        if (max.HasValue)
+        {
+            schema["maxLength"] = min.HasValue ? Math.Max(min.Value, max.Value) : max.Value;
+        }
+    }
+
+    private static void AppendArrayItemBounds(Dictionary<string, object> schema, JsonFieldDefinition field)
+    {
+        if (schema == null || field == null || field.fieldType != JsonFieldType.Array)
+        {
+            return;
+        }
+
+        int? min = TryParseNonNegativeInt(field.minItems);
+        int? max = TryParseNonNegativeInt(field.maxItems);
+
+        if (min.HasValue)
+        {
+            schema["minItems"] = min.Value;
+        }
+
+        if (max.HasValue)
+        {
+            schema["maxItems"] = min.HasValue ? Math.Max(min.Value, max.Value) : max.Value;
+        }
+    }
+
+    private static int? TryParseNonNegativeInt(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
+        {
+            return null;
+        }
+
+        return value >= 0 ? value : null;
     }
 }
 

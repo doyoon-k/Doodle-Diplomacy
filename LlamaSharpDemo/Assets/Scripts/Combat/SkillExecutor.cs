@@ -31,6 +31,11 @@ public class SkillExecutor : MonoBehaviour
     private bool isInvincible = false;
     private bool isFacingRight = true;
     private bool isDashing = false;
+    [Header("Facing Direction")]
+    [Tooltip("Ignore tiny horizontal input/noise below this value when updating facing direction.")]
+    public float facingInputDeadZone = 0.2f;
+    [Tooltip("Fallback velocity deadzone used when input is near zero.")]
+    public float facingVelocityDeadZone = 0.05f;
 
     [Header("MultiJump Settings")]
     public int maxExtraJumps = 1;
@@ -70,6 +75,12 @@ public class SkillExecutor : MonoBehaviour
     public float airborneRadius = 50f;
     public float airborneForce = 300f;
 
+    [Header("Targeting")]
+    [Tooltip("Preferred physics mask for enemy targeting. If empty, falls back to all colliders + EnemyAI/tag filtering.")]
+    public LayerMask enemyTargetMask;
+    [Tooltip("Optional fallback tag check for enemy targets.")]
+    public string enemyTag = "Enemy";
+
     [Header("GroundSlam Settings")]
     public float groundSlamForce = 500f;
     public float groundSlamRadius = 80f;
@@ -99,6 +110,11 @@ public class SkillExecutor : MonoBehaviour
         if (spriteRenderer != null)
         {
             baseSpriteColor = spriteRenderer.color;
+            isFacingRight = !spriteRenderer.flipX;
+        }
+        else if (transform.localScale.x < 0f)
+        {
+            isFacingRight = false;
         }
 
         if (attackHitbox != null) attackHitbox.gameObject.SetActive(false);
@@ -112,8 +128,7 @@ public class SkillExecutor : MonoBehaviour
         float moveInput = DemoInput.GetAxisRaw("Horizontal");
         if (!isDashing)
         {
-            if (moveInput > 0) isFacingRight = true;
-            else if (moveInput < 0) isFacingRight = false;
+            UpdateFacingDirection(moveInput);
         }
 
         if (spriteRenderer != null && Mathf.Abs(moveInput) > 0.1f)
@@ -169,7 +184,7 @@ public class SkillExecutor : MonoBehaviour
 
     IEnumerator ExecuteAtomicSkill(string atomicSkill)
     {
-        string action = atomicSkill.ToUpper();
+        string action = NormalizeAtomicSkill(atomicSkill);
 
         switch (action)
         {
@@ -195,6 +210,9 @@ public class SkillExecutor : MonoBehaviour
             case "STUN": yield return Stun(); break;
             case "SLOW": yield return Slow(); break;
             case "AIRBORNE": yield return Airborne(); break;
+            default:
+                Debug.LogWarning($"[SkillExecutor] Unknown primitive action: '{atomicSkill}'");
+                break;
         }
     }
 
@@ -446,6 +464,10 @@ public class SkillExecutor : MonoBehaviour
         }
 
         Collider2D[] targets = Physics2D.OverlapCircleAll(transform.position, groundSlamRadius, LayerMask.GetMask("Enemy"));
+        if (targets == null || targets.Length == 0)
+        {
+            targets = FindEnemyTargets(groundSlamRadius);
+        }
         float damage = (playerStats != null) ? playerStats.GetStat("AttackPower") * groundSlamDamageMultiplier : 100f;
 
         foreach (Collider2D col in targets)
@@ -635,7 +657,11 @@ public class SkillExecutor : MonoBehaviour
     {
         Debug.Log("Stun!");
 
-        Collider2D[] targets = Physics2D.OverlapCircleAll(transform.position, stunRadius, LayerMask.GetMask("Enemy"));
+        Collider2D[] targets = FindEnemyTargets(stunRadius);
+        if (targets.Length == 0)
+        {
+            Debug.Log("[SkillExecutor] Stun found no enemy targets in range.");
+        }
 
         foreach (Collider2D col in targets)
         {
@@ -659,7 +685,11 @@ public class SkillExecutor : MonoBehaviour
     {
         Debug.Log("Slow!");
 
-        Collider2D[] targets = Physics2D.OverlapCircleAll(transform.position, slowRadius, LayerMask.GetMask("Enemy"));
+        Collider2D[] targets = FindEnemyTargets(slowRadius);
+        if (targets.Length == 0)
+        {
+            Debug.Log("[SkillExecutor] Slow found no enemy targets in range.");
+        }
 
         foreach (Collider2D col in targets)
         {
@@ -689,7 +719,11 @@ public class SkillExecutor : MonoBehaviour
             ProceduralVFX.Instance.CreateAirborneEffect(transform.position, airborneForce);
         }
 
-        Collider2D[] targets = Physics2D.OverlapCircleAll(transform.position, airborneRadius, LayerMask.GetMask("Enemy"));
+        Collider2D[] targets = FindEnemyTargets(airborneRadius);
+        if (targets.Length == 0)
+        {
+            Debug.Log("[SkillExecutor] Airborne found no enemy targets in range.");
+        }
 
         foreach (Collider2D col in targets)
         {
@@ -708,4 +742,89 @@ public class SkillExecutor : MonoBehaviour
     // ========================================
     // HELPER FUNCTIONS
     // ========================================
+
+    private string NormalizeAtomicSkill(string atomicSkill)
+    {
+        if (string.IsNullOrWhiteSpace(atomicSkill))
+        {
+            return string.Empty;
+        }
+
+        return atomicSkill
+            .Trim()
+            .Replace(" ", string.Empty)
+            .Replace("_", string.Empty)
+            .ToUpperInvariant();
+    }
+
+    private Collider2D[] FindEnemyTargets(float radius)
+    {
+        Collider2D[] candidates = enemyTargetMask.value != 0
+            ? Physics2D.OverlapCircleAll(transform.position, radius, enemyTargetMask)
+            : Physics2D.OverlapCircleAll(transform.position, radius);
+
+        if (candidates == null || candidates.Length == 0)
+        {
+            return System.Array.Empty<Collider2D>();
+        }
+
+        var filtered = new List<Collider2D>(candidates.Length);
+        foreach (Collider2D col in candidates)
+        {
+            if (col == null || col.transform == transform)
+            {
+                continue;
+            }
+
+            bool isEnemy = col.GetComponent<EnemyAI>() != null;
+            if (!isEnemy && !string.IsNullOrWhiteSpace(enemyTag))
+            {
+                try
+                {
+                    isEnemy = col.CompareTag(enemyTag);
+                }
+                catch (UnityException)
+                {
+                    isEnemy = false;
+                }
+            }
+
+            if (isEnemy)
+            {
+                filtered.Add(col);
+            }
+        }
+
+        return filtered.ToArray();
+    }
+
+    private void UpdateFacingDirection(float horizontalInput)
+    {
+        if (horizontalInput > facingInputDeadZone)
+        {
+            isFacingRight = true;
+            return;
+        }
+
+        if (horizontalInput < -facingInputDeadZone)
+        {
+            isFacingRight = false;
+            return;
+        }
+
+        if (rb == null)
+        {
+            return;
+        }
+
+        float vx = rb.linearVelocity.x;
+        if (vx > facingVelocityDeadZone)
+        {
+            isFacingRight = true;
+        }
+        else if (vx < -facingVelocityDeadZone)
+        {
+            isFacingRight = false;
+        }
+    }
 }

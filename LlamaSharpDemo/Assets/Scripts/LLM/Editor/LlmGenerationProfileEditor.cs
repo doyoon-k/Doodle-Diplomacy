@@ -22,6 +22,7 @@ public class LlmGenerationProfileEditor : Editor
     private SerializedProperty _streamProp;
     private SerializedProperty _keepAliveProp;
     private SerializedProperty _systemPromptProp;
+    private SerializedProperty _jsonSchemaDeliveryModeProp;
     private SerializedProperty _modelParamsProp;
     private SerializedProperty _runtimeParamsProp;
     private SerializedProperty _jsonFieldsProp;
@@ -32,6 +33,7 @@ public class LlmGenerationProfileEditor : Editor
         _streamProp = serializedObject.FindProperty("stream");
         _keepAliveProp = serializedObject.FindProperty("keepAlive");
         _systemPromptProp = serializedObject.FindProperty("systemPromptTemplate");
+        _jsonSchemaDeliveryModeProp = serializedObject.FindProperty("jsonSchemaDeliveryMode");
         _modelParamsProp = serializedObject.FindProperty("modelParams");
         _runtimeParamsProp = serializedObject.FindProperty("runtimeParams");
         _jsonFieldsProp = serializedObject.FindProperty("jsonFields");
@@ -47,6 +49,7 @@ public class LlmGenerationProfileEditor : Editor
         EditorGUILayout.PropertyField(_streamProp);
         EditorGUILayout.PropertyField(_keepAliveProp);
         EditorGUILayout.PropertyField(_systemPromptProp);
+        EditorGUILayout.PropertyField(_jsonSchemaDeliveryModeProp);
         EditorGUILayout.PropertyField(_modelParamsProp, true);
         EditorGUILayout.PropertyField(_runtimeParamsProp, true);
         bool basicSettingsChanged = EditorGUI.EndChangeCheck();
@@ -429,6 +432,10 @@ public class LlmGenerationProfileEditor : Editor
         element.FindPropertyRelative(nameof(JsonFieldDefinition.arrayElementType)).enumValueIndex = (int)JsonArrayElementType.String;
         element.FindPropertyRelative(nameof(JsonFieldDefinition.minValue)).stringValue = string.Empty;
         element.FindPropertyRelative(nameof(JsonFieldDefinition.maxValue)).stringValue = string.Empty;
+        element.FindPropertyRelative(nameof(JsonFieldDefinition.minLength)).stringValue = string.Empty;
+        element.FindPropertyRelative(nameof(JsonFieldDefinition.maxLength)).stringValue = string.Empty;
+        element.FindPropertyRelative(nameof(JsonFieldDefinition.minItems)).stringValue = string.Empty;
+        element.FindPropertyRelative(nameof(JsonFieldDefinition.maxItems)).stringValue = string.Empty;
         var enums = element.FindPropertyRelative(nameof(JsonFieldDefinition.enumOptions));
         if (enums != null)
         {
@@ -572,22 +579,30 @@ public class LlmGenerationProfileEditor : Editor
 
             bool isArray = (JsonFieldType)fieldTypeProp.enumValueIndex == JsonFieldType.Array;
             bool isObject = (JsonFieldType)fieldTypeProp.enumValueIndex == JsonFieldType.Object;
+            bool isString = (JsonFieldType)fieldTypeProp.enumValueIndex == JsonFieldType.String;
             bool isNumeric = !isArray && !isObject &&
                              ((JsonFieldType)fieldTypeProp.enumValueIndex == JsonFieldType.Number ||
                               (JsonFieldType)fieldTypeProp.enumValueIndex == JsonFieldType.Integer);
+
+            var arrayElementTypeProp = element.FindPropertyRelative(nameof(JsonFieldDefinition.arrayElementType));
+            bool arrayUsesObjectItems = isArray && arrayElementTypeProp != null &&
+                                        (JsonArrayElementType)arrayElementTypeProp.enumValueIndex == JsonArrayElementType.Object;
 
             if (isArray)
             {
                 using (new EditorGUI.IndentLevelScope())
                 {
                     EditorGUILayout.PropertyField(
-                        element.FindPropertyRelative(nameof(JsonFieldDefinition.arrayElementType)),
+                        arrayElementTypeProp,
                         new GUIContent("Element Type")
                     );
                 }
             }
 
-            DrawEnumList(element.FindPropertyRelative(nameof(JsonFieldDefinition.enumOptions)));
+            if (isString || (isArray && !arrayUsesObjectItems))
+            {
+                DrawEnumList(element.FindPropertyRelative(nameof(JsonFieldDefinition.enumOptions)));
+            }
 
             if (isNumeric)
             {
@@ -598,8 +613,26 @@ public class LlmGenerationProfileEditor : Editor
                 }
             }
 
+            if (isString)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    EditorGUILayout.PropertyField(element.FindPropertyRelative(nameof(JsonFieldDefinition.minLength)), new GUIContent("Min Length"));
+                    EditorGUILayout.PropertyField(element.FindPropertyRelative(nameof(JsonFieldDefinition.maxLength)), new GUIContent("Max Length"));
+                }
+            }
+
+            if (isArray)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    EditorGUILayout.PropertyField(element.FindPropertyRelative(nameof(JsonFieldDefinition.minItems)), new GUIContent("Min Items"));
+                    EditorGUILayout.PropertyField(element.FindPropertyRelative(nameof(JsonFieldDefinition.maxItems)), new GUIContent("Max Items"));
+                }
+            }
+
             bool needsChildren = isObject ||
-                                 (isArray && (JsonArrayElementType)element.FindPropertyRelative(nameof(JsonFieldDefinition.arrayElementType)).enumValueIndex == JsonArrayElementType.Object);
+                                 arrayUsesObjectItems;
             if (needsChildren)
             {
                 var childrenProp = element.FindPropertyRelative(nameof(JsonFieldDefinition.children));

@@ -34,6 +34,10 @@ MonoBehaviour:
     enumOptions: []
     minValue: 
     maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
   - fieldName: statChanges
     fieldType: 5
     arrayElementType: 4
@@ -53,6 +57,10 @@ MonoBehaviour:
       - CooldownHaste
       minValue: 
       maxValue: 
+      minLength: 
+      maxLength: 
+      minItems: 
+      maxItems: 
     - fieldName: changeType
       fieldType: 0
       arrayElementType: 0
@@ -62,6 +70,10 @@ MonoBehaviour:
       - multiplicative
       minValue: 
       maxValue: 
+      minLength: 
+      maxLength: 
+      minItems: 
+      maxItems: 
     - fieldName: value
       fieldType: 1
       arrayElementType: 0
@@ -69,9 +81,17 @@ MonoBehaviour:
       enumOptions: []
       minValue: 
       maxValue: 
+      minLength: 
+      maxLength: 
+      minItems: 
+      maxItems: 
     enumOptions: []
     minValue: 
     maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
   modelParams:
     temperature: 0.7
     top_p: 0.9

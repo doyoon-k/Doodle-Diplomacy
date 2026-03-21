@@ -66,6 +66,18 @@ LlamaSharpDemo/Assets/StreamingAssets/Models/gemma-3-4b-it-q4_k_m.gguf
 
 LlamaSharpDemo/Assets/StreamingAssets/Models/gemma-3-4b-it-q4_k_m.gguf.meta
 
+LlamaSharpDemo/Assets/StreamingAssets/Models/*.gguf
+
+LlamaSharpDemo/Assets/StreamingAssets/Models/*.gguf.meta
+
+LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.gguf
+
+LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.gguf.meta
+
+LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.safetensors
+
+LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.safetensors.meta
+
 # Ignore OpenRouter config
 openrouter_config.json
 openrouter_config.example.json

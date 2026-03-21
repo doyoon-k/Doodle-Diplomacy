@@ -36,7 +36,8 @@ This package addresses those with:
 - Supports model preload and safe reinitialization when settings change
 
 2. **State-Based Prompt Pipeline**
-- Uses `Dictionary<string, string>` as shared state
+- Uses mutable `PipelineState` as shared state
+- Supports both text values and image objects (`Texture2D` / `Sprite`) for VLM steps
 - Supports mixed step types: `JsonLlm`, `CompletionLlm`, `CustomLink`
 
 3. **Schema-Constrained JSON Output**

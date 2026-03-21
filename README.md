@@ -53,6 +53,7 @@ Recommended order:
 3. `Docs/QuickStart.md`
 4. `Docs/PipelineEditorGuide.md`
 5. `Docs/Troubleshooting.md`
+6. `Docs/StableDiffusionCppRuntime.md` (stable-diffusion.cpp local image generation path)
 
 ## Practical Requirements
 

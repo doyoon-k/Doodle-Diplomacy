@@ -21,7 +21,8 @@ public class PromptPipelineGraphWindow : EditorWindow
     private ScrollView _simulationLogScroll;
     private TextField _simulationLogField;
     private bool _isSimulating;
-    private readonly Dictionary<string, string> _inputValues = new();
+    private readonly Dictionary<string, string> _textInputValues = new();
+    private readonly Dictionary<string, UnityEngine.Object> _imageInputValues = new();
 
     [MenuItem("Window/LLM/Prompt Pipeline Editor")]
     public static void ShowWindow()
@@ -364,23 +365,135 @@ public class PromptPipelineGraphWindow : EditorWindow
 
         foreach (var key in inputKeys)
         {
-            if (!_inputValues.ContainsKey(key.keyName))
+            if (key.valueKind == AnalyzedStateValueKind.Image)
             {
-                _inputValues[key.keyName] = string.Empty;
+                CreateImageInputField(key);
+                continue;
             }
 
-            var field = new TextField(key.keyName)
-            {
-                multiline = true,
-                value = _inputValues[key.keyName],
-                style = { minHeight = 40 }
-            };
-            field.RegisterValueChangedCallback(evt =>
-            {
-                _inputValues[key.keyName] = evt.newValue;
-            });
-            _simulationInputs.Add(field);
+            CreateTextInputField(key);
         }
+    }
+
+    private void CreateTextInputField(AnalyzedStateKey key)
+    {
+        if (!_textInputValues.ContainsKey(key.keyName))
+        {
+            _textInputValues[key.keyName] = string.Empty;
+        }
+
+        var field = new TextField(key.keyName)
+        {
+            multiline = true,
+            value = _textInputValues[key.keyName],
+            style = { minHeight = 40 }
+        };
+        field.RegisterValueChangedCallback(evt =>
+        {
+            _textInputValues[key.keyName] = evt.newValue;
+        });
+        _simulationInputs.Add(field);
+    }
+
+    private void CreateImageInputField(AnalyzedStateKey key)
+    {
+        _imageInputValues.TryGetValue(key.keyName, out UnityEngine.Object currentValue);
+
+        var container = new VisualElement
+        {
+            style =
+            {
+                flexDirection = FlexDirection.Column,
+                marginBottom = 8
+            }
+        };
+
+        var field = new ObjectField(key.keyName)
+        {
+            objectType = typeof(UnityEngine.Object),
+            allowSceneObjects = false,
+            value = currentValue
+        };
+        container.Add(field);
+
+        var helpLabel = new Label
+        {
+            style =
+            {
+                whiteSpace = WhiteSpace.Normal,
+                unityFontStyleAndWeight = FontStyle.Italic,
+                marginBottom = 4
+            }
+        };
+        container.Add(helpLabel);
+
+        var preview = new Image
+        {
+            scaleMode = ScaleMode.ScaleToFit,
+            style =
+            {
+                width = 128,
+                height = 128,
+                marginBottom = 4,
+                backgroundColor = new Color(0.12f, 0.12f, 0.12f, 1f)
+            }
+        };
+        container.Add(preview);
+
+        var buttons = new VisualElement
+        {
+            style =
+            {
+                flexDirection = FlexDirection.Row
+            }
+        };
+
+        var validateButton = new Button(() => ValidateImageInput(key.keyName))
+        {
+            text = "Validate Image"
+        };
+        validateButton.style.marginRight = 4;
+        buttons.Add(validateButton);
+
+        var clearButton = new Button(() =>
+        {
+            _imageInputValues.Remove(key.keyName);
+            field.SetValueWithoutNotify(null);
+            UpdateImagePreview(preview, helpLabel, null);
+        })
+        {
+            text = "Clear"
+        };
+        buttons.Add(clearButton);
+
+        container.Add(buttons);
+
+        field.RegisterValueChangedCallback(evt =>
+        {
+            if (!IsSupportedImageObject(evt.newValue))
+            {
+                EditorUtility.DisplayDialog(
+                    "Unsupported Image Input",
+                    "Only Texture2D or Sprite assets can be assigned to vision pipeline inputs.",
+                    "OK");
+                field.SetValueWithoutNotify(evt.previousValue);
+                return;
+            }
+
+            if (evt.newValue == null)
+            {
+                _imageInputValues.Remove(key.keyName);
+            }
+            else
+            {
+                _imageInputValues[key.keyName] = evt.newValue;
+            }
+
+            UpdateImagePreview(preview, helpLabel, evt.newValue);
+        });
+
+        UpdateImagePreview(preview, helpLabel, currentValue);
+        _simulationInputs.Add(container);
     }
 
     private void ClearSimulationLog()
@@ -434,17 +547,35 @@ public class PromptPipelineGraphWindow : EditorWindow
         );
     }
 
-    private Dictionary<string, string> BuildSimulationState()
+    private PipelineState BuildSimulationState()
     {
-        var state = new Dictionary<string, string>();
-        foreach (var kvp in _inputValues)
+        var state = new PipelineState();
+        var inputKeys = _graphView?.CurrentStateModel?.keys?
+            .Where(key => key.kind == AnalyzedStateKeyKind.Input)
+            .ToList();
+
+        if (inputKeys == null)
         {
-            state[kvp.Key] = kvp.Value;
+            return state;
         }
+
+        foreach (var key in inputKeys.Where(key => key.valueKind != AnalyzedStateValueKind.Image))
+        {
+            state.SetString(key.keyName, _textInputValues.TryGetValue(key.keyName, out string value) ? value : string.Empty);
+        }
+
+        foreach (var key in inputKeys.Where(key => key.valueKind == AnalyzedStateValueKind.Image))
+        {
+            if (_imageInputValues.TryGetValue(key.keyName, out UnityEngine.Object imageValue) && imageValue != null)
+            {
+                state.SetImage(key.keyName, imageValue);
+            }
+        }
+
         return state;
     }
 
-    private void OnSimulationCompleted(Dictionary<string, string> resultState)
+    private void OnSimulationCompleted(PipelineState resultState)
     {
         _isSimulating = false;
         _runButton.SetEnabled(true);
@@ -455,6 +586,69 @@ public class PromptPipelineGraphWindow : EditorWindow
         {
             _graphView.ApplySimulationResult(resultState);
         }
+    }
+
+    private void ValidateImageInput(string keyName)
+    {
+        if (!_imageInputValues.TryGetValue(keyName, out UnityEngine.Object imageValue) || imageValue == null)
+        {
+            AppendSimulationLog($"Image input '{keyName}' is empty.");
+            _simulationStatus.text = $"Image '{keyName}' is empty";
+            return;
+        }
+
+        if (!PipelineImageUtility.TryNormalize(imageValue, 1024, out var normalized, out string error))
+        {
+            AppendSimulationLog($"Image input '{keyName}' failed validation: {error}");
+            _simulationStatus.text = $"Image validation failed: {keyName}";
+            return;
+        }
+
+        using (normalized)
+        {
+            AppendSimulationLog(
+                $"Validated image '{keyName}': {normalized.Texture.width}x{normalized.Texture.height} from {normalized.SourceSummary}.");
+            _simulationStatus.text = $"Image '{keyName}' validated";
+        }
+    }
+
+    private static bool IsSupportedImageObject(UnityEngine.Object value)
+    {
+        return value == null || value is Texture2D || value is Sprite;
+    }
+
+    private static void UpdateImagePreview(Image preview, Label helpLabel, UnityEngine.Object imageValue)
+    {
+        if (preview == null || helpLabel == null)
+        {
+            return;
+        }
+
+        preview.image = ResolvePreviewTexture(imageValue);
+        helpLabel.text = imageValue == null
+            ? "Assign a Texture2D or Sprite. Sprite inputs are cropped to their sprite rect before inference."
+            : PipelineState.DescribeValue(imageValue);
+    }
+
+    private static Texture ResolvePreviewTexture(UnityEngine.Object imageValue)
+    {
+        if (imageValue == null)
+        {
+            return null;
+        }
+
+        Texture2D assetPreview = AssetPreview.GetAssetPreview(imageValue) ?? AssetPreview.GetMiniThumbnail(imageValue);
+        if (assetPreview != null)
+        {
+            return assetPreview;
+        }
+
+        return imageValue switch
+        {
+            Texture2D texture => texture,
+            Sprite sprite => sprite.texture,
+            _ => null
+        };
     }
 
     private void OnSimulationFailed(string error)

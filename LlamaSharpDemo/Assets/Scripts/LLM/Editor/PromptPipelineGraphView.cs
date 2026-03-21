@@ -86,7 +86,7 @@ public class PromptPipelineGraphView : GraphView
         Reload();
     }
 
-    public void ApplySimulationResult(Dictionary<string, string> state)
+    public void ApplySimulationResult(PipelineState state)
     {
         if (_stateModel == null || state == null)
         {
@@ -95,9 +95,9 @@ public class PromptPipelineGraphView : GraphView
 
         foreach (var key in _stateModel.keys)
         {
-            if (state.TryGetValue(key.keyName, out var value))
+            if (state.HasAnyValue(key.keyName))
             {
-                key.lastValuePreview = value;
+                key.lastValuePreview = state.GetDisplayValue(key.keyName);
             }
         }
     }
@@ -1311,7 +1311,13 @@ internal class PromptPipelineStepNode : Node
     private readonly DropdownField _customTypeDropdown;
     private readonly VisualElement _customParamsContainer;
     private readonly Button _insertStateKeyButton;
+    private readonly Toggle _useVisionField;
+    private readonly TextField _imageStateKeyField;
+    private readonly Button _pickImageStateKeyButton;
+    private readonly Toggle _requireImageField;
+    private readonly IntegerField _resizeLongestSideField;
     private readonly VisualElement _jsonOptionsContainer;
+    private readonly VisualElement _visionOptionsContainer;
     private readonly VisualElement _customOptionsContainer;
 
     private List<string> _availableKeys = new();
@@ -1473,6 +1479,64 @@ internal class PromptPipelineStepNode : Node
         };
         extensionContainer.Add(_insertStateKeyButton);
 
+        _visionOptionsContainer = new VisualElement { style = { flexDirection = FlexDirection.Column } };
+        _visionOptionsContainer.Add(new Label("Vision Options"));
+
+        _useVisionField = new Toggle("Use Vision")
+        {
+            value = step.useVision
+        };
+        _useVisionField.RegisterValueChangedCallback(evt =>
+        {
+            ApplyChange("Toggle Vision", () => step.useVision = evt.newValue);
+            UpdateVisionInputsEnabled();
+        });
+        _visionOptionsContainer.Add(_useVisionField);
+
+        _imageStateKeyField = new TextField("Image State Key")
+        {
+            value = step.imageStateKey ?? string.Empty
+        };
+        _imageStateKeyField.RegisterValueChangedCallback(evt =>
+        {
+            ApplyChange("Edit Image State Key", () => step.imageStateKey = evt.newValue?.Trim());
+        });
+        _visionOptionsContainer.Add(_imageStateKeyField);
+
+        _pickImageStateKeyButton = new Button(OnPickImageStateKeyClicked)
+        {
+            text = "Use Existing Key"
+        };
+        _visionOptionsContainer.Add(_pickImageStateKeyButton);
+
+        _requireImageField = new Toggle("Require Image")
+        {
+            value = step.requireImage
+        };
+        _requireImageField.RegisterValueChangedCallback(evt =>
+        {
+            ApplyChange("Toggle Require Image", () => step.requireImage = evt.newValue);
+        });
+        _visionOptionsContainer.Add(_requireImageField);
+
+        _resizeLongestSideField = new IntegerField("Resize Longest Side")
+        {
+            value = Mathf.Max(64, step.resizeLongestSide)
+        };
+        _resizeLongestSideField.RegisterValueChangedCallback(evt =>
+        {
+            int clamped = Mathf.Max(64, evt.newValue);
+            _resizeLongestSideField.SetValueWithoutNotify(clamped);
+            ApplyChange("Edit Vision Resize Limit", () => step.resizeLongestSide = clamped);
+        });
+        _visionOptionsContainer.Add(_resizeLongestSideField);
+
+        var visionHelp = new HelpBox(
+            "The selected PipelineState key must contain a Texture2D or Sprite. Sprite inputs are cropped to their rect before VLM inference.",
+            HelpBoxMessageType.Info);
+        _visionOptionsContainer.Add(visionHelp);
+        extensionContainer.Add(_visionOptionsContainer);
+
         _jsonOptionsContainer = new VisualElement { style = { flexDirection = FlexDirection.Column } };
         _jsonOptionsContainer.Add(new Label("JSON Options"));
         _maxRetriesField = new IntegerField("Max Retries") { value = step.jsonMaxRetries };
@@ -1589,19 +1653,39 @@ internal class PromptPipelineStepNode : Node
 
     private void UpdatePromptInputsEnabled()
     {
-        bool hasSettings = Step?.llmProfile != null;
+        bool isLlmStep = Step != null &&
+            (Step.stepKind == PromptPipelineStepKind.JsonLlm || Step.stepKind == PromptPipelineStepKind.CompletionLlm);
+        bool hasSettings = isLlmStep && Step.llmProfile != null;
         _userPromptField?.SetEnabled(hasSettings);
         _insertStateKeyButton?.SetEnabled(hasSettings && _availableKeys != null && _availableKeys.Count > 0);
+        _useVisionField?.SetEnabled(isLlmStep);
+        UpdateVisionInputsEnabled();
     }
 
     private void RefreshSections()
     {
         bool isJson = Step.stepKind == PromptPipelineStepKind.JsonLlm;
+        bool isLlm = isJson || Step.stepKind == PromptPipelineStepKind.CompletionLlm;
         bool isCustom = Step.stepKind == PromptPipelineStepKind.CustomLink;
 
         _jsonOptionsContainer.style.display = isJson ? DisplayStyle.Flex : DisplayStyle.None;
+        _visionOptionsContainer.style.display = isLlm ? DisplayStyle.Flex : DisplayStyle.None;
         _customOptionsContainer.style.display = isCustom ? DisplayStyle.Flex : DisplayStyle.None;
+        UpdateVisionInputsEnabled();
         UpdateHeaderStyle();
+    }
+
+    private void UpdateVisionInputsEnabled()
+    {
+        bool isLlmStep = Step != null &&
+            (Step.stepKind == PromptPipelineStepKind.JsonLlm || Step.stepKind == PromptPipelineStepKind.CompletionLlm);
+        bool visionEnabled = isLlmStep && Step.useVision;
+        bool hasAvailableKeys = _availableKeys != null && _availableKeys.Count > 0;
+
+        _imageStateKeyField?.SetEnabled(visionEnabled);
+        _pickImageStateKeyButton?.SetEnabled(visionEnabled && hasAvailableKeys);
+        _requireImageField?.SetEnabled(visionEnabled);
+        _resizeLongestSideField?.SetEnabled(visionEnabled);
     }
 
     private void SyncParamsWithConstructor(string typeName, bool force)
@@ -1778,6 +1862,33 @@ internal class PromptPipelineStepNode : Node
             });
         }
         menu.DropDown(_insertStateKeyButton.worldBound);
+    }
+
+    private void OnPickImageStateKeyClicked()
+    {
+        if (_availableKeys == null || _availableKeys.Count == 0)
+        {
+            return;
+        }
+
+        var keys = _availableKeys.ToList();
+        if (!string.IsNullOrWhiteSpace(Step.imageStateKey) &&
+            !keys.Contains(Step.imageStateKey, StringComparer.Ordinal))
+        {
+            keys.Add(Step.imageStateKey);
+        }
+
+        var menu = new GenericMenu();
+        foreach (string key in keys.OrderBy(k => k, StringComparer.Ordinal))
+        {
+            menu.AddItem(new GUIContent(key), string.Equals(key, Step.imageStateKey, StringComparison.Ordinal), () =>
+            {
+                ApplyChange("Select Image State Key", () => Step.imageStateKey = key);
+                _imageStateKeyField.SetValueWithoutNotify(key);
+            });
+        }
+
+        menu.DropDown(_pickImageStateKeyButton.worldBound);
     }
 
     private void UpdateHeaderStyle()
@@ -1986,7 +2097,9 @@ internal class PipelineInputNode : Node
             foreach (var key in model.keys.Where(k => k.kind == AnalyzedStateKeyKind.Input))
             {
                 var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(string));
-                port.portName = key.keyName;
+                port.portName = key.valueKind == AnalyzedStateValueKind.Image
+                    ? $"{key.keyName} (Image)"
+                    : key.keyName;
                 port.pickingMode = PickingMode.Ignore;
                 outputContainer.Add(port);
                 _ports[key.keyName] = port;

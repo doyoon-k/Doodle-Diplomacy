@@ -1,18 +1,33 @@
-using System.Collections.Generic;
-using System.Text;
+using System.Text.RegularExpressions;
 
 public class PromptTemplate
 {
-    private readonly string template;
-    public PromptTemplate(string template) => this.template = template;
+    private static readonly Regex PlaceholderRegex = new Regex(
+        "{{([A-Za-z0-9_]+)}}",
+        RegexOptions.Compiled);
 
-    public string Render(Dictionary<string, string> state)
+    private readonly string _template;
+
+    public PromptTemplate(string template)
     {
-        var sb = new StringBuilder(template);
-        foreach (var kv in state)
+        _template = template ?? string.Empty;
+    }
+
+    public string Render(PipelineState state)
+    {
+        if (string.IsNullOrEmpty(_template) || state == null)
         {
-            sb.Replace($"{{{{{kv.Key}}}}}", kv.Value);
+            return _template;
         }
-        return sb.ToString();
+
+        return PlaceholderRegex.Replace(_template, match =>
+        {
+            if (match.Groups.Count < 2)
+            {
+                return match.Value;
+            }
+
+            return state.GetTemplateValue(match.Groups[1].Value);
+        });
     }
 }

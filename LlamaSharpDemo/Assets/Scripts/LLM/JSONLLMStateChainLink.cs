@@ -1,11 +1,10 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Text.Json;
 using UnityEngine;
 
 /// <summary>
-/// Executes an LLM call that is expected to return JSON and merges the parsed keys into the shared state dictionary.
+/// Executes an LLM call that is expected to return JSON and merges parsed keys into the shared state.
 /// </summary>
 public class JSONLLMStateChainLink : IStateChainLink
 {
@@ -15,15 +14,33 @@ public class JSONLLMStateChainLink : IStateChainLink
     private readonly float _delayBetweenRetries;
     private readonly PromptTemplate _userPromptTemplate;
     private readonly Action<string> _log;
+    private readonly bool _useVision;
+    private readonly string _imageStateKey;
+    private readonly bool _requireImage;
+    private readonly int _resizeLongestSide;
 
     public JSONLLMStateChainLink(
         LlmGenerationProfile settings,
         string userPromptTemplate,
         int maxRetries = 3,
         float delayBetweenRetries = 0.1f,
+        bool useVision = false,
+        string imageStateKey = null,
+        bool requireImage = false,
+        int resizeLongestSide = 1024,
         Action<string> log = null
     )
-        : this(LlmServiceLocator.Require(), settings, userPromptTemplate, maxRetries, delayBetweenRetries, log)
+        : this(
+            LlmServiceLocator.Require(),
+            settings,
+            userPromptTemplate,
+            maxRetries,
+            delayBetweenRetries,
+            useVision,
+            imageStateKey,
+            requireImage,
+            resizeLongestSide,
+            log)
     {
     }
 
@@ -33,6 +50,10 @@ public class JSONLLMStateChainLink : IStateChainLink
         string userPromptTemplate,
         int maxRetries = 3,
         float delayBetweenRetries = 0.1f,
+        bool useVision = false,
+        string imageStateKey = null,
+        bool requireImage = false,
+        int resizeLongestSide = 1024,
         Action<string> log = null
     )
     {
@@ -42,31 +63,34 @@ public class JSONLLMStateChainLink : IStateChainLink
         _userPromptTemplate = new PromptTemplate(userPromptTemplate ?? string.Empty);
         _maxRetries = Mathf.Max(1, maxRetries);
         _delayBetweenRetries = Mathf.Max(0f, delayBetweenRetries);
+        _useVision = useVision;
+        _imageStateKey = imageStateKey;
+        _requireImage = requireImage;
+        _resizeLongestSide = Mathf.Max(64, resizeLongestSide);
     }
 
     public IEnumerator Execute(
-        Dictionary<string, string> state,
-        Action<Dictionary<string, string>> onDone
+        PipelineState state,
+        Action<PipelineState> onDone
     )
     {
-        state ??= new Dictionary<string, string>();
+        state ??= new PipelineState();
         if (_settings == null)
         {
-            Debug.LogError("[JSONLLMStateChainLink] LlmGenerationProfile is missing.");
-            onDone?.Invoke(state);
+            yield return Fail(state, onDone, "[JSONLLMStateChainLink] LlmGenerationProfile is missing.");
             yield break;
         }
 
         if (_llmService == null)
         {
-            Debug.LogError("[JSONLLMStateChainLink] ILlmService is missing.");
-            onDone?.Invoke(state);
+            yield return Fail(state, onDone, "[JSONLLMStateChainLink] ILlmService is missing.");
             yield break;
         }
 
         int attempt = 0;
         bool parsedSuccessfully = false;
         string parsedJson = null;
+        string lastError = null;
 
         while (attempt < _maxRetries && !parsedSuccessfully)
         {
@@ -76,11 +100,30 @@ public class JSONLLMStateChainLink : IStateChainLink
             Log($"[JSONLLMStateChainLink] Attempt {attempt}/{_maxRetries} - User Prompt:\n{userPrompt}");
 
             string jsonResponse = null;
-            yield return _llmService.GenerateCompletionWithState(
-                _settings,
-                userPrompt,
-                state,
-                resp => jsonResponse = resp);
+            using var imageResult = ResolveImage(state, out string imageError);
+            if (imageError != null)
+            {
+                yield return Fail(state, onDone, imageError);
+                yield break;
+            }
+
+            if (imageResult != null)
+            {
+                yield return _llmService.GenerateCompletionWithImage(
+                    _settings,
+                    userPrompt,
+                    state,
+                    imageResult.Texture,
+                    resp => jsonResponse = resp);
+            }
+            else
+            {
+                yield return _llmService.GenerateCompletionWithState(
+                    _settings,
+                    userPrompt,
+                    state,
+                    resp => jsonResponse = resp);
+            }
 
             Log($"[JSONLLMStateChainLink] Attempt {attempt}/{_maxRetries} - Raw Response:\n{jsonResponse}");
 
@@ -89,9 +132,14 @@ public class JSONLLMStateChainLink : IStateChainLink
                 parsedJson = ExtractJsonObject(jsonResponse);
                 using var document = JsonDocument.Parse(parsedJson);
                 parsedSuccessfully = document.RootElement.ValueKind == JsonValueKind.Object;
+                if (!parsedSuccessfully)
+                {
+                    lastError = "Root JSON value is not an object.";
+                }
             }
             catch (Exception e)
             {
+                lastError = e.Message;
                 Log($"[JSONLLMStateChainLink] JSON parse failed: {e.Message}");
                 parsedJson = null;
             }
@@ -102,19 +150,27 @@ public class JSONLLMStateChainLink : IStateChainLink
             }
         }
 
-        if (parsedSuccessfully && !string.IsNullOrWhiteSpace(parsedJson))
+        if (!parsedSuccessfully || string.IsNullOrWhiteSpace(parsedJson))
         {
-            using var document = JsonDocument.Parse(parsedJson);
+            yield return Fail(
+                state,
+                onDone,
+                $"[JSONLLMStateChainLink] Failed to parse valid JSON after {_maxRetries} attempts. Last error: {lastError}");
+            yield break;
+        }
+
+        using (var document = JsonDocument.Parse(parsedJson))
+        {
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                state[property.Name] = JsonElementToStateString(property.Value);
+                state.SetString(property.Name, JsonElementToStateString(property.Value));
             }
         }
 
         onDone?.Invoke(state);
     }
 
-    private string RenderUserPrompt(Dictionary<string, string> state)
+    private string RenderUserPrompt(PipelineState state)
     {
         if (_userPromptTemplate == null)
         {
@@ -122,6 +178,44 @@ public class JSONLLMStateChainLink : IStateChainLink
         }
 
         return _userPromptTemplate.Render(state);
+    }
+
+    private PipelineImageUtility.ImageNormalizationResult ResolveImage(PipelineState state, out string error)
+    {
+        error = null;
+        if (!_useVision)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(_imageStateKey))
+        {
+            error = "[JSONLLMStateChainLink] Vision is enabled but imageStateKey is empty.";
+            return null;
+        }
+
+        if (!state.HasAnyValue(_imageStateKey))
+        {
+            if (_requireImage)
+            {
+                error = $"[JSONLLMStateChainLink] Required image key '{_imageStateKey}' is missing.";
+            }
+
+            return null;
+        }
+
+        if (!PipelineImageUtility.TryResolveFromState(
+                state,
+                _imageStateKey,
+                _resizeLongestSide,
+                out PipelineImageUtility.ImageNormalizationResult result,
+                out string normalizationError))
+        {
+            error = $"[JSONLLMStateChainLink] {normalizationError}";
+            return null;
+        }
+
+        return result;
     }
 
     private static string ExtractJsonObject(string text)
@@ -151,6 +245,14 @@ public class JSONLLMStateChainLink : IStateChainLink
             JsonValueKind.Array => element.GetRawText(),
             _ => element.ToString()
         };
+    }
+
+    private IEnumerator Fail(PipelineState state, Action<PipelineState> onDone, string error)
+    {
+        Log(error);
+        state.SetString(PromptPipelineConstants.ErrorKey, error);
+        onDone?.Invoke(state);
+        yield break;
     }
 
     private void Log(string message)

@@ -120,6 +120,28 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         public bool[] completedSegments;
     }
 
+    private enum HfDownloadApplyMode
+    {
+        LlmProfiles,
+        StableDiffusionPreset
+    }
+
+    private sealed class HfDownloadPlan
+    {
+        public string AssetLabel = "model";
+        public string RepoId = string.Empty;
+        public string FilePath = string.Empty;
+        public string Revision = DefaultHfRevision;
+        public string Token = string.Empty;
+        public string DestinationFolderName = DefaultModelFolderName;
+        public string ExpectedExtension = ".gguf";
+        public bool AutoApplyAfterDownload = true;
+        public HfDownloadApplyMode ApplyMode = HfDownloadApplyMode.LlmProfiles;
+        public int StableDiffusionPresetIndex = -1;
+
+        public string FileName => Path.GetFileName(FilePath ?? string.Empty);
+    }
+
     private Vector2 _scroll;
     private BackendMode _backendMode;
     private List<string> _modelChoices = new();
@@ -132,11 +154,17 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
     private string _hfRevision = DefaultHfRevision;
     private string _hfToken = string.Empty;
     private bool _hfAutoApplyAfterDownload = true;
+    private int _sdSelectedPresetIndex;
+    private string _sdRepoId = string.Empty;
+    private string _sdFilePath = string.Empty;
+    private string _sdRevision = DefaultHfRevision;
+    private bool _sdAutoApplyAfterDownload = true;
     private bool _hfIsDownloading;
     private bool _hfIsWatchingBrowserDownload;
     private long _hfDownloadedBytes;
     private long _hfTotalBytes = -1;
     private string _hfDownloadStatus = "Idle";
+    private HfDownloadPlan _activeHfDownloadPlan;
     private CancellationTokenSource _hfDownloadCancellation;
     private Task _hfDownloadTask;
     private CancellationTokenSource _hfBrowserWatchCancellation;
@@ -157,6 +185,7 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
     private void OnEnable()
     {
         CleanupLegacyPartFilesInStreamingAssets();
+        LoadStableDiffusionPresetIntoFields(_sdSelectedPresetIndex);
         RefreshState();
     }
 
@@ -186,6 +215,8 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         DrawModelSection();
         EditorGUILayout.Space(10f);
         DrawHuggingFaceSection();
+        EditorGUILayout.Space(10f);
+        DrawStableDiffusionDownloadSection();
         EditorGUILayout.Space(10f);
         DrawValidationSection();
         EditorGUILayout.Space(10f);
@@ -317,33 +348,8 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
             "Auto-apply downloaded model to all LlmGenerationProfile assets",
             _hfAutoApplyAfterDownload);
 
-        bool isTransferActive = _hfIsDownloading || _hfIsWatchingBrowserDownload;
-        if (isTransferActive)
+        if (DrawActiveTransferUiIfNeeded(HfDownloadApplyMode.LlmProfiles))
         {
-            GetHfProgressSnapshot(out long downloaded, out long total, out string status);
-            float progress = total > 0 ? Mathf.Clamp01((float)downloaded / total) : 0f;
-            string progressText = total > 0
-                ? $"{FormatBytes(downloaded)} / {FormatBytes(total)}"
-                : $"{FormatBytes(downloaded)}";
-
-            Rect rect = GUILayoutUtility.GetRect(18f, 18f);
-            EditorGUI.ProgressBar(rect, progress, progressText);
-            GUILayout.Space(4f);
-
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                EditorGUILayout.HelpBox(status, MessageType.Info);
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Cancel", GUILayout.Height(24f)))
-                {
-                    CancelActiveHfOperation();
-                }
-            }
-
-            Repaint();
             return;
         }
 
@@ -351,21 +357,130 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
             !string.IsNullOrWhiteSpace(_hfRepoId) &&
             !string.IsNullOrWhiteSpace(_hfFilePath);
 
-        using (new EditorGUI.DisabledScope(!hasRequiredInputs))
+        using (new EditorGUI.DisabledScope(!hasRequiredInputs || HasAnyActiveTransfer()))
         {
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("Download In Editor", GUILayout.Height(26f)))
                 {
-                    StartHuggingFaceDownload();
+                    StartLlmHuggingFaceDownload();
                 }
 
                 if (GUILayout.Button("Open Browser (Fast) + Auto Import", GUILayout.Height(26f)))
                 {
-                    StartBrowserAssistedDownload();
+                    StartLlmBrowserAssistedDownload();
                 }
             }
         }
+    }
+
+    private void DrawStableDiffusionDownloadSection()
+    {
+        EditorGUILayout.LabelField("2-2) Stable Diffusion Models", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "Download recommended Stable Diffusion GGUF models into StreamingAssets/SDModels and auto-configure StableDiffusionCppSettings.",
+            MessageType.None);
+
+        IReadOnlyList<StableDiffusionDownloadPreset> presets = StableDiffusionCppSetupUtility.DownloadPresets;
+        if (presets.Count == 0)
+        {
+            EditorGUILayout.HelpBox("No Stable Diffusion presets are configured.", MessageType.Warning);
+            return;
+        }
+
+        _sdSelectedPresetIndex = Mathf.Clamp(_sdSelectedPresetIndex, 0, presets.Count - 1);
+        string[] presetLabels = presets.Select(preset => preset.Label).ToArray();
+        int newPresetIndex = EditorGUILayout.Popup("Preset", _sdSelectedPresetIndex, presetLabels);
+        if (newPresetIndex != _sdSelectedPresetIndex)
+        {
+            _sdSelectedPresetIndex = newPresetIndex;
+            LoadStableDiffusionPresetIntoFields(_sdSelectedPresetIndex);
+        }
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Use Preset Values", GUILayout.Height(24f)))
+            {
+                LoadStableDiffusionPresetIntoFields(_sdSelectedPresetIndex);
+            }
+
+            if (GUILayout.Button("Apply Existing Download To Settings", GUILayout.Height(24f)))
+            {
+                ApplyExistingStableDiffusionDownload();
+            }
+        }
+
+        _sdRepoId = EditorGUILayout.TextField(new GUIContent("Repo ID"), _sdRepoId);
+        _sdFilePath = EditorGUILayout.TextField(new GUIContent("GGUF File Path"), _sdFilePath);
+        _sdRevision = EditorGUILayout.TextField(new GUIContent("Revision"), _sdRevision);
+        _hfToken = EditorGUILayout.PasswordField(new GUIContent("Access Token (optional)"), _hfToken);
+        _sdAutoApplyAfterDownload = EditorGUILayout.ToggleLeft(
+            "Auto-apply downloaded model to StableDiffusionCppSettings",
+            _sdAutoApplyAfterDownload);
+
+        string destinationFolder = StableDiffusionCppSetupUtility.GetModelDestinationDirectoryAbsolute();
+        EditorGUILayout.HelpBox(
+            $"Destination folder:\n{destinationFolder}",
+            MessageType.None);
+
+        if (DrawActiveTransferUiIfNeeded(HfDownloadApplyMode.StableDiffusionPreset))
+        {
+            return;
+        }
+
+        bool hasRequiredInputs =
+            !string.IsNullOrWhiteSpace(_sdRepoId) &&
+            !string.IsNullOrWhiteSpace(_sdFilePath);
+
+        using (new EditorGUI.DisabledScope(!hasRequiredInputs || HasAnyActiveTransfer()))
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Download In Editor", GUILayout.Height(26f)))
+                {
+                    StartStableDiffusionHuggingFaceDownload();
+                }
+
+                if (GUILayout.Button("Open Browser (Fast) + Auto Import", GUILayout.Height(26f)))
+                {
+                    StartStableDiffusionBrowserDownload();
+                }
+            }
+        }
+    }
+
+    private bool DrawActiveTransferUiIfNeeded(HfDownloadApplyMode applyMode)
+    {
+        if (!IsTransferActiveForMode(applyMode))
+        {
+            return false;
+        }
+
+        GetHfProgressSnapshot(out long downloaded, out long total, out string status);
+        float progress = total > 0 ? Mathf.Clamp01((float)downloaded / total) : 0f;
+        string progressText = total > 0
+            ? $"{FormatBytes(downloaded)} / {FormatBytes(total)}"
+            : $"{FormatBytes(downloaded)}";
+
+        Rect rect = GUILayoutUtility.GetRect(18f, 18f);
+        EditorGUI.ProgressBar(rect, progress, progressText);
+        GUILayout.Space(4f);
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            EditorGUILayout.HelpBox(status, MessageType.Info);
+        }
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Cancel", GUILayout.Height(24f)))
+            {
+                CancelActiveHfOperation();
+            }
+        }
+
+        Repaint();
+        return true;
     }
 
     private void DrawValidationSection()
@@ -391,32 +506,51 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         SetStatus("State refreshed.", MessageType.Info);
     }
 
-    private void StartHuggingFaceDownload()
+    private void StartLlmHuggingFaceDownload()
     {
-        if (_hfIsDownloading || _hfIsWatchingBrowserDownload)
+        StartConfiguredHuggingFaceDownload(BuildLlmDownloadPlan(), browserAssisted: false);
+    }
+
+    private void StartLlmBrowserAssistedDownload()
+    {
+        StartConfiguredHuggingFaceDownload(BuildLlmDownloadPlan(), browserAssisted: true);
+    }
+
+    private void StartStableDiffusionHuggingFaceDownload()
+    {
+        StartConfiguredHuggingFaceDownload(BuildStableDiffusionDownloadPlan(), browserAssisted: false);
+    }
+
+    private void StartStableDiffusionBrowserDownload()
+    {
+        StartConfiguredHuggingFaceDownload(BuildStableDiffusionDownloadPlan(), browserAssisted: true);
+    }
+
+    private void StartConfiguredHuggingFaceDownload(HfDownloadPlan plan, bool browserAssisted)
+    {
+        if (plan == null || HasAnyActiveTransfer())
         {
             return;
         }
 
-        string repoId = (_hfRepoId ?? string.Empty).Trim();
-        string filePath = NormalizeModelPathForUrl(_hfFilePath);
-        string revision = string.IsNullOrWhiteSpace(_hfRevision) ? DefaultHfRevision : _hfRevision.Trim();
-        string token = (_hfToken ?? string.Empty).Trim();
-
+        string repoId = (plan.RepoId ?? string.Empty).Trim();
+        string filePath = NormalizeModelPathForUrl(plan.FilePath);
+        string revision = string.IsNullOrWhiteSpace(plan.Revision) ? DefaultHfRevision : plan.Revision.Trim();
         if (string.IsNullOrWhiteSpace(repoId) || string.IsNullOrWhiteSpace(filePath))
         {
-            SetStatus("Repo ID and GGUF file path are required.", MessageType.Warning);
+            SetStatus($"Repo ID and {plan.ExpectedExtension} file path are required.", MessageType.Warning);
             return;
         }
 
-        if (!filePath.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(plan.ExpectedExtension) &&
+            !filePath.EndsWith(plan.ExpectedExtension, StringComparison.OrdinalIgnoreCase))
         {
-            bool continueWithoutGguf = EditorUtility.DisplayDialog(
+            bool continueWithoutExpectedExtension = EditorUtility.DisplayDialog(
                 "File Extension Check",
-                $"The selected file path does not end with .gguf:\n{filePath}\n\nContinue anyway?",
+                $"The selected file path does not end with {plan.ExpectedExtension}:\n{filePath}\n\nContinue anyway?",
                 "Continue",
                 "Cancel");
-            if (!continueWithoutGguf)
+            if (!continueWithoutExpectedExtension)
             {
                 return;
             }
@@ -425,13 +559,18 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         string fileName = Path.GetFileName(filePath);
         if (string.IsNullOrWhiteSpace(fileName))
         {
-            SetStatus("Invalid GGUF file path.", MessageType.Error);
+            SetStatus($"Invalid {plan.AssetLabel} file path.", MessageType.Error);
             return;
         }
 
-        string destinationDirectory = Path.Combine(Application.streamingAssetsPath, DefaultModelFolderName);
+        plan.RepoId = repoId;
+        plan.FilePath = filePath;
+        plan.Revision = revision;
+        plan.Token = (plan.Token ?? string.Empty).Trim();
+
+        string destinationDirectory = GetDestinationDirectory(plan);
         Directory.CreateDirectory(destinationDirectory);
-        string destinationPath = Path.Combine(destinationDirectory, fileName);
+        string destinationPath = GetDestinationPath(plan);
         string legacyPartPath = destinationPath + ".part";
         TryDeleteFileSilently(legacyPartPath);
 
@@ -449,100 +588,167 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         }
 
         string url = BuildHuggingFaceResolveUrl(repoId, revision, filePath);
+        _activeHfDownloadPlan = plan;
+
+        if (browserAssisted)
+        {
+            string watchDirectory = ResolveDefaultDownloadsFolder();
+            if (!Directory.Exists(watchDirectory))
+            {
+                try
+                {
+                    Directory.CreateDirectory(watchDirectory);
+                }
+                catch (Exception ex)
+                {
+                    SetStatus($"Browser download folder is invalid: {ex.Message}", MessageType.Error);
+                    _activeHfDownloadPlan = null;
+                    return;
+                }
+            }
+
+            _hfBrowserWatchCancellation?.Dispose();
+            _hfBrowserWatchCancellation = new CancellationTokenSource();
+            _hfBrowserWatchTask = null;
+            _hfIsWatchingBrowserDownload = true;
+            DateTime startedAtUtc = DateTime.UtcNow;
+
+            SetHfProgress(0, -1, $"Opened browser URL. Waiting for '{fileName}' in {watchDirectory}...");
+            SetStatus($"Browser download started for {plan.AssetLabel}. Waiting for completion and auto-import...", MessageType.Info);
+            Application.OpenURL(url);
+
+            _hfBrowserWatchTask = WatchBrowserDownloadAndImportAsync(
+                watchDirectory,
+                fileName,
+                startedAtUtc,
+                destinationPath,
+                _hfBrowserWatchCancellation.Token);
+            _hfBrowserWatchTask.ContinueWith(task =>
+            {
+                EditorApplication.delayCall += () => CompleteBrowserAssistedDownload(task);
+            }, TaskScheduler.Default);
+            return;
+        }
 
         _hfDownloadCancellation?.Dispose();
         _hfDownloadCancellation = new CancellationTokenSource();
         _hfDownloadTask = null;
         _hfIsDownloading = true;
         SetHfProgress(0, -1, $"Starting download from {repoId}...");
-        SetStatus("Downloading model from Hugging Face...", MessageType.Info);
+        SetStatus($"Downloading {plan.AssetLabel} from Hugging Face...", MessageType.Info);
 
         _hfDownloadTask = DownloadModelFromHuggingFaceAsync(
             url,
             destinationPath,
-            token,
+            plan.Token,
             _hfDownloadCancellation.Token);
 
         _hfDownloadTask.ContinueWith(task =>
         {
-            EditorApplication.delayCall += () => CompleteHuggingFaceDownload(task, destinationPath);
+            EditorApplication.delayCall += () => CompleteHuggingFaceDownload(task);
         }, TaskScheduler.Default);
     }
 
-    private void StartBrowserAssistedDownload()
+    private HfDownloadPlan BuildLlmDownloadPlan()
     {
-        if (_hfIsDownloading || _hfIsWatchingBrowserDownload)
+        return new HfDownloadPlan
+        {
+            AssetLabel = "GGUF model",
+            RepoId = _hfRepoId,
+            FilePath = _hfFilePath,
+            Revision = _hfRevision,
+            Token = _hfToken,
+            DestinationFolderName = DefaultModelFolderName,
+            ExpectedExtension = ".gguf",
+            AutoApplyAfterDownload = _hfAutoApplyAfterDownload,
+            ApplyMode = HfDownloadApplyMode.LlmProfiles
+        };
+    }
+
+    private HfDownloadPlan BuildStableDiffusionDownloadPlan()
+    {
+        return new HfDownloadPlan
+        {
+            AssetLabel = "Stable Diffusion model",
+            RepoId = _sdRepoId,
+            FilePath = _sdFilePath,
+            Revision = _sdRevision,
+            Token = _hfToken,
+            DestinationFolderName = StableDiffusionCppSetupUtility.ModelsFolderName,
+            ExpectedExtension = ".gguf",
+            AutoApplyAfterDownload = _sdAutoApplyAfterDownload,
+            ApplyMode = HfDownloadApplyMode.StableDiffusionPreset,
+            StableDiffusionPresetIndex = _sdSelectedPresetIndex
+        };
+    }
+
+    private void LoadStableDiffusionPresetIntoFields(int presetIndex)
+    {
+        if (!StableDiffusionCppSetupUtility.TryGetPreset(presetIndex, out StableDiffusionDownloadPreset preset))
         {
             return;
         }
 
-        string repoId = (_hfRepoId ?? string.Empty).Trim();
-        string filePath = NormalizeModelPathForUrl(_hfFilePath);
-        string revision = string.IsNullOrWhiteSpace(_hfRevision) ? DefaultHfRevision : _hfRevision.Trim();
-        if (string.IsNullOrWhiteSpace(repoId) || string.IsNullOrWhiteSpace(filePath))
+        _sdSelectedPresetIndex = presetIndex;
+        _sdRepoId = preset.RepoId;
+        _sdFilePath = preset.FilePath;
+        _sdRevision = preset.Revision;
+    }
+
+    private void ApplyExistingStableDiffusionDownload()
+    {
+        if (!StableDiffusionCppSetupUtility.TryGetPreset(_sdSelectedPresetIndex, out StableDiffusionDownloadPreset preset))
         {
-            SetStatus("Repo ID and GGUF file path are required.", MessageType.Warning);
+            SetStatus("Select a Stable Diffusion preset first.", MessageType.Warning);
             return;
         }
 
-        string fileName = Path.GetFileName(filePath);
-        if (string.IsNullOrWhiteSpace(fileName))
+        string candidatePath = Path.Combine(
+            StableDiffusionCppSetupUtility.GetModelDestinationDirectoryAbsolute(),
+            Path.GetFileName(NormalizeModelPathForUrl(_sdFilePath)));
+        if (!File.Exists(candidatePath))
         {
-            SetStatus("Invalid GGUF file path.", MessageType.Error);
+            SetStatus($"Model file was not found in StreamingAssets:\n{candidatePath}", MessageType.Warning);
             return;
         }
 
-        string watchDirectory = ResolveDefaultDownloadsFolder();
-        if (!Directory.Exists(watchDirectory))
+        if (!TryGetStreamingAssetsRelativePath(candidatePath, out string relativeModelPath))
         {
-            try
-            {
-                Directory.CreateDirectory(watchDirectory);
-            }
-            catch (Exception ex)
-            {
-                SetStatus($"Browser download folder is invalid: {ex.Message}", MessageType.Error);
-                return;
-            }
+            SetStatus($"Model is not located under StreamingAssets:\n{candidatePath}", MessageType.Error);
+            return;
         }
 
-        string destinationDirectory = Path.Combine(Application.streamingAssetsPath, DefaultModelFolderName);
-        Directory.CreateDirectory(destinationDirectory);
-        string destinationPath = Path.Combine(destinationDirectory, fileName);
-        if (File.Exists(destinationPath))
+        try
         {
-            bool replace = EditorUtility.DisplayDialog(
-                "Replace Existing Model",
-                $"A model with the same name already exists:\n{destinationPath}\n\nReplace it after browser download completes?",
-                "Replace",
-                "Cancel");
-            if (!replace)
-            {
-                return;
-            }
+            StableDiffusionCppSetupUtility.ApplyDownloadedPreset(preset, relativeModelPath);
+            SetStatus($"Stable Diffusion settings updated to use {relativeModelPath}.", MessageType.Info);
         }
-
-        string url = BuildHuggingFaceResolveUrl(repoId, revision, filePath);
-        _hfBrowserWatchCancellation?.Dispose();
-        _hfBrowserWatchCancellation = new CancellationTokenSource();
-        _hfBrowserWatchTask = null;
-        _hfIsWatchingBrowserDownload = true;
-        DateTime startedAtUtc = DateTime.UtcNow;
-
-        SetHfProgress(0, -1, $"Opened browser URL. Waiting for '{fileName}' in {watchDirectory}...");
-        SetStatus("Browser download started. Waiting for completion and auto-import...", MessageType.Info);
-        Application.OpenURL(url);
-
-        _hfBrowserWatchTask = WatchBrowserDownloadAndImportAsync(
-            watchDirectory,
-            fileName,
-            startedAtUtc,
-            destinationPath,
-            _hfBrowserWatchCancellation.Token);
-        _hfBrowserWatchTask.ContinueWith(task =>
+        catch (Exception ex)
         {
-            EditorApplication.delayCall += () => CompleteBrowserAssistedDownload(task, destinationPath);
-        }, TaskScheduler.Default);
+            SetStatus($"Failed to apply Stable Diffusion preset: {ex.Message}", MessageType.Error);
+        }
+    }
+
+    private bool HasAnyActiveTransfer()
+    {
+        return _hfIsDownloading || _hfIsWatchingBrowserDownload;
+    }
+
+    private bool IsTransferActiveForMode(HfDownloadApplyMode applyMode)
+    {
+        return HasAnyActiveTransfer() &&
+               _activeHfDownloadPlan != null &&
+               _activeHfDownloadPlan.ApplyMode == applyMode;
+    }
+
+    private static string GetDestinationDirectory(HfDownloadPlan plan)
+    {
+        return Path.Combine(Application.streamingAssetsPath, plan.DestinationFolderName ?? DefaultModelFolderName);
+    }
+
+    private static string GetDestinationPath(HfDownloadPlan plan)
+    {
+        return Path.Combine(GetDestinationDirectory(plan), plan.FileName);
     }
 
     private async Task WatchBrowserDownloadAndImportAsync(
@@ -707,8 +913,10 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         await destination.FlushAsync(cancellationToken);
     }
 
-    private void CompleteBrowserAssistedDownload(Task task, string destinationPath)
+    private void CompleteBrowserAssistedDownload(Task task)
     {
+        HfDownloadPlan plan = _activeHfDownloadPlan;
+        string destinationPath = plan != null ? GetDestinationPath(plan) : string.Empty;
         _hfIsWatchingBrowserDownload = false;
 
         if (task.IsCanceled || (_hfBrowserWatchCancellation?.IsCancellationRequested ?? false))
@@ -729,19 +937,13 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         AssetDatabase.Refresh();
         RefreshState();
 
-        if (TryGetStreamingAssetsRelativePath(destinationPath, out string relativeModelPath))
+        try
         {
-            _selectedModelIndex = _modelChoices.FindIndex(path =>
-                string.Equals(path, relativeModelPath, StringComparison.OrdinalIgnoreCase));
+            ApplyDownloadedPlan(plan, destinationPath, "Model imported from browser download");
         }
-
-        if (_hfAutoApplyAfterDownload && !string.IsNullOrWhiteSpace(relativeModelPath))
+        catch (Exception ex)
         {
-            ApplyModelToAllProfiles(relativeModelPath);
-        }
-        else
-        {
-            SetStatus($"Model imported from browser download: {destinationPath}", MessageType.Info);
+            SetStatus($"Browser-assisted import succeeded but post-apply failed: {ex.Message}", MessageType.Error);
         }
 
         CleanupBrowserWatchHandles();
@@ -1427,8 +1629,10 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         return 0;
     }
 
-    private void CompleteHuggingFaceDownload(Task task, string destinationPath)
+    private void CompleteHuggingFaceDownload(Task task)
     {
+        HfDownloadPlan plan = _activeHfDownloadPlan;
+        string destinationPath = plan != null ? GetDestinationPath(plan) : string.Empty;
         _hfIsDownloading = false;
 
         if (task.IsCanceled || (_hfDownloadCancellation?.IsCancellationRequested ?? false))
@@ -1450,22 +1654,75 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         AssetDatabase.Refresh();
         RefreshState();
 
-        if (TryGetStreamingAssetsRelativePath(destinationPath, out string relativeModelPath))
+        try
         {
-            _selectedModelIndex = _modelChoices.FindIndex(path =>
-                string.Equals(path, relativeModelPath, StringComparison.OrdinalIgnoreCase));
+            ApplyDownloadedPlan(plan, destinationPath, "Model downloaded");
         }
-
-        if (_hfAutoApplyAfterDownload && !string.IsNullOrWhiteSpace(relativeModelPath))
+        catch (Exception ex)
         {
-            ApplyModelToAllProfiles(relativeModelPath);
-        }
-        else
-        {
-            SetStatus($"Model downloaded: {destinationPath}", MessageType.Info);
+            SetStatus($"Download succeeded but post-apply failed: {ex.Message}", MessageType.Error);
         }
 
         CleanupHfDownloadHandles();
+    }
+
+    private void ApplyDownloadedPlan(HfDownloadPlan plan, string destinationPath, string defaultSuccessPrefix)
+    {
+        if (plan == null)
+        {
+            SetStatus($"{defaultSuccessPrefix}: {destinationPath}", MessageType.Info);
+            return;
+        }
+
+        TryGetStreamingAssetsRelativePath(destinationPath, out string relativeModelPath);
+
+        switch (plan.ApplyMode)
+        {
+            case HfDownloadApplyMode.LlmProfiles:
+            {
+                if (!string.IsNullOrWhiteSpace(relativeModelPath))
+                {
+                    _selectedModelIndex = _modelChoices.FindIndex(path =>
+                        string.Equals(path, relativeModelPath, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (plan.AutoApplyAfterDownload && !string.IsNullOrWhiteSpace(relativeModelPath))
+                {
+                    ApplyModelToAllProfiles(relativeModelPath);
+                }
+                else
+                {
+                    SetStatus($"{defaultSuccessPrefix}: {destinationPath}", MessageType.Info);
+                }
+
+                break;
+            }
+            case HfDownloadApplyMode.StableDiffusionPreset:
+            {
+                if (string.IsNullOrWhiteSpace(relativeModelPath))
+                {
+                    SetStatus($"{defaultSuccessPrefix}: {destinationPath}", MessageType.Info);
+                    break;
+                }
+
+                if (plan.AutoApplyAfterDownload)
+                {
+                    StableDiffusionCppSetupUtility.ApplyDownloadedPreset(
+                        plan.StableDiffusionPresetIndex,
+                        relativeModelPath);
+                    SetStatus($"Stable Diffusion model ready: {relativeModelPath}", MessageType.Info);
+                }
+                else
+                {
+                    SetStatus($"{defaultSuccessPrefix}: {destinationPath}", MessageType.Info);
+                }
+
+                break;
+            }
+            default:
+                SetStatus($"{defaultSuccessPrefix}: {destinationPath}", MessageType.Info);
+                break;
+        }
     }
 
     private void CleanupHfDownloadHandles()
@@ -1473,6 +1730,7 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         _hfDownloadTask = null;
         _hfDownloadCancellation?.Dispose();
         _hfDownloadCancellation = null;
+        _activeHfDownloadPlan = null;
     }
 
     private void CleanupBrowserWatchHandles()
@@ -1480,6 +1738,7 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         _hfBrowserWatchTask = null;
         _hfBrowserWatchCancellation?.Dispose();
         _hfBrowserWatchCancellation = null;
+        _activeHfDownloadPlan = null;
     }
 
     private void CancelActiveHfOperation()

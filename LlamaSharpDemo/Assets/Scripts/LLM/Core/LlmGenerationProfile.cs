@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using UnityEngine;
@@ -14,6 +15,10 @@ public class LlmGenerationProfile : ScriptableObject
     public string format;
     public bool stream = false;
     public string keepAlive = null;
+    [Tooltip("Optional multimodal projector / mmproj file required for local vision inference.")]
+    public string visionProjectorModel;
+    [Tooltip("When true, the vision projector path is resolved from Application.streamingAssetsPath.")]
+    public bool visionProjectorRelativeToStreamingAssets = true;
 
     [TextArea(3, 20)]
     [Tooltip("System prompt template; supports {{varName}} placeholders.")]
@@ -79,7 +84,7 @@ public class LlmGenerationProfile : ScriptableObject
     /// <summary>
     /// Renders the system prompt with the given state dictionary and stores the result for later reuse.
     /// </summary>
-    public void RenderSystemPrompt(Dictionary<string, string> state)
+    public void RenderSystemPrompt(PipelineState state)
     {
         var tmpl = new PromptTemplate(systemPromptTemplate ?? string.Empty);
         _lastRenderedPrompt = tmpl.Render(state);
@@ -91,6 +96,27 @@ public class LlmGenerationProfile : ScriptableObject
     public string GetLastRenderedPrompt()
     {
         return _lastRenderedPrompt;
+    }
+
+    public string ResolveVisionProjectorPath()
+    {
+        if (string.IsNullOrWhiteSpace(visionProjectorModel))
+        {
+            return null;
+        }
+
+        string candidate = visionProjectorModel.Trim();
+        if (Path.IsPathRooted(candidate))
+        {
+            return candidate;
+        }
+
+        if (visionProjectorRelativeToStreamingAssets)
+        {
+            return Path.Combine(Application.streamingAssetsPath, candidate);
+        }
+
+        return Path.GetFullPath(candidate);
     }
 }
 

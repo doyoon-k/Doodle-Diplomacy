@@ -137,9 +137,9 @@ public class ItemManager : MonoBehaviour
         }
 
         // 1. Initialize State
-        Dictionary<string, string> state = new Dictionary<string, string>();
-        state["item_name"] = item.itemName;
-        state["item_description"] = item.description;
+        var state = new PipelineState();
+        state.SetString("item_name", item.itemName);
+        state.SetString("item_description", item.description);
 
         // Real Stats
         if (playerStats != null)
@@ -148,42 +148,42 @@ public class ItemManager : MonoBehaviour
             {
                 foreach (var kvp in playerStats.statConfig.GetStats())
                 {
-                    state[kvp.Key] = playerStats.GetStat(kvp.Key).ToString();
+                    state.SetString(kvp.Key, playerStats.GetStat(kvp.Key).ToString());
                 }
             }
             else
             {
                 // Fallback
-                state["AttackPower"] = playerStats.GetStat("AttackPower").ToString();
-                state["AttackSpeed"] = playerStats.GetStat("AttackSpeed").ToString();
-                state["ProjectileRange"] = playerStats.GetStat("ProjectileRange").ToString();
-                state["MovementSpeed"] = playerStats.GetStat("MovementSpeed").ToString();
-                state["MaxHealth"] = playerStats.GetStat("MaxHealth").ToString();
-                state["Defense"] = playerStats.GetStat("Defense").ToString();
-                state["JumpPower"] = playerStats.GetStat("JumpPower").ToString();
-                state["CooldownHaste"] = playerStats.GetStat("CooldownHaste").ToString();
+                state.SetString("AttackPower", playerStats.GetStat("AttackPower").ToString());
+                state.SetString("AttackSpeed", playerStats.GetStat("AttackSpeed").ToString());
+                state.SetString("ProjectileRange", playerStats.GetStat("ProjectileRange").ToString());
+                state.SetString("MovementSpeed", playerStats.GetStat("MovementSpeed").ToString());
+                state.SetString("MaxHealth", playerStats.GetStat("MaxHealth").ToString());
+                state.SetString("Defense", playerStats.GetStat("Defense").ToString());
+                state.SetString("JumpPower", playerStats.GetStat("JumpPower").ToString());
+                state.SetString("CooldownHaste", playerStats.GetStat("CooldownHaste").ToString());
             }
         }
         else
         {
             // Fallback if playerStats is missing
-            state["AttackPower"] = "50";
-            state["AttackSpeed"] = "1.0";
-            state["ProjectileRange"] = "10";
-            state["MovementSpeed"] = "5";
-            state["MaxHealth"] = "100";
-            state["Defense"] = "10";
-            state["JumpPower"] = "10";
-            state["CooldownHaste"] = "0";
+            state.SetString("AttackPower", "50");
+            state.SetString("AttackSpeed", "1.0");
+            state.SetString("ProjectileRange", "10");
+            state.SetString("MovementSpeed", "5");
+            state.SetString("MaxHealth", "100");
+            state.SetString("Defense", "10");
+            state.SetString("JumpPower", "10");
+            state.SetString("CooldownHaste", "0");
         }
 
         if (playerStats != null)
         {
-            state["character_description"] = playerStats.characterDescription;
+            state.SetString("character_description", playerStats.characterDescription);
         }
         else
         {
-            state["character_description"] = "A brave warrior.";
+            state.SetString("character_description", "A brave warrior.");
         }
 
         bool pipelineFinished = false;
@@ -250,7 +250,7 @@ public class ItemManager : MonoBehaviour
 
     // --- Mapping Logic ---
 
-    private AIResponse MapStateToResponse(Dictionary<string, string> state)
+    private AIResponse MapStateToResponse(PipelineState state)
     {
         AIResponse response = new AIResponse();
         response.stat_model = new StatModel { stat_changes = new StatChanges() };
@@ -259,8 +259,8 @@ public class ItemManager : MonoBehaviour
         try
         {
             // --- Stat Mapping ---
-            if (state.ContainsKey("stat") && state.ContainsKey("value"))
-                ApplySingleStat(response.stat_model.stat_changes, state["stat"], state["value"]);
+            if (state.TryGetString("stat", out string statName) && state.TryGetString("value", out string statValue))
+                ApplySingleStat(response.stat_model.stat_changes, statName, statValue);
 
             string nestedJson = GetValue(state, "statChanges", "stat_changes", "stats");
             if (!string.IsNullOrEmpty(nestedJson)) ParseNestedStats(nestedJson, response.stat_model.stat_changes);
@@ -589,9 +589,21 @@ public class ItemManager : MonoBehaviour
         return 0f;
     }
 
-    private string GetValue(Dictionary<string, string> dict, params string[] potentialKeys)
+    private string GetValue(PipelineState dict, params string[] potentialKeys)
     {
-        foreach (var key in potentialKeys) if (dict.ContainsKey(key)) return dict[key];
+        if (dict == null)
+        {
+            return null;
+        }
+
+        foreach (var key in potentialKeys)
+        {
+            if (dict.TryGetString(key, out string value))
+            {
+                return value;
+            }
+        }
+
         return null;
     }
 }

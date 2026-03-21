@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
+  m_Name: VisionImageSummaryPipeline
+  m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
+  displayName: VisionImageSummaryPipeline
+  description: Minimal reference pipeline for one-image VLM JSON analysis.
+  steps:
+  - stepName: AnalyzeReferenceImage
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 3c301f9a2b1e4ee7a6c3a84297d1d2f8, type: 2}
+    userPromptTemplate: '[CONTEXT]
+
+      Goal: {{analysis_goal}}
+
+
+      [INSTRUCTION]
+
+      Analyze the provided image for use in a Unity content pipeline.
+
+      If Goal is empty, assume the goal is to produce a concise general-purpose visual summary.
+
+      Return only JSON matching the schema.'
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 1
+    imageStateKey: reference_image
+    requireImage: 1
+    resizeLongestSide: 1024
+    customLinkTypeName: 
+    customAsset: {fileID: 0}
+    customLinkParameters: []
+    editorPosition: {x: -455, y: 54}
+    guid: 8ec2ba0e-87fc-4ef7-a340-aebc566a6efd
+    nextStepGuid: 
+  layoutSettings:
+    inputNodePosition: {x: -810, y: 41}
+    outputNodePosition: {x: 311, y: 40}
+    inputPositionInitialized: 1
+    outputPositionInitialized: 1
+    viewPosition: {x: 610, y: -77, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
+    viewInitialized: 1
+    snapshotPositions:
+    - {x: -80, y: 42}
+    snapshotPositionsInitialized: 1

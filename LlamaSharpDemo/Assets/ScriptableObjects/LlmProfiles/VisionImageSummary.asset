@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: VisionImageSummary
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  model: Models/gemma-3-4b-it-q4_k_m.gguf
+  format: '{"type":"object","properties":{"image_summary":{"type":"string","minLength":20,"maxLength":160},"primary_subject":{"type":"string","minLength":2,"maxLength":40},"notable_objects":{"type":"array","items":{"type":"string"},"minItems":1,"maxItems":6},"visual_tags":{"type":"array","items":{"type":"string"},"minItems":3,"maxItems":8}},"required":["image_summary","primary_subject","notable_objects","visual_tags"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
+  systemPromptTemplate: "You are a vision analysis assistant for a Unity content pipeline.\n\nAnalyze exactly one provided image.\nDescribe only what is visually observable.\nDo not invent hidden gameplay meaning, lore, or off-screen context.\nReturn only valid JSON matching the schema.\nKeep wording concise and literal."
+  jsonSchemaDeliveryMode: 0
+  jsonFields:
+  - fieldName: image_summary
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 20
+    maxLength: 160
+    minItems: 
+    maxItems: 
+  - fieldName: primary_subject
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 2
+    maxLength: 40
+    minItems: 
+    maxItems: 
+  - fieldName: notable_objects
+    fieldType: 5
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 1
+    maxItems: 6
+  - fieldName: visual_tags
+    fieldType: 5
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 3
+    maxItems: 8
+  modelParams:
+    temperature: 0.2
+    top_p: 0.9
+    top_k: 40
+    num_predict: 160
+    repeat_penalty: 1.05
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 4

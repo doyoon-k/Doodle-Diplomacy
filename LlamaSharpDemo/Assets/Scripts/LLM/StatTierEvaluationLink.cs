@@ -42,14 +42,13 @@ public class StatTierEvaluationLink : IStateChainLink, ICustomLinkStateProvider
         }
     }
 
-    public System.Collections.IEnumerator Execute(Dictionary<string, string> state, Action<Dictionary<string, string>> onDone)
+    public System.Collections.IEnumerator Execute(PipelineState state, Action<PipelineState> onDone)
     {
-        state ??= new Dictionary<string, string>();
-        var result = new Dictionary<string, string>(state);
+        state ??= new PipelineState();
 
         if (_configAsset == null || _statRanges.Count == 0)
         {
-            onDone?.Invoke(result);
+            onDone?.Invoke(state);
             yield break;
         }
 
@@ -58,20 +57,20 @@ public class StatTierEvaluationLink : IStateChainLink, ICustomLinkStateProvider
             string statName = kvp.Key;
             StatRange definition = kvp.Value;
 
-            if (result.TryGetValue(statName, out string valueStr) &&
+            if (state.TryGetString(statName, out string valueStr) &&
                 float.TryParse(valueStr, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
             {
                 string tier = EvaluateTier(value, definition.MinValue, definition.MaxValue);
-                result[$"{statName}Tier"] = tier;
+                state.SetString($"{statName}Tier", tier);
             }
         }
 
-        if (!string.IsNullOrEmpty(_characterDescription) && !result.ContainsKey("character_description"))
+        if (!string.IsNullOrEmpty(_characterDescription) && !state.HasAnyValue("character_description"))
         {
-            result["character_description"] = _characterDescription;
+            state.SetString("character_description", _characterDescription);
         }
 
-        onDone?.Invoke(result);
+        onDone?.Invoke(state);
         yield break;
     }
 

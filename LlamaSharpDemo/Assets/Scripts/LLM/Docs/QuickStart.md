@@ -5,6 +5,7 @@ This guide gets the package running in a fresh Unity project quickly.
 For package intent, feature map, and demo explanation, read `PackageOverview.md` first.
 For graph authoring workflow, read `PipelineEditorGuide.md`.
 For full scene setup + LlmGenerationProfile details, read `Tutorial.html`.
+For a minimal multimodal example, see `VisionSampleGuide.md`.
 
 ## 1) Import Package
 

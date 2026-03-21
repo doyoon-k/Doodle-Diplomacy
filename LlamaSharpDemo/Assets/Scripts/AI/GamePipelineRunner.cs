@@ -28,13 +28,13 @@ public class GamePipelineRunner : MonoBehaviour
         }
     }
 
-    public void RunPipeline(PromptPipelineAsset asset, Dictionary<string, string> initialState, Action<Dictionary<string, string>> onComplete)
+    public void RunPipeline(PromptPipelineAsset asset, PipelineState initialState, Action<PipelineState> onComplete)
     {
         StopGeneration();
         _currentRoutine = StartCoroutine(RunRoutine(asset, initialState, onComplete));
     }
 
-    private IEnumerator RunRoutine(PromptPipelineAsset asset, Dictionary<string, string> initialState, Action<Dictionary<string, string>> onComplete)
+    private IEnumerator RunRoutine(PromptPipelineAsset asset, PipelineState initialState, Action<PipelineState> onComplete)
     {
         if (asset == null || asset.steps == null)
         {
@@ -61,7 +61,7 @@ public class GamePipelineRunner : MonoBehaviour
         }
 
         // 2. Execute Pipeline
-        Dictionary<string, string> finalState = null;
+        PipelineState finalState = null;
         yield return executor.Execute(initialState, result => finalState = result);
 
         // 3. Callback
@@ -88,6 +88,10 @@ public class GamePipelineRunner : MonoBehaviour
                     step.userPromptTemplate,
                     step.jsonMaxRetries,
                     step.jsonRetryDelaySeconds,
+                    step.useVision,
+                    step.imageStateKey,
+                    step.requireImage,
+                    step.resizeLongestSide,
                     null // Log callback is null to avoid double logging (internal Debug.Log is sufficient)
                 );
             case PromptPipelineStepKind.CompletionLlm:
@@ -95,6 +99,10 @@ public class GamePipelineRunner : MonoBehaviour
                     _runtimeService,
                     step.llmProfile,
                     step.userPromptTemplate,
+                    step.useVision,
+                    step.imageStateKey,
+                    step.requireImage,
+                    step.resizeLongestSide,
                     null // Log callback is null to avoid double logging
                 );
             case PromptPipelineStepKind.CustomLink:

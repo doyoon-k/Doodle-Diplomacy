@@ -24,11 +24,11 @@ public class SampleCustomLink : IStateChainLink, ICustomLinkStateProvider
     }
 
     public IEnumerator Execute(
-        Dictionary<string, string> state,
-        Action<Dictionary<string, string>> onDone)
+        PipelineState state,
+        Action<PipelineState> onDone)
     {
-        state ??= new Dictionary<string, string>();
-        state["greeting"] = $"Hello {_title} {_name} (Lv {_level}), welcome aboard.";
+        state ??= new PipelineState();
+        state.SetString("greeting", $"Hello {_title} {_name} (Lv {_level}), welcome aboard.");
         onDone?.Invoke(state);
         yield break;
     }

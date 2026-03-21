@@ -10,8 +10,8 @@ public static class PromptPipelineSimulator
 {
     public static void Run(
         PromptPipelineAsset asset,
-        Dictionary<string, string> initialState,
-        Action<Dictionary<string, string>> onSuccess,
+        PipelineState initialState,
+        Action<PipelineState> onSuccess,
         Action<string> onError,
         Action<string> onLog = null,
         ILlmService service = null
@@ -99,6 +99,10 @@ public static class PromptPipelineSimulator
                     step.userPromptTemplate,
                     step.jsonMaxRetries,
                     step.jsonRetryDelaySeconds,
+                    step.useVision,
+                    step.imageStateKey,
+                    step.requireImage,
+                    step.resizeLongestSide,
                     onLog
                 );
             case PromptPipelineStepKind.CompletionLlm:
@@ -107,6 +111,10 @@ public static class PromptPipelineSimulator
                     service,
                     step.llmProfile,
                     step.userPromptTemplate,
+                    step.useVision,
+                    step.imageStateKey,
+                    step.requireImage,
+                    step.resizeLongestSide,
                     onLog
                 );
             case PromptPipelineStepKind.CustomLink:
@@ -123,14 +131,14 @@ public static class PromptPipelineSimulator
 
     private static IEnumerator RunExecutor(
         StateSequentialChainExecutor executor,
-        Dictionary<string, string> state,
-        Action<Dictionary<string, string>> onSuccess,
+        PipelineState state,
+        Action<PipelineState> onSuccess,
         Action<string> onError,
         Action<string> onLog,
         IDisposable ownedService
     )
     {
-        Dictionary<string, string> finalState = null;
+        PipelineState finalState = null;
         bool failed = false;
         IEnumerator routine = executor.Execute(state, s => finalState = s);
 
@@ -159,17 +167,25 @@ public static class PromptPipelineSimulator
 
         if (!failed)
         {
-            onSuccess?.Invoke(finalState ?? state);
+            PipelineState successfulState = finalState ?? state;
+            if (successfulState != null &&
+                successfulState.TryGetString(PromptPipelineConstants.ErrorKey, out string pipelineError) &&
+                !string.IsNullOrWhiteSpace(pipelineError))
+            {
+                onError?.Invoke(pipelineError);
+            }
+            else
+            {
+                onSuccess?.Invoke(successfulState);
+            }
         }
 
         ownedService?.Dispose();
     }
 
-    private static Dictionary<string, string> CloneOrCreate(Dictionary<string, string> source)
+    private static PipelineState CloneOrCreate(PipelineState source)
     {
-        return source != null
-            ? new Dictionary<string, string>(source)
-            : new Dictionary<string, string>();
+        return source?.Clone() ?? new PipelineState();
     }
 
     private static void EnsureSettings(PromptPipelineStep step)

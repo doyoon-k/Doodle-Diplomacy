@@ -117,14 +117,22 @@ public class PromptPipelineAsset : ScriptableObject
                     step.llmProfile,
                     step.userPromptTemplate,
                     step.jsonMaxRetries,
-                    step.jsonRetryDelaySeconds
+                    step.jsonRetryDelaySeconds,
+                    step.useVision,
+                    step.imageStateKey,
+                    step.requireImage,
+                    step.resizeLongestSide
                 );
             case PromptPipelineStepKind.CompletionLlm:
                 EnsureSettings(step);
                 return new CompletionChainLink(
                     service,
                     step.llmProfile,
-                    step.userPromptTemplate
+                    step.userPromptTemplate,
+                    step.useVision,
+                    step.imageStateKey,
+                    step.requireImage,
+                    step.resizeLongestSide
                 );
             case PromptPipelineStepKind.CustomLink:
                 return InstantiateCustomLink(step);
@@ -168,7 +176,7 @@ public class PromptPipelineAsset : ScriptableObject
             .Where(p => p != null && !string.IsNullOrWhiteSpace(p.key))
             .ToDictionary(p => p.key, p => p.value ?? string.Empty, StringComparer.Ordinal);
 
-        // 1. Try constructor (Dictionary<string, string>, ScriptableObject)
+        // 1. Try constructor (Dictionary<string, string>, ScriptableObject) for custom parameter bags + asset.
         var dictAssetCtor = type.GetConstructor(new[] { typeof(Dictionary<string, string>), typeof(ScriptableObject) });
         if (dictAssetCtor != null)
         {
@@ -194,7 +202,7 @@ public class PromptPipelineAsset : ScriptableObject
             }
         }
 
-        // 3. Try constructor (Dictionary<string, string>)
+        // 3. Try constructor (Dictionary<string, string>) for custom parameter bags.
         var dictCtor = type.GetConstructor(new[] { typeof(Dictionary<string, string>) });
         if (dictCtor != null)
         {
@@ -303,6 +311,20 @@ public class PromptPipelineStep
 
     [Min(0f)]
     public float jsonRetryDelaySeconds = 0.1f;
+
+    [Header("Vision Options")]
+    [Tooltip("When enabled, this step will try to resolve an image from the shared PipelineState and send it to a vision-capable model.")]
+    public bool useVision;
+
+    [Tooltip("PipelineState key that should contain a Texture2D or Sprite for this step.")]
+    public string imageStateKey;
+
+    [Tooltip("If true, missing image input fails the pipeline instead of falling back to text-only generation.")]
+    public bool requireImage = true;
+
+    [Min(64)]
+    [Tooltip("Images are resized so their longest side does not exceed this value before VLM inference.")]
+    public int resizeLongestSide = 1024;
 
     [Header("Custom Link Options")]
     [Tooltip("Full type name implementing IStateChainLink (Type.GetType resolvable).")]

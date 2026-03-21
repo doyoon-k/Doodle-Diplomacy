@@ -22,6 +22,8 @@ public class LlmGenerationProfileEditor : Editor
     private SerializedProperty _streamProp;
     private SerializedProperty _keepAliveProp;
     private SerializedProperty _systemPromptProp;
+    private SerializedProperty _visionProjectorModelProp;
+    private SerializedProperty _visionProjectorRelativeProp;
     private SerializedProperty _jsonSchemaDeliveryModeProp;
     private SerializedProperty _modelParamsProp;
     private SerializedProperty _runtimeParamsProp;
@@ -33,6 +35,8 @@ public class LlmGenerationProfileEditor : Editor
         _streamProp = serializedObject.FindProperty("stream");
         _keepAliveProp = serializedObject.FindProperty("keepAlive");
         _systemPromptProp = serializedObject.FindProperty("systemPromptTemplate");
+        _visionProjectorModelProp = serializedObject.FindProperty("visionProjectorModel");
+        _visionProjectorRelativeProp = serializedObject.FindProperty("visionProjectorRelativeToStreamingAssets");
         _jsonSchemaDeliveryModeProp = serializedObject.FindProperty("jsonSchemaDeliveryMode");
         _modelParamsProp = serializedObject.FindProperty("modelParams");
         _runtimeParamsProp = serializedObject.FindProperty("runtimeParams");
@@ -46,6 +50,7 @@ public class LlmGenerationProfileEditor : Editor
         EditorGUI.BeginChangeCheck();
         EditorGUILayout.LabelField("Basic Settings", EditorStyles.boldLabel);
         DrawModelSetupSection();
+        DrawVisionSetupSection();
         EditorGUILayout.PropertyField(_streamProp);
         EditorGUILayout.PropertyField(_keepAliveProp);
         EditorGUILayout.PropertyField(_systemPromptProp);
@@ -153,6 +158,39 @@ public class LlmGenerationProfileEditor : Editor
         DrawModelStatus(relativeToStreamingAssetsProp != null && relativeToStreamingAssetsProp.boolValue);
     }
 
+    private void DrawVisionSetupSection()
+    {
+        EditorGUILayout.Space(6f);
+        EditorGUILayout.LabelField("Vision Settings", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "Vision-enabled pipeline steps require a projector/mmproj file in addition to the base model.",
+            MessageType.Info);
+
+        EditorGUILayout.PropertyField(_visionProjectorModelProp, new GUIContent("Vision Projector"));
+        EditorGUILayout.PropertyField(_visionProjectorRelativeProp, new GUIContent("Relative To StreamingAssets"));
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Select Vision Projector..."))
+            {
+                SelectVisionProjectorFile();
+            }
+
+            string resolvedPath = ResolveModelPathForEditor(
+                _visionProjectorModelProp?.stringValue,
+                _visionProjectorRelativeProp != null && _visionProjectorRelativeProp.boolValue);
+            using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath)))
+            {
+                if (GUILayout.Button("Reveal Vision Projector"))
+                {
+                    EditorUtility.RevealInFinder(resolvedPath);
+                }
+            }
+        }
+
+        DrawVisionProjectorStatus();
+    }
+
     private void DrawModelStatus(bool relativeToStreamingAssets)
     {
         string modelPath = _modelProp.stringValue?.Trim();
@@ -208,6 +246,34 @@ public class LlmGenerationProfileEditor : Editor
             if (relativeToStreamingAssetsProp != null)
             {
                 relativeToStreamingAssetsProp.boolValue = false;
+            }
+        }
+    }
+
+    private void SelectVisionProjectorFile()
+    {
+        string preferredFolder = Path.Combine(Application.streamingAssetsPath, DefaultStreamingModelsRelativeFolder);
+        string initialFolder = Directory.Exists(preferredFolder) ? preferredFolder : Application.dataPath;
+        string selectedPath = EditorUtility.OpenFilePanel("Select vision projector", initialFolder, string.Empty);
+        if (string.IsNullOrWhiteSpace(selectedPath))
+        {
+            return;
+        }
+
+        if (TryGetStreamingAssetsRelativePath(selectedPath, out string streamingRelativePath))
+        {
+            _visionProjectorModelProp.stringValue = streamingRelativePath;
+            if (_visionProjectorRelativeProp != null)
+            {
+                _visionProjectorRelativeProp.boolValue = true;
+            }
+        }
+        else
+        {
+            _visionProjectorModelProp.stringValue = selectedPath;
+            if (_visionProjectorRelativeProp != null)
+            {
+                _visionProjectorRelativeProp.boolValue = false;
             }
         }
     }
@@ -319,6 +385,34 @@ public class LlmGenerationProfileEditor : Editor
         }
 
         EditorUtility.DisplayDialog("Apply Model", $"Updated {updatedCount} profile(s).", "OK");
+    }
+
+    private void DrawVisionProjectorStatus()
+    {
+        string projectorPath = _visionProjectorModelProp?.stringValue?.Trim();
+        if (string.IsNullOrWhiteSpace(projectorPath))
+        {
+            EditorGUILayout.HelpBox("Vision projector path is empty. Text-only steps can ignore this.", MessageType.None);
+            return;
+        }
+
+        string resolved = ResolveModelPathForEditor(
+            projectorPath,
+            _visionProjectorRelativeProp != null && _visionProjectorRelativeProp.boolValue);
+        if (string.IsNullOrWhiteSpace(resolved))
+        {
+            EditorGUILayout.HelpBox("Could not resolve the vision projector path.", MessageType.Warning);
+            return;
+        }
+
+        if (File.Exists(resolved))
+        {
+            EditorGUILayout.HelpBox($"Resolved vision projector file:\n{resolved}", MessageType.Info);
+        }
+        else
+        {
+            EditorGUILayout.HelpBox($"Vision projector file not found:\n{resolved}", MessageType.Error);
+        }
     }
 
     private static List<string> GetStreamingAssetModelChoices()

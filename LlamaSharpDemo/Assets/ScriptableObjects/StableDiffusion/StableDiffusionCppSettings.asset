@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faf99782ec1b37e4c907dcc92020c22a, type: 3}
+  m_Name: StableDiffusionCppSettings
+  m_EditorClassIdentifier: Assembly-CSharp::StableDiffusionCppSettings
+  runtimeVersion: v0.0.1
+  runtimePackages:
+  - platform: 1
+    streamingAssetsRuntimeFolder: SDCpp/win-x64
+    executableFileName: sd-cli.exe
+  modelProfiles:
+  - {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
+  - {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
+  activeModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
+  modelPath: SDModels/stable-diffusion-v1-5-pruned-emaonly-Q4_1.gguf
+  vaePath: 
+  copyModelToPersistentDataPath: 0
+  defaultWidth: 512
+  defaultHeight: 512
+  defaultSteps: 10
+  defaultCfgScale: 7
+  defaultSeed: 42
+  defaultSampler: euler_a
+  defaultNegativePrompt: 
+  defaultOffloadToCpu: 1
+  defaultClipOnCpu: 0
+  defaultVaeTiling: 0
+  defaultDiffusionFlashAttention: 1
+  defaultUseCacheMode: 0
+  defaultCacheMode: easycache
+  defaultCacheOption: 
+  defaultCachePreset: 
+  processTimeoutSeconds: 600
+  globalAdditionalArguments: 
+  runtimeOutputSubfolder: generated/sdcpp
+  enableGpuTelemetry: 1
+  gpuTelemetryPollIntervalMs: 500
+  editorOutputProjectRelativePath: Assets/Generated/StableDiffusion

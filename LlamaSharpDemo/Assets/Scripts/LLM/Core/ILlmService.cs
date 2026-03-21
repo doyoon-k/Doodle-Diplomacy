@@ -32,7 +32,14 @@ public interface ILlmService
     IEnumerator GenerateCompletionWithState(
         LlmGenerationProfile settings,
         string userPrompt,
-        Dictionary<string, string> state,
+        PipelineState state,
+        Action<string> onResponse);
+
+    IEnumerator GenerateCompletionWithImage(
+        LlmGenerationProfile settings,
+        string userPrompt,
+        PipelineState state,
+        Texture2D image,
         Action<string> onResponse);
 
     IEnumerator ChatCompletion(
@@ -158,7 +165,7 @@ public static class LlamaSharpInterop
         };
     }
 
-    public static string RenderSystemPrompt(LlmGenerationProfile settings, Dictionary<string, string> state)
+    public static string RenderSystemPrompt(LlmGenerationProfile settings, PipelineState state)
     {
         if (settings == null)
         {
@@ -228,6 +235,49 @@ public static class LlamaSharpInterop
         // No-op. Keep this method to avoid touching all call sites during migration.
     }
 
+    public static async Task<string> InferToStringAsync(
+        ILLamaExecutor executor,
+        string prompt,
+        IInferenceParams inferenceParams,
+        CancellationToken cancellationToken)
+    {
+        if (executor == null)
+        {
+            return string.Empty;
+        }
+
+        await InferenceGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var output = new StringBuilder();
+            IAsyncEnumerator<string> enumerator = null;
+            try
+            {
+                enumerator = executor
+                    .InferAsync(prompt ?? string.Empty, inferenceParams, cancellationToken)
+                    .GetAsyncEnumerator(cancellationToken);
+
+                while (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                {
+                    output.Append(enumerator.Current);
+                }
+            }
+            finally
+            {
+                if (enumerator != null)
+                {
+                    await enumerator.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+
+            return output.ToString();
+        }
+        finally
+        {
+            InferenceGate.Release();
+        }
+    }
+
     public static IEnumerator InferToString(
         ILLamaExecutor executor,
         string prompt,
@@ -240,68 +290,27 @@ public static class LlamaSharpInterop
             yield break;
         }
 
-        Task waitTask = InferenceGate.WaitAsync();
-        while (!waitTask.IsCompleted)
+        Task<string> inferenceTask = null;
+        inferenceTask = Task.Run(() => InferToStringAsync(
+            executor,
+            prompt,
+            inferenceParams,
+            CancellationToken.None));
+
+        while (!inferenceTask.IsCompleted)
         {
             yield return null;
         }
 
-        Exception waitFailure = GetTaskException(waitTask);
-        if (waitFailure != null)
+        Exception failure = GetTaskException(inferenceTask);
+        if (failure != null)
         {
-            Debug.LogError($"[LlamaSharpInterop] Failed to enter inference gate: {waitFailure}");
+            Debug.LogError($"[LlamaSharpInterop] Inference failed: {failure}");
             onResponse?.Invoke(string.Empty);
             yield break;
         }
 
-        Task<string> inferenceTask = null;
-        try
-        {
-            inferenceTask = Task.Run(async () =>
-            {
-                var output = new StringBuilder();
-                IAsyncEnumerator<string> enumerator = null;
-                try
-                {
-                    enumerator = executor
-                        .InferAsync(prompt ?? string.Empty, inferenceParams, CancellationToken.None)
-                        .GetAsyncEnumerator(CancellationToken.None);
-
-                    while (await enumerator.MoveNextAsync())
-                    {
-                        output.Append(enumerator.Current);
-                    }
-                }
-                finally
-                {
-                    if (enumerator != null)
-                    {
-                        await enumerator.DisposeAsync();
-                    }
-                }
-
-                return output.ToString();
-            });
-
-            while (!inferenceTask.IsCompleted)
-            {
-                yield return null;
-            }
-
-            Exception failure = GetTaskException(inferenceTask);
-            if (failure != null)
-            {
-                Debug.LogError($"[LlamaSharpInterop] Inference failed: {failure}");
-                onResponse?.Invoke(string.Empty);
-                yield break;
-            }
-
-            onResponse?.Invoke(inferenceTask.Result);
-        }
-        finally
-        {
-            InferenceGate.Release();
-        }
+        onResponse?.Invoke(inferenceTask.Result);
     }
 
     private static bool TryGetJsonGrammar(LlmGenerationProfile settings, out Grammar grammar)

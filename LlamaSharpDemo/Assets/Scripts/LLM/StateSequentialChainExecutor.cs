@@ -8,19 +8,24 @@ public class StateSequentialChainExecutor
 
     public void AddLink(IStateChainLink link) => _links.Add(link);
 
-    // 호출부에서 StartCoroutine으로 돌리기
     public IEnumerator Execute(
-        Dictionary<string, string> initialState,
-        Action<Dictionary<string, string>> onComplete
+        PipelineState initialState,
+        Action<PipelineState> onComplete
     )
     {
-        var state = initialState;
+        var state = initialState ?? new PipelineState();
         foreach (var link in _links)
         {
-            Dictionary<string, string> next = null;
+            PipelineState next = null;
             yield return link.Execute(state, s => next = s);
-            state = next;
+            state = next ?? state;
+
+            if (state.TryGetString(PromptPipelineConstants.ErrorKey, out _))
+            {
+                break;
+            }
         }
+
         onComplete(state);
     }
 }

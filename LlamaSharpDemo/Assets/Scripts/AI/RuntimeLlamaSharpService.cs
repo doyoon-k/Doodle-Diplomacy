@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using LLama;
 using LLama.Abstractions;
@@ -34,6 +35,7 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     [Tooltip("Use explicit native bootstrap logic. Disable to rely on Unity plugin loading only.")]
     [SerializeField] private bool useNativeBootstrap;
 
+    private readonly object _visionLock = new object();
     public bool IsPreloadInProgress { get; private set; }
     public bool IsPreloadComplete { get; private set; }
     public bool IsModelReady => _executor != null;
@@ -45,7 +47,9 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
 
     private LLamaWeights _weights;
     private ILLamaExecutor _executor;
+    private MtmdWeights _mtmdWeights;
     private string _loadedModelPath;
+    private string _loadedVisionProjectorPath;
     private int _loadedContextSize;
     private int _loadedGpuLayerCount;
     private int _loadedThreads;
@@ -132,7 +136,7 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     public IEnumerator GenerateCompletionWithState(
         LlmGenerationProfile settings,
         string userPrompt,
-        Dictionary<string, string> state,
+        PipelineState state,
         Action<string> onResponse)
     {
         ILLamaExecutor executor = null;
@@ -160,6 +164,67 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
             prompt,
             LlamaSharpInterop.CreateInferenceParams(settings),
             onResponse);
+    }
+
+    public IEnumerator GenerateCompletionWithImage(
+        LlmGenerationProfile settings,
+        string userPrompt,
+        PipelineState state,
+        Texture2D image,
+        Action<string> onResponse)
+    {
+        if (image == null)
+        {
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
+        ILLamaExecutor executor = null;
+        yield return EnsureExecutorLoaded(settings, exec => executor = exec);
+        if (executor == null || _weights == null)
+        {
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
+        if (!PipelineImageUtility.TryEncodeToPng(image, out byte[] pngBytes, out string encodeError))
+        {
+            Debug.LogError($"[RuntimeLlamaSharpService] {encodeError}");
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
+        string systemPrompt = LlamaSharpInterop.RenderSystemPrompt(settings, state);
+        string prompt = LlamaSharpInterop.BuildUserPrompt(
+            settings,
+            userPrompt,
+            requiresJson: !string.IsNullOrWhiteSpace(settings?.format),
+            systemPrompt: systemPrompt);
+
+        if (logTraffic)
+        {
+            Debug.Log($"[RuntimeLlamaSharpService] System Prompt:\n{systemPrompt}\nUser Prompt:\n{prompt}\nImage: {image.name} ({image.width}x{image.height})");
+        }
+
+        string resolvedModelPath = LlamaSharpInterop.ResolveModelPath(settings);
+        Task<string> inferenceTask = Task.Run(() =>
+            RunWithOptionalNativeBootstrap(() =>
+                InferWithVision(settings, resolvedModelPath, prompt, pngBytes)));
+
+        while (!inferenceTask.IsCompleted)
+        {
+            yield return null;
+        }
+
+        Exception failure = GetTaskException(inferenceTask);
+        if (failure != null)
+        {
+            Debug.LogError($"[RuntimeLlamaSharpService] Vision inference failed: {failure}");
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
+        onResponse?.Invoke(inferenceTask.Result ?? string.Empty);
     }
 
     public IEnumerator ChatCompletion(
@@ -389,6 +454,93 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
         }
     }
 
+    private bool TryEnsureVisionWeightsLoaded(LlmGenerationProfile settings, out string error)
+    {
+        error = null;
+        if (settings == null)
+        {
+            error = "Vision inference requires an LlmGenerationProfile.";
+            return false;
+        }
+
+        string resolvedVisionPath = settings.ResolveVisionProjectorPath();
+        if (string.IsNullOrWhiteSpace(resolvedVisionPath))
+        {
+            error = "Vision inference requires 'visionProjectorModel' on the LlmGenerationProfile.";
+            return false;
+        }
+
+        if (!File.Exists(resolvedVisionPath))
+        {
+            error = $"Vision projector file not found: {resolvedVisionPath}";
+            return false;
+        }
+
+        if (_weights == null)
+        {
+            error = "Text model weights are not loaded.";
+            return false;
+        }
+
+        if (_mtmdWeights != null &&
+            string.Equals(_loadedVisionProjectorPath, resolvedVisionPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (_mtmdWeights is IDisposable disposableMtmd)
+        {
+            disposableMtmd.Dispose();
+        }
+
+        _mtmdWeights = null;
+
+        try
+        {
+            _mtmdWeights = MtmdWeights.LoadFromFile(resolvedVisionPath, _weights, default);
+            _loadedVisionProjectorPath = resolvedVisionPath;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to load vision projector '{resolvedVisionPath}': {ex.Message}";
+            _mtmdWeights = null;
+            _loadedVisionProjectorPath = null;
+            return false;
+        }
+    }
+
+    private string InferWithVision(
+        LlmGenerationProfile settings,
+        string resolvedModelPath,
+        string prompt,
+        byte[] imageBytes)
+    {
+        if (_weights == null)
+        {
+            throw new InvalidOperationException("Text model weights are not loaded.");
+        }
+
+        lock (_visionLock)
+        {
+            if (!TryEnsureVisionWeightsLoaded(settings, out string visionError))
+            {
+                throw new InvalidOperationException(visionError);
+            }
+
+            var modelParams = LlamaSharpInterop.CreateModelParams(settings, resolvedModelPath);
+            using var context = new LLamaContext(_weights, modelParams, null);
+            var executor = new InteractiveExecutor(context, _mtmdWeights, null);
+
+            _mtmdWeights.ClearMedia();
+            _mtmdWeights.LoadMedia(imageBytes);
+            return LlamaSharpInterop
+                .InferToStringAsync(executor, prompt, LlamaSharpInterop.CreateInferenceParams(settings), CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+        }
+    }
+
     private T RunWithOptionalNativeBootstrap<T>(Func<T> action)
     {
         if (action == null)
@@ -420,7 +572,15 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
             _weights = null;
         }
 
+        if (_mtmdWeights is IDisposable disposableMtmd)
+        {
+            disposableMtmd.Dispose();
+        }
+
+        _mtmdWeights = null;
+
         _loadedModelPath = null;
+        _loadedVisionProjectorPath = null;
         _loadedContextSize = 0;
         _loadedGpuLayerCount = 0;
         _loadedThreads = 0;

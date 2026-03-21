@@ -39,6 +39,7 @@ public static class PipelineStateAnalyzer
                 case PromptPipelineStepKind.JsonLlm:
                 case PromptPipelineStepKind.CompletionLlm:
                     CollectPromptKeys(step, keyMap, i);
+                    CollectVisionKeys(step, keyMap, i);
                     break;
                 case PromptPipelineStepKind.CustomLink:
                     CollectCustomLinkKeys(step, keyMap, i);
@@ -154,6 +155,22 @@ public static class PipelineStateAnalyzer
         }
     }
 
+    private static void CollectVisionKeys(
+        PromptPipelineStep step,
+        Dictionary<string, AnalyzedStateKey> keyMap,
+        int stepIndex)
+    {
+        if (step == null || !step.useVision || string.IsNullOrWhiteSpace(step.imageStateKey))
+        {
+            return;
+        }
+
+        RegisterKey(keyMap, step.imageStateKey)
+            .MarkValueKind(AnalyzedStateValueKind.Image)
+            .consumedByStepIndices
+            .AddUnique(stepIndex);
+    }
+
     private static void CollectJsonProducedKeys(
         PromptPipelineStep step,
         Dictionary<string, AnalyzedStateKey> keyMap,
@@ -230,7 +247,11 @@ public static class PipelineStateAnalyzer
     {
         if (!keyMap.TryGetValue(keyName, out var key))
         {
-            key = new AnalyzedStateKey { keyName = keyName };
+            key = new AnalyzedStateKey
+            {
+                keyName = keyName,
+                valueKind = AnalyzedStateValueKind.Text
+            };
             keyMap.Add(keyName, key);
         }
         return key;
@@ -320,7 +341,18 @@ public class AnalyzedStateKey
     public List<int> producedByStepIndices = new();
     public List<int> consumedByStepIndices = new();
     public AnalyzedStateKeyKind kind;
+    public AnalyzedStateValueKind valueKind;
     public string lastValuePreview;
+
+    public AnalyzedStateKey MarkValueKind(AnalyzedStateValueKind kindToApply)
+    {
+        if (kindToApply == AnalyzedStateValueKind.Image)
+        {
+            valueKind = AnalyzedStateValueKind.Image;
+        }
+
+        return this;
+    }
 }
 
 [Serializable]
@@ -336,6 +368,12 @@ public enum AnalyzedStateKeyKind
     Input = 0,
     Intermediate = 1,
     Output = 2
+}
+
+public enum AnalyzedStateValueKind
+{
+    Text = 0,
+    Image = 1
 }
 
 internal static class ListExtensions

@@ -12,10 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: NewSkillGeneration
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/gemma-3-4b-it-q4_k_m.gguf
+  model: Models/gemma-3-4b-it-q4_0.gguf
   format: '{"type":"object","properties":{"NewSkill":{"type":"object","properties":{"abilityName":{"type":"string","minLength":3,"maxLength":32},"primitiveActions":{"type":"array","items":{"type":"string","enum":["FireProjectile","ExplosiveProjectile","PiercingProjectile","MeleeStrike","GroundSlam","Dash","MultiJump","Blink","ShieldBuff","InstantHeal","Invincible","DamageReductionBuff","Stun","Slow","Airborne"]},"minItems":2,"maxItems":4},"abilityDescription":{"type":"string","minLength":12,"maxLength":160}},"required":["abilityName","primitiveActions","abilityDescription"],"additionalProperties":false}},"required":["NewSkill"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
   systemPromptTemplate: "You are a game design assistant. Design ONE active ability
     based on the character and absorbed item.\n\n[PRIMITIVE ACTIONS LIST]\n- FireProjectile,
     ExplosiveProjectile, PiercingProjectile\n- MeleeStrike, GroundSlam\n- Dash, MultiJump,
@@ -26,6 +28,7 @@ MonoBehaviour:
     Ordered array of primitive IDs (strings).\n   - abilityDescription: 1-2 sentences
     (max 30 words), explaining the feel. No numbers.\n4. Format: Return ONLY valid
     JSON matching the schema."
+  jsonSchemaDeliveryMode: 0
   jsonFields:
   - fieldName: NewSkill
     fieldType: 4

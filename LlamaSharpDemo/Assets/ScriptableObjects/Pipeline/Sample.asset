@@ -17,10 +17,14 @@ MonoBehaviour:
   steps:
   - stepName: Step 1
     stepKind: 0
-    llmProfile: {fileID: 11400000, guid: 84801d43b9f1d3943ba362bcf9f3309e, type: 2}
+    llmProfile: {fileID: 11400000, guid: 943b4e34f94c7cd46991bc6d70dce1b6, type: 2}
     userPromptTemplate: '{{Name}}'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 1
+    resizeLongestSide: 1024
     customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
     customAsset: {fileID: 0}
@@ -31,7 +35,7 @@ MonoBehaviour:
       value: 
     - key: level
       value: 
-    editorPosition: {x: -1281, y: 343}
+    editorPosition: {x: -1359, y: 335}
     guid: c4e3e025-a098-430b-9200-0288546dbe3b
     nextStepGuid: c4c9348e-61e7-4592-944e-f30ddde4ea00
   - stepName: Step 2
@@ -40,6 +44,10 @@ MonoBehaviour:
     userPromptTemplate: '{{response}}'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 1
+    resizeLongestSide: 1024
     customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
     customAsset: {fileID: 0}
@@ -59,6 +67,10 @@ MonoBehaviour:
     userPromptTemplate: 
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 1
+    resizeLongestSide: 1024
     customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
     customAsset: {fileID: 0}
@@ -77,11 +89,11 @@ MonoBehaviour:
     outputNodePosition: {x: 736, y: 364}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 1602, y: -125, z: 0}
-    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
+    viewPosition: {x: 1490, y: -124, z: 0}
+    viewScale: {x: 0.65751624, y: 0.65751624, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: -924, y: 454}
-    - {x: -345, y: 440}
-    - {x: 316, y: 379}
+    - {x: -940, y: 418}
+    - {x: -315, y: 426}
+    - {x: 346, y: 372}
     snapshotPositionsInitialized: 1

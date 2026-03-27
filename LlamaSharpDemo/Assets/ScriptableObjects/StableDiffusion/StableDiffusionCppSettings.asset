@@ -18,9 +18,11 @@ MonoBehaviour:
     streamingAssetsRuntimeFolder: SDCpp/win-x64
     executableFileName: sd-cli.exe
   modelProfiles:
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
   - {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
-  activeModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
+  activeModelProfile: {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
   modelPath: SDModels/stable-diffusion-v1-5-pruned-emaonly-Q4_1.gguf
   vaePath: 
   copyModelToPersistentDataPath: 0

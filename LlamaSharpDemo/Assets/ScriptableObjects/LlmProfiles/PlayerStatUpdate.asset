@@ -12,10 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: PlayerStatUpdate
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/gemma-3-4b-it-q4_k_m.gguf
+  model: Models/gemma-3-4b-it-q4_0.gguf
   format: '{"type":"object","properties":{"character_description":{"type":"string"},"statChanges":{"type":"array","items":{"type":"object","properties":{"stat":{"type":"string","enum":["AttackPower","AttackSpeed","ProjectileRange","MovementSpeed","MaxHealth","Defense","JumpPower","CooldownHaste"]},"changeType":{"type":"string","enum":["additive","multiplicative"]},"value":{"type":"number"}},"required":["stat","changeType","value"],"additionalProperties":false}}},"required":["character_description","statChanges"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
   systemPromptTemplate: "You are a game design assistant for a roguelike action game.
     Your task is to update the player's stats and description after absorbing an
     item.\n\n[CONTEXT]\nItem and current character description are provided by the
@@ -26,6 +28,7 @@ MonoBehaviour:
     MaxHealth, Defense, JumpPower, CooldownHaste.\n   - ChangeType: \"additive\"
     (-5.0 to 5.0) OR \"multiplicative\" (0.5 to 1.1).\n3. Output: Provide ONLY the
     strict JSON object matching the schema. No explanation."
+  jsonSchemaDeliveryMode: 0
   jsonFields:
   - fieldName: character_description
     fieldType: 0

@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 
 public class PromptPipelineGraphWindow : EditorWindow
 {
+    private const string LocalFileSummaryPrefix = "Local file: ";
     private PromptPipelineGraphView _graphView;
     private PromptPipelineAsset _activeAsset;
     private PromptPipelineCommandManager _commandManager;
@@ -23,6 +24,9 @@ public class PromptPipelineGraphWindow : EditorWindow
     private bool _isSimulating;
     private readonly Dictionary<string, string> _textInputValues = new();
     private readonly Dictionary<string, UnityEngine.Object> _imageInputValues = new();
+    private readonly Dictionary<string, string> _imageInputSummaries = new();
+    private readonly HashSet<Texture2D> _temporaryImageInputs = new();
+    private static readonly string[] SupportedLocalImageExtensions = { ".png", ".jpg", ".jpeg" };
 
     [MenuItem("Window/LLM/Prompt Pipeline Editor")]
     public static void ShowWindow()
@@ -52,6 +56,8 @@ public class PromptPipelineGraphWindow : EditorWindow
 
     private void OnDisable()
     {
+        ReleaseAllImageInputs();
+
         if (_graphView != null)
         {
             _graphView.StateModelChanged -= OnStateModelChanged;
@@ -347,15 +353,16 @@ public class PromptPipelineGraphWindow : EditorWindow
 
     private void RebuildSimulationInputs(AnalyzedStateModel model)
     {
+        var inputKeys = model?.keys?.Where(k => k.kind == AnalyzedStateKeyKind.Input).ToList()
+                        ?? new List<AnalyzedStateKey>();
+
+        PruneSimulationInputCache(inputKeys);
         _simulationInputs.Clear();
         if (_activeAsset == null)
         {
             _simulationInputs.Add(new Label("Select a PromptPipelineAsset to view its inputs."));
             return;
         }
-
-        var inputKeys = model?.keys?.Where(k => k.kind == AnalyzedStateKeyKind.Input).ToList()
-                        ?? new List<AnalyzedStateKey>();
 
         if (inputKeys.Count == 0)
         {
@@ -448,6 +455,13 @@ public class PromptPipelineGraphWindow : EditorWindow
             }
         };
 
+        var loadButton = new Button(() => LoadLocalImageInput(key.keyName, field, preview, helpLabel))
+        {
+            text = "Load File..."
+        };
+        loadButton.style.marginRight = 4;
+        buttons.Add(loadButton);
+
         var validateButton = new Button(() => ValidateImageInput(key.keyName))
         {
             text = "Validate Image"
@@ -457,9 +471,9 @@ public class PromptPipelineGraphWindow : EditorWindow
 
         var clearButton = new Button(() =>
         {
-            _imageInputValues.Remove(key.keyName);
+            ReleaseImageInput(key.keyName);
             field.SetValueWithoutNotify(null);
-            UpdateImagePreview(preview, helpLabel, null);
+            UpdateImagePreview(preview, helpLabel, key.keyName, null);
         })
         {
             text = "Clear"
@@ -474,25 +488,17 @@ public class PromptPipelineGraphWindow : EditorWindow
             {
                 EditorUtility.DisplayDialog(
                     "Unsupported Image Input",
-                    "Only Texture2D or Sprite assets can be assigned to vision pipeline inputs.",
+                    "Only Texture2D or Sprite assets can be assigned directly. Use 'Load File...' for local PNG/JPG images.",
                     "OK");
                 field.SetValueWithoutNotify(evt.previousValue);
                 return;
             }
 
-            if (evt.newValue == null)
-            {
-                _imageInputValues.Remove(key.keyName);
-            }
-            else
-            {
-                _imageInputValues[key.keyName] = evt.newValue;
-            }
-
-            UpdateImagePreview(preview, helpLabel, evt.newValue);
+            SetImageInputValue(key.keyName, evt.newValue);
+            UpdateImagePreview(preview, helpLabel, key.keyName, evt.newValue);
         });
 
-        UpdateImagePreview(preview, helpLabel, currentValue);
+        UpdateImagePreview(preview, helpLabel, key.keyName, currentValue);
         _simulationInputs.Add(container);
     }
 
@@ -617,7 +623,7 @@ public class PromptPipelineGraphWindow : EditorWindow
         return value == null || value is Texture2D || value is Sprite;
     }
 
-    private static void UpdateImagePreview(Image preview, Label helpLabel, UnityEngine.Object imageValue)
+    private void UpdateImagePreview(Image preview, Label helpLabel, string keyName, UnityEngine.Object imageValue)
     {
         if (preview == null || helpLabel == null)
         {
@@ -626,8 +632,8 @@ public class PromptPipelineGraphWindow : EditorWindow
 
         preview.image = ResolvePreviewTexture(imageValue);
         helpLabel.text = imageValue == null
-            ? "Assign a Texture2D or Sprite. Sprite inputs are cropped to their sprite rect before inference."
-            : PipelineState.DescribeValue(imageValue);
+            ? "Assign a Texture2D or Sprite asset, or use 'Load File...' for a local PNG/JPG image."
+            : ResolveImageInputSummary(keyName, imageValue);
     }
 
     private static Texture ResolvePreviewTexture(UnityEngine.Object imageValue)
@@ -649,6 +655,195 @@ public class PromptPipelineGraphWindow : EditorWindow
             Sprite sprite => sprite.texture,
             _ => null
         };
+    }
+
+    private void LoadLocalImageInput(string keyName, ObjectField field, Image preview, Label helpLabel)
+    {
+        string initialDirectory = GetImageFilePanelDirectory(keyName);
+        string selectedPath = EditorUtility.OpenFilePanel("Select reference image", initialDirectory, string.Empty);
+        if (string.IsNullOrWhiteSpace(selectedPath))
+        {
+            return;
+        }
+
+        if (!TryLoadTextureFromFile(selectedPath, out Texture2D texture, out string error))
+        {
+            EditorUtility.DisplayDialog("Load Image Failed", error, "OK");
+            return;
+        }
+
+        SetImageInputValue(keyName, texture, ownsTexture: true, summary: $"{LocalFileSummaryPrefix}{selectedPath}");
+        field.SetValueWithoutNotify(texture);
+        UpdateImagePreview(preview, helpLabel, keyName, texture);
+    }
+
+    private void SetImageInputValue(string keyName, UnityEngine.Object imageValue, bool ownsTexture = false, string summary = null)
+    {
+        ReleaseImageInput(keyName);
+
+        if (imageValue == null)
+        {
+            return;
+        }
+
+        _imageInputValues[keyName] = imageValue;
+
+        if (ownsTexture && imageValue is Texture2D texture)
+        {
+            _temporaryImageInputs.Add(texture);
+        }
+
+        if (!string.IsNullOrWhiteSpace(summary))
+        {
+            _imageInputSummaries[keyName] = summary;
+        }
+    }
+
+    private void ReleaseImageInput(string keyName)
+    {
+        if (_imageInputValues.TryGetValue(keyName, out UnityEngine.Object imageValue) &&
+            imageValue is Texture2D texture &&
+            _temporaryImageInputs.Remove(texture))
+        {
+            DestroyTemporaryTexture(texture);
+        }
+
+        _imageInputValues.Remove(keyName);
+        _imageInputSummaries.Remove(keyName);
+    }
+
+    private void ReleaseAllImageInputs()
+    {
+        foreach (string keyName in _imageInputValues.Keys.ToList())
+        {
+            ReleaseImageInput(keyName);
+        }
+
+        _imageInputValues.Clear();
+        _imageInputSummaries.Clear();
+        _temporaryImageInputs.Clear();
+    }
+
+    private void PruneSimulationInputCache(IReadOnlyCollection<AnalyzedStateKey> inputKeys)
+    {
+        var validKeys = new HashSet<string>(inputKeys.Select(key => key.keyName), StringComparer.Ordinal);
+
+        foreach (string staleTextKey in _textInputValues.Keys.Where(key => !validKeys.Contains(key)).ToList())
+        {
+            _textInputValues.Remove(staleTextKey);
+        }
+
+        foreach (string staleImageKey in _imageInputValues.Keys.Where(key => !validKeys.Contains(key)).ToList())
+        {
+            ReleaseImageInput(staleImageKey);
+        }
+    }
+
+    private string ResolveImageInputSummary(string keyName, UnityEngine.Object imageValue)
+    {
+        if (_imageInputSummaries.TryGetValue(keyName, out string summary) && !string.IsNullOrWhiteSpace(summary))
+        {
+            return summary;
+        }
+
+        return PipelineState.DescribeValue(imageValue);
+    }
+
+    private string GetImageFilePanelDirectory(string keyName)
+    {
+        if (_imageInputSummaries.TryGetValue(keyName, out string summary) &&
+            summary.StartsWith(LocalFileSummaryPrefix, StringComparison.Ordinal))
+        {
+            string localPath = summary.Substring(LocalFileSummaryPrefix.Length);
+            if (File.Exists(localPath))
+            {
+                return Path.GetDirectoryName(localPath);
+            }
+        }
+
+        if (_imageInputValues.TryGetValue(keyName, out UnityEngine.Object imageValue) && imageValue != null)
+        {
+            string assetPath = AssetDatabase.GetAssetPath(imageValue);
+            if (!string.IsNullOrWhiteSpace(assetPath))
+            {
+                string absolutePath = Path.GetFullPath(assetPath);
+                if (File.Exists(absolutePath))
+                {
+                    return Path.GetDirectoryName(absolutePath);
+                }
+            }
+        }
+
+        return Application.dataPath;
+    }
+
+    private static bool TryLoadTextureFromFile(string path, out Texture2D texture, out string error)
+    {
+        texture = null;
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            error = "Image path is empty.";
+            return false;
+        }
+
+        if (!File.Exists(path))
+        {
+            error = $"Image file not found: {path}";
+            return false;
+        }
+
+        string extension = Path.GetExtension(path);
+        if (!SupportedLocalImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+        {
+            error = $"Unsupported image format '{extension}'. Use PNG or JPG/JPEG.";
+            return false;
+        }
+
+        byte[] bytes;
+        try
+        {
+            bytes = File.ReadAllBytes(path);
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to read image file: {ex.Message}";
+            return false;
+        }
+
+        texture = new Texture2D(2, 2, TextureFormat.RGBA32, false)
+        {
+            name = Path.GetFileName(path),
+            hideFlags = HideFlags.HideAndDontSave
+        };
+
+        if (texture.LoadImage(bytes, markNonReadable: false))
+        {
+            return true;
+        }
+
+        DestroyTemporaryTexture(texture);
+        texture = null;
+        error = "Unity could not decode the selected image. Use PNG or JPG/JPEG.";
+        return false;
+    }
+
+    private static void DestroyTemporaryTexture(Texture2D texture)
+    {
+        if (texture == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            UnityEngine.Object.Destroy(texture);
+        }
+        else
+        {
+            UnityEngine.Object.DestroyImmediate(texture);
+        }
     }
 
     private void OnSimulationFailed(string error)

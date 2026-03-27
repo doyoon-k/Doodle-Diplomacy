@@ -25,31 +25,41 @@ MonoBehaviour:
 
       [INSTRUCTION]
 
-      Analyze the provided image for use in a Unity content pipeline.
+      Analyze
+      the provided image for use in a Unity content pipeline.
 
-      If Goal is empty, assume the goal is to produce a concise general-purpose visual summary.
+      If Goal is empty,
+      assume the goal is to produce a concise general-purpose visual summary.
 
-      Return only JSON matching the schema.'
+      Return
+      only JSON matching the schema.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1
     imageStateKey: reference_image
     requireImage: 1
     resizeLongestSide: 1024
-    customLinkTypeName: 
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
     customAsset: {fileID: 0}
-    customLinkParameters: []
-    editorPosition: {x: -455, y: 54}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: -415, y: 50}
     guid: 8ec2ba0e-87fc-4ef7-a340-aebc566a6efd
     nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -810, y: 41}
+    inputNodePosition: {x: -653, y: 67}
     outputNodePosition: {x: 311, y: 40}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 610, y: -77, z: 0}
-    viewScale: {x: 1, y: 1, z: 1}
+    viewPosition: {x: 720, y: -50, z: 0}
+    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: -80, y: 42}
+    - {x: 19, y: 78}
     snapshotPositionsInitialized: 1

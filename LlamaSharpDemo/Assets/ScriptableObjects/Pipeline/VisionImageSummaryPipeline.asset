@@ -49,17 +49,17 @@ MonoBehaviour:
       value: 
     - key: level
       value: 
-    editorPosition: {x: -415, y: 50}
+    editorPosition: {x: -540, y: 26}
     guid: 8ec2ba0e-87fc-4ef7-a340-aebc566a6efd
     nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -653, y: 67}
-    outputNodePosition: {x: 311, y: 40}
+    inputNodePosition: {x: -756, y: 65}
+    outputNodePosition: {x: 231, y: 50}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 720, y: -50, z: 0}
-    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
+    viewPosition: {x: 771, y: -825, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 19, y: 78}
+    - {x: 16, y: 63}
     snapshotPositionsInitialized: 1

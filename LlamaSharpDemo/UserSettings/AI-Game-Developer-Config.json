@@ -438,10 +438,11 @@
     }
   ],
   "skillAutoGenerate": {
-    "codex": true
+    "codex": true,
+    "antigravity": true
   },
   "timeoutMs": 10000,
   "keepConnected": true,
   "generateSkillFiles": false,
-  "skillsPath": "C:\\Users\\Doyoon Kim\\Documents\\Digipen\\Unity_LLM_Integration\\LlamaSharpDemo\\.agents\\skills"
+  "skillsPath": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\LlamaSharpDemo\\.agents\\skills"
 }

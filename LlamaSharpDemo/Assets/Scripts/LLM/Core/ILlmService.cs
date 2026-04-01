@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using LLama;
 using LLama.Abstractions;
 using LLama.Common;
+using LLama.Native;
 using LLama.Sampling;
 using UnityEngine;
 
@@ -60,6 +61,7 @@ public static class LlamaSharpInterop
 {
     private const int AutoThreadCap = 4;
     private const int AutoBatchThreadCap = 1;
+    private const string FallbackVisionMarker = "<image>";
     private static readonly SemaphoreSlim InferenceGate = new SemaphoreSlim(1, 1);
     private static readonly object GrammarCacheLock = new object();
     private static readonly Dictionary<string, GrammarCacheEntry> GrammarCache =
@@ -129,6 +131,37 @@ public static class LlamaSharpInterop
         return Math.Max(1, Math.Min(AutoBatchThreadCap, threadCount));
     }
 
+    public static MtmdContextParams CreateMtmdContextParams(LlmGenerationProfile settings)
+    {
+        var runtime = settings?.runtimeParams ?? new LlmGenerationProfile.RuntimeParams();
+        return new MtmdContextParams
+        {
+            NThreads = ResolveThreadCount(runtime.threads),
+            UseGpu = Mathf.Max(0, runtime.gpuLayerCount) > 0,
+            PrintTimings = false,
+            Warmup = false,
+            MediaMarker = ResolveVisionMarker()
+        };
+    }
+
+    public static string ResolveVisionMarker()
+    {
+        try
+        {
+            string nativeMarker = NativeApi.MtmdDefaultMarker();
+            if (!string.IsNullOrWhiteSpace(nativeMarker))
+            {
+                return nativeMarker;
+            }
+        }
+        catch
+        {
+            // Fall back to the common llama.cpp multimodal marker when native lookup is unavailable.
+        }
+
+        return FallbackVisionMarker;
+    }
+
     public static InferenceParams CreateInferenceParams(LlmGenerationProfile settings)
     {
         var source = settings?.modelParams ?? new LlmGenerationProfile.ModelParams();
@@ -180,9 +213,20 @@ public static class LlamaSharpInterop
         LlmGenerationProfile settings,
         string userPrompt,
         bool requiresJson,
-        string systemPrompt = null)
+        string systemPrompt = null,
+        bool includeVisionMarker = false)
     {
         var builder = new StringBuilder();
+        if (includeVisionMarker)
+        {
+            string visionMarker = ResolveVisionMarker();
+            if (!string.IsNullOrWhiteSpace(visionMarker))
+            {
+                builder.AppendLine(visionMarker);
+                builder.AppendLine();
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(systemPrompt))
         {
             builder.AppendLine("System:");

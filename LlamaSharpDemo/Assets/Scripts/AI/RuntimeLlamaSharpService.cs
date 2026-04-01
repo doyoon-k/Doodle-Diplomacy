@@ -199,7 +199,8 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
             settings,
             userPrompt,
             requiresJson: !string.IsNullOrWhiteSpace(settings?.format),
-            systemPrompt: systemPrompt);
+            systemPrompt: systemPrompt,
+            includeVisionMarker: true);
 
         if (logTraffic)
         {
@@ -497,7 +498,10 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
 
         try
         {
-            _mtmdWeights = MtmdWeights.LoadFromFile(resolvedVisionPath, _weights, default);
+            _mtmdWeights = MtmdWeights.LoadFromFile(
+                resolvedVisionPath,
+                _weights,
+                LlamaSharpInterop.CreateMtmdContextParams(settings));
             _loadedVisionProjectorPath = resolvedVisionPath;
             return true;
         }

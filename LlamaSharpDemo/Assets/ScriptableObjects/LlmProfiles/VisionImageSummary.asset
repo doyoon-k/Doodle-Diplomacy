@@ -16,7 +16,7 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"image_summary":{"type":"string","minLength":20,"maxLength":160},"primary_subject":{"type":"string","minLength":2,"maxLength":40},"notable_objects":{"type":"array","items":{"type":"string"},"minItems":1,"maxItems":6},"visual_tags":{"type":"array","items":{"type":"string"},"minItems":3,"maxItems":8}},"required":["image_summary","primary_subject","notable_objects","visual_tags"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  visionProjectorModel: 
+  visionProjectorModel: Models/mmproj-model-f16-4B.gguf
   visionProjectorRelativeToStreamingAssets: 1
   systemPromptTemplate: 'You are a vision analysis assistant for a Unity content
     pipeline.

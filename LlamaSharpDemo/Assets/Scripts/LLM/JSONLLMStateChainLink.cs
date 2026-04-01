@@ -127,6 +127,19 @@ public class JSONLLMStateChainLink : IStateChainLink
 
             Log($"[JSONLLMStateChainLink] Attempt {attempt}/{_maxRetries} - Raw Response:\n{jsonResponse}");
 
+            if (string.IsNullOrWhiteSpace(jsonResponse))
+            {
+                lastError = "LLM returned an empty response. Check earlier model or vision loading errors in the console.";
+                Log($"[JSONLLMStateChainLink] {lastError}");
+
+                if (attempt < _maxRetries && _delayBetweenRetries > 0f)
+                {
+                    yield return new WaitForSeconds(_delayBetweenRetries);
+                }
+
+                continue;
+            }
+
             try
             {
                 parsedJson = ExtractJsonObject(jsonResponse);

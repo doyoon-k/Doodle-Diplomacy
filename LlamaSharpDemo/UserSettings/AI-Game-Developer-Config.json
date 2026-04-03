@@ -237,6 +237,10 @@
       "enabled": true
     },
     {
+      "name": "tool-list",
+      "enabled": true
+    },
+    {
       "name": "tool-set-enabled-state",
       "enabled": false
     },

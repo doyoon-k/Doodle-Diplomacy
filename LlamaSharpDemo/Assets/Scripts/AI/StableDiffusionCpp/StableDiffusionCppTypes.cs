@@ -1,19 +1,39 @@
 using System;
 using System.Collections.Generic;
 
+public enum StableDiffusionCppGenerationMode
+{
+    Txt2Img = 0,
+    Img2Img = 1,
+    Inpaint = 2,
+    Sketch = 3
+}
+
 [Serializable]
 public class StableDiffusionCppGenerationRequest
 {
+    public StableDiffusionCppGenerationMode mode = StableDiffusionCppGenerationMode.Txt2Img;
     public string prompt = "a cinematic photo of a red cube on a white table";
     public string negativePrompt = string.Empty;
+    public string initImagePath = string.Empty;
+    public string maskImagePath = string.Empty;
+    public string controlImagePath = string.Empty;
+    public string controlNetPathOverride = string.Empty;
     public int width = 512;
     public int height = 512;
     public int steps = 20;
     public float cfgScale = 7.0f;
+    public float strength = 0.75f;
+    public bool overrideImageCfgScale;
+    public float imageCfgScale = 7.0f;
+    public bool useInitImageDimensions;
     public int seed = 42;
     public int batchCount = 1;
     public string sampler = "euler_a";
+    public string scheduler = "discrete";
     public string modelPathOverride = string.Empty;
+    public bool useControlNet;
+    public float controlStrength = 0.9f;
     public string outputDirectory = string.Empty;
     public string outputFileName = string.Empty;
     public string outputFormat = "png";
@@ -27,6 +47,56 @@ public class StableDiffusionCppGenerationRequest
     public string cacheOption = string.Empty;
     public string cachePreset = string.Empty;
     public bool persistOutputToRequestedDirectory = true;
+
+    public bool RequiresInitImage =>
+        mode == StableDiffusionCppGenerationMode.Img2Img ||
+        mode == StableDiffusionCppGenerationMode.Inpaint;
+
+    public bool RequiresMaskImage => mode == StableDiffusionCppGenerationMode.Inpaint;
+    public bool RequiresControlImage => mode == StableDiffusionCppGenerationMode.Sketch || useControlNet;
+    public bool RequiresControlNetModel => mode == StableDiffusionCppGenerationMode.Sketch || useControlNet;
+
+    public StableDiffusionCppGenerationRequest Clone()
+    {
+        return new StableDiffusionCppGenerationRequest
+        {
+            mode = mode,
+            prompt = prompt,
+            negativePrompt = negativePrompt,
+            initImagePath = initImagePath,
+            maskImagePath = maskImagePath,
+            controlImagePath = controlImagePath,
+            controlNetPathOverride = controlNetPathOverride,
+            width = width,
+            height = height,
+            steps = steps,
+            cfgScale = cfgScale,
+            strength = strength,
+            overrideImageCfgScale = overrideImageCfgScale,
+            imageCfgScale = imageCfgScale,
+            useInitImageDimensions = useInitImageDimensions,
+            seed = seed,
+            batchCount = batchCount,
+            sampler = sampler,
+            scheduler = scheduler,
+            modelPathOverride = modelPathOverride,
+            useControlNet = useControlNet,
+            controlStrength = controlStrength,
+            outputDirectory = outputDirectory,
+            outputFileName = outputFileName,
+            outputFormat = outputFormat,
+            extraArgumentsRaw = extraArgumentsRaw,
+            offloadToCpu = offloadToCpu,
+            clipOnCpu = clipOnCpu,
+            vaeTiling = vaeTiling,
+            diffusionFlashAttention = diffusionFlashAttention,
+            useCacheMode = useCacheMode,
+            cacheMode = cacheMode,
+            cacheOption = cacheOption,
+            cachePreset = cachePreset,
+            persistOutputToRequestedDirectory = persistOutputToRequestedDirectory
+        };
+    }
 }
 
 public sealed class StableDiffusionCppPreparationResult

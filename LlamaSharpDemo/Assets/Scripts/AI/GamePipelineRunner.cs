@@ -20,12 +20,19 @@ public class GamePipelineRunner : MonoBehaviour
 
     public void StopGeneration()
     {
+        _runtimeService?.CancelActiveOperations();
+
         if (_currentRoutine != null)
         {
             StopCoroutine(_currentRoutine);
             _currentRoutine = null;
             Debug.Log("[GamePipelineRunner] Generation stopped by user.");
         }
+    }
+
+    private void OnDisable()
+    {
+        StopGeneration();
     }
 
     public void RunPipeline(PromptPipelineAsset asset, PipelineState initialState, Action<PipelineState> onComplete)
@@ -39,6 +46,7 @@ public class GamePipelineRunner : MonoBehaviour
         if (asset == null || asset.steps == null)
         {
             Debug.LogError("[GamePipelineRunner] Asset is null or empty!");
+            onComplete?.Invoke(CreateErrorState(initialState, "[GamePipelineRunner] Asset is null or empty."));
             yield break;
         }
 
@@ -62,17 +70,56 @@ public class GamePipelineRunner : MonoBehaviour
 
         // 2. Execute Pipeline
         PipelineState finalState = null;
-        yield return executor.Execute(initialState, result => finalState = result);
+        IEnumerator execution = null;
+        try
+        {
+            execution = executor.Execute(initialState, result => finalState = result);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[GamePipelineRunner] Failed to create pipeline execution: {ex}");
+            finalState = CreateErrorState(initialState, $"[GamePipelineRunner] Failed to create pipeline execution: {ex.Message}");
+        }
+
+        if (execution != null)
+        {
+            while (true)
+            {
+                bool hasNext;
+                object currentYield = null;
+
+                try
+                {
+                    hasNext = execution.MoveNext();
+                    if (hasNext)
+                    {
+                        currentYield = execution.Current;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[GamePipelineRunner] Pipeline execution threw an exception: {ex}");
+                    finalState = CreateErrorState(initialState, $"[GamePipelineRunner] Pipeline execution failed: {ex.Message}");
+                    break;
+                }
+
+                if (!hasNext)
+                {
+                    break;
+                }
+
+                yield return currentYield;
+            }
+        }
 
         // 3. Callback
-        if (finalState != null)
-        {
-            onComplete?.Invoke(finalState);
-        }
-        else
+        if (finalState == null)
         {
             Debug.LogError("[GamePipelineRunner] Pipeline execution failed.");
+            finalState = CreateErrorState(initialState, "[GamePipelineRunner] Pipeline execution failed.");
         }
+
+        onComplete?.Invoke(finalState);
 
         _currentRoutine = null;
     }
@@ -115,5 +162,12 @@ public class GamePipelineRunner : MonoBehaviour
     private IStateChainLink InstantiateCustomLink(PromptPipelineStep step)
     {
         return PromptPipelineAsset.InstantiateCustomLink(step);
+    }
+
+    private static PipelineState CreateErrorState(PipelineState sourceState, string error)
+    {
+        PipelineState state = sourceState?.Clone() ?? new PipelineState();
+        state.SetString(PromptPipelineConstants.ErrorKey, error ?? "Pipeline execution failed.");
+        return state;
     }
 }

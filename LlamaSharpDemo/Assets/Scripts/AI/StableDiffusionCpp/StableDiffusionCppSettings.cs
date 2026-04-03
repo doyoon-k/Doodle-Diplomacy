@@ -7,10 +7,10 @@ using UnityEngine;
 public class StableDiffusionCppSettings : ScriptableObject
 {
     [Header("Runtime Packaging")]
-    [Tooltip("Version token used for persistent runtime install path. Bump to force re-install.")]
+    [Tooltip("Runtime install version label used under persistentDataPath. Increase this value when you replace the bundled stable-diffusion.cpp binaries and want Unity to copy/install the new runtime into a fresh folder.")]
     public string runtimeVersion = "v0.0.1";
 
-    [Tooltip("Per-platform runtime package locations under StreamingAssets.")]
+    [Tooltip("Per-platform stable-diffusion.cpp runtime packages bundled under StreamingAssets. At startup, the entry matching the current OS is selected and its executable is copied/prepared for inference.")]
     public List<StableDiffusionCppRuntimePackage> runtimePackages = new List<StableDiffusionCppRuntimePackage>
     {
         new StableDiffusionCppRuntimePackage
@@ -22,73 +22,63 @@ public class StableDiffusionCppSettings : ScriptableObject
     };
 
     [Header("Model Profiles")]
-    [Tooltip("Model profiles (SD-1.5, SD-Turbo, etc.) managed as ScriptableObjects.")]
+    [Tooltip("List of available Stable Diffusion model profiles. Each profile asset owns its model path, optional VAE/ControlNet paths, and default generation parameters such as resolution, steps, sampler, scheduler, and prompt defaults.")]
     public List<StableDiffusionCppModelProfile> modelProfiles = new List<StableDiffusionCppModelProfile>();
 
-    [Tooltip("Active model profile used by runtime/editor.")]
+    [Tooltip("Currently selected model profile used by the generator window and runtime. If this is empty, the first non-null entry in Model Profiles is used; if no profile exists, model preparation/generation cannot resolve a model path.")]
     public StableDiffusionCppModelProfile activeModelProfile;
 
-    [Header("Model")]
-    [Tooltip("Fallback model path used when no active model profile is assigned.")]
-    public string modelPath = "SDModels/v1-5-pruned-emaonly.safetensors";
-
-    [Tooltip("Fallback VAE path used when no active model profile is assigned.")]
-    public string vaePath = string.Empty;
-
-    [Tooltip("Copy model into persistentDataPath before inference. Recommended off for very large files.")]
+    [Header("Model Storage")]
+    [Tooltip("If enabled, the active profile's model file is copied from StreamingAssets (or its source location) into persistentDataPath before running inference, and the copied file is passed to sd-cli. This can reduce read issues on some platforms, but it duplicates large model files and increases disk usage, so keep it off unless you need a local writable/runtime-managed copy.")]
     public bool copyModelToPersistentDataPath;
 
-    [Header("Defaults")]
-    [Min(64)]
-    public int defaultWidth = 512;
-    [Min(64)]
-    public int defaultHeight = 512;
-    [Min(1)]
-    public int defaultSteps = 20;
-    [Min(0.1f)]
-    public float defaultCfgScale = 7.0f;
-    public int defaultSeed = 42;
-    public string defaultSampler = "euler_a";
-    public string defaultNegativePrompt = string.Empty;
-
     [Header("Performance Defaults")]
-    [Tooltip("Add --offload-to-cpu by default.")]
+    [Tooltip("Default state for the generator window's Offload Weights To CPU option. When enabled, sd-cli receives --offload-to-cpu, which moves part of the model workload/weights to system RAM/CPU to reduce VRAM pressure, usually at the cost of slower generation.")]
     public bool defaultOffloadToCpu;
-    [Tooltip("Add --clip-on-cpu by default.")]
+
+    [Tooltip("Default state for the generator window's Keep CLIP On CPU option. When enabled, sd-cli receives --clip-on-cpu, so the text encoder runs on CPU instead of GPU. This can save VRAM, but prompt encoding may become slower.")]
     public bool defaultClipOnCpu;
-    [Tooltip("Add --vae-tiling by default.")]
+
+    [Tooltip("Default state for the generator window's Enable VAE Tiling option. When enabled, sd-cli receives --vae-tiling, which decodes/encodes latent images in tiles to reduce peak VRAM usage, especially at higher resolutions. It can be slower and may introduce subtle tile-boundary artifacts depending on the model/output.")]
     public bool defaultVaeTiling;
-    [Tooltip("Add --diffusion-fa by default.")]
+
+    [Tooltip("Default state for the generator window's Use Diffusion Flash Attention option. When enabled, sd-cli receives --diffusion-fa, using a flash-attention implementation for the diffusion U-Net/denoiser attention blocks. This can reduce memory use and improve speed on supported GPU/runtime combinations, but behavior and gains depend on the backend/model.")]
     public bool defaultDiffusionFlashAttention;
-    [Tooltip("Add --cache-mode by default.")]
+
+    [Tooltip("Default state for the generator window's Enable Cache Mode option. When enabled, the command includes --cache-mode plus the selected cache mode string below, allowing stable-diffusion.cpp to reuse/cache intermediate computations for supported acceleration strategies. Keep disabled if you want the baseline uncached path.")]
     public bool defaultUseCacheMode;
-    [Tooltip("Default cache mode when cache mode is enabled.")]
+
+    [Tooltip("Default value passed to --cache-mode when cache mode is enabled in the generator. Examples include easycache, ucache, dbcache, taylorseer, and cache-dit. The exact mode controls which stable-diffusion.cpp caching strategy is used, so choose one supported by your target model/runtime.")]
     public string defaultCacheMode = "easycache";
-    [Tooltip("Optional default value for --cache-option.")]
+
+    [Tooltip("Optional default value passed to --cache-option when cache mode is enabled. This is a raw stable-diffusion.cpp cache parameter string for advanced tuning; leave empty unless the selected cache mode requires extra options or you are intentionally overriding its behavior.")]
     public string defaultCacheOption = string.Empty;
-    [Tooltip("Optional default value for --cache-preset.")]
+
+    [Tooltip("Optional default value passed to --cache-preset when cache mode is enabled. Use this when the chosen cache mode supports named presets and you want a preset selected automatically; leave empty to let stable-diffusion.cpp use its own default behavior.")]
     public string defaultCachePreset = string.Empty;
 
     [Header("Runtime Execution")]
+    [Tooltip("Maximum time, in seconds, to wait for one sd-cli process before the runtime treats it as timed out and terminates/cancels that generation request. Increase this for slow CPUs, large images, high step counts, or very large models.")]
     [Min(30)]
     public int processTimeoutSeconds = 600;
 
-    [Tooltip("Additional raw CLI arguments appended to every command.")]
+    [Tooltip("Extra raw command-line arguments appended to every sd-cli invocation after the generated arguments. Use this as an escape hatch for stable-diffusion.cpp options that are not exposed by dedicated UI fields. Invalid or conflicting flags can break generation, so keep it empty unless you know the exact CLI arguments you want.")]
     public string globalAdditionalArguments = string.Empty;
 
-    [Tooltip("Subfolder under persistentDataPath where generated images are stored by default.")]
+    [Tooltip("Relative subfolder under Application.persistentDataPath where runtime-generated images are written when no explicit output directory override is provided. Example: generated/sdcpp stores files under <persistentDataPath>/generated/sdcpp.")]
     public string runtimeOutputSubfolder = "generated/sdcpp";
 
     [Header("GPU Telemetry")]
-    [Tooltip("If enabled, runtime samples nvidia-smi while generating and reports peak GPU memory/use in logs.")]
+    [Tooltip("If enabled, the runtime periodically queries nvidia-smi while a generation is running and logs peak GPU memory usage/utilization for that process. This is mainly for NVIDIA GPU debugging/profiling; on systems without nvidia-smi or compatible telemetry, the generation still runs but GPU telemetry may be unavailable.")]
     public bool enableGpuTelemetry = true;
+
     [Range(100, 2000)]
-    [Tooltip("Sampling interval for nvidia-smi polling in milliseconds.")]
+    [Tooltip("Polling interval, in milliseconds, for GPU telemetry sampling via nvidia-smi. Lower values capture shorter VRAM/utilization spikes more accurately but add more monitoring overhead; higher values are lighter but may miss brief peaks.")]
     public int gpuTelemetryPollIntervalMs = 500;
 
     [Header("Editor UX")]
-    [Tooltip("Project-relative output folder used by the editor test window.")]
-    public string editorOutputProjectRelativePath = "Assets/Generated/StableDiffusion";
+    [Tooltip("Project-relative folder path used by the editor generator window as its default output location when saving generated images into the Assets tree. Use an Assets/... path if you want outputs to appear in the Project window after AssetDatabase refresh.")]
+    public string editorOutputProjectRelativePath = "Assets/Images/GeneratedImages";
 
     public StableDiffusionCppRuntimePackage GetPackageForCurrentPlatform()
     {
@@ -132,17 +122,30 @@ public class StableDiffusionCppSettings : ScriptableObject
     public string ResolveModelPath()
     {
         StableDiffusionCppModelProfile profile = GetActiveModelProfile();
-        string path = profile != null ? profile.modelPath : modelPath;
-        return ResolvePathFromStreamingAssetsOrAbsolute(path);
+        return profile != null
+            ? ResolvePathFromStreamingAssetsOrAbsolute(profile.modelPath)
+            : string.Empty;
     }
 
     public string ResolveVaePath()
     {
         StableDiffusionCppModelProfile profile = GetActiveModelProfile();
-        string path = profile != null && !string.IsNullOrWhiteSpace(profile.vaePath)
-            ? profile.vaePath
-            : vaePath;
-        return ResolvePathFromStreamingAssetsOrAbsolute(path);
+        return profile != null
+            ? ResolvePathFromStreamingAssetsOrAbsolute(profile.vaePath)
+            : string.Empty;
+    }
+
+    public string ResolveControlNetPath(string controlNetPathOverride = null)
+    {
+        if (!string.IsNullOrWhiteSpace(controlNetPathOverride))
+        {
+            return ResolvePathFromStreamingAssetsOrAbsolute(controlNetPathOverride);
+        }
+
+        StableDiffusionCppModelProfile profile = GetActiveModelProfile();
+        return profile != null
+            ? ResolvePathFromStreamingAssetsOrAbsolute(profile.controlNetPath)
+            : string.Empty;
     }
 
     public StableDiffusionCppModelProfile GetActiveModelProfile()
@@ -244,7 +247,7 @@ public class StableDiffusionCppSettings : ScriptableObject
             ? "generated/sdcpp"
             : runtimeOutputSubfolder.Trim();
         editorOutputProjectRelativePath = string.IsNullOrWhiteSpace(editorOutputProjectRelativePath)
-            ? "Assets/Generated/StableDiffusion"
+            ? "Assets/Images/GeneratedImages"
             : editorOutputProjectRelativePath.Trim();
         defaultCacheMode = NormalizeTokenOrFallback(defaultCacheMode, "easycache");
         defaultCacheOption ??= string.Empty;
@@ -252,71 +255,14 @@ public class StableDiffusionCppSettings : ScriptableObject
     }
 }
 
-[CreateAssetMenu(fileName = "StableDiffusionModelProfile", menuName = "AI/Stable Diffusion CPP Model Profile")]
-public class StableDiffusionCppModelProfile : ScriptableObject
-{
-    [Header("Identity")]
-    [Tooltip("User-facing profile label.")]
-    public string profileName = "SD 1.5";
-
-    [Header("Model")]
-    [Tooltip("Model path relative to StreamingAssets, or absolute path.")]
-    public string modelPath = "SDModels/v1-5-pruned-emaonly-q4_K.gguf";
-
-    [Tooltip("Optional VAE path relative to StreamingAssets, or absolute path.")]
-    public string vaePath = string.Empty;
-
-    [Header("Generation Defaults")]
-    [Min(64)]
-    public int defaultWidth = 512;
-    [Min(64)]
-    public int defaultHeight = 512;
-    [Min(1)]
-    public int defaultSteps = 20;
-    [Min(0.1f)]
-    public float defaultCfgScale = 7.0f;
-    public int defaultSeed = 42;
-    public string defaultSampler = "euler_a";
-    [TextArea(2, 6)]
-    public string defaultNegativePrompt = string.Empty;
-
-    public string DisplayName => string.IsNullOrWhiteSpace(profileName) ? name : profileName.Trim();
-
-    public void ApplyDefaultsTo(StableDiffusionCppGenerationRequest request)
-    {
-        if (request == null)
-        {
-            return;
-        }
-
-        request.width = defaultWidth;
-        request.height = defaultHeight;
-        request.steps = defaultSteps;
-        request.cfgScale = defaultCfgScale;
-        request.seed = defaultSeed;
-        request.sampler = string.IsNullOrWhiteSpace(defaultSampler) ? "euler_a" : defaultSampler.Trim();
-        request.negativePrompt = defaultNegativePrompt ?? string.Empty;
-    }
-
-    private void OnValidate()
-    {
-        profileName = string.IsNullOrWhiteSpace(profileName) ? "Stable Diffusion Profile" : profileName.Trim();
-        defaultWidth = Mathf.Max(64, defaultWidth);
-        defaultHeight = Mathf.Max(64, defaultHeight);
-        defaultSteps = Mathf.Max(1, defaultSteps);
-        defaultCfgScale = Mathf.Max(0.1f, defaultCfgScale);
-        defaultSampler = string.IsNullOrWhiteSpace(defaultSampler) ? "euler_a" : defaultSampler.Trim();
-        defaultNegativePrompt ??= string.Empty;
-    }
-}
-
 [Serializable]
 public class StableDiffusionCppRuntimePackage
 {
     public StableDiffusionCppPlatformId platform = StableDiffusionCppPlatformId.WinX64;
-    [Tooltip("Runtime folder path relative to StreamingAssets.")]
+    [Tooltip("Folder path under StreamingAssets that contains the stable-diffusion.cpp runtime files for this platform entry. Example: SDCpp/win-x64 resolves to <StreamingAssets>/SDCpp/win-x64.")]
     public string streamingAssetsRuntimeFolder = "SDCpp/win-x64";
-    [Tooltip("Executable file name inside the runtime folder.")]
+
+    [Tooltip("Executable file name inside the selected runtime folder that will be launched for generation. On Windows this is typically sd-cli.exe; on Linux/macOS it may be the corresponding sd-cli binary name.")]
     public string executableFileName = "sd-cli.exe";
 }
 

@@ -144,11 +144,6 @@ internal static class StableDiffusionCppSetupUtility
             settings.activeModelProfile = firstProfile;
         }
 
-        if (string.IsNullOrWhiteSpace(settings.modelPath) && firstProfile != null)
-        {
-            settings.modelPath = firstProfile.modelPath;
-        }
-
         EditorUtility.SetDirty(settings);
         AssetDatabase.SaveAssets();
     }
@@ -180,7 +175,6 @@ internal static class StableDiffusionCppSetupUtility
         AssignProfileIfMissing(settings, profile);
 
         settings.activeModelProfile = profile;
-        settings.modelPath = normalizedPath;
 
         EditorUtility.SetDirty(profile);
         EditorUtility.SetDirty(settings);

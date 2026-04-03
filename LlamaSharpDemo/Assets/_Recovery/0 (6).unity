@@ -241,7 +241,6 @@ MonoBehaviour:
   useNativeBootstrap: 0
   modelLoadTimeoutSeconds: 120
   inferenceTimeoutSeconds: 120
-  shutdownDrainTimeoutSeconds: 0.75
 --- !u!114 &101234112
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2192,7 +2191,8 @@ MonoBehaviour:
   pipelineAsset: {fileID: 11400000, guid: 7e64bdb47c6642d8a154b829a2d1e2e6, type: 2}
   imageStateKey: reference_image
   analysisGoalKey: analysis_goal
-  analysisGoal: Describe what you see from the image.
+  analysisGoal: Analyze the player's drawing and summarize the visible shapes, symbols,
+    and notable visual patterns.
   logExports: 1
   logPipelineCompletion: 1
 --- !u!1 &989394716

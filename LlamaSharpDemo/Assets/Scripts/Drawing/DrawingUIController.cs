@@ -119,6 +119,9 @@ public class DrawingUIController : MonoBehaviour
     private Vector2 _redoButtonBasePosition;
     private Vector2 _customColorPanelBasePosition;
     private RectTransform _brushSizeLabelRect;
+    private Transform _controlPanelParent;
+    private int _controlPanelBaseSiblingIndex = -1;
+    private bool _controlPanelRaisedForCustomPanel;
 
     private void Awake()
     {
@@ -131,6 +134,7 @@ public class DrawingUIController : MonoBehaviour
         EnsureToolButtons();
         EnsureHistoryButtons();
         CacheReferences();
+        CacheControlPanelSortingState();
         CaptureLayoutBaseline();
         EnsureCircleSprite();
         BindControls();
@@ -326,6 +330,21 @@ public class DrawingUIController : MonoBehaviour
         _redoButtonBasePosition = GetAnchoredPosition(redoButton != null ? redoButton.GetComponent<RectTransform>() : null);
         _customColorPanelBasePosition = GetAnchoredPosition(customColorPanel);
         _layoutBaselineCaptured = true;
+    }
+
+    private void CacheControlPanelSortingState()
+    {
+        if (controlPanel == null)
+        {
+            _controlPanelParent = null;
+            _controlPanelBaseSiblingIndex = -1;
+            _controlPanelRaisedForCustomPanel = false;
+            return;
+        }
+
+        _controlPanelParent = controlPanel.parent;
+        _controlPanelBaseSiblingIndex = controlPanel.GetSiblingIndex();
+        _controlPanelRaisedForCustomPanel = false;
     }
 
     private void BindControls()
@@ -957,6 +976,52 @@ public class DrawingUIController : MonoBehaviour
         {
             customColorPanel.gameObject.SetActive(visible);
         }
+
+        RefreshControlPanelOverlayOrder();
+    }
+
+    private void RefreshControlPanelOverlayOrder()
+    {
+        if (controlPanel == null)
+        {
+            return;
+        }
+
+        Transform parent = controlPanel.parent;
+        if (parent == null)
+        {
+            return;
+        }
+
+        if (_controlPanelParent != parent || _controlPanelBaseSiblingIndex < 0)
+        {
+            CacheControlPanelSortingState();
+        }
+
+        if (_customPanelVisible)
+        {
+            if (!_controlPanelRaisedForCustomPanel)
+            {
+                _controlPanelBaseSiblingIndex = controlPanel.GetSiblingIndex();
+            }
+
+            controlPanel.SetAsLastSibling();
+            if (customColorPanel != null)
+            {
+                customColorPanel.SetAsLastSibling();
+            }
+
+            _controlPanelRaisedForCustomPanel = true;
+            return;
+        }
+
+        if (!_controlPanelRaisedForCustomPanel || _controlPanelParent != parent)
+        {
+            return;
+        }
+
+        controlPanel.SetSiblingIndex(Mathf.Clamp(_controlPanelBaseSiblingIndex, 0, parent.childCount - 1));
+        _controlPanelRaisedForCustomPanel = false;
     }
 
     private void OnHistoryStateChanged(bool canUndo, bool canRedo)

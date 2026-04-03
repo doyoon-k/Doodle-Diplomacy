@@ -15,8 +15,18 @@ using UnityEngine;
 /// </summary>
 public sealed class LlamaSharpEditorService : ILlmService, IDisposable
 {
+    private const float DefaultInferenceTimeoutSeconds = 120f;
+    private const float DefaultShutdownDrainTimeoutSeconds = 0.75f;
+
     private readonly bool _logTraffic;
+    private readonly float _inferenceTimeoutSeconds;
+    private readonly float _shutdownDrainTimeoutSeconds;
+    private readonly object _operationLock = new object();
     private readonly object _visionLock = new object();
+    private CancellationTokenSource _serviceLifetimeCts;
+    private CancellationTokenSource _activeInferenceCts;
+    private Task<string> _activeInferenceTask;
+    private bool _disposed;
     private LLamaWeights _weights;
     private ILLamaExecutor _executor;
     private MtmdWeights _mtmdWeights;
@@ -26,9 +36,15 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
     private int _loadedGpuLayerCount;
     private int _loadedThreads;
 
-    public LlamaSharpEditorService(bool logTraffic = false)
+    public LlamaSharpEditorService(
+        bool logTraffic = false,
+        float inferenceTimeoutSeconds = DefaultInferenceTimeoutSeconds,
+        float shutdownDrainTimeoutSeconds = DefaultShutdownDrainTimeoutSeconds)
     {
         _logTraffic = logTraffic;
+        _inferenceTimeoutSeconds = Mathf.Max(0f, inferenceTimeoutSeconds);
+        _shutdownDrainTimeoutSeconds = Mathf.Max(0f, shutdownDrainTimeoutSeconds);
+        _serviceLifetimeCts = new CancellationTokenSource();
     }
 
     public ILLamaExecutor GetExecutor(LlmGenerationProfile settings)
@@ -81,6 +97,12 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         PipelineState state,
         Action<string> onResponse)
     {
+        if (_disposed)
+        {
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
         var executor = GetExecutor(settings);
         if (executor == null)
         {
@@ -100,10 +122,21 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
             Debug.Log($"[LlamaSharpEditorService] System Prompt:\n{systemPrompt}\nUser Prompt:\n{prompt}");
         }
 
-        yield return LlamaSharpInterop.InferToString(
-            executor,
-            prompt,
-            LlamaSharpInterop.CreateInferenceParams(settings),
+        CancellationTokenSource timeoutCts = CreateOperationCancellationSource(_inferenceTimeoutSeconds);
+        Task<string> inferenceTask = Task.Run(() =>
+            LlamaSharpInterop.InferToStringAsync(
+                executor,
+                prompt,
+                LlamaSharpInterop.CreateInferenceParams(settings),
+                timeoutCts.Token),
+            timeoutCts.Token);
+        RegisterActiveInference(inferenceTask, timeoutCts);
+
+        yield return WaitForInferenceTask(
+            inferenceTask,
+            timeoutCts,
+            _inferenceTimeoutSeconds,
+            "editor text inference",
             onResponse);
     }
 
@@ -115,6 +148,12 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         Action<string> onResponse)
     {
         if (image == null)
+        {
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
+        if (_disposed)
         {
             onResponse?.Invoke(string.Empty);
             yield break;
@@ -155,21 +194,18 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         }
 
         string resolvedModelPath = LlamaSharpInterop.ResolveModelPath(settings);
-        Task<string> inferenceTask = Task.Run(() => InferWithVision(settings, resolvedModelPath, prompt, pngBytes));
-        while (!inferenceTask.IsCompleted)
-        {
-            yield return null;
-        }
+        CancellationTokenSource timeoutCts = CreateOperationCancellationSource(_inferenceTimeoutSeconds);
+        Task<string> inferenceTask = Task.Run(
+            () => InferWithVision(settings, resolvedModelPath, prompt, pngBytes, timeoutCts.Token),
+            timeoutCts.Token);
+        RegisterActiveInference(inferenceTask, timeoutCts);
 
-        Exception failure = GetTaskException(inferenceTask);
-        if (failure != null)
-        {
-            Debug.LogError($"[LlamaSharpEditorService] Vision inference failed: {failure}");
-            onResponse?.Invoke(string.Empty);
-            yield break;
-        }
-
-        onResponse?.Invoke(inferenceTask.Result ?? string.Empty);
+        yield return WaitForInferenceTask(
+            inferenceTask,
+            timeoutCts,
+            _inferenceTimeoutSeconds,
+            "editor vision inference",
+            onResponse);
     }
 
     public IEnumerator ChatCompletion(
@@ -193,7 +229,24 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
 
     public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        CancelActiveOperations();
+
+        if (!TryDrainActiveOperations(_shutdownDrainTimeoutSeconds))
+        {
+            Debug.LogWarning("[LlamaSharpEditorService] Dispose skipped immediate LLama resource disposal because editor tasks were still active.");
+            DisposeLifetimeCancellationSource();
+            return;
+        }
+
+        ClearCompletedOperationReferences();
         DisposeExecutor();
+        DisposeLifetimeCancellationSource();
     }
 
     private bool TryLoadExecutor(LlmGenerationProfile settings, string resolvedModelPath)
@@ -290,7 +343,8 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         LlmGenerationProfile settings,
         string resolvedModelPath,
         string prompt,
-        byte[] imageBytes)
+        byte[] imageBytes,
+        CancellationToken cancellationToken)
     {
         if (_weights == null)
         {
@@ -311,9 +365,194 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
             _mtmdWeights.ClearMedia();
             _mtmdWeights.LoadMedia(imageBytes);
             return LlamaSharpInterop
-                .InferToStringAsync(executor, prompt, LlamaSharpInterop.CreateInferenceParams(settings), CancellationToken.None)
+                .InferToStringAsync(executor, prompt, LlamaSharpInterop.CreateInferenceParams(settings), cancellationToken)
                 .GetAwaiter()
                 .GetResult();
+        }
+    }
+
+    public void CancelActiveOperations()
+    {
+        CancellationTokenSource lifetimeCts;
+        CancellationTokenSource inferenceCts;
+
+        lock (_operationLock)
+        {
+            lifetimeCts = _serviceLifetimeCts;
+            inferenceCts = _activeInferenceCts;
+        }
+
+        TryCancel(inferenceCts);
+        TryCancel(lifetimeCts);
+    }
+
+    private void RegisterActiveInference(Task<string> inferenceTask, CancellationTokenSource cancellationSource)
+    {
+        lock (_operationLock)
+        {
+            _activeInferenceTask = inferenceTask;
+            _activeInferenceCts = cancellationSource;
+        }
+
+        inferenceTask.ContinueWith(
+            _ => ReleaseActiveInference(inferenceTask, cancellationSource),
+            CancellationToken.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
+    }
+
+    private void ReleaseActiveInference(Task<string> inferenceTask, CancellationTokenSource cancellationSource)
+    {
+        bool shouldDisposeCts = false;
+
+        lock (_operationLock)
+        {
+            if (ReferenceEquals(_activeInferenceTask, inferenceTask))
+            {
+                _activeInferenceTask = null;
+            }
+
+            if (ReferenceEquals(_activeInferenceCts, cancellationSource))
+            {
+                _activeInferenceCts = null;
+                shouldDisposeCts = true;
+            }
+        }
+
+        if (shouldDisposeCts)
+        {
+            cancellationSource.Dispose();
+        }
+    }
+
+    private IEnumerator WaitForInferenceTask(
+        Task<string> inferenceTask,
+        CancellationTokenSource timeoutCts,
+        float timeoutSeconds,
+        string operationName,
+        Action<string> onResponse)
+    {
+        float startTime = Time.realtimeSinceStartup;
+        while (!inferenceTask.IsCompleted)
+        {
+            if (_disposed)
+            {
+                timeoutCts?.Cancel();
+                onResponse?.Invoke(string.Empty);
+                yield break;
+            }
+
+            if (timeoutSeconds > 0f &&
+                Time.realtimeSinceStartup - startTime >= timeoutSeconds)
+            {
+                timeoutCts?.Cancel();
+                Debug.LogError($"[LlamaSharpEditorService] {operationName} timed out after {timeoutSeconds:0.#} seconds.");
+                onResponse?.Invoke(string.Empty);
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        Exception failure = GetTaskException(inferenceTask);
+        if (failure != null)
+        {
+            bool wasCancelled = failure is OperationCanceledException || timeoutCts?.IsCancellationRequested == true;
+            string failureMessage = wasCancelled
+                ? $"{operationName} was cancelled."
+                : $"{operationName} failed: {failure}";
+            Debug.LogError($"[LlamaSharpEditorService] {failureMessage}");
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
+        onResponse?.Invoke(inferenceTask.Result ?? string.Empty);
+    }
+
+    private CancellationTokenSource CreateOperationCancellationSource(float timeoutSeconds)
+    {
+        CancellationTokenSource cancellationSource = _serviceLifetimeCts != null
+            ? CancellationTokenSource.CreateLinkedTokenSource(_serviceLifetimeCts.Token)
+            : new CancellationTokenSource();
+
+        if (timeoutSeconds > 0f)
+        {
+            cancellationSource.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+        }
+
+        return cancellationSource;
+    }
+
+    private bool TryDrainActiveOperations(float timeoutSeconds)
+    {
+        if (timeoutSeconds <= 0f)
+        {
+            return !HasRunningOperations();
+        }
+
+        DateTime deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (!HasRunningOperations())
+            {
+                return true;
+            }
+
+            Thread.Sleep(25);
+        }
+
+        return !HasRunningOperations();
+    }
+
+    private bool HasRunningOperations()
+    {
+        lock (_operationLock)
+        {
+            return _activeInferenceTask != null && !_activeInferenceTask.IsCompleted;
+        }
+    }
+
+    private void ClearCompletedOperationReferences()
+    {
+        CancellationTokenSource inferenceCts = null;
+
+        lock (_operationLock)
+        {
+            if (_activeInferenceTask == null || _activeInferenceTask.IsCompleted)
+            {
+                _activeInferenceTask = null;
+                inferenceCts = _activeInferenceCts;
+                _activeInferenceCts = null;
+            }
+        }
+
+        inferenceCts?.Dispose();
+    }
+
+    private void DisposeLifetimeCancellationSource()
+    {
+        CancellationTokenSource lifetimeCts;
+
+        lock (_operationLock)
+        {
+            lifetimeCts = _serviceLifetimeCts;
+            _serviceLifetimeCts = null;
+        }
+
+        lifetimeCts?.Dispose();
+    }
+
+    private static void TryCancel(CancellationTokenSource cancellationSource)
+    {
+        try
+        {
+            if (cancellationSource != null && !cancellationSource.IsCancellationRequested)
+            {
+                cancellationSource.Cancel();
+            }
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 

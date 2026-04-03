@@ -39,6 +39,9 @@ public class LlmGenerationProfile : ScriptableObject
         public float top_k = 40f;
         public int num_predict = 0;
         public float repeat_penalty = 1.1f;
+        [Min(0)]
+        [Tooltip("0 keeps random sampling. Values greater than 0 force a deterministic seed.")]
+        public int seed = 0;
     }
 
     [Serializable]

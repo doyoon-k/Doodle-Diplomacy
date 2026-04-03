@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5a52de0c0c7f4622b49a03077282c981, type: 3}
-  m_Name: SD-Turbo-q4_K
+  m_Name: SD-1.5-q4-1
   m_EditorClassIdentifier: Assembly-CSharp::StableDiffusionCppModelProfile
-  profileName: SD-Turbo Q8_0
-  modelPath: SDModels/sd_turbo-f16-q8_0.gguf
+  profileName: SD 1.5 Q4 1
+  modelPath: SDModels/stable-diffusion-v1-5-pruned-emaonly-Q4_1.gguf
   vaePath: 
   controlNetPath: SDModels/control_v11p_sd15_scribble-q4_K.gguf
   defaultWidth: 512
   defaultHeight: 512
-  defaultSteps: 1
-  defaultCfgScale: 1
+  defaultSteps: 20
+  defaultCfgScale: 7
   defaultSeed: 42
-  defaultSampler: euler
-  defaultScheduler: discrete
+  defaultSampler: dpm++2m
+  defaultScheduler: karras
   defaultNegativePrompt: 
   defaultControlStrength: 0.9

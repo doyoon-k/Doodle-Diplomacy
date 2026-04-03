@@ -13,79 +13,28 @@ MonoBehaviour:
   m_Name: VisionImageSummary
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
   model: Models/gemma-3-4b-it-q4_0.gguf
-  format: '{"type":"object","properties":{"image_summary":{"type":"string","minLength":20,"maxLength":160},"primary_subject":{"type":"string","minLength":2,"maxLength":40},"notable_objects":{"type":"array","items":{"type":"string"},"minItems":1,"maxItems":6},"visual_tags":{"type":"array","items":{"type":"string"},"minItems":3,"maxItems":8}},"required":["image_summary","primary_subject","notable_objects","visual_tags"],"additionalProperties":false}'
+  format: 
   stream: 0
   keepAlive: 
   visionProjectorModel: Models/mmproj-model-f16-4B.gguf
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: 'You are a vision analysis assistant for a Unity content
-    pipeline.
-
-
-    Analyze exactly one provided image.
-
-    Describe only what is
-    visually observable.
-
-    Do not invent hidden gameplay meaning, lore, or off-screen
-    context.
-
-    Return only valid JSON matching the schema.
-
-    Keep wording concise
-    and literal.'
+  systemPromptTemplate: "The subject was given two objects and created a drawing
+    combining them into one scene. The subject is NOT part of the image. The subject
+    is the person who created the drawing. Describe the situation shown in the image.
+    Infer the relationship between the elements. What is the subject trying to do
+    with these two objects in this scene? Based on this, analyze what this suggests
+    about the subject\u2019s tendencies. Focus on the subject\u2019s intention behind
+    creating the scene, not the intentions of the objects in the image. Be explicit
+    about the intended action."
   jsonSchemaDeliveryMode: 0
-  jsonFields:
-  - fieldName: image_summary
-    fieldType: 0
-    arrayElementType: 0
-    children: []
-    enumOptions: []
-    minValue: 
-    maxValue: 
-    minLength: 20
-    maxLength: 160
-    minItems: 
-    maxItems: 
-  - fieldName: primary_subject
-    fieldType: 0
-    arrayElementType: 0
-    children: []
-    enumOptions: []
-    minValue: 
-    maxValue: 
-    minLength: 2
-    maxLength: 40
-    minItems: 
-    maxItems: 
-  - fieldName: notable_objects
-    fieldType: 5
-    arrayElementType: 0
-    children: []
-    enumOptions: []
-    minValue: 
-    maxValue: 
-    minLength: 
-    maxLength: 
-    minItems: 1
-    maxItems: 6
-  - fieldName: visual_tags
-    fieldType: 5
-    arrayElementType: 0
-    children: []
-    enumOptions: []
-    minValue: 
-    maxValue: 
-    minLength: 
-    maxLength: 
-    minItems: 3
-    maxItems: 8
+  jsonFields: []
   modelParams:
     temperature: 0.2
     top_p: 0.9
     top_k: 40
-    num_predict: 160
+    num_predict: 400
     repeat_penalty: 1.05
+    seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
     contextSize: 2048

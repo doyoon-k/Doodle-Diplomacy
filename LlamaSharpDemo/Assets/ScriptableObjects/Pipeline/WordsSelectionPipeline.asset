@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
-  m_Name: VisionImageSummaryPipeline
+  m_Name: WordsSelectionPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
-  displayName: VisionImageSummaryPipeline
-  description: Minimal reference pipeline for one-image VLM JSON analysis.
+  displayName: WordsSelection
+  description: 
   steps:
-  - stepName: AnalyzeReferenceImage
-    stepKind: 1
-    llmProfile: {fileID: 11400000, guid: 3c301f9a2b1e4ee7a6c3a84297d1d2f8, type: 2}
-    userPromptTemplate: 'Objects given : {{objects_given}}'
+  - stepName: Step 1
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 7dc8bb6a3ce8b1f4fa62b64af7d23363, type: 2}
+    userPromptTemplate: 
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
-    useVision: 1
-    imageStateKey: reference_image
+    useVision: 0
+    imageStateKey: 
     requireImage: 1
     resizeLongestSide: 1024
     customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
@@ -35,17 +35,17 @@ MonoBehaviour:
       value: 
     - key: level
       value: 
-    editorPosition: {x: -531, y: 29}
-    guid: 8ec2ba0e-87fc-4ef7-a340-aebc566a6efd
+    editorPosition: {x: -378, y: 20}
+    guid: 48a00961-5e4d-48f0-bbd1-e696ae268b18
     nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -736, y: 39}
-    outputNodePosition: {x: 121, y: 39}
+    inputNodePosition: {x: -580, y: 43}
+    outputNodePosition: {x: 244, y: 52}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 861, y: 0, z: 0}
-    viewScale: {x: 1.15, y: 1.15, z: 1}
+    viewPosition: {x: 498, y: -156, z: 0}
+    viewScale: {x: 0.57175326, y: 0.57175326, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: -110, y: 50}
+    - {x: 39, y: 43}
     snapshotPositionsInitialized: 1

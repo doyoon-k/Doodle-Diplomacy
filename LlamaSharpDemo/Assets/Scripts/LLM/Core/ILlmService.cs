@@ -191,6 +191,11 @@ public static class LlamaSharpInterop
                 : DefaultSamplingPipeline.GrammarOptimizationMode.None
         };
 
+        if (source.seed > 0)
+        {
+            sampling.Seed = (uint)source.seed;
+        }
+
         return new InferenceParams
         {
             MaxTokens = source.num_predict > 0 ? source.num_predict : -1,

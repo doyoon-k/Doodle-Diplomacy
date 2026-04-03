@@ -8,6 +8,9 @@ using UnityEngine;
 /// </summary>
 public static class PromptPipelineSimulator
 {
+    private static int _runSerial;
+    private static IDisposable _activeOwnedService;
+
     public static void Run(
         PromptPipelineAsset asset,
         PipelineState initialState,
@@ -23,8 +26,16 @@ public static class PromptPipelineSimulator
             return;
         }
 
+        CancelActiveSimulation();
+
         bool ownsService = service == null;
         service ??= new LlamaSharpEditorService();
+        int runSerial = ++_runSerial;
+        if (ownsService && service is IDisposable ownedDisposable)
+        {
+            _activeOwnedService = ownedDisposable;
+        }
+
         onLog?.Invoke($"Building pipeline '{asset.displayName}'...");
 
         try
@@ -37,7 +48,8 @@ public static class PromptPipelineSimulator
                 onSuccess,
                 onError,
                 onLog,
-                ownsService ? service as IDisposable : null));
+                ownsService ? service as IDisposable : null,
+                runSerial));
         }
         catch (Exception ex)
         {
@@ -45,8 +57,16 @@ public static class PromptPipelineSimulator
             {
                 disposableService.Dispose();
             }
+            ClearOwnedServiceIfCurrent(runSerial, service as IDisposable);
             onError?.Invoke(ex.Message);
         }
+    }
+
+    public static void CancelActiveSimulation()
+    {
+        _runSerial++;
+        _activeOwnedService?.Dispose();
+        _activeOwnedService = null;
     }
 
     private static StateSequentialChainExecutor BuildExecutor(
@@ -135,52 +155,72 @@ public static class PromptPipelineSimulator
         Action<PipelineState> onSuccess,
         Action<string> onError,
         Action<string> onLog,
-        IDisposable ownedService
+        IDisposable ownedService,
+        int runSerial
     )
     {
         PipelineState finalState = null;
         bool failed = false;
         IEnumerator routine = executor.Execute(state, s => finalState = s);
 
-        while (true)
+        try
         {
-            object currentYield;
-            try
+            while (true)
             {
-                if (!routine.MoveNext())
+                if (runSerial != _runSerial)
                 {
+                    yield break;
+                }
+
+                object currentYield;
+                try
+                {
+                    if (!routine.MoveNext())
+                    {
+                        break;
+                    }
+
+                    currentYield = routine.Current;
+                }
+                catch (Exception ex)
+                {
+                    failed = true;
+                    onLog?.Invoke($"Pipeline execution threw: {ex}");
+                    onError?.Invoke(ex.Message);
                     break;
                 }
 
-                currentYield = routine.Current;
+                yield return currentYield;
             }
-            catch (Exception ex)
+
+            if (!failed && runSerial == _runSerial)
             {
-                failed = true;
-                onLog?.Invoke($"Pipeline execution threw: {ex}");
-                onError?.Invoke(ex.Message);
-                break;
+                PipelineState successfulState = finalState ?? state;
+                if (successfulState != null &&
+                    successfulState.TryGetString(PromptPipelineConstants.ErrorKey, out string pipelineError) &&
+                    !string.IsNullOrWhiteSpace(pipelineError))
+                {
+                    onError?.Invoke(pipelineError);
+                }
+                else
+                {
+                    onSuccess?.Invoke(successfulState);
+                }
             }
-
-            yield return currentYield;
         }
-
-        if (!failed)
+        finally
         {
-            PipelineState successfulState = finalState ?? state;
-            if (successfulState != null &&
-                successfulState.TryGetString(PromptPipelineConstants.ErrorKey, out string pipelineError) &&
-                !string.IsNullOrWhiteSpace(pipelineError))
-            {
-                onError?.Invoke(pipelineError);
-            }
-            else
-            {
-                onSuccess?.Invoke(successfulState);
-            }
+            ownedService?.Dispose();
+            ClearOwnedServiceIfCurrent(runSerial, ownedService);
         }
+    }
 
-        ownedService?.Dispose();
+    private static void ClearOwnedServiceIfCurrent(int runSerial, IDisposable ownedService)
+    {
+        if (runSerial == _runSerial && ReferenceEquals(_activeOwnedService, ownedService))
+        {
+            _activeOwnedService = null;
+        }
     }
 
     private static PipelineState CloneOrCreate(PipelineState source)

@@ -178,6 +178,177 @@ public static class StableDiffusionCppRuntime
         StableDiffusionCppGenerationRequest request,
         CancellationToken cancellationToken = default)
     {
+        StableDiffusionCppGenerationRequest requestCopy = request != null ? request.Clone() : null;
+        if (requestCopy != null)
+        {
+            requestCopy.mode = StableDiffusionCppGenerationMode.Txt2Img;
+        }
+
+        return await GenerateAsync(settings, requestCopy, cancellationToken);
+    }
+
+    public static async Task<StableDiffusionCppGenerationResult> GenerateImg2ImgAsync(
+        StableDiffusionCppSettings settings,
+        StableDiffusionCppGenerationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        StableDiffusionCppGenerationRequest requestCopy = request != null ? request.Clone() : null;
+        if (requestCopy != null)
+        {
+            requestCopy.mode = StableDiffusionCppGenerationMode.Img2Img;
+        }
+
+        return await GenerateAsync(settings, requestCopy, cancellationToken);
+    }
+
+    public static async Task<StableDiffusionCppGenerationResult> GenerateInpaintAsync(
+        StableDiffusionCppSettings settings,
+        StableDiffusionCppGenerationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        StableDiffusionCppGenerationRequest requestCopy = request != null ? request.Clone() : null;
+        if (requestCopy != null)
+        {
+            requestCopy.mode = StableDiffusionCppGenerationMode.Inpaint;
+        }
+
+        return await GenerateAsync(settings, requestCopy, cancellationToken);
+    }
+
+    public static async Task<StableDiffusionCppGenerationResult> GenerateFromTexturesAsync(
+        StableDiffusionCppSettings settings,
+        StableDiffusionCppGenerationRequest request,
+        Texture2D initImage,
+        Texture2D maskImage = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await GenerateFromTexturesAsync(
+            settings,
+            request,
+            initImage,
+            maskImage,
+            controlImage: null,
+            cancellationToken);
+    }
+
+    public static async Task<StableDiffusionCppGenerationResult> GenerateFromTexturesAsync(
+        StableDiffusionCppSettings settings,
+        StableDiffusionCppGenerationRequest request,
+        Texture2D initImage,
+        Texture2D maskImage,
+        Texture2D controlImage,
+        CancellationToken cancellationToken = default)
+    {
+        DateTime startUtc = DateTime.UtcNow;
+        StableDiffusionCppGenerationRequest requestCopy = request != null
+            ? request.Clone()
+            : new StableDiffusionCppGenerationRequest();
+
+        string tempInputDirectory = string.Empty;
+        try
+        {
+            if (initImage != null || maskImage != null || controlImage != null)
+            {
+                tempInputDirectory = CreateTempInputDirectory();
+
+                if (initImage != null)
+                {
+                    if (!StableDiffusionCppImageIO.TryWriteTextureToUniqueTempPng(
+                            initImage,
+                            tempInputDirectory,
+                            "init",
+                            out string initImagePath,
+                            out string initError))
+                    {
+                        return StableDiffusionCppGenerationResult.Failed(
+                            initError,
+                            -1,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            DateTime.UtcNow - startUtc);
+                    }
+
+                    requestCopy.initImagePath = initImagePath;
+                    if (request == null || requestCopy.mode == StableDiffusionCppGenerationMode.Txt2Img)
+                    {
+                        requestCopy.mode = maskImage != null
+                            ? StableDiffusionCppGenerationMode.Inpaint
+                            : StableDiffusionCppGenerationMode.Img2Img;
+                    }
+
+                    if (requestCopy.useInitImageDimensions)
+                    {
+                        requestCopy.width = initImage.width;
+                        requestCopy.height = initImage.height;
+                    }
+                }
+
+                if (maskImage != null)
+                {
+                    if (!StableDiffusionCppImageIO.TryWriteTextureToUniqueTempPng(
+                            maskImage,
+                            tempInputDirectory,
+                            "mask",
+                            out string maskImagePath,
+                            out string maskError))
+                    {
+                        return StableDiffusionCppGenerationResult.Failed(
+                            maskError,
+                            -1,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            DateTime.UtcNow - startUtc);
+                    }
+
+                    requestCopy.maskImagePath = maskImagePath;
+                    requestCopy.mode = StableDiffusionCppGenerationMode.Inpaint;
+                }
+
+                if (controlImage != null)
+                {
+                    if (!StableDiffusionCppImageIO.TryWriteTextureToUniqueTempPng(
+                            controlImage,
+                            tempInputDirectory,
+                            "control",
+                            out string controlImagePath,
+                            out string controlError))
+                    {
+                        return StableDiffusionCppGenerationResult.Failed(
+                            controlError,
+                            -1,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            DateTime.UtcNow - startUtc);
+                    }
+
+                    requestCopy.controlImagePath = controlImagePath;
+                    requestCopy.useControlNet = true;
+                    if (request == null || requestCopy.mode == StableDiffusionCppGenerationMode.Txt2Img)
+                    {
+                        requestCopy.mode = StableDiffusionCppGenerationMode.Sketch;
+                    }
+                }
+            }
+
+            return await GenerateAsync(settings, requestCopy, cancellationToken);
+        }
+        finally
+        {
+            CleanupTempInputDirectory(tempInputDirectory);
+        }
+    }
+
+    public static async Task<StableDiffusionCppGenerationResult> GenerateAsync(
+        StableDiffusionCppSettings settings,
+        StableDiffusionCppGenerationRequest request,
+        CancellationToken cancellationToken = default)
+    {
         DateTime startUtc = DateTime.UtcNow;
         if (settings == null)
         {
@@ -203,10 +374,11 @@ public static class StableDiffusionCppRuntime
                 TimeSpan.Zero);
         }
 
-        if (string.IsNullOrWhiteSpace(request.prompt))
+        StableDiffusionCppGenerationRequest requestCopy = request.Clone();
+        if (!TryNormalizeRequestForGeneration(settings, requestCopy, out string requestError))
         {
             return StableDiffusionCppGenerationResult.Failed(
-                "Prompt is required.",
+                requestError,
                 -1,
                 string.Empty,
                 string.Empty,
@@ -218,7 +390,7 @@ public static class StableDiffusionCppRuntime
         StableDiffusionCppPreparationResult prep = PrepareRuntime(
             settings,
             forceReinstall: false,
-            modelPathOverride: request.modelPathOverride);
+            modelPathOverride: requestCopy.modelPathOverride);
         if (!prep.Success)
         {
             return StableDiffusionCppGenerationResult.Failed(
@@ -231,8 +403,8 @@ public static class StableDiffusionCppRuntime
                 DateTime.UtcNow - startUtc);
         }
 
-        bool persistOutputToRequestedDirectory = request.persistOutputToRequestedDirectory;
-        string requestedOutputDirectory = ResolveOutputDirectory(settings, request.outputDirectory);
+        bool persistOutputToRequestedDirectory = requestCopy.persistOutputToRequestedDirectory;
+        string requestedOutputDirectory = ResolveOutputDirectory(settings, requestCopy.outputDirectory);
         if (persistOutputToRequestedDirectory)
         {
             Directory.CreateDirectory(requestedOutputDirectory);
@@ -243,9 +415,9 @@ public static class StableDiffusionCppRuntime
         // fail to save directly into project paths (e.g., Assets/...).
         string cliOutputDirectory = GetCliTempOutputDirectory(settings);
         Directory.CreateDirectory(cliOutputDirectory);
-        string cliOutputPath = ResolveOutputPath(cliOutputDirectory, request.outputFileName, request.outputFormat);
+        string cliOutputPath = ResolveOutputPath(cliOutputDirectory, requestCopy.outputFileName, requestCopy.outputFormat);
 
-        string args = BuildArguments(settings, prep, request, cliOutputPath);
+        string args = BuildArguments(settings, prep, requestCopy, cliOutputPath);
         var startInfo = new ProcessStartInfo
         {
             FileName = prep.ExecutablePath,
@@ -379,7 +551,7 @@ public static class StableDiffusionCppRuntime
                     gpuTelemetrySamples: gpuTelemetry != null ? gpuTelemetry.Samples : 0);
             }
 
-            List<string> outputs = DetectOutputFiles(cliOutputDirectory, cliOutputPath, request, startUtc);
+            List<string> outputs = DetectOutputFiles(cliOutputDirectory, cliOutputPath, requestCopy, startUtc);
             if (outputs.Count == 0)
             {
                 return StableDiffusionCppGenerationResult.Failed(
@@ -517,10 +689,34 @@ public static class StableDiffusionCppRuntime
             "--steps " + steps.ToString(CultureInfo.InvariantCulture),
             "--cfg-scale " + cfg.ToString(CultureInfo.InvariantCulture),
             "--sampling-method " + QuoteOrRaw(request.sampler, "euler_a"),
+            "--scheduler " + QuoteOrRaw(request.scheduler, "discrete"),
             "--seed " + seed.ToString(CultureInfo.InvariantCulture),
             "--batch-count " + batchCount.ToString(CultureInfo.InvariantCulture),
             "-o " + Quote(NormalizePathForCli(outputPath))
         };
+
+        if (request.RequiresInitImage)
+        {
+            parts.Add("-i " + Quote(NormalizePathForCli(request.initImagePath)));
+            parts.Add("--strength " + request.strength.ToString(CultureInfo.InvariantCulture));
+        }
+
+        if (request.RequiresMaskImage)
+        {
+            parts.Add("--mask " + Quote(NormalizePathForCli(request.maskImagePath)));
+        }
+
+        if (request.RequiresInitImage && request.overrideImageCfgScale)
+        {
+            parts.Add("--img-cfg-scale " + request.imageCfgScale.ToString(CultureInfo.InvariantCulture));
+        }
+
+        if (request.RequiresControlImage)
+        {
+            parts.Add("--control-net " + Quote(NormalizePathForCli(request.controlNetPathOverride)));
+            parts.Add("--control-image " + Quote(NormalizePathForCli(request.controlImagePath)));
+            parts.Add("--control-strength " + request.controlStrength.ToString(CultureInfo.InvariantCulture));
+        }
 
         if (!string.IsNullOrWhiteSpace(request.negativePrompt))
         {
@@ -579,6 +775,206 @@ public static class StableDiffusionCppRuntime
         }
 
         return string.Join(" ", parts);
+    }
+
+    private static bool TryNormalizeRequestForGeneration(
+        StableDiffusionCppSettings settings,
+        StableDiffusionCppGenerationRequest request,
+        out string error)
+    {
+        error = null;
+        if (request == null)
+        {
+            error = "Generation request is null.";
+            return false;
+        }
+
+        request.prompt ??= string.Empty;
+        request.negativePrompt ??= string.Empty;
+        request.initImagePath ??= string.Empty;
+        request.maskImagePath ??= string.Empty;
+        request.controlImagePath ??= string.Empty;
+        request.controlNetPathOverride ??= string.Empty;
+        request.modelPathOverride ??= string.Empty;
+        request.outputDirectory ??= string.Empty;
+        request.outputFileName ??= string.Empty;
+        request.outputFormat = NormalizeFormat(request.outputFormat);
+        request.extraArgumentsRaw ??= string.Empty;
+        request.sampler = string.IsNullOrWhiteSpace(request.sampler) ? "euler_a" : request.sampler.Trim();
+        request.scheduler = string.IsNullOrWhiteSpace(request.scheduler) ? "discrete" : request.scheduler.Trim();
+        request.cacheMode = string.IsNullOrWhiteSpace(request.cacheMode) ? "easycache" : request.cacheMode.Trim();
+        request.cacheOption ??= string.Empty;
+        request.cachePreset ??= string.Empty;
+        request.width = Mathf.Max(64, request.width);
+        request.height = Mathf.Max(64, request.height);
+        request.steps = Mathf.Max(1, request.steps);
+        request.cfgScale = Mathf.Max(0.1f, request.cfgScale);
+        request.strength = Mathf.Clamp(request.strength, 0.01f, 1f);
+        request.imageCfgScale = Mathf.Max(0.1f, request.imageCfgScale);
+        request.controlStrength = Mathf.Clamp(request.controlStrength, 0f, 2f);
+        request.batchCount = Mathf.Max(1, request.batchCount);
+
+        if (request.mode == StableDiffusionCppGenerationMode.Sketch)
+        {
+            request.useControlNet = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.prompt))
+        {
+            error = "Prompt is required.";
+            return false;
+        }
+
+        if (request.RequiresInitImage)
+        {
+            request.initImagePath = ResolveInputPath(request.initImagePath);
+            if (string.IsNullOrWhiteSpace(request.initImagePath) || !File.Exists(request.initImagePath))
+            {
+                error = "Init image is required and must point to an existing file.";
+                return false;
+            }
+
+            if (request.useInitImageDimensions)
+            {
+                if (!StableDiffusionCppImageIO.TryGetImageSizeFromFile(
+                        request.initImagePath,
+                        out Vector2Int initSize,
+                        out string sizeError))
+                {
+                    error = $"Failed to read init image dimensions: {sizeError}";
+                    return false;
+                }
+
+                request.width = Mathf.Max(64, initSize.x);
+                request.height = Mathf.Max(64, initSize.y);
+            }
+        }
+
+        if (request.RequiresMaskImage)
+        {
+            request.maskImagePath = ResolveInputPath(request.maskImagePath);
+            if (string.IsNullOrWhiteSpace(request.maskImagePath) || !File.Exists(request.maskImagePath))
+            {
+                error = "Mask image is required for inpainting and must point to an existing file.";
+                return false;
+            }
+
+            if (!TryValidateMaskDimensions(request.initImagePath, request.maskImagePath, out error))
+            {
+                return false;
+            }
+        }
+
+        if (request.RequiresControlImage)
+        {
+            request.controlImagePath = ResolveInputPath(request.controlImagePath);
+            if (string.IsNullOrWhiteSpace(request.controlImagePath) || !File.Exists(request.controlImagePath))
+            {
+                error = "Control image is required for Sketch/ControlNet generation and must point to an existing file.";
+                return false;
+            }
+
+            request.controlNetPathOverride = settings.ResolveControlNetPath(request.controlNetPathOverride);
+            if (string.IsNullOrWhiteSpace(request.controlNetPathOverride) || !File.Exists(request.controlNetPathOverride))
+            {
+                error =
+                    "ControlNet model is required for Sketch/ControlNet generation and must point to an existing .gguf/.safetensors/.ckpt file.";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryValidateMaskDimensions(string initImagePath, string maskImagePath, out string error)
+    {
+        error = null;
+        if (!StableDiffusionCppImageIO.TryGetImageSizeFromFile(initImagePath, out Vector2Int initSize, out string initError))
+        {
+            error = $"Failed to read init image dimensions: {initError}";
+            return false;
+        }
+
+        if (!StableDiffusionCppImageIO.TryGetImageSizeFromFile(maskImagePath, out Vector2Int maskSize, out string maskError))
+        {
+            error = $"Failed to read mask image dimensions: {maskError}";
+            return false;
+        }
+
+        if (initSize != maskSize)
+        {
+            error =
+                $"Init image and mask image must have matching dimensions. Init={initSize.x}x{initSize.y}, Mask={maskSize.x}x{maskSize.y}.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static string ResolveInputPath(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        string trimmed = value.Trim();
+        if (Path.IsPathRooted(trimmed))
+        {
+            return trimmed;
+        }
+
+        string normalized = trimmed
+            .Replace('\\', Path.DirectorySeparatorChar)
+            .Replace('/', Path.DirectorySeparatorChar)
+            .TrimStart(Path.DirectorySeparatorChar);
+
+        string streamingAssetsCandidate = Path.Combine(Application.streamingAssetsPath, normalized);
+        if (File.Exists(streamingAssetsCandidate))
+        {
+            return streamingAssetsCandidate;
+        }
+
+        string projectRoot = GetProjectRoot();
+        string projectCandidate = Path.Combine(projectRoot, normalized);
+        if (File.Exists(projectCandidate))
+        {
+            return projectCandidate;
+        }
+
+        return projectCandidate;
+    }
+
+    private static string GetProjectRoot()
+    {
+        return Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+    }
+
+    private static string CreateTempInputDirectory()
+    {
+        string directory = Path.Combine(
+            Application.temporaryCachePath,
+            "sdcpp_input",
+            DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + "_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        return directory;
+    }
+
+    private static void CleanupTempInputDirectory(string directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.Delete(directory, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[StableDiffusionCppRuntime] Failed to delete temporary input directory '{directory}': {ex.Message}");
+        }
     }
 
     private static string ResolveOutputDirectory(StableDiffusionCppSettings settings, string outputDirectory)

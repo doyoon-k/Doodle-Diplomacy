@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 using UnityEngine;
 
@@ -155,6 +157,14 @@ public class JSONLLMStateChainLink : IStateChainLink
                 lastError = e.Message;
                 Log($"[JSONLLMStateChainLink] JSON parse failed: {e.Message}");
                 parsedJson = null;
+
+                if (TryRecoverSingleStringFieldJson(jsonResponse, out string recoveredJson, out string recoveryMessage))
+                {
+                    parsedJson = recoveredJson;
+                    parsedSuccessfully = true;
+                    lastError = null;
+                    Log($"[JSONLLMStateChainLink] Recovered malformed JSON response. {recoveryMessage}");
+                }
             }
 
             if (!parsedSuccessfully && attempt < _maxRetries && _delayBetweenRetries > 0f)
@@ -258,6 +268,175 @@ public class JSONLLMStateChainLink : IStateChainLink
             JsonValueKind.Array => element.GetRawText(),
             _ => element.ToString()
         };
+    }
+
+    private bool TryRecoverSingleStringFieldJson(string rawResponse, out string recoveredJson, out string message)
+    {
+        recoveredJson = null;
+        message = null;
+
+        if (!TryGetSingleTopLevelStringFieldName(out string fieldName))
+        {
+            return false;
+        }
+
+        string summary = ExtractLikelySummaryText(rawResponse, fieldName);
+        if (string.IsNullOrWhiteSpace(summary))
+        {
+            return false;
+        }
+
+        recoveredJson = JsonSerializer.Serialize(new Dictionary<string, string>
+        {
+            [fieldName] = summary
+        });
+
+        message = $"Filled '{fieldName}' with extracted summary text.";
+        return true;
+    }
+
+    private bool TryGetSingleTopLevelStringFieldName(out string fieldName)
+    {
+        fieldName = null;
+        IReadOnlyList<JsonFieldDefinition> fields = _settings?.JsonFields;
+        if (fields == null)
+        {
+            return false;
+        }
+
+        int validFieldCount = 0;
+        for (int i = 0; i < fields.Count; i++)
+        {
+            JsonFieldDefinition field = fields[i];
+            if (field == null || string.IsNullOrWhiteSpace(field.fieldName))
+            {
+                continue;
+            }
+
+            validFieldCount++;
+            if (validFieldCount > 1 || field.fieldType != JsonFieldType.String)
+            {
+                fieldName = null;
+                return false;
+            }
+
+            fieldName = field.fieldName.Trim();
+        }
+
+        return validFieldCount == 1 && !string.IsNullOrWhiteSpace(fieldName);
+    }
+
+    private static string ExtractLikelySummaryText(string rawResponse, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(rawResponse))
+        {
+            return null;
+        }
+
+        string normalized = rawResponse.Replace("\r\n", "\n").Replace('\r', '\n');
+        int imageMarkerIndex = normalized.LastIndexOf("[IMAGE]", StringComparison.OrdinalIgnoreCase);
+        if (imageMarkerIndex >= 0)
+        {
+            normalized = normalized.Substring(imageMarkerIndex + "[IMAGE]".Length);
+        }
+
+        normalized = normalized
+            .Replace("```json", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("```", string.Empty, StringComparison.Ordinal);
+
+        var builder = new StringBuilder(normalized.Length);
+        string[] lines = normalized.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string cleanedLine = CleanRecoveryLine(lines[i], fieldName);
+            if (string.IsNullOrWhiteSpace(cleanedLine))
+            {
+                continue;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append(' ');
+            }
+
+            builder.Append(cleanedLine);
+        }
+
+        return NormalizeWhitespace(builder.ToString());
+    }
+
+    private static string CleanRecoveryLine(string line, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return null;
+        }
+
+        string trimmed = line.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return null;
+        }
+
+        if (string.Equals(trimmed, "[IMAGE]", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trimmed, "image.png", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trimmed, "json", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trimmed, "<__media__>", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (trimmed.StartsWith($"\"{fieldName}\"", StringComparison.OrdinalIgnoreCase))
+        {
+            int colonIndex = trimmed.IndexOf(':');
+            if (colonIndex >= 0 && colonIndex + 1 < trimmed.Length)
+            {
+                trimmed = trimmed.Substring(colonIndex + 1).Trim();
+            }
+        }
+
+        trimmed = trimmed.Trim(' ', '"', '{', '}', ',');
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return null;
+        }
+
+        if (string.Equals(trimmed, fieldName, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return trimmed;
+    }
+
+    private static string NormalizeWhitespace(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var builder = new StringBuilder(text.Length);
+        bool previousWasWhitespace = false;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (char.IsWhiteSpace(c))
+            {
+                if (!previousWasWhitespace)
+                {
+                    builder.Append(' ');
+                    previousWasWhitespace = true;
+                }
+
+                continue;
+            }
+
+            builder.Append(c);
+            previousWasWhitespace = false;
+        }
+
+        return builder.ToString().Trim();
     }
 
     private IEnumerator Fail(PipelineState state, Action<PipelineState> onDone, string error)

@@ -17,22 +17,24 @@ MonoBehaviour:
   - platform: 1
     streamingAssetsRuntimeFolder: SDCpp/win-x64
     executableFileName: sd-cli.exe
+    nativeLibraryFileName: stable-diffusion.dll
   modelProfiles:
   - {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
   - {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
   - {fileID: 11400000, guid: 1492f48f1265adc4f99d320ee1176409, type: 2}
-  activeModelProfile: {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
+  activeModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
   copyModelToPersistentDataPath: 0
   defaultOffloadToCpu: 1
   defaultClipOnCpu: 0
   defaultVaeTiling: 0
   defaultDiffusionFlashAttention: 1
-  defaultUseCacheMode: 0
+  defaultUseCacheMode: 1
   defaultCacheMode: easycache
   defaultCacheOption: 
   defaultCachePreset: 
   processTimeoutSeconds: 600
   globalAdditionalArguments: 
+  preferPersistentNativeWorker: 1
   runtimeOutputSubfolder: generated/sdcpp
   enableGpuTelemetry: 1
   gpuTelemetryPollIntervalMs: 500

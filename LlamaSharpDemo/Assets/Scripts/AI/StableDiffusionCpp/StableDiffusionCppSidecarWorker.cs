@@ -22,7 +22,7 @@ internal static class StableDiffusionCppSidecarWorker
     private const int ProgressPollIntervalMs = 150;
 
     private static readonly object WorkerLock = new object();
-    private static readonly HttpClient HttpClient = new HttpClient();
+    private static readonly HttpClient HttpClient = new HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
 
     private static Process _workerProcess;
     private static Uri _baseUri;

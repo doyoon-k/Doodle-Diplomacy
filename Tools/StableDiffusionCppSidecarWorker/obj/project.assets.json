@@ -8,23 +8,23 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Doyoon\\.nuget\\packages\\": {},
+    "C:\\Users\\Doyoon Kim\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\StableDiffusionCppSidecarWorker.csproj",
+      "projectUniqueName": "C:\\Users\\Doyoon Kim\\Documents\\Digipen\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\StableDiffusionCppSidecarWorker.csproj",
       "projectName": "StableDiffusionCppSidecarWorker",
-      "projectPath": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\StableDiffusionCppSidecarWorker.csproj",
-      "packagesPath": "C:\\Users\\Doyoon\\.nuget\\packages\\",
-      "outputPath": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\obj\\",
+      "projectPath": "C:\\Users\\Doyoon Kim\\Documents\\Digipen\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\StableDiffusionCppSidecarWorker.csproj",
+      "packagesPath": "C:\\Users\\Doyoon Kim\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Doyoon Kim\\Documents\\Digipen\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Doyoon\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Doyoon Kim\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -33,6 +33,7 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Users\\Doyoon Kim\\MyLocalNugetSource": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -72,7 +73,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

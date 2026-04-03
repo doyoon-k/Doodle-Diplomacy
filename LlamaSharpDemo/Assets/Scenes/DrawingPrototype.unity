@@ -2121,6 +2121,15 @@ MonoBehaviour:
   applyFullSketchResult: 1
   sketchResultApplyRowsPerFrame: 32
   maxHistoryEntries: 24
+  enableStickerLayers: 1
+  stickerSurfaceOffset: 0.02
+  stickerDepthStep: 0.0025
+  minStickerScale: 0.08
+  maxStickerScale: 12
+  stickerScaleStep: 0.08
+  stickerRotationStep: 8
+  stickerOpacityStep: 0.05
+  selectedStickerOutlineColor: {r: 0.15, g: 0.9, b: 1, a: 0.95}
 --- !u!23 &979744349
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2258,6 +2267,12 @@ MonoBehaviour:
   randomizeSeed: 1
   regionPadding: 24
   logGenerationSummary: 1
+  selectedStylePresetIndex: 0
+  extractTransparentStickers: 1
+  backgroundRemovalTolerance: 0.08
+  stickerTrimPadding: 4
+  stickerFilterMode: 1
+  maxStoredStickerCandidates: 24
 --- !u!1 &989394716
 GameObject:
   m_ObjectHideFlags: 0
@@ -4284,7 +4299,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1453, y: -20}
+  m_AnchoredPosition: {x: 1473, y: -691}
   m_SizeDelta: {x: 430, y: 228}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1746886263

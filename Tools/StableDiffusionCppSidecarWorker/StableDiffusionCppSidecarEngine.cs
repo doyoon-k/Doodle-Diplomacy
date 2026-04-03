@@ -4,14 +4,41 @@ using System.Text;
 internal sealed class StableDiffusionCppSidecarEngine
 {
     private const long MaxLeakedOutputBytesBeforeRecycle = 192L * 1024L * 1024L;
+    private const string LoadingPhase = "Loading Model";
+    private const string SamplingPhase = "Sampling";
+    private const string DecodingPhase = "Decoding";
+    private const string IdlePhase = "Idle";
+
+    private static readonly StableDiffusionCppNativeBridge.ProgressCallback NativeProgressCallback =
+        HandleNativeProgress;
+    private static readonly StableDiffusionCppNativeBridge.PreviewCallback NativePreviewCallback =
+        HandleNativePreview;
 
     private readonly object _engineLock = new object();
+    private readonly object _progressLock = new object();
+    private readonly IntPtr _callbackUserData;
 
     private IntPtr _sdContext = IntPtr.Zero;
     private ContextSignature _loadedSignature;
     private long _leakedOutputBytes;
     private bool _isBusy;
     private bool _shouldRecycleAfterResponse;
+    private long _progressSessionId;
+    private bool _hasProgressSnapshot;
+    private int _progressStep;
+    private int _progressTotalSteps;
+    private string _progressPhase = IdlePhase;
+    private string _progressMessage = string.Empty;
+    private long _previewUpdateIndex;
+    private int _previewWidth;
+    private int _previewHeight;
+    private int _previewChannelCount = 3;
+    private byte[] _previewBytes;
+
+    public StableDiffusionCppSidecarEngine()
+    {
+        _callbackUserData = GCHandle.ToIntPtr(GCHandle.Alloc(this));
+    }
 
     public bool HasLoadedContext
     {
@@ -43,6 +70,44 @@ internal sealed class StableDiffusionCppSidecarEngine
             {
                 return _shouldRecycleAfterResponse;
             }
+        }
+    }
+
+    public StableDiffusionCppWorkerProgressResponse GetProgressSnapshot()
+    {
+        lock (_progressLock)
+        {
+            StableDiffusionCppWorkerImagePayload previewImage = null;
+            if (_previewBytes != null &&
+                _previewBytes.Length > 0 &&
+                _previewWidth > 0 &&
+                _previewHeight > 0 &&
+                _previewChannelCount > 0)
+            {
+                previewImage = new StableDiffusionCppWorkerImagePayload
+                {
+                    width = _previewWidth,
+                    height = _previewHeight,
+                    channelCount = _previewChannelCount,
+                    base64Data = Convert.ToBase64String(_previewBytes)
+                };
+            }
+
+            int totalSteps = Math.Max(0, _progressTotalSteps);
+            int step = MathfClamp(_progressStep, 0, Math.Max(1, totalSteps));
+            return new StableDiffusionCppWorkerProgressResponse
+            {
+                isBusy = _isBusy,
+                hasProgress = _hasProgressSnapshot,
+                progressSessionId = _progressSessionId,
+                step = step,
+                totalSteps = totalSteps,
+                progress01 = totalSteps > 0 ? (float)step / totalSteps : (_isBusy ? 0f : 1f),
+                phase = _progressPhase ?? string.Empty,
+                message = _progressMessage ?? string.Empty,
+                previewUpdateIndex = _previewUpdateIndex,
+                previewImage = previewImage
+            };
         }
     }
 
@@ -98,11 +163,17 @@ internal sealed class StableDiffusionCppSidecarEngine
 
         var stdOut = new StringBuilder(512);
         var stdErr = new StringBuilder(512);
+        ResetProgressSnapshot(Math.Max(1, request.steps));
+        UpdateProgressSnapshot(LoadingPhase, "Loading Stable Diffusion model...", 0, Math.Max(1, request.steps));
+
         ContextSignature signature = ContextSignature.From(request);
         if (!EnsureContext(signature, stdOut, stdErr, out string contextError))
         {
             return Failure(contextError ?? "Failed to initialize sd_ctx.", stdOut.ToString(), stdErr.ToString());
         }
+
+        ConfigureProgressCallbacks(request);
+        UpdateProgressSnapshot(SamplingPhase, "Starting denoise steps...", 0, Math.Max(1, request.steps));
 
         IntPtr nativeResults = IntPtr.Zero;
         IntPtr promptPtr = IntPtr.Zero;
@@ -200,6 +271,8 @@ internal sealed class StableDiffusionCppSidecarEngine
             nativeResults = IntPtr.Zero;
             nativeOutputsNeedRecycle = false;
 
+            UpdateProgressSnapshot(DecodingPhase, "Decoding final image...", Math.Max(1, request.steps), Math.Max(1, request.steps));
+
             return new StableDiffusionCppWorkerGenerateResponse
             {
                 success = true,
@@ -228,6 +301,14 @@ internal sealed class StableDiffusionCppSidecarEngine
                     : EstimateOutputBytes(request);
                 TrackLeakedOutputBytes(estimatedBytes, stdErr, forceRecycle: true);
             }
+
+            StableDiffusionCppNativeBridge.SdSetPreviewCallback(
+                null,
+                StableDiffusionCppNativeBridge.PreviewMode.None,
+                0,
+                false,
+                false,
+                IntPtr.Zero);
         }
     }
 
@@ -334,6 +415,85 @@ internal sealed class StableDiffusionCppSidecarEngine
         }
 
         _loadedSignature = null;
+    }
+
+    private void ConfigureProgressCallbacks(StableDiffusionCppWorkerGenerateRequest request)
+    {
+        StableDiffusionCppNativeBridge.SdSetProgressCallback(
+            NativeProgressCallback,
+            _callbackUserData);
+
+        bool enablePreview = request != null && request.enableProgressPreview;
+        StableDiffusionCppNativeBridge.PreviewMode previewMode = enablePreview
+            ? ParsePreviewMode(request.previewMode)
+            : StableDiffusionCppNativeBridge.PreviewMode.None;
+        int previewInterval = request != null
+            ? Math.Max(1, request.previewIntervalSteps)
+            : 2;
+
+        StableDiffusionCppNativeBridge.SdSetPreviewCallback(
+            enablePreview ? NativePreviewCallback : null,
+            previewMode,
+            previewInterval,
+            enablePreview,
+            false,
+            enablePreview ? _callbackUserData : IntPtr.Zero);
+    }
+
+    private void ResetProgressSnapshot(int totalSteps)
+    {
+        lock (_progressLock)
+        {
+            _progressSessionId++;
+            _hasProgressSnapshot = true;
+            _progressStep = 0;
+            _progressTotalSteps = Math.Max(1, totalSteps);
+            _progressPhase = LoadingPhase;
+            _progressMessage = "Loading Stable Diffusion model...";
+            _previewUpdateIndex = 0;
+            _previewWidth = 0;
+            _previewHeight = 0;
+            _previewChannelCount = 3;
+            _previewBytes = null;
+        }
+    }
+
+    private void UpdateProgressSnapshot(string phase, string message, int step, int totalSteps)
+    {
+        lock (_progressLock)
+        {
+            _hasProgressSnapshot = true;
+            _progressPhase = string.IsNullOrWhiteSpace(phase) ? SamplingPhase : phase;
+            _progressMessage = string.IsNullOrWhiteSpace(message)
+                ? _progressPhase
+                : message;
+            _progressTotalSteps = Math.Max(1, totalSteps);
+            _progressStep = MathfClamp(step, 0, _progressTotalSteps);
+        }
+    }
+
+    private void UpdatePreviewSnapshot(StableDiffusionCppNativeBridge.SdImage nativeImage)
+    {
+        int width = checked((int)nativeImage.width);
+        int height = checked((int)nativeImage.height);
+        int channel = checked((int)nativeImage.channel);
+        int byteLength = checked(width * height * channel);
+        if (width <= 0 || height <= 0 || channel <= 0 || nativeImage.data == IntPtr.Zero || byteLength <= 0)
+        {
+            return;
+        }
+
+        var bytes = new byte[byteLength];
+        Marshal.Copy(nativeImage.data, bytes, 0, byteLength);
+
+        lock (_progressLock)
+        {
+            _previewWidth = width;
+            _previewHeight = height;
+            _previewChannelCount = channel;
+            _previewBytes = bytes;
+            _previewUpdateIndex++;
+        }
     }
 
     private static IntPtr CopyImageToNative(StableDiffusionCppWorkerImagePayload image)
@@ -474,6 +634,96 @@ internal sealed class StableDiffusionCppSidecarEngine
             stdOut = stdOut,
             stdErr = stdErr
         };
+    }
+
+    private static StableDiffusionCppNativeBridge.PreviewMode ParsePreviewMode(string value)
+    {
+        string normalized = string.IsNullOrWhiteSpace(value)
+            ? "vae"
+            : value.Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "proj" => StableDiffusionCppNativeBridge.PreviewMode.Proj,
+            "tae" => StableDiffusionCppNativeBridge.PreviewMode.Tae,
+            "vae" => StableDiffusionCppNativeBridge.PreviewMode.Vae,
+            _ => StableDiffusionCppNativeBridge.PreviewMode.Vae
+        };
+    }
+
+    private static void HandleNativeProgress(int step, int steps, float time, IntPtr data)
+    {
+        StableDiffusionCppSidecarEngine target = ResolveCallbackTarget(data);
+        if (target == null)
+        {
+            return;
+        }
+
+        int totalSteps = Math.Max(1, steps);
+        int clampedStep = MathfClamp(step, 0, totalSteps);
+        string elapsedText = time > 0f
+            ? $"Sampling step {clampedStep}/{totalSteps} ({time:0.0}s)"
+            : $"Sampling step {clampedStep}/{totalSteps}";
+        target.UpdateProgressSnapshot(SamplingPhase, elapsedText, clampedStep, totalSteps);
+    }
+
+    private static void HandleNativePreview(
+        int step,
+        int frameCount,
+        IntPtr frames,
+        bool isNoisy,
+        IntPtr data)
+    {
+        if (isNoisy || frameCount <= 0 || frames == IntPtr.Zero)
+        {
+            return;
+        }
+
+        StableDiffusionCppSidecarEngine target = ResolveCallbackTarget(data);
+        if (target == null)
+        {
+            return;
+        }
+
+        StableDiffusionCppNativeBridge.SdImage previewImage =
+            Marshal.PtrToStructure<StableDiffusionCppNativeBridge.SdImage>(frames);
+        target.UpdatePreviewSnapshot(previewImage);
+
+        lock (target._progressLock)
+        {
+            int totalSteps = Math.Max(1, target._progressTotalSteps);
+            int clampedStep = MathfClamp(step, 0, totalSteps);
+            target._hasProgressSnapshot = true;
+            target._progressPhase = SamplingPhase;
+            target._progressStep = clampedStep;
+            target._progressMessage = $"Sampling step {clampedStep}/{totalSteps} · preview {target._previewUpdateIndex}";
+        }
+    }
+
+    private static StableDiffusionCppSidecarEngine ResolveCallbackTarget(IntPtr data)
+    {
+        if (data == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        try
+        {
+            return GCHandle.FromIntPtr(data).Target as StableDiffusionCppSidecarEngine;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static int MathfClamp(int value, int min, int max)
+    {
+        if (value < min)
+        {
+            return min;
+        }
+
+        return value > max ? max : value;
     }
 
     private sealed class ContextSignature

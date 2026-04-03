@@ -13,6 +13,7 @@ public static class StableDiffusionCppRuntime
 {
     private static readonly object ActiveProcessLock = new object();
     private static Process _activeProcess;
+    public static event Action<StableDiffusionCppWorkerProgressResponse> ProgressChanged;
 
     private sealed class GpuTelemetryStats
     {
@@ -63,6 +64,11 @@ public static class StableDiffusionCppRuntime
     public static void ReleasePersistentWorker()
     {
         StableDiffusionCppSidecarWorker.ReleaseContext();
+    }
+
+    internal static void PublishProgress(StableDiffusionCppWorkerProgressResponse progress)
+    {
+        ProgressChanged?.Invoke(progress);
     }
 
     public static StableDiffusionCppPreparationResult PrepareRuntime(

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("StableDiffusionCppSidecarWorker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ac484a26cfcb0051d24a2c58affd2d4f26b6f4a1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+db9bb9af867b3a6c4e8280ad9e93351cece6c376")]
 [assembly: System.Reflection.AssemblyProductAttribute("StableDiffusionCppSidecarWorker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("StableDiffusionCppSidecarWorker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -13,6 +13,25 @@ using UnityEditor;
 public class DrawingSketchGuideGenerator : MonoBehaviour
 {
     private const string FallbackSubjectPrompt = "a clean illustrated object";
+    private const string ReadyStatusMessage = "Sketch sticker generator is ready.";
+    private const int SingleCandidatePerGeneration = 1;
+    private static readonly string[] StylePresetNames =
+    {
+        "Clean Sticker",
+        "Photo Realistic",
+        "Painterly",
+        "Pixel Art",
+        "Ink Sketch"
+    };
+
+    private static readonly string[] StylePresetPrompts =
+    {
+        "clean object sticker, readable silhouette, crisp edges, game prop presentation",
+        "photo-realistic object, natural materials, detailed lighting, sharp subject focus, product photo quality",
+        "painterly hand-painted object, visible brush texture, rich color variation",
+        "pixel-art object sprite, chunky readable silhouette, controlled palette, no dithering noise",
+        "inked illustration with confident linework and light color wash"
+    };
 
     private readonly struct SketchGuideApplyResult
     {
@@ -54,14 +73,39 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
     [SerializeField] private int regionPadding = 24;
     [SerializeField] private bool logGenerationSummary = true;
 
+    [Header("Sticker Candidates")]
+    [SerializeField] private int selectedStylePresetIndex;
+    [SerializeField] private bool extractTransparentStickers = true;
+    [Range(0.01f, 0.5f)]
+    [SerializeField] private float backgroundRemovalTolerance = 0.08f;
+    [Min(0)]
+    [SerializeField] private int stickerTrimPadding = 4;
+    [SerializeField] private FilterMode stickerFilterMode = FilterMode.Bilinear;
+    [Min(1)]
+    [SerializeField] private int maxStoredStickerCandidates = 24;
+
     private CancellationTokenSource _generationCancellation;
     private bool _isGenerating;
-    private string _statusMessage = "Sketch guide generator is ready.";
+    private string _statusMessage = ReadyStatusMessage;
+    private readonly List<DrawingStickerCandidate> _stickerCandidates = new();
+    private readonly object _progressSnapshotLock = new();
+    private StableDiffusionCppWorkerProgressResponse _pendingProgressSnapshot;
+    private Texture2D _livePreviewTexture;
+    private long _appliedProgressSessionId = -1L;
+    private long _appliedPreviewUpdateIndex = -1L;
+    private float _generationProgress01;
+    private string _generationProgressPhase = "Idle";
 
     public event Action<bool, string> GenerationStateChanged;
+    public event Action<float, Texture2D, string> GenerationProgressChanged;
+    public event Action<IReadOnlyList<DrawingStickerCandidate>, string> StickerCandidatesChanged;
 
     public bool IsGenerating => _isGenerating;
     public string StatusMessage => _statusMessage;
+    public float GenerationProgress01 => _generationProgress01;
+    public string GenerationProgressPhase => _generationProgressPhase;
+    public Texture2D LivePreviewTexture => _livePreviewTexture;
+    public IReadOnlyList<DrawingStickerCandidate> StickerCandidates => _stickerCandidates;
     public StableDiffusionCppSettings StableDiffusionSettings => stableDiffusionSettings;
     public StableDiffusionCppModelProfile SelectedModelProfile => GetSelectedModelProfile();
     public string Prompt
@@ -74,6 +118,12 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
     {
         get => controlStrength;
         set => controlStrength = Mathf.Clamp(value, 0f, 2f);
+    }
+
+    public float BackgroundRemovalTolerance
+    {
+        get => backgroundRemovalTolerance;
+        set => backgroundRemovalTolerance = Mathf.Clamp(value, 0.01f, 0.5f);
     }
 
     public int Steps
@@ -128,9 +178,27 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
         PublishState(_isGenerating, _statusMessage);
     }
 
+    private void OnEnable()
+    {
+        StableDiffusionCppRuntime.ProgressChanged += OnStableDiffusionProgressChanged;
+    }
+
     private void OnDisable()
     {
+        StableDiffusionCppRuntime.ProgressChanged -= OnStableDiffusionProgressChanged;
         CancelGeneration();
+    }
+
+    private void OnDestroy()
+    {
+        ClearStickerCandidates();
+        SafeDestroyTexture(_livePreviewTexture);
+        _livePreviewTexture = null;
+    }
+
+    private void Update()
+    {
+        ApplyPendingProgressSnapshot();
     }
 
     public void GenerateFromCurrentGuide()
@@ -165,6 +233,7 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
 
         _generationCancellation?.Dispose();
         _generationCancellation = new CancellationTokenSource();
+        ResetGenerationProgressState();
         _ = RunGenerationAsync(_generationCancellation.Token);
     }
 
@@ -227,6 +296,74 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
         }
     }
 
+    public int GetStylePresetCount()
+    {
+        return StylePresetNames.Length;
+    }
+
+    public int GetSelectedStylePresetIndex()
+    {
+        return Mathf.Clamp(selectedStylePresetIndex, 0, Mathf.Max(0, StylePresetNames.Length - 1));
+    }
+
+    public void GetStylePresetDisplayNames(List<string> styleNames)
+    {
+        if (styleNames == null)
+        {
+            return;
+        }
+
+        styleNames.Clear();
+        styleNames.AddRange(StylePresetNames);
+    }
+
+    public void SelectStylePresetIndex(int presetIndex)
+    {
+        selectedStylePresetIndex = Mathf.Clamp(presetIndex, 0, Mathf.Max(0, StylePresetNames.Length - 1));
+        SetStatus(false, $"Style preset selected: {StylePresetNames[selectedStylePresetIndex]}");
+    }
+
+    public void ClearStickerCandidates()
+    {
+        for (int i = 0; i < _stickerCandidates.Count; i++)
+        {
+            _stickerCandidates[i]?.Dispose();
+        }
+
+        _stickerCandidates.Clear();
+        PublishStickerCandidates("Sticker candidates cleared.");
+    }
+
+    public bool TryPlaceStickerCandidate(int candidateIndex, out string error)
+    {
+        error = null;
+
+        if (drawingBoard == null)
+        {
+            error = "Drawing board reference is missing.";
+            return false;
+        }
+
+        if (candidateIndex < 0 || candidateIndex >= _stickerCandidates.Count)
+        {
+            error = "Sticker candidate index is out of range.";
+            return false;
+        }
+
+        DrawingStickerCandidate candidate = _stickerCandidates[candidateIndex];
+        if (candidate == null || candidate.Texture == null)
+        {
+            error = "Selected sticker candidate is unavailable.";
+            return false;
+        }
+
+        return drawingBoard.TryApplyStickerFromTexture(
+            candidate.Texture,
+            candidate.PlacementRegion,
+            $"Sticker_{candidateIndex + 1:00}",
+            out error);
+    }
+
     public void SelectModelProfileIndex(int profileIndex)
     {
         if (_isGenerating)
@@ -265,13 +402,12 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
     private async Task RunGenerationAsync(CancellationToken cancellationToken)
     {
         Texture2D controlTexture = null;
-        Texture2D generatedTexture = null;
         if (drawingBoard != null)
         {
             drawingBoard.SetInteractionLocked(true);
         }
 
-        SetStatus(true, "Generating from sketch guide...");
+        SetStatus(true, "Generating one sticker from sketch guide...");
 
         try
         {
@@ -293,6 +429,7 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
                 steps = Mathf.Clamp(steps, 1, 60),
                 cfgScale = Mathf.Max(0.1f, cfgScale),
                 seed = randomizeSeed ? UnityEngine.Random.Range(1, int.MaxValue) : seed,
+                batchCount = SingleCandidatePerGeneration,
                 useInitImageDimensions = true,
                 useControlNet = true,
                 persistOutputToRequestedDirectory = false
@@ -317,6 +454,7 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
             request.steps = Mathf.Clamp(steps, 1, 60);
             request.cfgScale = Mathf.Max(0.1f, cfgScale);
             request.seed = randomizeSeed ? UnityEngine.Random.Range(1, int.MaxValue) : seed;
+            request.batchCount = SingleCandidatePerGeneration;
             request.width = controlTexture.width;
             request.height = controlTexture.height;
             request.useInitImageDimensions = false;
@@ -348,42 +486,63 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
 
             if (result.OutputFiles == null || result.OutputFiles.Count == 0)
             {
-                SetStatus(false, "Sketch guide generation produced no image.");
-                return;
-            }
-
-            if (!StableDiffusionCppImageIO.TryLoadTextureFromFile(result.OutputFiles[0], out generatedTexture, out string loadError))
-            {
-                SetStatus(false, loadError);
+                SetStatus(false, "Sticker candidate generation produced no image.");
                 return;
             }
 
             if (drawingBoard == null)
             {
-                SetStatus(false, "Drawing board reference was lost before applying the result.");
+                SetStatus(false, "Drawing board reference was lost before building sticker candidates.");
                 return;
             }
 
             int padding = Mathf.Max(regionPadding, drawingBoard.SketchGuideRegionPadding);
-            SketchGuideApplyResult applyResult = await ApplySketchGuideResultAsync(
-                generatedTexture,
-                guideRegion,
-                padding,
-                cancellationToken);
-            if (!applyResult.Success)
+            int generatedCandidateCount = 0;
+            for (int i = 0; i < result.OutputFiles.Count; i++)
             {
-                SetStatus(false, applyResult.Error);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    SetStatus(false, "Sticker candidate generation cancelled.");
+                    return;
+                }
+
+                string outputFile = result.OutputFiles[i];
+                int candidateSeed = request.seed > int.MaxValue - i ? request.seed : request.seed + i;
+                if (TryCreateStickerCandidateFromOutput(
+                        outputFile,
+                        guideRegion,
+                        padding,
+                        BuildPromptText(),
+                        candidateSeed,
+                        out DrawingStickerCandidate candidate,
+                        out string candidateError))
+                {
+                    _stickerCandidates.Add(candidate);
+                    TrimStoredStickerCandidates();
+                    generatedCandidateCount++;
+                }
+                else if (logGenerationSummary)
+                {
+                    Debug.LogWarning($"[DrawingSketchGuideGenerator] Failed to build sticker candidate from '{outputFile}': {candidateError}");
+                }
+            }
+
+            if (generatedCandidateCount == 0)
+            {
+                SetStatus(false, "Generation finished but no transparent sticker could be extracted.");
+                PublishStickerCandidates(StatusMessage);
                 return;
             }
 
             string successMessage =
-                $"Sketch guide applied ({applyResult.AppliedRegion.width}x{applyResult.AppliedRegion.height}, seed {request.seed}, {result.Elapsed.TotalSeconds:0.0}s).";
+                $"Generated {generatedCandidateCount} sticker from '{Prompt}' and added it to the palette ({result.Elapsed.TotalSeconds:0.0}s, {_stickerCandidates.Count} stored).";
             SetStatus(false, successMessage);
+            PublishStickerCandidates(successMessage);
 
             if (logGenerationSummary)
             {
                 Debug.Log(
-                    $"[DrawingSketchGuideGenerator] {successMessage}\nOutput: {result.OutputFiles[0]}\nPrompt: {request.prompt}");
+                    $"[DrawingSketchGuideGenerator] {successMessage}\nOutputs: {string.Join(", ", result.OutputFiles)}\nPrompt: {request.prompt}");
             }
         }
         catch (OperationCanceledException)
@@ -403,7 +562,6 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
             }
 
             SafeDestroyTexture(controlTexture);
-            SafeDestroyTexture(generatedTexture);
 
             _generationCancellation?.Dispose();
             _generationCancellation = null;
@@ -413,15 +571,165 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
     private void SetStatus(bool isGenerating, string message)
     {
         _isGenerating = isGenerating;
+        if (!_isGenerating)
+        {
+            lock (_progressSnapshotLock)
+            {
+                _pendingProgressSnapshot = null;
+            }
+
+            _generationProgress01 = string.IsNullOrWhiteSpace(message) || message == ReadyStatusMessage ? 0f : 1f;
+            _generationProgressPhase = "Idle";
+        }
+
         _statusMessage = string.IsNullOrWhiteSpace(message)
-            ? (_isGenerating ? "Generating from sketch guide..." : "Sketch guide generator is ready.")
+            ? (_isGenerating ? "Generating one sticker from sketch guide..." : ReadyStatusMessage)
             : message;
         PublishState(_isGenerating, _statusMessage);
+        if (!_isGenerating)
+        {
+            GenerationProgressChanged?.Invoke(_generationProgress01, _livePreviewTexture, _statusMessage);
+        }
     }
 
     private void PublishState(bool isGenerating, string message)
     {
         GenerationStateChanged?.Invoke(isGenerating, message);
+    }
+
+    private void PublishStickerCandidates(string message)
+    {
+        StickerCandidatesChanged?.Invoke(_stickerCandidates, message ?? StatusMessage);
+    }
+
+    private void OnStableDiffusionProgressChanged(StableDiffusionCppWorkerProgressResponse progress)
+    {
+        if (progress == null || !_isGenerating)
+        {
+            return;
+        }
+
+        lock (_progressSnapshotLock)
+        {
+            _pendingProgressSnapshot = progress;
+        }
+    }
+
+    private void ResetGenerationProgressState()
+    {
+        lock (_progressSnapshotLock)
+        {
+            _pendingProgressSnapshot = null;
+        }
+
+        _generationProgress01 = 0f;
+        _generationProgressPhase = "Loading Model";
+        _appliedProgressSessionId = -1L;
+        _appliedPreviewUpdateIndex = -1L;
+        SafeDestroyTexture(_livePreviewTexture);
+        _livePreviewTexture = null;
+        GenerationProgressChanged?.Invoke(_generationProgress01, _livePreviewTexture, "Loading Stable Diffusion model...");
+    }
+
+    private void ApplyPendingProgressSnapshot()
+    {
+        StableDiffusionCppWorkerProgressResponse snapshot = null;
+        lock (_progressSnapshotLock)
+        {
+            if (_pendingProgressSnapshot != null)
+            {
+                snapshot = _pendingProgressSnapshot;
+                _pendingProgressSnapshot = null;
+            }
+        }
+
+        if (snapshot == null || !snapshot.hasProgress)
+        {
+            return;
+        }
+
+        _generationProgressPhase = string.IsNullOrWhiteSpace(snapshot.phase)
+            ? "Sampling"
+            : snapshot.phase;
+        _generationProgress01 = Mathf.Clamp01(snapshot.progress01);
+
+        if (snapshot.progressSessionId != _appliedProgressSessionId)
+        {
+            _appliedProgressSessionId = snapshot.progressSessionId;
+            _appliedPreviewUpdateIndex = -1L;
+            SafeDestroyTexture(_livePreviewTexture);
+            _livePreviewTexture = null;
+        }
+
+        if (snapshot.previewImage != null &&
+            snapshot.previewImage.HasData &&
+            snapshot.previewUpdateIndex > _appliedPreviewUpdateIndex)
+        {
+            if (TryCreateLivePreviewTexture(snapshot.previewImage, out Texture2D previewTexture))
+            {
+                SafeDestroyTexture(_livePreviewTexture);
+                _livePreviewTexture = previewTexture;
+                _appliedPreviewUpdateIndex = snapshot.previewUpdateIndex;
+            }
+        }
+
+        string message = BuildProgressMessage(snapshot);
+        _statusMessage = message;
+        GenerationStateChanged?.Invoke(_isGenerating, _statusMessage);
+        GenerationProgressChanged?.Invoke(_generationProgress01, _livePreviewTexture, _statusMessage);
+    }
+
+    private static string BuildProgressMessage(StableDiffusionCppWorkerProgressResponse snapshot)
+    {
+        if (snapshot == null)
+        {
+            return "Generating sticker...";
+        }
+
+        if (!string.IsNullOrWhiteSpace(snapshot.message))
+        {
+            return snapshot.message;
+        }
+
+        if (snapshot.totalSteps > 0)
+        {
+            int step = Mathf.Clamp(snapshot.step, 0, snapshot.totalSteps);
+            return $"{snapshot.phase} {step}/{snapshot.totalSteps}";
+        }
+
+        return string.IsNullOrWhiteSpace(snapshot.phase)
+            ? "Generating sticker..."
+            : snapshot.phase;
+    }
+
+    private static bool TryCreateLivePreviewTexture(
+        StableDiffusionCppWorkerImagePayload previewPayload,
+        out Texture2D previewTexture)
+    {
+        previewTexture = null;
+        if (previewPayload == null || !previewPayload.HasData)
+        {
+            return false;
+        }
+
+        try
+        {
+            byte[] bytes = Convert.FromBase64String(previewPayload.base64Data);
+            return StableDiffusionCppImageIO.TryCreateTextureFromTopDownRawBytes(
+                bytes,
+                previewPayload.width,
+                previewPayload.height,
+                previewPayload.channelCount,
+                FilterMode.Bilinear,
+                out previewTexture,
+                out _);
+        }
+        catch
+        {
+            SafeDestroyTexture(previewTexture);
+            previewTexture = null;
+            return false;
+        }
     }
 
     private Task<SketchGuideApplyResult> ApplySketchGuideResultAsync(
@@ -450,6 +758,74 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
             }));
 
         return completionSource.Task;
+    }
+
+    private bool TryCreateStickerCandidateFromOutput(
+        string outputFilePath,
+        RectInt guideRegion,
+        int padding,
+        string promptText,
+        int candidateSeed,
+        out DrawingStickerCandidate candidate,
+        out string error)
+    {
+        candidate = null;
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(outputFilePath))
+        {
+            error = "Generated output path is empty.";
+            return false;
+        }
+
+        if (!StableDiffusionCppImageIO.TryLoadTextureFromFile(outputFilePath, out Texture2D sourceTexture, out error))
+        {
+            return false;
+        }
+
+        Texture2D stickerTexture = null;
+        RectInt placementRegion = guideRegion;
+        try
+        {
+            if (extractTransparentStickers)
+            {
+                if (!DrawingStickerExtractor.TryExtractTransparentSticker(
+                        sourceTexture,
+                        guideRegion,
+                        padding,
+                        backgroundRemovalTolerance,
+                        stickerTrimPadding,
+                        stickerFilterMode,
+                        out stickerTexture,
+                        out placementRegion,
+                        out error))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                stickerTexture = DuplicateTexture(sourceTexture, stickerFilterMode);
+                if (placementRegion.width <= 0 || placementRegion.height <= 0)
+                {
+                    placementRegion = new RectInt(0, 0, sourceTexture.width, sourceTexture.height);
+                }
+            }
+
+            candidate = new DrawingStickerCandidate(
+                stickerTexture,
+                placementRegion,
+                outputFilePath,
+                promptText,
+                candidateSeed);
+            stickerTexture = null;
+            return true;
+        }
+        finally
+        {
+            SafeDestroyTexture(sourceTexture);
+            SafeDestroyTexture(stickerTexture);
+        }
     }
 
     private void InitializeSelectedModelProfile()
@@ -518,9 +894,13 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
         string template = string.IsNullOrWhiteSpace(promptTemplate)
             ? "Create a clean, fully colored illustration of {0} on a plain white background. Follow the sketch guide silhouette and proportions closely."
             : promptTemplate.Trim();
-        return template.Contains("{0}", StringComparison.Ordinal)
+        string styledPrompt = template.Contains("{0}", StringComparison.Ordinal)
             ? string.Format(template, subject)
-            : $"{template} {subject}";
+            : $"{subject}, {template}";
+        string stylePresetPrompt = GetSelectedStylePresetPrompt();
+        return string.IsNullOrWhiteSpace(stylePresetPrompt)
+            ? styledPrompt
+            : $"{styledPrompt}, {stylePresetPrompt}";
     }
 
     private string BuildNegativePromptText()
@@ -542,6 +922,46 @@ public class DrawingSketchGuideGenerator : MonoBehaviour
         else
         {
             UnityEngine.Object.DestroyImmediate(texture);
+        }
+    }
+
+    private static Texture2D DuplicateTexture(Texture2D sourceTexture, FilterMode filterMode)
+    {
+        if (sourceTexture == null)
+        {
+            return null;
+        }
+
+        var copy = new Texture2D(sourceTexture.width, sourceTexture.height, TextureFormat.RGBA32, false)
+        {
+            name = $"{sourceTexture.name}_Copy",
+            filterMode = filterMode,
+            wrapMode = TextureWrapMode.Clamp
+        };
+        copy.SetPixels32(sourceTexture.GetPixels32());
+        copy.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+        return copy;
+    }
+
+    private string GetSelectedStylePresetPrompt()
+    {
+        if (StylePresetPrompts.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        int index = Mathf.Clamp(selectedStylePresetIndex, 0, StylePresetPrompts.Length - 1);
+        return StylePresetPrompts[index];
+    }
+
+    private void TrimStoredStickerCandidates()
+    {
+        int maxCount = Mathf.Max(1, maxStoredStickerCandidates);
+        while (_stickerCandidates.Count > maxCount)
+        {
+            DrawingStickerCandidate oldestCandidate = _stickerCandidates[0];
+            _stickerCandidates.RemoveAt(0);
+            oldestCandidate?.Dispose();
         }
     }
 

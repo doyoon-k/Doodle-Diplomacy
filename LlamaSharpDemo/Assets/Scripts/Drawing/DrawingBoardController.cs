@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -12,7 +13,8 @@ public enum DrawingToolMode
     Brush = 0,
     Eraser = 1,
     Fill = 2,
-    SketchGuide = 3
+    SketchGuide = 3,
+    StickerMaskErase = 4
 }
 
 /// <summary>
@@ -68,9 +70,21 @@ public class DrawingBoardController : MonoBehaviour
     [Header("History")]
     [SerializeField] private int maxHistoryEntries = 24;
 
+    [Header("Sticker Layers")]
+    [SerializeField] private bool enableStickerLayers = true;
+    [SerializeField] private float stickerSurfaceOffset = 0.02f;
+    [SerializeField] private float stickerDepthStep = 0.0025f;
+    [SerializeField] private float minStickerScale = 0.08f;
+    [SerializeField] private float maxStickerScale = 12f;
+    [SerializeField] private float stickerScaleStep = 0.08f;
+    [SerializeField] private float stickerRotationStep = 8f;
+    [SerializeField] private float stickerOpacityStep = 0.05f;
+    [SerializeField] private Color selectedStickerOutlineColor = new(0.15f, 0.90f, 1f, 0.95f);
+
     private DrawingCanvas _canvas;
     private DrawingCanvas _guideCanvas;
     private DrawingCanvas _displayCanvas;
+    private DrawingCanvas _exportCanvas;
     private DrawingHistory _history;
     private Material _runtimeMaterial;
     private LineRenderer _brushPreviewRenderer;
@@ -84,10 +98,18 @@ public class DrawingBoardController : MonoBehaviour
     private bool _isInteractionLocked;
     private Vector2Int _lastPixel;
     private readonly StrokeHistoryCapture _strokeHistory = new();
+    private readonly List<DrawingStickerLayer> _stickerLayers = new();
+    private Transform _stickerRoot;
+    private DrawingStickerLayer _selectedSticker;
+    private bool _isDraggingSticker;
+    private bool _useStickerMaskErase;
+    private bool _isErasingStickerMask;
+    private Vector3 _stickerDragOffsetBoardLocal;
 
     public event Action<int> BrushRadiusChanged;
     public event Action<bool, bool> HistoryStateChanged;
     public event Action<bool, bool> SketchGuideStateChanged;
+    public event Action<bool, float, string> StickerSelectionChanged;
 
     public Texture2D CanvasTexture => _canvas?.Texture;
     public Texture2D GuideTexture => _guideCanvas?.Texture;
@@ -104,6 +126,11 @@ public class DrawingBoardController : MonoBehaviour
     public bool CanRedo => _history != null && _history.CanRedo;
     public int SketchGuideRegionPadding => Mathf.Max(0, sketchGuideRegionPadding);
     public bool HasSketchGuide => _guideCanvas != null && _guideCanvas.TryGetNonBackgroundBounds(out _);
+    public bool HasSelectedSticker => _selectedSticker != null;
+    public float SelectedStickerOpacity => _selectedSticker != null ? _selectedSticker.Opacity : 1f;
+    public string SelectedStickerLabel => _selectedSticker != null ? _selectedSticker.LayerName : string.Empty;
+    public bool IsStickerMaskEraseEnabled => _useStickerMaskErase;
+    public int StickerCount => _stickerLayers.Count;
 
     private void Awake()
     {
@@ -137,7 +164,11 @@ public class DrawingBoardController : MonoBehaviour
             return;
         }
 
-        UpdateBrushRadiusFromScroll();
+        if (_selectedSticker == null || _useStickerMaskErase)
+        {
+            UpdateBrushRadiusFromScroll();
+        }
+
         HandlePointerInput();
     }
 
@@ -187,9 +218,204 @@ public class DrawingBoardController : MonoBehaviour
         NotifySketchGuideStateChanged();
     }
 
+    public bool TryCreateStickerFromTexture(
+        Texture2D stickerTexture,
+        RectInt placementRegion,
+        string stickerLabel,
+        out string error)
+    {
+        error = null;
+
+        if (!enableStickerLayers)
+        {
+            error = "Sticker layers are disabled on this drawing board.";
+            return false;
+        }
+
+        if (_canvas == null || _displayCanvas == null)
+        {
+            error = "Drawing canvases are not initialized.";
+            return false;
+        }
+
+        if (stickerTexture == null)
+        {
+            error = "Sticker texture is null.";
+            return false;
+        }
+
+        if (!TryResolveStickerPlacement(
+                stickerTexture,
+                placementRegion,
+                out Vector3 centerLocal,
+                out Vector3 sizeLocal,
+                out error))
+        {
+            return false;
+        }
+
+        EnsureStickerRoot();
+
+        var stickerObject = new GameObject($"StickerLayer_{_stickerLayers.Count + 1:00}");
+        stickerObject.hideFlags = RuntimeHideFlags;
+        stickerObject.transform.SetParent(_stickerRoot, false);
+        stickerObject.transform.localPosition = new Vector3(
+            centerLocal.x,
+            stickerSurfaceOffset + (_stickerLayers.Count * stickerDepthStep),
+            centerLocal.z);
+        stickerObject.transform.localRotation = Quaternion.identity;
+        stickerObject.transform.localScale = sizeLocal;
+
+        DrawingStickerLayer stickerLayer = stickerObject.AddComponent<DrawingStickerLayer>();
+        stickerLayer.Initialize(
+            stickerTexture,
+            placementRegion,
+            stickerLabel,
+            _stickerLayers.Count + 1,
+            selectedStickerOutlineColor);
+        _stickerLayers.Add(stickerLayer);
+        SelectSticker(stickerLayer);
+        ClearSketchGuide();
+        return true;
+    }
+
+    public bool TryApplyStickerFromTexture(
+        Texture2D stickerTexture,
+        RectInt placementRegion,
+        string stickerLabel,
+        out string error)
+    {
+        if (_selectedSticker == null)
+        {
+            return TryCreateStickerFromTexture(
+                stickerTexture,
+                placementRegion,
+                stickerLabel,
+                out error);
+        }
+
+        error = null;
+        if (!TryResolveStickerPlacement(
+                stickerTexture,
+                placementRegion,
+                out _,
+                out Vector3 sizeLocal,
+                out error))
+        {
+            return false;
+        }
+
+        Vector3 currentPosition = _selectedSticker.transform.localPosition;
+        Vector3 currentScale = _selectedSticker.transform.localScale;
+        _selectedSticker.ReplaceStickerTexture(stickerTexture, placementRegion, stickerLabel);
+        _selectedSticker.transform.localPosition = currentPosition;
+        _selectedSticker.transform.localScale = new Vector3(
+            Mathf.Sign(Mathf.Approximately(currentScale.x, 0f) ? 1f : currentScale.x) * sizeLocal.x,
+            currentScale.y,
+            Mathf.Sign(Mathf.Approximately(currentScale.z, 0f) ? 1f : currentScale.z) * sizeLocal.z);
+        ClampStickerInsideBoard(_selectedSticker);
+        SelectSticker(_selectedSticker);
+        ClearSketchGuide();
+        return true;
+    }
+
+    public bool DeleteSelectedSticker()
+    {
+        if (_selectedSticker == null)
+        {
+            return false;
+        }
+
+        DrawingStickerLayer stickerToRemove = _selectedSticker;
+        SelectSticker(null);
+        _isDraggingSticker = false;
+
+        int index = _stickerLayers.IndexOf(stickerToRemove);
+        if (index >= 0)
+        {
+            _stickerLayers.RemoveAt(index);
+        }
+
+        if (stickerToRemove != null)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(stickerToRemove.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(stickerToRemove.gameObject);
+            }
+        }
+
+        NormalizeStickerLayerDepths();
+        return true;
+    }
+
+    public bool ConfirmSelectedStickerPlacement()
+    {
+        if (_selectedSticker == null)
+        {
+            NotifyStickerSelectionChanged();
+            return false;
+        }
+
+        SelectSticker(null);
+        _isDraggingSticker = false;
+        _isErasingStickerMask = false;
+        return true;
+    }
+
+    public void SetSelectedStickerOpacity(float opacity)
+    {
+        if (_selectedSticker == null)
+        {
+            NotifyStickerSelectionChanged();
+            return;
+        }
+
+        _selectedSticker.SetOpacity(opacity);
+        NotifyStickerSelectionChanged();
+    }
+
+    public Texture2D GetCompositeTextureForExport()
+    {
+        if (_canvas == null)
+        {
+            return null;
+        }
+
+        if (!enableStickerLayers || _stickerLayers.Count == 0)
+        {
+            return _canvas.Texture;
+        }
+
+        if (_exportCanvas == null ||
+            _exportCanvas.Width != _canvas.Width ||
+            _exportCanvas.Height != _canvas.Height)
+        {
+            _exportCanvas?.Dispose();
+            _exportCanvas = new DrawingCanvas(_canvas.Width, _canvas.Height, backgroundColor, filterMode);
+        }
+
+        Color32[] compositePixels = _canvas.CopyPixels();
+        Bounds boardMeshBounds = GetBoardMeshBounds();
+        for (int i = 0; i < _stickerLayers.Count; i++)
+        {
+            BlendStickerIntoPixels(_stickerLayers[i], compositePixels, boardMeshBounds);
+        }
+
+        _exportCanvas.ApplyRegion(
+            new RectInt(0, 0, _canvas.Width, _canvas.Height),
+            compositePixels);
+        return _exportCanvas.Texture;
+    }
+
     public void SetBrushColor(Color color)
     {
         FinalizeStrokeHistory();
+        SelectSticker(null);
+        _isDraggingSticker = false;
         brushColor = color;
         _useEraser = false;
         _useSketchGuide = false;
@@ -212,6 +438,8 @@ public class DrawingBoardController : MonoBehaviour
     public void SetEraserEnabled(bool enabled)
     {
         FinalizeStrokeHistory();
+        SelectSticker(null);
+        _isDraggingSticker = false;
         _useEraser = enabled;
         if (enabled)
         {
@@ -231,6 +459,8 @@ public class DrawingBoardController : MonoBehaviour
     public void SetFillToolEnabled(bool enabled)
     {
         FinalizeStrokeHistory();
+        SelectSticker(null);
+        _isDraggingSticker = false;
         _useFillTool = enabled;
         if (enabled)
         {
@@ -250,6 +480,8 @@ public class DrawingBoardController : MonoBehaviour
     public void SetSketchGuideEnabled(bool enabled)
     {
         FinalizeStrokeHistory();
+        SelectSticker(null);
+        _isDraggingSticker = false;
         _useSketchGuide = enabled;
         if (enabled)
         {
@@ -266,6 +498,41 @@ public class DrawingBoardController : MonoBehaviour
         SetSketchGuideEnabled(!_useSketchGuide);
     }
 
+    public void SetStickerMaskEraseEnabled(bool enabled)
+    {
+        if (!enableStickerLayers || _selectedSticker == null)
+        {
+            enabled = false;
+        }
+
+        if (_useStickerMaskErase == enabled)
+        {
+            NotifyStickerSelectionChanged();
+            return;
+        }
+
+        FinalizeStrokeHistory();
+        _useStickerMaskErase = enabled;
+        _isDrawing = false;
+        _isDraggingSticker = false;
+        _isErasingStickerMask = false;
+
+        if (_useStickerMaskErase)
+        {
+            _useEraser = false;
+            _useFillTool = false;
+            _useSketchGuide = false;
+            NotifySketchGuideStateChanged();
+        }
+
+        NotifyStickerSelectionChanged();
+    }
+
+    public void ToggleStickerMaskErase()
+    {
+        SetStickerMaskEraseEnabled(!_useStickerMaskErase);
+    }
+
     public void SetInteractionLocked(bool locked)
     {
         if (_isInteractionLocked == locked)
@@ -277,6 +544,8 @@ public class DrawingBoardController : MonoBehaviour
         if (locked)
         {
             _isDrawing = false;
+            _isDraggingSticker = false;
+            _isErasingStickerMask = false;
             FinalizeStrokeHistory();
             if (_brushPreviewRenderer != null)
             {
@@ -287,6 +556,11 @@ public class DrawingBoardController : MonoBehaviour
 
     public DrawingToolMode GetCurrentToolMode()
     {
+        if (_useStickerMaskErase)
+        {
+            return DrawingToolMode.StickerMaskErase;
+        }
+
         if (_useSketchGuide)
         {
             return DrawingToolMode.SketchGuide;
@@ -621,12 +895,15 @@ public class DrawingBoardController : MonoBehaviour
     private void OnDestroy()
     {
         ResetStrokeHistory();
+        ClearAllStickerLayers();
         _canvas?.Dispose();
         _canvas = null;
         _guideCanvas?.Dispose();
         _guideCanvas = null;
         _displayCanvas?.Dispose();
         _displayCanvas = null;
+        _exportCanvas?.Dispose();
+        _exportCanvas = null;
         _history?.Clear();
         ReleaseRuntimeMaterial();
         CleanupBrushPreview();
@@ -651,10 +928,13 @@ public class DrawingBoardController : MonoBehaviour
         _canvas?.Dispose();
         _guideCanvas?.Dispose();
         _displayCanvas?.Dispose();
+        _exportCanvas?.Dispose();
         _canvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
         _guideCanvas = new DrawingCanvas(textureWidth, textureHeight, Color.clear, filterMode);
         _displayCanvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
+        _exportCanvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
         _history = new DrawingHistory(maxHistoryEntries);
+        EnsureStickerRoot();
         ResetStrokeHistory();
         RefreshDisplayFullCanvas();
 
@@ -685,6 +965,8 @@ public class DrawingBoardController : MonoBehaviour
         {
             UpdateBrushPreview(pointerOverUi: true);
             _isDrawing = false;
+            _isDraggingSticker = false;
+            _isErasingStickerMask = false;
             FinalizeStrokeHistory();
             return;
         }
@@ -694,8 +976,15 @@ public class DrawingBoardController : MonoBehaviour
         bool pointerUp = GetPointerUpThisFrame();
         bool pointerOverUi = blockPointerWhenOverUi && IsPointerOverUi();
 
-        UpdateBrushPreview(pointerOverUi);
+        bool hideBrushPreview = pointerOverUi || _isDraggingSticker || (_selectedSticker != null && !_useStickerMaskErase);
+        UpdateBrushPreview(hideBrushPreview);
         HandleHistoryShortcuts();
+        HandleStickerKeyboardShortcuts(pointerOverUi);
+
+        if (TryHandleStickerPointerInput(pointerDown, pointerHeld, pointerUp, pointerOverUi))
+        {
+            return;
+        }
 
         if (pointerOverUi)
         {
@@ -772,6 +1061,11 @@ public class DrawingBoardController : MonoBehaviour
         if (_useSketchGuide)
         {
             return sketchGuideOverlayColor;
+        }
+
+        if (_useStickerMaskErase)
+        {
+            return previewEraserColor;
         }
 
         return _useEraser ? previewEraserColor : previewBrushColor;
@@ -949,6 +1243,412 @@ public class DrawingBoardController : MonoBehaviour
     private void NotifySketchGuideStateChanged()
     {
         SketchGuideStateChanged?.Invoke(_useSketchGuide, HasSketchGuide);
+    }
+
+    private void NotifyStickerSelectionChanged()
+    {
+        StickerSelectionChanged?.Invoke(
+            _selectedSticker != null,
+            _selectedSticker != null ? _selectedSticker.Opacity : 1f,
+            _selectedSticker != null ? _selectedSticker.LayerName : string.Empty);
+    }
+
+    private void EnsureStickerRoot()
+    {
+        if (!enableStickerLayers || _stickerRoot != null)
+        {
+            return;
+        }
+
+        Transform existingRoot = transform.Find("StickerRoot");
+        if (existingRoot != null)
+        {
+            _stickerRoot = existingRoot;
+            return;
+        }
+
+        var stickerRootObject = new GameObject("StickerRoot");
+        stickerRootObject.hideFlags = RuntimeHideFlags;
+        stickerRootObject.transform.SetParent(transform, false);
+        stickerRootObject.transform.localPosition = Vector3.zero;
+        stickerRootObject.transform.localRotation = Quaternion.identity;
+        stickerRootObject.transform.localScale = Vector3.one;
+        _stickerRoot = stickerRootObject.transform;
+    }
+
+    private void ClearAllStickerLayers()
+    {
+        SelectSticker(null);
+        _isDraggingSticker = false;
+
+        for (int i = _stickerLayers.Count - 1; i >= 0; i--)
+        {
+            DrawingStickerLayer stickerLayer = _stickerLayers[i];
+            if (stickerLayer == null)
+            {
+                continue;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(stickerLayer.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(stickerLayer.gameObject);
+            }
+        }
+
+        _stickerLayers.Clear();
+        if (_stickerRoot != null)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(_stickerRoot.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(_stickerRoot.gameObject);
+            }
+
+            _stickerRoot = null;
+        }
+    }
+
+    private void SelectSticker(DrawingStickerLayer stickerLayer)
+    {
+        if (_selectedSticker == stickerLayer)
+        {
+            if (_selectedSticker == null)
+            {
+                _useStickerMaskErase = false;
+                _isErasingStickerMask = false;
+            }
+
+            NotifyStickerSelectionChanged();
+            return;
+        }
+
+        if (_selectedSticker != null)
+        {
+            _selectedSticker.SetSelected(false);
+        }
+
+        _selectedSticker = stickerLayer;
+        if (_selectedSticker != null)
+        {
+            _selectedSticker.SetSelected(true);
+        }
+        else
+        {
+            _useStickerMaskErase = false;
+            _isErasingStickerMask = false;
+        }
+
+        NotifyStickerSelectionChanged();
+    }
+
+    private bool TryHandleStickerPointerInput(
+        bool pointerDown,
+        bool pointerHeld,
+        bool pointerUp,
+        bool pointerOverUi)
+    {
+        if (!enableStickerLayers)
+        {
+            _isDraggingSticker = false;
+            _isErasingStickerMask = false;
+            _useStickerMaskErase = false;
+            return false;
+        }
+
+        if (pointerOverUi)
+        {
+            if (pointerUp || !pointerHeld)
+            {
+                _isDraggingSticker = false;
+                _isErasingStickerMask = false;
+            }
+
+            return _isDraggingSticker || _isErasingStickerMask;
+        }
+
+        if (_useStickerMaskErase)
+        {
+            return TryHandleStickerMaskErasePointerInput(pointerDown, pointerHeld, pointerUp);
+        }
+
+        if (_isDraggingSticker)
+        {
+            if (_selectedSticker != null && pointerHeld && TryGetPointerBoardLocalPoint(out Vector3 boardLocalPoint))
+            {
+                SetStickerBoardLocalPosition(_selectedSticker, boardLocalPoint + _stickerDragOffsetBoardLocal);
+            }
+
+            if (pointerUp || !pointerHeld)
+            {
+                _isDraggingSticker = false;
+            }
+
+            return true;
+        }
+
+        if (pointerDown)
+        {
+            if (TryPickStickerFromPointer(out DrawingStickerLayer stickerLayer, out Vector3 stickerHitBoardLocal))
+            {
+                FinalizeStrokeHistory();
+                _isDrawing = false;
+                SelectSticker(stickerLayer);
+                _stickerDragOffsetBoardLocal = stickerLayer.transform.localPosition - stickerHitBoardLocal;
+                _isDraggingSticker = true;
+                return true;
+            }
+
+            if (_selectedSticker != null)
+            {
+                _isDrawing = false;
+                SelectSticker(null);
+                return true;
+            }
+        }
+
+        return _selectedSticker != null;
+    }
+
+    private bool TryHandleStickerMaskErasePointerInput(
+        bool pointerDown,
+        bool pointerHeld,
+        bool pointerUp)
+    {
+        if (_selectedSticker == null)
+        {
+            _isErasingStickerMask = false;
+            _useStickerMaskErase = false;
+            return false;
+        }
+
+        if (_isErasingStickerMask)
+        {
+            if (pointerHeld)
+            {
+                TryEraseSelectedStickerMaskAtPointer();
+            }
+
+            if (pointerUp || !pointerHeld)
+            {
+                _isErasingStickerMask = false;
+            }
+
+            return true;
+        }
+
+        if (pointerDown)
+        {
+            if (TryPickStickerFromPointer(out DrawingStickerLayer stickerLayer, out _))
+            {
+                FinalizeStrokeHistory();
+                _isDrawing = false;
+                SelectSticker(stickerLayer);
+                _isDraggingSticker = false;
+                _isErasingStickerMask = TryEraseSelectedStickerMaskAtPointer();
+                return true;
+            }
+
+            _isDrawing = false;
+            SelectSticker(null);
+            return true;
+        }
+
+        return true;
+    }
+
+    private bool TryEraseSelectedStickerMaskAtPointer()
+    {
+        if (_selectedSticker == null || _canvas == null || !TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray ray = drawingCamera.ScreenPointToRay(pointerScreenPosition);
+        if (!_selectedSticker.TryRaycast(ray, 1000f, out RaycastHit stickerHit))
+        {
+            return false;
+        }
+
+        return _selectedSticker.TryEraseAlphaAtWorldPoint(stickerHit.point, GetPreviewWorldRadius(stickerHit));
+    }
+
+    private void HandleStickerKeyboardShortcuts(bool pointerOverUi)
+    {
+        if (!enableStickerLayers || _selectedSticker == null || pointerOverUi)
+        {
+            return;
+        }
+
+        float scrollDelta = GetScrollDelta();
+        if (!_useStickerMaskErase && Mathf.Abs(scrollDelta) >= 0.01f)
+        {
+            if (GetStickerRotateModifierPressed())
+            {
+                RotateSelectedSticker(Mathf.Sign(scrollDelta) * stickerRotationStep);
+            }
+            else
+            {
+                ScaleSelectedSticker(Mathf.Sign(scrollDelta) * stickerScaleStep);
+            }
+        }
+
+        if (GetStickerFlipShortcutPressed())
+        {
+            _selectedSticker.FlipHorizontal();
+            ClampStickerInsideBoard(_selectedSticker);
+        }
+
+        if (GetStickerOpacityIncreaseShortcutPressed())
+        {
+            SetSelectedStickerOpacity(_selectedSticker.Opacity + stickerOpacityStep);
+        }
+
+        if (GetStickerOpacityDecreaseShortcutPressed())
+        {
+            SetSelectedStickerOpacity(_selectedSticker.Opacity - stickerOpacityStep);
+        }
+
+        if (GetStickerDeleteShortcutPressed())
+        {
+            DeleteSelectedSticker();
+        }
+    }
+
+    private bool TryPickStickerFromPointer(out DrawingStickerLayer stickerLayer, out Vector3 stickerHitBoardLocal)
+    {
+        stickerLayer = null;
+        stickerHitBoardLocal = default;
+
+        if (_stickerLayers.Count == 0 || !TryGetPointerScreenPosition(out Vector2 pointerScreenPosition))
+        {
+            return false;
+        }
+
+        Ray ray = drawingCamera.ScreenPointToRay(pointerScreenPosition);
+        for (int i = _stickerLayers.Count - 1; i >= 0; i--)
+        {
+            DrawingStickerLayer candidate = _stickerLayers[i];
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            if (!candidate.TryRaycast(ray, 1000f, out RaycastHit stickerHit))
+            {
+                continue;
+            }
+
+            stickerLayer = candidate;
+            stickerHitBoardLocal = transform.InverseTransformPoint(stickerHit.point);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGetPointerBoardLocalPoint(out Vector3 boardLocalPoint)
+    {
+        boardLocalPoint = default;
+        if (!TryGetPointerHit(out RaycastHit hit))
+        {
+            return false;
+        }
+
+        boardLocalPoint = transform.InverseTransformPoint(hit.point);
+        return true;
+    }
+
+    private void SetStickerBoardLocalPosition(DrawingStickerLayer stickerLayer, Vector3 boardLocalPosition)
+    {
+        if (stickerLayer == null)
+        {
+            return;
+        }
+
+        Vector3 currentPosition = stickerLayer.transform.localPosition;
+        stickerLayer.transform.localPosition = new Vector3(
+            boardLocalPosition.x,
+            currentPosition.y,
+            boardLocalPosition.z);
+        ClampStickerInsideBoard(stickerLayer);
+    }
+
+    private void ScaleSelectedSticker(float scaleDelta)
+    {
+        if (_selectedSticker == null)
+        {
+            return;
+        }
+
+        Vector3 scale = _selectedSticker.transform.localScale;
+        float width = Mathf.Clamp(Mathf.Abs(scale.x) * (1f + scaleDelta), minStickerScale, maxStickerScale);
+        float depth = Mathf.Clamp(Mathf.Abs(scale.z) * (1f + scaleDelta), minStickerScale, maxStickerScale);
+        scale.x = Mathf.Sign(scale.x == 0f ? 1f : scale.x) * width;
+        scale.z = Mathf.Sign(scale.z == 0f ? 1f : scale.z) * depth;
+        _selectedSticker.transform.localScale = scale;
+        ClampStickerInsideBoard(_selectedSticker);
+    }
+
+    private void RotateSelectedSticker(float rotationDelta)
+    {
+        if (_selectedSticker == null)
+        {
+            return;
+        }
+
+        Vector3 euler = _selectedSticker.transform.localEulerAngles;
+        euler.y += rotationDelta;
+        _selectedSticker.transform.localEulerAngles = euler;
+        ClampStickerInsideBoard(_selectedSticker);
+    }
+
+    private void ClampStickerInsideBoard(DrawingStickerLayer stickerLayer)
+    {
+        if (stickerLayer == null)
+        {
+            return;
+        }
+
+        Bounds boardBounds = GetBoardMeshBounds();
+        Rect stickerRect = stickerLayer.GetBoardLocalRect();
+        float halfWidth = stickerRect.width * 0.5f;
+        float halfHeight = stickerRect.height * 0.5f;
+        Vector3 position = stickerLayer.transform.localPosition;
+        float xMin = boardBounds.min.x + halfWidth;
+        float xMax = boardBounds.max.x - halfWidth;
+        float zMin = boardBounds.min.z + halfHeight;
+        float zMax = boardBounds.max.z - halfHeight;
+
+        position.x = xMin <= xMax
+            ? Mathf.Clamp(position.x, xMin, xMax)
+            : boardBounds.center.x;
+        position.z = zMin <= zMax
+            ? Mathf.Clamp(position.z, zMin, zMax)
+            : boardBounds.center.z;
+        stickerLayer.transform.localPosition = position;
+    }
+
+    private void NormalizeStickerLayerDepths()
+    {
+        for (int i = 0; i < _stickerLayers.Count; i++)
+        {
+            DrawingStickerLayer stickerLayer = _stickerLayers[i];
+            if (stickerLayer == null)
+            {
+                continue;
+            }
+
+            Vector3 position = stickerLayer.transform.localPosition;
+            position.y = stickerSurfaceOffset + (i * stickerDepthStep);
+            stickerLayer.transform.localPosition = position;
+        }
     }
 
     private void PaintSketchGuideLine(Vector2Int from, Vector2Int to)
@@ -1194,6 +1894,170 @@ public class DrawingBoardController : MonoBehaviour
         }
     }
 
+    private bool TryResolveStickerPlacement(
+        Texture2D stickerTexture,
+        RectInt placementRegion,
+        out Vector3 centerLocal,
+        out Vector3 sizeLocal,
+        out string error)
+    {
+        centerLocal = Vector3.zero;
+        sizeLocal = Vector3.one;
+        error = null;
+
+        if (_canvas == null || stickerTexture == null)
+        {
+            error = "Sticker placement failed because the board canvas or sticker texture is unavailable.";
+            return false;
+        }
+
+        RectInt resolvedRegion = placementRegion;
+        if (resolvedRegion.width <= 0 || resolvedRegion.height <= 0)
+        {
+            int fallbackWidth = Mathf.Clamp(stickerTexture.width, 1, _canvas.Width);
+            int fallbackHeight = Mathf.Clamp(stickerTexture.height, 1, _canvas.Height);
+            resolvedRegion = new RectInt(
+                Mathf.Max(0, (_canvas.Width - fallbackWidth) / 2),
+                Mathf.Max(0, (_canvas.Height - fallbackHeight) / 2),
+                fallbackWidth,
+                fallbackHeight);
+        }
+
+        Bounds boardBounds = GetBoardMeshBounds();
+        Vector2 canvasCenterUv = new(
+            (resolvedRegion.x + (resolvedRegion.width * 0.5f)) / _canvas.Width,
+            (resolvedRegion.y + (resolvedRegion.height * 0.5f)) / _canvas.Height);
+        Vector2 surfaceCenterUv = CanvasUvToSurfaceUv(canvasCenterUv);
+
+        centerLocal = new Vector3(
+            Mathf.Lerp(boardBounds.min.x, boardBounds.max.x, surfaceCenterUv.x),
+            stickerSurfaceOffset + (_stickerLayers.Count * stickerDepthStep),
+            Mathf.Lerp(boardBounds.min.z, boardBounds.max.z, surfaceCenterUv.y));
+
+        float scaleX = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
+        float widthLocal = (resolvedRegion.width / (_canvas.Width * scaleX)) * boardBounds.size.x;
+        float depthLocal = (resolvedRegion.height / (_canvas.Height * scaleY)) * boardBounds.size.z;
+        float aspect = stickerTexture.height > 0
+            ? stickerTexture.width / (float)stickerTexture.height
+            : 1f;
+
+        if (widthLocal <= 0.0001f && depthLocal > 0.0001f)
+        {
+            widthLocal = depthLocal * aspect;
+        }
+        else if (depthLocal <= 0.0001f && widthLocal > 0.0001f)
+        {
+            depthLocal = Mathf.Approximately(aspect, 0f) ? widthLocal : widthLocal / aspect;
+        }
+
+        float maxDimension = Mathf.Max(widthLocal, depthLocal);
+        if (maxDimension > maxStickerScale && maxDimension > 0.0001f)
+        {
+            float scaleFactor = maxStickerScale / maxDimension;
+            widthLocal *= scaleFactor;
+            depthLocal *= scaleFactor;
+        }
+
+        float minDimension = Mathf.Min(widthLocal, depthLocal);
+        if (minDimension < minStickerScale && minDimension > 0.0001f)
+        {
+            float scaleFactor = minStickerScale / minDimension;
+            widthLocal *= scaleFactor;
+            depthLocal *= scaleFactor;
+        }
+
+        sizeLocal = new Vector3(
+            Mathf.Max(minStickerScale, widthLocal),
+            1f,
+            Mathf.Max(minStickerScale, depthLocal));
+        return true;
+    }
+
+    private void BlendStickerIntoPixels(
+        DrawingStickerLayer stickerLayer,
+        Color32[] compositePixels,
+        Bounds boardBounds)
+    {
+        if (stickerLayer == null ||
+            stickerLayer.Texture == null ||
+            compositePixels == null ||
+            _canvas == null ||
+            stickerLayer.Opacity <= 0.001f)
+        {
+            return;
+        }
+
+        Color32[] stickerPixels = stickerLayer.Texture.GetPixels32();
+        if (stickerPixels == null || stickerPixels.Length == 0)
+        {
+            return;
+        }
+
+        int stickerWidth = stickerLayer.Texture.width;
+        int stickerHeight = stickerLayer.Texture.height;
+        if (stickerWidth <= 0 || stickerHeight <= 0)
+        {
+            return;
+        }
+
+        Matrix4x4 boardLocalToStickerLocal =
+            stickerLayer.transform.worldToLocalMatrix * transform.localToWorldMatrix;
+        float stickerPlaneY = stickerLayer.transform.localPosition.y;
+
+        for (int y = 0; y < _canvas.Height; y++)
+        {
+            float canvasV = (y + 0.5f) / _canvas.Height;
+            float surfaceV = CanvasUvToSurfaceUv(new Vector2(0.5f, canvasV)).y;
+            float boardLocalZ = Mathf.Lerp(boardBounds.min.z, boardBounds.max.z, surfaceV);
+
+            for (int x = 0; x < _canvas.Width; x++)
+            {
+                float canvasU = (x + 0.5f) / _canvas.Width;
+                float surfaceU = CanvasUvToSurfaceUv(new Vector2(canvasU, canvasV)).x;
+                float boardLocalX = Mathf.Lerp(boardBounds.min.x, boardBounds.max.x, surfaceU);
+                Vector3 stickerLocalPoint = boardLocalToStickerLocal.MultiplyPoint3x4(
+                    new Vector3(boardLocalX, stickerPlaneY, boardLocalZ));
+
+                float stickerU = stickerLocalPoint.x + 0.5f;
+                float stickerV = stickerLocalPoint.z + 0.5f;
+                if (stickerU < 0f || stickerU > 1f || stickerV < 0f || stickerV > 1f)
+                {
+                    continue;
+                }
+
+                Color sampledColor = SampleTextureBilinear(
+                    stickerPixels,
+                    stickerWidth,
+                    stickerHeight,
+                    stickerU,
+                    stickerV);
+                sampledColor.a *= stickerLayer.Opacity;
+                if (sampledColor.a <= 0.001f)
+                {
+                    continue;
+                }
+
+                int canvasIndex = (y * _canvas.Width) + x;
+                compositePixels[canvasIndex] = BlendColorOver(sampledColor, compositePixels[canvasIndex]);
+            }
+        }
+    }
+
+    private Bounds GetBoardMeshBounds()
+    {
+        if (boardRenderer != null)
+        {
+            MeshFilter meshFilter = boardRenderer.GetComponent<MeshFilter>();
+            if (meshFilter != null && meshFilter.sharedMesh != null)
+            {
+                return meshFilter.sharedMesh.bounds;
+            }
+        }
+
+        return new Bounds(Vector3.zero, new Vector3(10f, 0f, 10f));
+    }
+
     private static RectInt UnionRegions(RectInt left, RectInt right)
     {
         int minX = Mathf.Min(left.xMin, right.xMin);
@@ -1271,6 +2135,67 @@ public class DrawingBoardController : MonoBehaviour
         return new Vector2(
             (surfaceUv.x * boardTextureScale.x) + boardTextureOffset.x,
             (surfaceUv.y * boardTextureScale.y) + boardTextureOffset.y);
+    }
+
+    private Vector2 CanvasUvToSurfaceUv(Vector2 canvasUv)
+    {
+        float scaleX = Mathf.Abs(boardTextureScale.x) > 0.0001f ? boardTextureScale.x : 1f;
+        float scaleY = Mathf.Abs(boardTextureScale.y) > 0.0001f ? boardTextureScale.y : 1f;
+        return new Vector2(
+            (canvasUv.x - boardTextureOffset.x) / scaleX,
+            (canvasUv.y - boardTextureOffset.y) / scaleY);
+    }
+
+    private static Color SampleTextureBilinear(
+        Color32[] pixels,
+        int width,
+        int height,
+        float u,
+        float v)
+    {
+        if (pixels == null || pixels.Length == 0 || width <= 0 || height <= 0)
+        {
+            return Color.clear;
+        }
+
+        float x = Mathf.Clamp01(u) * (width - 1);
+        float y = Mathf.Clamp01(v) * (height - 1);
+        int x0 = Mathf.FloorToInt(x);
+        int y0 = Mathf.FloorToInt(y);
+        int x1 = Mathf.Min(x0 + 1, width - 1);
+        int y1 = Mathf.Min(y0 + 1, height - 1);
+        float tx = x - x0;
+        float ty = y - y0;
+
+        Color c00 = pixels[(y0 * width) + x0];
+        Color c10 = pixels[(y0 * width) + x1];
+        Color c01 = pixels[(y1 * width) + x0];
+        Color c11 = pixels[(y1 * width) + x1];
+        Color bottom = Color.Lerp(c00, c10, tx);
+        Color top = Color.Lerp(c01, c11, tx);
+        return Color.Lerp(bottom, top, ty);
+    }
+
+    private static Color32 BlendColorOver(Color source, Color32 destination)
+    {
+        float srcA = Mathf.Clamp01(source.a);
+        if (srcA <= 0f)
+        {
+            return destination;
+        }
+
+        Color dst = destination;
+        float dstA = Mathf.Clamp01(dst.a);
+        float outA = srcA + (dstA * (1f - srcA));
+        if (outA <= 0.0001f)
+        {
+            return new Color32(0, 0, 0, 0);
+        }
+
+        float outR = ((source.r * srcA) + (dst.r * dstA * (1f - srcA))) / outA;
+        float outG = ((source.g * srcA) + (dst.g * dstA * (1f - srcA))) / outA;
+        float outB = ((source.b * srcA) + (dst.b * dstA * (1f - srcA))) / outA;
+        return (Color32)new Color(outR, outG, outB, outA);
     }
 
     private static void ConfigureRuntimeMaterial(Material material)
@@ -1421,6 +2346,88 @@ public class DrawingBoardController : MonoBehaviour
         bool shiftPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         return (controlPressed && Input.GetKeyDown(KeyCode.Y)) ||
                (controlPressed && shiftPressed && Input.GetKeyDown(KeyCode.Z));
+#else
+        return false;
+#endif
+    }
+
+    private static bool GetStickerRotateModifierPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null &&
+            (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed))
+        {
+            return true;
+        }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+        return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+#else
+        return false;
+#endif
+    }
+
+    private static bool GetStickerFlipShortcutPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
+        {
+            return true;
+        }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+        return Input.GetKeyDown(KeyCode.F);
+#else
+        return false;
+#endif
+    }
+
+    private static bool GetStickerDeleteShortcutPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null &&
+            (Keyboard.current.deleteKey.wasPressedThisFrame || Keyboard.current.backspaceKey.wasPressedThisFrame))
+        {
+            return true;
+        }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+        return Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace);
+#else
+        return false;
+#endif
+    }
+
+    private static bool GetStickerOpacityIncreaseShortcutPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null && Keyboard.current.rightBracketKey.wasPressedThisFrame)
+        {
+            return true;
+        }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+        return Input.GetKeyDown(KeyCode.RightBracket);
+#else
+        return false;
+#endif
+    }
+
+    private static bool GetStickerOpacityDecreaseShortcutPressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null && Keyboard.current.leftBracketKey.wasPressedThisFrame)
+        {
+            return true;
+        }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+        return Input.GetKeyDown(KeyCode.LeftBracket);
 #else
         return false;
 #endif

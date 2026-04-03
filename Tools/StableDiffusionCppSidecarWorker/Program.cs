@@ -133,6 +133,12 @@ internal static class Program
             return;
         }
 
+        if (string.Equals(path, "/progress", StringComparison.OrdinalIgnoreCase))
+        {
+            await WriteJsonAsync(context, 200, Engine.GetProgressSnapshot());
+            return;
+        }
+
         if (string.Equals(path, "/release", StringComparison.OrdinalIgnoreCase))
         {
             Engine.ReleaseContext();

@@ -119,17 +119,20 @@ public static class StableDiffusionCppImageIO
             return false;
         }
 
-        Texture2D texture = null;
+        if (!TryCreateTextureFromTopDownRawBytes(
+                bytes,
+                width,
+                height,
+                channelCount,
+                FilterMode.Bilinear,
+                out Texture2D texture,
+                out error))
+        {
+            return false;
+        }
+
         try
         {
-            // stable-diffusion.cpp returns top-down rows, but Texture2D.LoadRawTextureData expects
-            // Unity's bottom-up texture memory layout.
-            byte[] unityBytes = ConvertTopDownRawBytesToUnityRawBytes(bytes, width, height, bytesPerPixel);
-
-            texture = new Texture2D(width, height, textureFormat, false);
-            texture.LoadRawTextureData(unityBytes);
-            texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
-
             byte[] encoded = string.Equals(outputFormat, "jpg", StringComparison.OrdinalIgnoreCase) ||
                              string.Equals(outputFormat, "jpeg", StringComparison.OrdinalIgnoreCase)
                 ? texture.EncodeToJPG()
@@ -157,6 +160,68 @@ public static class StableDiffusionCppImageIO
         finally
         {
             SafeDestroy(texture);
+        }
+    }
+
+    public static bool TryCreateTextureFromTopDownRawBytes(
+        byte[] bytes,
+        int width,
+        int height,
+        int channelCount,
+        FilterMode filterMode,
+        out Texture2D texture,
+        out string error)
+    {
+        texture = null;
+        error = null;
+
+        if (bytes == null || bytes.Length == 0)
+        {
+            error = "Image byte buffer is empty.";
+            return false;
+        }
+
+        if (width <= 0 || height <= 0)
+        {
+            error = $"Invalid image dimensions: {width}x{height}";
+            return false;
+        }
+
+        TextureFormat textureFormat = ResolveTextureFormat(channelCount, out int bytesPerPixel);
+        if (textureFormat == TextureFormat.RGBA32 && channelCount != 4)
+        {
+            error = $"Unsupported channel count: {channelCount}";
+            return false;
+        }
+
+        int expectedLength = width * height * bytesPerPixel;
+        if (bytes.Length < expectedLength)
+        {
+            error = $"Image byte buffer is too small. Expected at least {expectedLength} bytes, got {bytes.Length}.";
+            return false;
+        }
+
+        try
+        {
+            // stable-diffusion.cpp returns top-down rows, but Texture2D.LoadRawTextureData expects
+            // Unity's bottom-up texture memory layout.
+            byte[] unityBytes = ConvertTopDownRawBytesToUnityRawBytes(bytes, width, height, bytesPerPixel);
+
+            texture = new Texture2D(width, height, textureFormat, false)
+            {
+                filterMode = filterMode,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            texture.LoadRawTextureData(unityBytes);
+            texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            SafeDestroy(texture);
+            texture = null;
+            error = $"Failed to build texture from raw bytes: {ex.Message}";
+            return false;
         }
     }
     public static bool TryWriteTextureToUniqueTempPng(

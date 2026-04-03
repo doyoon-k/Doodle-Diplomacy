@@ -115,6 +115,15 @@ internal static class StableDiffusionCppNativeBridge
         Count = 3
     }
 
+    internal enum PreviewMode
+    {
+        None = 0,
+        Proj = 1,
+        Tae = 2,
+        Vae = 3,
+        Count = 4
+    }
+
     internal enum CacheMode
     {
         Disabled = 0,
@@ -305,6 +314,19 @@ internal static class StableDiffusionCppNativeBridge
         public SdCacheParams cache;
     }
 
+    internal delegate void ProgressCallback(
+        int step,
+        int steps,
+        float time,
+        IntPtr data);
+
+    internal delegate void PreviewCallback(
+        int step,
+        int frame_count,
+        IntPtr frames,
+        [MarshalAs(UnmanagedType.I1)] bool is_noisy,
+        IntPtr data);
+
     internal static bool CanUseLibraryPath(string nativeLibraryPath)
     {
         if (string.IsNullOrWhiteSpace(nativeLibraryPath))
@@ -464,6 +486,20 @@ internal static class StableDiffusionCppNativeBridge
 
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "sd_cache_params_init")]
     internal static extern void SdCacheParamsInit(ref SdCacheParams cacheParams);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "sd_set_progress_callback")]
+    internal static extern void SdSetProgressCallback(
+        ProgressCallback callback,
+        IntPtr data);
+
+    [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "sd_set_preview_callback")]
+    internal static extern void SdSetPreviewCallback(
+        PreviewCallback callback,
+        PreviewMode mode,
+        int interval,
+        [MarshalAs(UnmanagedType.I1)] bool denoised,
+        [MarshalAs(UnmanagedType.I1)] bool noisy,
+        IntPtr data);
 
     [DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "sd_get_default_sample_method")]
     internal static extern SampleMethod GetDefaultSampleMethod(IntPtr sdCtx);

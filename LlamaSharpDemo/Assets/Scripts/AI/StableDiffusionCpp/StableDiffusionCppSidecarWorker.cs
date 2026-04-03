@@ -19,6 +19,7 @@ internal static class StableDiffusionCppSidecarWorker
     private const string WorkerDllFileName = "StableDiffusionCppSidecarWorker.dll";
     private const string WorkerStateFileName = "worker_state.json";
     private const string ListenIp = "127.0.0.1";
+    private const int ProgressPollIntervalMs = 150;
 
     private static readonly object WorkerLock = new object();
     private static readonly HttpClient HttpClient = new HttpClient();
@@ -368,6 +369,9 @@ internal static class StableDiffusionCppSidecarWorker
             diffusionFlashAttention = request.diffusionFlashAttention,
             useCacheMode = request.useCacheMode,
             cacheMode = request.cacheMode ?? string.Empty,
+            enableProgressPreview = true,
+            previewMode = "vae",
+            previewIntervalSteps = Mathf.Clamp(request.steps / 4, 1, 4),
             initImage = initImage,
             maskImage = maskImage,
             controlImage = controlImage
@@ -448,17 +452,43 @@ internal static class StableDiffusionCppSidecarWorker
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeoutCts.CancelAfter(timeoutMs);
 
-        using HttpResponseMessage response = await HttpClient.PostAsync(
-            new Uri(baseUri, "generate"),
-            content,
-            timeoutCts.Token);
-        string responseJson = await response.Content.ReadAsStringAsync();
+        using var progressCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token);
+        Task progressTask = PollProgressAsync(baseUri, progressCts.Token);
+
+        HttpResponseMessage response = null;
+        HttpStatusCode responseStatusCode = HttpStatusCode.InternalServerError;
+        bool responseIsSuccessStatusCode = false;
+        string responseJson;
+        try
+        {
+            response = await HttpClient.PostAsync(
+                new Uri(baseUri, "generate"),
+                content,
+                timeoutCts.Token);
+            responseStatusCode = response.StatusCode;
+            responseIsSuccessStatusCode = response.IsSuccessStatusCode;
+            responseJson = await response.Content.ReadAsStringAsync();
+        }
+        finally
+        {
+            progressCts.Cancel();
+            try
+            {
+                await progressTask;
+            }
+            catch
+            {
+                // Ignore progress polling shutdown races.
+            }
+
+            response?.Dispose();
+        }
         if (string.IsNullOrWhiteSpace(responseJson))
         {
             return new StableDiffusionCppWorkerGenerateResponse
             {
                 success = false,
-                errorMessage = $"Sidecar worker returned HTTP {(int)response.StatusCode} with empty body."
+                errorMessage = $"Sidecar worker returned HTTP {(int)responseStatusCode} with empty body."
             };
         }
 
@@ -473,16 +503,60 @@ internal static class StableDiffusionCppSidecarWorker
             };
         }
 
-        if (!response.IsSuccessStatusCode && parsed.success)
+        if (!responseIsSuccessStatusCode && parsed.success)
         {
             parsed.success = false;
             if (string.IsNullOrWhiteSpace(parsed.errorMessage))
             {
-                parsed.errorMessage = $"Sidecar worker returned HTTP {(int)response.StatusCode}.";
+                parsed.errorMessage = $"Sidecar worker returned HTTP {(int)responseStatusCode}.";
             }
         }
 
         return parsed;
+    }
+
+    private static async Task PollProgressAsync(Uri baseUri, CancellationToken cancellationToken)
+    {
+        if (baseUri == null)
+        {
+            return;
+        }
+
+        Uri progressUri = new Uri(baseUri, "progress");
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                using HttpResponseMessage response = await HttpClient.GetAsync(progressUri, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    string json = await response.Content.ReadAsStringAsync();
+                    StableDiffusionCppWorkerProgressResponse progress =
+                        JsonUtility.FromJson<StableDiffusionCppWorkerProgressResponse>(json);
+                    if (progress != null)
+                    {
+                        StableDiffusionCppRuntime.PublishProgress(progress);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch
+            {
+                // Progress polling is best-effort; generation result handling owns hard failures.
+            }
+
+            try
+            {
+                await Task.Delay(ProgressPollIntervalMs, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
     }
 
     private static List<string> WriteOutputImages(

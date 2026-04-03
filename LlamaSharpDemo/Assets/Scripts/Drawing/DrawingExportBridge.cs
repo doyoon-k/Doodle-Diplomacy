@@ -22,7 +22,7 @@ public class DrawingExportBridge : MonoBehaviour
 
     public event Action<PipelineState> PipelineCompleted;
 
-    public Texture2D CurrentTexture => drawingBoard != null ? drawingBoard.CanvasTexture : null;
+    public Texture2D CurrentTexture => drawingBoard != null ? drawingBoard.GetCompositeTextureForExport() : null;
     public PromptPipelineAsset PipelineAsset => pipelineAsset;
     public string ImageStateKey => imageStateKey;
 

@@ -44,6 +44,9 @@ public sealed class StableDiffusionCppWorkerGenerateRequest
     public bool diffusionFlashAttention;
     public bool useCacheMode;
     public string cacheMode = "easycache";
+    public bool enableProgressPreview;
+    public string previewMode = "vae";
+    public int previewIntervalSteps = 2;
 
     public StableDiffusionCppWorkerImagePayload initImage;
     public StableDiffusionCppWorkerImagePayload maskImage;
@@ -68,6 +71,21 @@ public sealed class StableDiffusionCppWorkerHealthResponse
     public int processId;
     public bool hasLoadedContext;
     public bool isBusy;
+}
+
+[Serializable]
+public sealed class StableDiffusionCppWorkerProgressResponse
+{
+    public bool isBusy;
+    public bool hasProgress;
+    public long progressSessionId;
+    public int step;
+    public int totalSteps;
+    public float progress01;
+    public string phase = string.Empty;
+    public string message = string.Empty;
+    public long previewUpdateIndex;
+    public StableDiffusionCppWorkerImagePayload previewImage;
 }
 
 [Serializable]

@@ -24,4 +24,4 @@ MonoBehaviour:
   defaultSampler: dpm++2m
   defaultScheduler: karras
   defaultNegativePrompt: 
-  defaultControlStrength: 0.7
+  defaultControlStrength: 0.6

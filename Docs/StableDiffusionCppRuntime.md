@@ -6,15 +6,18 @@ This project now includes a shipping-oriented integration path for `stable-diffu
 
 - Package runtime binaries with the game.
 - Bootstrap those binaries to `persistentDataPath` at runtime.
-- Generate images from Unity by launching the local process.
+- Generate images from Unity with a persistent sidecar worker process when possible.
+- Fall back to launching the local `sd-cli` process for requests that rely on raw CLI-only options.
 
 ## Added Components
 
 - `StableDiffusionCppSettings` (`ScriptableObject`)
   - Per-platform runtime package mapping
   - Model path, defaults, timeout, global CLI args
+  - Persistent sidecar worker preference
 - `StableDiffusionCppRuntime`
   - Runtime preparation (`StreamingAssets -> persistentDataPath`)
+  - Persistent sidecar worker generation + one-shot process fallback
   - Process execution + cancellation + timeout + output detection
 - `StableDiffusionCppGeneratorWindow` (Editor)
   - Menu: `Tools/AI/Stable Diffusion CPP/Generator`
@@ -51,8 +54,15 @@ Assets/StreamingAssets/
 
 - Runtime binaries are installed to:
   - `%persistentDataPath%/sdcpp/<runtimeVersion>/<platform>/...`
+- Sidecar worker binaries are built to:
+  - `%persistentDataPath%/sdcpp_sidecar/<runtimeVersion>/<platform>/...`
 - Model is loaded from `StreamingAssets` by default.
 - Optional model copy to persistent path is configurable.
+- If `preferPersistentNativeWorker` is enabled, the first supported generation request builds/launches `Tools/StableDiffusionCppSidecarWorker` as a localhost worker process. That process loads `stable-diffusion.dll`, creates one cached `sd_ctx`, and reuses it across subsequent compatible requests.
+- Because the model runs in a separate process, it avoids same-name CUDA DLL collisions with Unity/LlamaSharp native plugins inside the Editor/Player process.
+- The worker project is built with `dotnet publish` on first launch or when source files change, so a local .NET SDK/runtime must be available on the development machine.
+- If you need to free that cached context and stop the worker process manually (for example when leaving a paint mode), call `StableDiffusionCppRuntime.ReleasePersistentWorker()`.
+- In-flight sidecar generation still cannot be interrupted inside the C API, so canceling kills the worker process and the next request restarts it. One-shot `sd-cli` fallback also supports process kill.
 
 ## Notes
 

@@ -38,6 +38,11 @@ public static class StableDiffusionCppRuntime
     {
         get
         {
+            if (StableDiffusionCppSidecarWorker.IsBusy)
+            {
+                return true;
+            }
+
             lock (ActiveProcessLock)
             {
                 return _activeProcess != null;
@@ -47,10 +52,17 @@ public static class StableDiffusionCppRuntime
 
     public static void CancelActiveGeneration()
     {
+        StableDiffusionCppSidecarWorker.CancelActiveGeneration();
+
         lock (ActiveProcessLock)
         {
             TryKillProcess(_activeProcess);
         }
+    }
+
+    public static void ReleasePersistentWorker()
+    {
+        StableDiffusionCppSidecarWorker.ReleaseContext();
     }
 
     public static StableDiffusionCppPreparationResult PrepareRuntime(
@@ -97,6 +109,9 @@ public static class StableDiffusionCppRuntime
             SanitizePathToken(settings.runtimeVersion),
             platform.ToString());
         string installExecutablePath = Path.Combine(installRoot, package.executableFileName ?? string.Empty);
+        string installNativeLibraryPath = string.IsNullOrWhiteSpace(package.nativeLibraryFileName)
+            ? string.Empty
+            : Path.Combine(installRoot, package.nativeLibraryFileName.Trim());
 
         try
         {
@@ -170,7 +185,8 @@ public static class StableDiffusionCppRuntime
             installRoot,
             installExecutablePath,
             modelPath,
-            vaePath);
+            vaePath,
+            File.Exists(installNativeLibraryPath) ? installNativeLibraryPath : string.Empty);
     }
 
     public static async Task<StableDiffusionCppGenerationResult> GenerateTxt2ImgAsync(
@@ -418,6 +434,36 @@ public static class StableDiffusionCppRuntime
         string cliOutputPath = ResolveOutputPath(cliOutputDirectory, requestCopy.outputFileName, requestCopy.outputFormat);
 
         string args = BuildArguments(settings, prep, requestCopy, cliOutputPath);
+        if (StableDiffusionCppSidecarWorker.CanUsePersistentWorker(settings, prep, requestCopy))
+        {
+            string workerCommandLine = "[persistent-sidecar-worker] " + prep.NativeLibraryPath + " " + args;
+            return await StableDiffusionCppSidecarWorker.GenerateAsync(
+                settings,
+                prep,
+                requestCopy,
+                workerCommandLine,
+                cliOutputDirectory,
+                cliOutputPath,
+                requestedOutputDirectory,
+                persistOutputToRequestedDirectory,
+                startUtc,
+                cancellationToken);
+        }
+
+        if (StableDiffusionCppSidecarWorker.IsBusy)
+        {
+            return StableDiffusionCppGenerationResult.Failed(
+                "Generation is already running. Wait for completion or cancel first.",
+                -1,
+                prep.ExecutablePath + " " + args,
+                string.Empty,
+                string.Empty,
+                requestedOutputDirectory,
+                DateTime.UtcNow - startUtc);
+        }
+
+        StableDiffusionCppSidecarWorker.ReleaseContext();
+
         var startInfo = new ProcessStartInfo
         {
             FileName = prep.ExecutablePath,

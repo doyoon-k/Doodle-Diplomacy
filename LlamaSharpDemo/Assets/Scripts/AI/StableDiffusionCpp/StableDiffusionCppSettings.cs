@@ -65,6 +65,9 @@ public class StableDiffusionCppSettings : ScriptableObject
     [Tooltip("Extra raw command-line arguments appended to every sd-cli invocation after the generated arguments. Use this as an escape hatch for stable-diffusion.cpp options that are not exposed by dedicated UI fields. Invalid or conflicting flags can break generation, so keep it empty unless you know the exact CLI arguments you want.")]
     public string globalAdditionalArguments = string.Empty;
 
+    [Tooltip("If enabled, runtime image generation prefers a persistent sidecar worker process that keeps one sd_ctx loaded across requests outside the Unity process. Unsupported raw CLI/cache options still fall back to launching sd-cli per request.")]
+    public bool preferPersistentNativeWorker = true;
+
     [Tooltip("Relative subfolder under Application.persistentDataPath where runtime-generated images are written when no explicit output directory override is provided. Example: generated/sdcpp stores files under <persistentDataPath>/generated/sdcpp.")]
     public string runtimeOutputSubfolder = "generated/sdcpp";
 
@@ -226,6 +229,7 @@ public class StableDiffusionCppSettings : ScriptableObject
     private void OnValidate()
     {
         modelProfiles ??= new List<StableDiffusionCppModelProfile>();
+        runtimePackages ??= new List<StableDiffusionCppRuntimePackage>();
         if (activeModelProfile == null)
         {
             for (int i = 0; i < modelProfiles.Count; i++)
@@ -252,6 +256,70 @@ public class StableDiffusionCppSettings : ScriptableObject
         defaultCacheMode = NormalizeTokenOrFallback(defaultCacheMode, "easycache");
         defaultCacheOption ??= string.Empty;
         defaultCachePreset ??= string.Empty;
+
+        for (int i = 0; i < runtimePackages.Count; i++)
+        {
+            StableDiffusionCppRuntimePackage runtimePackage = runtimePackages[i];
+            if (runtimePackage == null)
+            {
+                continue;
+            }
+
+            runtimePackage.streamingAssetsRuntimeFolder =
+                NormalizeTokenOrFallback(
+                    runtimePackage.streamingAssetsRuntimeFolder,
+                    GetDefaultRuntimeFolder(runtimePackage.platform));
+            runtimePackage.executableFileName =
+                NormalizeTokenOrFallback(
+                    runtimePackage.executableFileName,
+                    GetDefaultExecutableFileName(runtimePackage.platform));
+            runtimePackage.nativeLibraryFileName =
+                NormalizeTokenOrFallback(
+                    runtimePackage.nativeLibraryFileName,
+                    GetDefaultNativeLibraryFileName(runtimePackage.platform));
+        }
+    }
+
+    private static string GetDefaultRuntimeFolder(StableDiffusionCppPlatformId platform)
+    {
+        switch (platform)
+        {
+            case StableDiffusionCppPlatformId.LinuxX64:
+                return "SDCpp/linux-x64";
+            case StableDiffusionCppPlatformId.MacOSX64:
+                return "SDCpp/osx-x64";
+            case StableDiffusionCppPlatformId.MacOSArm64:
+                return "SDCpp/osx-arm64";
+            default:
+                return "SDCpp/win-x64";
+        }
+    }
+
+    private static string GetDefaultExecutableFileName(StableDiffusionCppPlatformId platform)
+    {
+        switch (platform)
+        {
+            case StableDiffusionCppPlatformId.LinuxX64:
+            case StableDiffusionCppPlatformId.MacOSX64:
+            case StableDiffusionCppPlatformId.MacOSArm64:
+                return "sd-cli";
+            default:
+                return "sd-cli.exe";
+        }
+    }
+
+    private static string GetDefaultNativeLibraryFileName(StableDiffusionCppPlatformId platform)
+    {
+        switch (platform)
+        {
+            case StableDiffusionCppPlatformId.LinuxX64:
+                return "libstable-diffusion.so";
+            case StableDiffusionCppPlatformId.MacOSX64:
+            case StableDiffusionCppPlatformId.MacOSArm64:
+                return "libstable-diffusion.dylib";
+            default:
+                return "stable-diffusion.dll";
+        }
     }
 }
 
@@ -264,6 +332,9 @@ public class StableDiffusionCppRuntimePackage
 
     [Tooltip("Executable file name inside the selected runtime folder that will be launched for generation. On Windows this is typically sd-cli.exe; on Linux/macOS it may be the corresponding sd-cli binary name.")]
     public string executableFileName = "sd-cli.exe";
+
+    [Tooltip("Native library file name inside the selected runtime folder used by the persistent worker backend. On Windows this is stable-diffusion.dll.")]
+    public string nativeLibraryFileName = "stable-diffusion.dll";
 }
 
 public enum StableDiffusionCppPlatformId

@@ -4,6 +4,161 @@ using UnityEngine;
 
 public static class StableDiffusionCppImageIO
 {
+    public static bool TryLoadImageFileAsRawBytes(
+        string absolutePath,
+        int targetWidth,
+        int targetHeight,
+        int channelCount,
+        out byte[] bytes,
+        out int width,
+        out int height,
+        out string error)
+    {
+        bytes = null;
+        width = 0;
+        height = 0;
+        error = null;
+
+        if (channelCount != 1 && channelCount != 3 && channelCount != 4)
+        {
+            error = $"Unsupported channel count: {channelCount}";
+            return false;
+        }
+
+        if (!TryLoadTextureFromFile(absolutePath, out Texture2D source, out error))
+        {
+            return false;
+        }
+
+        Texture2D readable = source;
+        bool ownsReadable = false;
+
+        try
+        {
+            int resolvedWidth = Mathf.Max(1, targetWidth > 0 ? targetWidth : source.width);
+            int resolvedHeight = Mathf.Max(1, targetHeight > 0 ? targetHeight : source.height);
+
+            if (resolvedWidth != source.width || resolvedHeight != source.height)
+            {
+                if (!TryResizeTexture(source, resolvedWidth, resolvedHeight, out readable, out error))
+                {
+                    return false;
+                }
+
+                ownsReadable = true;
+            }
+
+            Color32[] pixels = readable.GetPixels32();
+            // Unity's Texture2D pixel buffers are laid out bottom-up, while stable-diffusion.cpp
+            // expects top-down image rows. Flip rows here so ControlNet/init/mask inputs keep
+            // the same visual orientation as the source texture.
+            bytes = ConvertPixelsToTopDownRawBytes(pixels, readable.width, readable.height, channelCount);
+            width = readable.width;
+            height = readable.height;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            bytes = null;
+            width = 0;
+            height = 0;
+            error = $"Failed to read image '{absolutePath}' as raw bytes: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            if (ownsReadable)
+            {
+                SafeDestroy(readable);
+            }
+
+            SafeDestroy(source);
+        }
+    }
+
+    public static bool TryWriteRawBytesToImageFile(
+        byte[] bytes,
+        int width,
+        int height,
+        int channelCount,
+        string absolutePath,
+        string outputFormat,
+        out string error)
+    {
+        error = null;
+
+        if (bytes == null || bytes.Length == 0)
+        {
+            error = "Image byte buffer is empty.";
+            return false;
+        }
+
+        if (width <= 0 || height <= 0)
+        {
+            error = $"Invalid image dimensions: {width}x{height}";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(absolutePath))
+        {
+            error = "Target image path is empty.";
+            return false;
+        }
+
+        TextureFormat textureFormat = ResolveTextureFormat(channelCount, out int bytesPerPixel);
+        if (textureFormat == TextureFormat.RGBA32 && channelCount != 4)
+        {
+            error = $"Unsupported channel count: {channelCount}";
+            return false;
+        }
+
+        int expectedLength = width * height * bytesPerPixel;
+        if (bytes.Length < expectedLength)
+        {
+            error = $"Image byte buffer is too small. Expected at least {expectedLength} bytes, got {bytes.Length}.";
+            return false;
+        }
+
+        Texture2D texture = null;
+        try
+        {
+            // stable-diffusion.cpp returns top-down rows, but Texture2D.LoadRawTextureData expects
+            // Unity's bottom-up texture memory layout.
+            byte[] unityBytes = ConvertTopDownRawBytesToUnityRawBytes(bytes, width, height, bytesPerPixel);
+
+            texture = new Texture2D(width, height, textureFormat, false);
+            texture.LoadRawTextureData(unityBytes);
+            texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+
+            byte[] encoded = string.Equals(outputFormat, "jpg", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(outputFormat, "jpeg", StringComparison.OrdinalIgnoreCase)
+                ? texture.EncodeToJPG()
+                : texture.EncodeToPNG();
+            if (encoded == null || encoded.Length == 0)
+            {
+                error = $"Failed to encode {outputFormat} image.";
+                return false;
+            }
+
+            string parent = Path.GetDirectoryName(absolutePath);
+            if (!string.IsNullOrWhiteSpace(parent))
+            {
+                Directory.CreateDirectory(parent);
+            }
+
+            File.WriteAllBytes(absolutePath, encoded);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to save image '{absolutePath}': {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            SafeDestroy(texture);
+        }
+    }
     public static bool TryWriteTextureToUniqueTempPng(
         Texture2D source,
         string directory,
@@ -249,6 +404,89 @@ public static class StableDiffusionCppImageIO
         }
 
         return string.IsNullOrWhiteSpace(sanitized) ? "image" : sanitized;
+    }
+
+    private static byte[] ConvertPixelsToTopDownRawBytes(
+        Color32[] pixels,
+        int width,
+        int height,
+        int channelCount)
+    {
+        if (pixels == null || pixels.Length == 0 || width <= 0 || height <= 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        var bytes = new byte[pixels.Length * channelCount];
+        for (int y = 0; y < height; y++)
+        {
+            int sourceRow = height - 1 - y;
+            int sourceRowOffset = sourceRow * width;
+            int targetRowOffset = y * width * channelCount;
+            for (int x = 0; x < width; x++)
+            {
+                Color32 pixel = pixels[sourceRowOffset + x];
+                int targetOffset = targetRowOffset + x * channelCount;
+
+                if (channelCount == 1)
+                {
+                    bytes[targetOffset] = (byte)Mathf.RoundToInt((pixel.r + pixel.g + pixel.b) / 3f);
+                    continue;
+                }
+
+                bytes[targetOffset] = pixel.r;
+                bytes[targetOffset + 1] = pixel.g;
+                bytes[targetOffset + 2] = pixel.b;
+                if (channelCount == 4)
+                {
+                    bytes[targetOffset + 3] = pixel.a;
+                }
+            }
+        }
+
+        return bytes;
+    }
+
+    private static byte[] ConvertTopDownRawBytesToUnityRawBytes(
+        byte[] bytes,
+        int width,
+        int height,
+        int bytesPerPixel)
+    {
+        if (bytes == null || bytes.Length == 0 || width <= 0 || height <= 0 || bytesPerPixel <= 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        int rowLength = width * bytesPerPixel;
+        var unityBytes = new byte[rowLength * height];
+        for (int y = 0; y < height; y++)
+        {
+            int sourceRowOffset = y * rowLength;
+            int targetRowOffset = (height - 1 - y) * rowLength;
+            Buffer.BlockCopy(bytes, sourceRowOffset, unityBytes, targetRowOffset, rowLength);
+        }
+
+        return unityBytes;
+    }
+
+    private static TextureFormat ResolveTextureFormat(int channelCount, out int bytesPerPixel)
+    {
+        switch (channelCount)
+        {
+            case 1:
+                bytesPerPixel = 1;
+                return TextureFormat.R8;
+            case 3:
+                bytesPerPixel = 3;
+                return TextureFormat.RGB24;
+            case 4:
+                bytesPerPixel = 4;
+                return TextureFormat.RGBA32;
+            default:
+                bytesPerPixel = 0;
+                return TextureFormat.RGBA32;
+        }
     }
 
     private static void SafeDestroy(UnityEngine.Object obj)

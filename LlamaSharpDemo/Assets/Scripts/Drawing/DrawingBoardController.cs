@@ -1,9 +1,19 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
+using System.Collections;
+using System.Threading;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
+
+public enum DrawingToolMode
+{
+    Brush = 0,
+    Eraser = 1,
+    Fill = 2,
+    SketchGuide = 3
+}
 
 /// <summary>
 /// Receives pointer input on a collider-backed drawing surface and paints into a runtime texture.
@@ -24,10 +34,12 @@ public class DrawingBoardController : MonoBehaviour
     [SerializeField] private Renderer boardRenderer;
     [SerializeField] private Collider drawingSurfaceCollider;
     [SerializeField] private Camera drawingCamera;
-    [SerializeField] private int textureWidth = 1024;
-    [SerializeField] private int textureHeight = 1024;
+    [SerializeField] private int textureWidth = 512;
+    [SerializeField] private int textureHeight = 512;
     [SerializeField] private FilterMode filterMode = FilterMode.Bilinear;
     [SerializeField] private string texturePropertyName = "_BaseMap";
+    [SerializeField] private Vector2 boardTextureScale = new(-1f, -1f);
+    [SerializeField] private Vector2 boardTextureOffset = new(1f, 1f);
 
     [Header("Brush")]
     [SerializeField] private Color backgroundColor = Color.white;
@@ -46,10 +58,19 @@ public class DrawingBoardController : MonoBehaviour
     [SerializeField] private Color previewBrushColor = new(0f, 0f, 0f, 0.9f);
     [SerializeField] private Color previewEraserColor = new(0.15f, 0.55f, 1f, 0.95f);
 
+    [Header("Sketch Guide")]
+    [SerializeField] private Color sketchGuideStrokeColor = new(0f, 0f, 0f, 1f);
+    [SerializeField] private Color sketchGuideOverlayColor = new(0.05f, 0.8f, 1f, 0.85f);
+    [SerializeField] private int sketchGuideRegionPadding = 24;
+    [SerializeField] private bool applyFullSketchResult = true;
+    [SerializeField] private int sketchResultApplyRowsPerFrame = 32;
+
     [Header("History")]
     [SerializeField] private int maxHistoryEntries = 24;
 
     private DrawingCanvas _canvas;
+    private DrawingCanvas _guideCanvas;
+    private DrawingCanvas _displayCanvas;
     private DrawingHistory _history;
     private Material _runtimeMaterial;
     private LineRenderer _brushPreviewRenderer;
@@ -58,22 +79,31 @@ public class DrawingBoardController : MonoBehaviour
     private bool _isDrawing;
     private bool _useEraser;
     private bool _useFillTool;
+    private bool _useSketchGuide;
     private bool _hasCapturedOriginalMaterial;
+    private bool _isInteractionLocked;
     private Vector2Int _lastPixel;
     private readonly StrokeHistoryCapture _strokeHistory = new();
 
     public event Action<int> BrushRadiusChanged;
     public event Action<bool, bool> HistoryStateChanged;
+    public event Action<bool, bool> SketchGuideStateChanged;
 
     public Texture2D CanvasTexture => _canvas?.Texture;
+    public Texture2D GuideTexture => _guideCanvas?.Texture;
+    public Texture2D DisplayTexture => _displayCanvas?.Texture;
     public int BrushRadius => brushRadius;
     public bool IsEraserEnabled => _useEraser;
     public bool IsFillToolEnabled => _useFillTool;
+    public bool IsSketchGuideEnabled => _useSketchGuide;
+    public bool IsInteractionLocked => _isInteractionLocked;
     public Color BrushColor => brushColor;
     public Color BackgroundColor => backgroundColor;
     public Color ActiveDrawColor => GetActiveDrawColor();
     public bool CanUndo => _history != null && _history.CanUndo;
     public bool CanRedo => _history != null && _history.CanRedo;
+    public int SketchGuideRegionPadding => Mathf.Max(0, sketchGuideRegionPadding);
+    public bool HasSketchGuide => _guideCanvas != null && _guideCanvas.TryGetNonBackgroundBounds(out _);
 
     private void Awake()
     {
@@ -101,7 +131,8 @@ public class DrawingBoardController : MonoBehaviour
 
     private void Update()
     {
-        if (_canvas == null || drawingSurfaceCollider == null || drawingCamera == null)
+        if (_canvas == null || _guideCanvas == null || _displayCanvas == null ||
+            drawingSurfaceCollider == null || drawingCamera == null)
         {
             return;
         }
@@ -113,7 +144,7 @@ public class DrawingBoardController : MonoBehaviour
     [ContextMenu("Clear Canvas")]
     public void ClearCanvas()
     {
-        if (_canvas == null)
+        if (_canvas == null || _displayCanvas == null || _isInteractionLocked)
         {
             return;
         }
@@ -128,12 +159,42 @@ public class DrawingBoardController : MonoBehaviour
         _canvas.Clear();
         Color32[] afterPixels = _canvas.CopyRegion(dirtyRegion);
         RecordHistory(dirtyRegion, beforePixels, afterPixels);
+        RefreshDisplayRegion(dirtyRegion);
+    }
+
+    [ContextMenu("Clear Sketch Guide")]
+    public void ClearSketchGuide()
+    {
+        if (_guideCanvas == null || _displayCanvas == null)
+        {
+            return;
+        }
+
+        _isDrawing = false;
+        if (_useSketchGuide)
+        {
+            FinalizeStrokeHistory();
+        }
+
+        if (!_guideCanvas.TryGetNonBackgroundBounds(out RectInt dirtyRegion))
+        {
+            NotifySketchGuideStateChanged();
+            return;
+        }
+
+        _guideCanvas.Clear();
+        RefreshDisplayRegion(dirtyRegion);
+        NotifySketchGuideStateChanged();
     }
 
     public void SetBrushColor(Color color)
     {
+        FinalizeStrokeHistory();
         brushColor = color;
         _useEraser = false;
+        _useSketchGuide = false;
+        _isDrawing = false;
+        NotifySketchGuideStateChanged();
     }
 
     public void SetBrushRadius(float radius)
@@ -150,60 +211,409 @@ public class DrawingBoardController : MonoBehaviour
 
     public void SetEraserEnabled(bool enabled)
     {
+        FinalizeStrokeHistory();
         _useEraser = enabled;
         if (enabled)
         {
             _useFillTool = false;
+            _useSketchGuide = false;
         }
+
+        _isDrawing = false;
+        NotifySketchGuideStateChanged();
     }
 
     public void ToggleEraser()
     {
-        _useEraser = !_useEraser;
-        if (_useEraser)
-        {
-            _useFillTool = false;
-        }
+        SetEraserEnabled(!_useEraser);
     }
 
     public void SetFillToolEnabled(bool enabled)
     {
+        FinalizeStrokeHistory();
         _useFillTool = enabled;
         if (enabled)
         {
             _useEraser = false;
+            _useSketchGuide = false;
         }
+
+        _isDrawing = false;
+        NotifySketchGuideStateChanged();
     }
 
     public void ToggleFillTool()
     {
-        _useFillTool = !_useFillTool;
+        SetFillToolEnabled(!_useFillTool);
+    }
+
+    public void SetSketchGuideEnabled(bool enabled)
+    {
+        FinalizeStrokeHistory();
+        _useSketchGuide = enabled;
+        if (enabled)
+        {
+            _useFillTool = false;
+            _useEraser = false;
+        }
+
+        _isDrawing = false;
+        NotifySketchGuideStateChanged();
+    }
+
+    public void ToggleSketchGuide()
+    {
+        SetSketchGuideEnabled(!_useSketchGuide);
+    }
+
+    public void SetInteractionLocked(bool locked)
+    {
+        if (_isInteractionLocked == locked)
+        {
+            return;
+        }
+
+        _isInteractionLocked = locked;
+        if (locked)
+        {
+            _isDrawing = false;
+            FinalizeStrokeHistory();
+            if (_brushPreviewRenderer != null)
+            {
+                _brushPreviewRenderer.enabled = false;
+            }
+        }
+    }
+
+    public DrawingToolMode GetCurrentToolMode()
+    {
+        if (_useSketchGuide)
+        {
+            return DrawingToolMode.SketchGuide;
+        }
+
         if (_useFillTool)
         {
-            _useEraser = false;
+            return DrawingToolMode.Fill;
+        }
+
+        return _useEraser ? DrawingToolMode.Eraser : DrawingToolMode.Brush;
+    }
+
+    public bool TryGetSketchGuideBounds(out RectInt guideRegion)
+    {
+        if (_guideCanvas == null)
+        {
+            guideRegion = default;
+            return false;
+        }
+
+        return _guideCanvas.TryGetNonBackgroundBounds(out guideRegion);
+    }
+
+    public bool TryBuildSketchGuideControlTexture(
+        out Texture2D controlTexture,
+        out RectInt guideRegion,
+        out string error)
+    {
+        controlTexture = null;
+        guideRegion = default;
+        error = null;
+
+        if (_guideCanvas == null)
+        {
+            error = "Sketch guide canvas is not initialized.";
+            return false;
+        }
+
+        if (!_guideCanvas.TryGetNonBackgroundBounds(out guideRegion))
+        {
+            error = "Draw sketch guide strokes first.";
+            return false;
+        }
+
+        Color32[] guidePixels = _guideCanvas.CopyPixels();
+        Color32[] controlPixels = new Color32[guidePixels.Length];
+        Color32 white = Color.white;
+        Color32 black = Color.black;
+        int width = _guideCanvas.Width;
+        int height = _guideCanvas.Height;
+        for (int y = 0; y < height; y++)
+        {
+            int rowStart = y * width;
+            for (int x = 0; x < width; x++)
+            {
+                int pixelIndex = rowStart + x;
+                controlPixels[pixelIndex] = guidePixels[pixelIndex].a > 0 ? black : white;
+            }
+        }
+
+        controlTexture = new Texture2D(_guideCanvas.Width, _guideCanvas.Height, TextureFormat.RGBA32, false)
+        {
+            name = $"{name}_SketchGuideControlTexture",
+            filterMode = filterMode,
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = RuntimeHideFlags
+        };
+        controlTexture.SetPixels32(controlPixels);
+        controlTexture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+        return true;
+    }
+
+    public bool TryApplySketchGuideResult(
+        Texture2D generatedTexture,
+        RectInt guideRegion,
+        int regionPadding,
+        out RectInt appliedRegion,
+        out string error)
+    {
+        appliedRegion = default;
+        error = null;
+
+        if (_canvas == null || _guideCanvas == null || _displayCanvas == null)
+        {
+            error = "Drawing canvases are not initialized.";
+            return false;
+        }
+
+        if (generatedTexture == null)
+        {
+            error = "Generated texture is null.";
+            return false;
+        }
+
+        if (guideRegion.width <= 0 || guideRegion.height <= 0)
+        {
+            if (!_guideCanvas.TryGetNonBackgroundBounds(out guideRegion))
+            {
+                error = "Sketch guide bounds are empty.";
+                return false;
+            }
+        }
+
+        appliedRegion = applyFullSketchResult
+            ? new RectInt(0, 0, _canvas.Width, _canvas.Height)
+            : ExpandRegion(guideRegion, Mathf.Max(0, regionPadding), _canvas.Width, _canvas.Height);
+        if (appliedRegion.width <= 0 || appliedRegion.height <= 0)
+        {
+            error = "Resolved sketch guide region is empty.";
+            return false;
+        }
+
+        Texture2D sampledTexture = generatedTexture;
+        Texture2D resizedTexture = null;
+        if (generatedTexture.width != _canvas.Width || generatedTexture.height != _canvas.Height)
+        {
+            if (!StableDiffusionCppImageIO.TryResizeTexture(
+                    generatedTexture,
+                    _canvas.Width,
+                    _canvas.Height,
+                    out resizedTexture,
+                    out error))
+            {
+                return false;
+            }
+
+            sampledTexture = resizedTexture;
+        }
+
+        try
+        {
+            Color32[] beforePixels = _canvas.CopyRegion(appliedRegion);
+            Color32[] generatedPixels = CopyTextureRegionPixels(
+                sampledTexture.GetPixels32(),
+                sampledTexture.width,
+                appliedRegion);
+
+            if (generatedPixels == null || generatedPixels.Length != appliedRegion.width * appliedRegion.height)
+            {
+                error = "Failed to read generated sketch guide pixels.";
+                return false;
+            }
+
+            _canvas.ApplyRegion(appliedRegion, generatedPixels);
+            RecordHistory(appliedRegion, beforePixels, generatedPixels);
+            _guideCanvas.Clear();
+            RefreshDisplayRegion(appliedRegion);
+            NotifySketchGuideStateChanged();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"Failed to apply sketch guide result: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            if (resizedTexture != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(resizedTexture);
+                }
+                else
+                {
+                    DestroyImmediate(resizedTexture);
+                }
+            }
+        }
+    }
+
+    public IEnumerator ApplySketchGuideResultCoroutine(
+        Texture2D generatedTexture,
+        RectInt guideRegion,
+        int regionPadding,
+        CancellationToken cancellationToken,
+        Action<bool, RectInt, string> onComplete)
+    {
+        RectInt appliedRegion = default;
+        string error = null;
+
+        if (_canvas == null || _guideCanvas == null || _displayCanvas == null)
+        {
+            onComplete?.Invoke(false, appliedRegion, "Drawing canvases are not initialized.");
+            yield break;
+        }
+
+        if (generatedTexture == null)
+        {
+            onComplete?.Invoke(false, appliedRegion, "Generated texture is null.");
+            yield break;
+        }
+
+        if (guideRegion.width <= 0 || guideRegion.height <= 0)
+        {
+            if (!_guideCanvas.TryGetNonBackgroundBounds(out guideRegion))
+            {
+                onComplete?.Invoke(false, appliedRegion, "Sketch guide bounds are empty.");
+                yield break;
+            }
+        }
+
+        appliedRegion = applyFullSketchResult
+            ? new RectInt(0, 0, _canvas.Width, _canvas.Height)
+            : ExpandRegion(guideRegion, Mathf.Max(0, regionPadding), _canvas.Width, _canvas.Height);
+        if (appliedRegion.width <= 0 || appliedRegion.height <= 0)
+        {
+            onComplete?.Invoke(false, appliedRegion, "Resolved sketch guide region is empty.");
+            yield break;
+        }
+
+        Texture2D sampledTexture = generatedTexture;
+        Texture2D resizedTexture = null;
+        if (generatedTexture.width != _canvas.Width || generatedTexture.height != _canvas.Height)
+        {
+            if (!StableDiffusionCppImageIO.TryResizeTexture(
+                    generatedTexture,
+                    _canvas.Width,
+                    _canvas.Height,
+                    out resizedTexture,
+                    out error))
+            {
+                onComplete?.Invoke(false, appliedRegion, error);
+                yield break;
+            }
+
+            sampledTexture = resizedTexture;
+        }
+
+        Color32[] beforePixels = _canvas.CopyRegion(appliedRegion);
+        Color32[] sourcePixels = sampledTexture.GetPixels32();
+        Color32[] afterPixels = new Color32[appliedRegion.width * appliedRegion.height];
+        int rowsPerFrame = Mathf.Clamp(sketchResultApplyRowsPerFrame, 1, appliedRegion.height);
+
+        try
+        {
+            for (int localY = 0; localY < appliedRegion.height; localY += rowsPerFrame)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    onComplete?.Invoke(false, appliedRegion, "Sketch guide generation cancelled.");
+                    yield break;
+                }
+
+                int chunkHeight = Mathf.Min(rowsPerFrame, appliedRegion.height - localY);
+                var chunkRegion = new RectInt(
+                    appliedRegion.x,
+                    appliedRegion.y + localY,
+                    appliedRegion.width,
+                    chunkHeight);
+                Color32[] chunkPixels = CopyTextureRegionPixels(
+                    sourcePixels,
+                    sampledTexture.width,
+                    chunkRegion);
+
+                if (chunkPixels == null || chunkPixels.Length != chunkRegion.width * chunkRegion.height)
+                {
+                    onComplete?.Invoke(false, appliedRegion, "Failed to read generated sketch guide pixels.");
+                    yield break;
+                }
+
+                _canvas.ApplyRegion(chunkRegion, chunkPixels);
+                RefreshDisplayRegion(chunkRegion);
+                Array.Copy(
+                    chunkPixels,
+                    0,
+                    afterPixels,
+                    localY * appliedRegion.width,
+                    chunkPixels.Length);
+                yield return null;
+            }
+
+            RecordHistory(appliedRegion, beforePixels, afterPixels);
+            _guideCanvas.Clear();
+            RefreshDisplayRegion(appliedRegion);
+            NotifySketchGuideStateChanged();
+            onComplete?.Invoke(true, appliedRegion, null);
+        }
+        finally
+        {
+            if (resizedTexture != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(resizedTexture);
+                }
+                else
+                {
+                    DestroyImmediate(resizedTexture);
+                }
+            }
         }
     }
 
     public bool Undo()
     {
+        if (_isInteractionLocked)
+        {
+            return false;
+        }
+
         FinalizeStrokeHistory();
         if (_history == null || !_history.Undo(_canvas))
         {
             return false;
         }
 
+        RefreshDisplayFullCanvas();
         NotifyHistoryStateChanged();
         return true;
     }
 
     public bool Redo()
     {
+        if (_isInteractionLocked)
+        {
+            return false;
+        }
+
         FinalizeStrokeHistory();
         if (_history == null || !_history.Redo(_canvas))
         {
             return false;
         }
 
+        RefreshDisplayFullCanvas();
         NotifyHistoryStateChanged();
         return true;
     }
@@ -213,6 +623,10 @@ public class DrawingBoardController : MonoBehaviour
         ResetStrokeHistory();
         _canvas?.Dispose();
         _canvas = null;
+        _guideCanvas?.Dispose();
+        _guideCanvas = null;
+        _displayCanvas?.Dispose();
+        _displayCanvas = null;
         _history?.Clear();
         ReleaseRuntimeMaterial();
         CleanupBrushPreview();
@@ -235,9 +649,14 @@ public class DrawingBoardController : MonoBehaviour
         CaptureOriginalMaterial();
         ReleaseRuntimeMaterial();
         _canvas?.Dispose();
+        _guideCanvas?.Dispose();
+        _displayCanvas?.Dispose();
         _canvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
+        _guideCanvas = new DrawingCanvas(textureWidth, textureHeight, Color.clear, filterMode);
+        _displayCanvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
         _history = new DrawingHistory(maxHistoryEntries);
         ResetStrokeHistory();
+        RefreshDisplayFullCanvas();
 
         Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
         if (shader == null)
@@ -254,13 +673,22 @@ public class DrawingBoardController : MonoBehaviour
         _runtimeMaterial.name = $"{name}_DrawingBoardMaterial";
         _runtimeMaterial.hideFlags = RuntimeHideFlags;
         ConfigureRuntimeMaterial(_runtimeMaterial);
-        AssignTexture(_runtimeMaterial, _canvas.Texture, texturePropertyName);
+        AssignTexture(_runtimeMaterial, _displayCanvas.Texture, texturePropertyName);
         boardRenderer.sharedMaterial = _runtimeMaterial;
         NotifyHistoryStateChanged();
+        NotifySketchGuideStateChanged();
     }
 
     private void HandlePointerInput()
     {
+        if (_isInteractionLocked)
+        {
+            UpdateBrushPreview(pointerOverUi: true);
+            _isDrawing = false;
+            FinalizeStrokeHistory();
+            return;
+        }
+
         bool pointerDown = GetPointerDownThisFrame();
         bool pointerHeld = GetPointerHeld();
         bool pointerUp = GetPointerUpThisFrame();
@@ -276,6 +704,14 @@ public class DrawingBoardController : MonoBehaviour
 
         if (!pointerOverUi && pointerDown && TryGetPointerPixel(out Vector2Int startPixel))
         {
+            if (_useSketchGuide)
+            {
+                _isDrawing = true;
+                _lastPixel = startPixel;
+                PaintSketchGuideLine(startPixel, startPixel);
+                return;
+            }
+
             if (_useFillTool)
             {
                 ApplyFill(startPixel);
@@ -287,15 +723,29 @@ public class DrawingBoardController : MonoBehaviour
             _isDrawing = true;
             _lastPixel = startPixel;
             CaptureStrokeSegmentBeforeChange(startPixel, startPixel);
-            _canvas.DrawLine(startPixel, startPixel, GetActiveDrawColor(), brushRadius, out _);
+            if (_canvas.DrawLine(startPixel, startPixel, GetActiveDrawColor(), brushRadius, out RectInt dirtyRegion))
+            {
+                RefreshDisplayRegion(dirtyRegion);
+            }
         }
 
         if (!pointerOverUi && _isDrawing && pointerHeld && TryGetPointerPixel(out Vector2Int currentPixel))
         {
             if (currentPixel != _lastPixel)
             {
+                if (_useSketchGuide)
+                {
+                    PaintSketchGuideLine(_lastPixel, currentPixel);
+                    _lastPixel = currentPixel;
+                    return;
+                }
+
                 CaptureStrokeSegmentBeforeChange(_lastPixel, currentPixel);
-                _canvas.DrawLine(_lastPixel, currentPixel, GetActiveDrawColor(), brushRadius, out _);
+                if (_canvas.DrawLine(_lastPixel, currentPixel, GetActiveDrawColor(), brushRadius, out RectInt dirtyRegion))
+                {
+                    RefreshDisplayRegion(dirtyRegion);
+                }
+
                 _lastPixel = currentPixel;
             }
         }
@@ -309,11 +759,21 @@ public class DrawingBoardController : MonoBehaviour
 
     private Color GetActiveDrawColor()
     {
+        if (_useSketchGuide)
+        {
+            return sketchGuideOverlayColor;
+        }
+
         return _useEraser ? backgroundColor : brushColor;
     }
 
     private Color GetPreviewColor()
     {
+        if (_useSketchGuide)
+        {
+            return sketchGuideOverlayColor;
+        }
+
         return _useEraser ? previewEraserColor : previewBrushColor;
     }
 
@@ -331,9 +791,9 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        Vector2 uv = hit.textureCoord;
-        int x = Mathf.Clamp(Mathf.FloorToInt(uv.x * _canvas.Width), 0, _canvas.Width - 1);
-        int y = Mathf.Clamp(Mathf.FloorToInt(uv.y * _canvas.Height), 0, _canvas.Height - 1);
+        Vector2 canvasUv = SurfaceUvToCanvasUv(hit.textureCoord);
+        int x = Mathf.Clamp(Mathf.FloorToInt(canvasUv.x * _canvas.Width), 0, _canvas.Width - 1);
+        int y = Mathf.Clamp(Mathf.FloorToInt(canvasUv.y * _canvas.Height), 0, _canvas.Height - 1);
         pixel = new Vector2Int(x, y);
         return true;
     }
@@ -397,6 +857,7 @@ public class DrawingBoardController : MonoBehaviour
         if (filled)
         {
             RecordHistory(dirtyRegion, beforePixels, afterPixels);
+            RefreshDisplayRegion(dirtyRegion);
         }
 
         return filled;
@@ -485,6 +946,63 @@ public class DrawingBoardController : MonoBehaviour
         HistoryStateChanged?.Invoke(CanUndo, CanRedo);
     }
 
+    private void NotifySketchGuideStateChanged()
+    {
+        SketchGuideStateChanged?.Invoke(_useSketchGuide, HasSketchGuide);
+    }
+
+    private void PaintSketchGuideLine(Vector2Int from, Vector2Int to)
+    {
+        if (_guideCanvas == null || _displayCanvas == null)
+        {
+            return;
+        }
+
+        if (_guideCanvas.DrawLine(from, to, sketchGuideStrokeColor, brushRadius, out RectInt dirtyRegion))
+        {
+            RefreshDisplayRegion(dirtyRegion);
+            NotifySketchGuideStateChanged();
+        }
+    }
+
+    private void RefreshDisplayFullCanvas()
+    {
+        if (_canvas == null || _displayCanvas == null)
+        {
+            return;
+        }
+
+        RefreshDisplayRegion(new RectInt(0, 0, _canvas.Width, _canvas.Height));
+    }
+
+    private void RefreshDisplayRegion(RectInt region)
+    {
+        if (_canvas == null || _displayCanvas == null || region.width <= 0 || region.height <= 0)
+        {
+            return;
+        }
+
+        Color32[] compositePixels = _canvas.CopyRegion(region);
+        if (_guideCanvas != null)
+        {
+            Color32[] guidePixels = _guideCanvas.CopyRegion(region);
+            int pixelCount = Mathf.Min(compositePixels.Length, guidePixels.Length);
+            Color guideColor = sketchGuideOverlayColor;
+            for (int i = 0; i < pixelCount; i++)
+            {
+                float alpha = guidePixels[i].a / 255f;
+                if (alpha <= 0f)
+                {
+                    continue;
+                }
+
+                compositePixels[i] = Color32.Lerp(compositePixels[i], guideColor, alpha * guideColor.a);
+            }
+        }
+
+        _displayCanvas.ApplyRegion(region, compositePixels);
+    }
+
     private void InitializeBrushPreview()
     {
         if (!showBrushPreview || _brushPreviewRenderer != null)
@@ -542,7 +1060,7 @@ public class DrawingBoardController : MonoBehaviour
             return;
         }
 
-        if (_useFillTool || pointerOverUi || !TryGetPointerHit(out RaycastHit hit))
+        if (_useFillTool || pointerOverUi || _isInteractionLocked || !TryGetPointerHit(out RaycastHit hit))
         {
             _brushPreviewRenderer.enabled = false;
             return;
@@ -685,6 +1203,15 @@ public class DrawingBoardController : MonoBehaviour
         return new RectInt(minX, minY, maxX - minX, maxY - minY);
     }
 
+    private static RectInt ExpandRegion(RectInt region, int padding, int width, int height)
+    {
+        int minX = Mathf.Clamp(region.xMin - padding, 0, Mathf.Max(0, width - 1));
+        int minY = Mathf.Clamp(region.yMin - padding, 0, Mathf.Max(0, height - 1));
+        int maxX = Mathf.Clamp(region.xMax + padding, 0, width);
+        int maxY = Mathf.Clamp(region.yMax + padding, 0, height);
+        return new RectInt(minX, minY, Mathf.Max(0, maxX - minX), Mathf.Max(0, maxY - minY));
+    }
+
     private static void CopyRegionPixels(Color32[] sourcePixels, RectInt sourceRegion, Color32[] destinationPixels, RectInt destinationRegion)
     {
         int offsetX = sourceRegion.xMin - destinationRegion.xMin;
@@ -698,7 +1225,29 @@ public class DrawingBoardController : MonoBehaviour
         }
     }
 
-    private static void AssignTexture(Material material, Texture2D texture, string texturePropertyName)
+    private static Color32[] CopyTextureRegionPixels(
+        Color32[] sourcePixels,
+        int sourceWidth,
+        RectInt region)
+    {
+        if (sourcePixels == null || sourceWidth <= 0 || region.width <= 0 || region.height <= 0)
+        {
+            return Array.Empty<Color32>();
+        }
+
+        Color32[] copy = new Color32[region.width * region.height];
+        for (int y = 0; y < region.height; y++)
+        {
+            int sourceY = region.y + y;
+            int sourceIndex = (sourceY * sourceWidth) + region.x;
+            int destinationIndex = y * region.width;
+            Array.Copy(sourcePixels, sourceIndex, copy, destinationIndex, region.width);
+        }
+
+        return copy;
+    }
+
+    private void AssignTexture(Material material, Texture2D texture, string texturePropertyName)
     {
         if (material == null)
         {
@@ -706,11 +1255,22 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         material.mainTexture = texture;
+        material.mainTextureScale = boardTextureScale;
+        material.mainTextureOffset = boardTextureOffset;
 
         if (!string.IsNullOrWhiteSpace(texturePropertyName) && material.HasProperty(texturePropertyName))
         {
             material.SetTexture(texturePropertyName, texture);
+            material.SetTextureScale(texturePropertyName, boardTextureScale);
+            material.SetTextureOffset(texturePropertyName, boardTextureOffset);
         }
+    }
+
+    private Vector2 SurfaceUvToCanvasUv(Vector2 surfaceUv)
+    {
+        return new Vector2(
+            (surfaceUv.x * boardTextureScale.x) + boardTextureOffset.x,
+            (surfaceUv.y * boardTextureScale.y) + boardTextureOffset.y);
     }
 
     private static void ConfigureRuntimeMaterial(Material material)

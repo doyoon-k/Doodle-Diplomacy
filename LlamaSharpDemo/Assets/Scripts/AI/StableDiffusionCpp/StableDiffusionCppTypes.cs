@@ -105,6 +105,7 @@ public sealed class StableDiffusionCppPreparationResult
     public string ErrorMessage { get; private set; }
     public string RuntimeInstallDirectory { get; private set; }
     public string ExecutablePath { get; private set; }
+    public string NativeLibraryPath { get; private set; }
     public string ModelPath { get; private set; }
     public string VaePath { get; private set; }
     public StableDiffusionCppPlatformId Platform { get; private set; }
@@ -123,7 +124,8 @@ public sealed class StableDiffusionCppPreparationResult
         string runtimeInstallDirectory,
         string executablePath,
         string modelPath,
-        string vaePath)
+        string vaePath,
+        string nativeLibraryPath = "")
     {
         return new StableDiffusionCppPreparationResult
         {
@@ -131,6 +133,7 @@ public sealed class StableDiffusionCppPreparationResult
             Platform = platform,
             RuntimeInstallDirectory = runtimeInstallDirectory,
             ExecutablePath = executablePath,
+            NativeLibraryPath = nativeLibraryPath ?? string.Empty,
             ModelPath = modelPath,
             VaePath = vaePath
         };

@@ -1,0 +1,15 @@
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.GeneratedMSBuildEditorConfig.editorconfig
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.AssemblyInfoInputs.cache
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.AssemblyInfo.cs
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.csproj.CoreCompileInputs.cache
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.sourcelink.json
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\StableDiffusionCppSidecarWorker.exe
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\StableDiffusionCppSidecarWorker.deps.json
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\StableDiffusionCppSidecarWorker.runtimeconfig.json
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\StableDiffusionCppSidecarWorker.dll
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\StableDiffusionCppSidecarWorker.pdb
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.dll
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\refint\StableDiffusionCppSidecarWorker.dll
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.pdb
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\StableDiffusionCppSidecarWorker.genruntimeconfig.cache
+C:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\obj\Release\net8.0\ref\StableDiffusionCppSidecarWorker.dll

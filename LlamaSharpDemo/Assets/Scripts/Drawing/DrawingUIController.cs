@@ -122,6 +122,7 @@ public class DrawingUIController : MonoBehaviour
     private Transform _controlPanelParent;
     private int _controlPanelBaseSiblingIndex = -1;
     private bool _controlPanelRaisedForCustomPanel;
+    private DrawingSketchGuidePanelController _sketchGuidePanel;
 
     private void Awake()
     {
@@ -139,6 +140,7 @@ public class DrawingUIController : MonoBehaviour
         EnsureCircleSprite();
         BindControls();
         BuildPalette();
+        EnsureSketchGuidePanel();
         SyncUi();
     }
 
@@ -148,6 +150,7 @@ public class DrawingUIController : MonoBehaviour
         {
             drawingBoard.BrushRadiusChanged += OnBrushRadiusChangedExternally;
             drawingBoard.HistoryStateChanged += OnHistoryStateChanged;
+            drawingBoard.SketchGuideStateChanged += OnSketchGuideStateChanged;
         }
     }
 
@@ -157,6 +160,7 @@ public class DrawingUIController : MonoBehaviour
         {
             drawingBoard.BrushRadiusChanged -= OnBrushRadiusChangedExternally;
             drawingBoard.HistoryStateChanged -= OnHistoryStateChanged;
+            drawingBoard.SketchGuideStateChanged -= OnSketchGuideStateChanged;
         }
     }
 
@@ -578,6 +582,7 @@ public class DrawingUIController : MonoBehaviour
             drawingBoard.SetBrushColor(swatch.SwatchColor);
             RefreshPaletteSelection();
             RefreshActiveColorPreview();
+            RefreshFillVisual();
             RefreshEraserVisual();
             RefreshCustomColorButtonVisual();
             return;
@@ -595,6 +600,7 @@ public class DrawingUIController : MonoBehaviour
 
             RefreshPaletteSelection();
             RefreshActiveColorPreview();
+            RefreshFillVisual();
             RefreshEraserVisual();
             RefreshCustomColorButtonVisual();
             return;
@@ -870,6 +876,10 @@ public class DrawingUIController : MonoBehaviour
             {
                 activeColorStatusText.text = "Current: Fill";
             }
+            else if (drawingBoard.IsSketchGuideEnabled)
+            {
+                activeColorStatusText.text = "Current: Sketch Guide";
+            }
             else
             {
                 activeColorStatusText.text = "Current: Brush";
@@ -917,6 +927,7 @@ public class DrawingUIController : MonoBehaviour
         bool usingCustomColor =
             drawingBoard != null &&
             !drawingBoard.IsEraserEnabled &&
+            !drawingBoard.IsSketchGuideEnabled &&
             !_isBrushColorInDefaultPalette;
 
         if (customColorButtonImage != null)
@@ -1027,6 +1038,29 @@ public class DrawingUIController : MonoBehaviour
     private void OnHistoryStateChanged(bool canUndo, bool canRedo)
     {
         RefreshHistoryButtons();
+    }
+
+    private void OnSketchGuideStateChanged(bool sketchGuideEnabled, bool hasSketchGuide)
+    {
+        RefreshPaletteSelection();
+        RefreshActiveColorPreview();
+        RefreshFillVisual();
+        RefreshEraserVisual();
+        RefreshCustomColorButtonVisual();
+    }
+
+    private void EnsureSketchGuidePanel()
+    {
+        if (_sketchGuidePanel != null)
+        {
+            return;
+        }
+
+        _sketchGuidePanel = GetComponent<DrawingSketchGuidePanelController>();
+        if (_sketchGuidePanel == null)
+        {
+            _sketchGuidePanel = gameObject.AddComponent<DrawingSketchGuidePanelController>();
+        }
     }
 
     private void EnsureToolButtons()

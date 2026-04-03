@@ -1,0 +1,5 @@
+C:\Users\Doyoon\AppData\LocalLow\DefaultCompany\LlamaSharpDemo\sdcpp_sidecar\v0.0.1\WinX64\StableDiffusionCppSidecarWorker.exe
+C:\Users\Doyoon\AppData\LocalLow\DefaultCompany\LlamaSharpDemo\sdcpp_sidecar\v0.0.1\WinX64\StableDiffusionCppSidecarWorker.dll
+C:\Users\Doyoon\AppData\LocalLow\DefaultCompany\LlamaSharpDemo\sdcpp_sidecar\v0.0.1\WinX64\StableDiffusionCppSidecarWorker.deps.json
+C:\Users\Doyoon\AppData\LocalLow\DefaultCompany\LlamaSharpDemo\sdcpp_sidecar\v0.0.1\WinX64\StableDiffusionCppSidecarWorker.runtimeconfig.json
+C:\Users\Doyoon\AppData\LocalLow\DefaultCompany\LlamaSharpDemo\sdcpp_sidecar\v0.0.1\WinX64\StableDiffusionCppSidecarWorker.pdb

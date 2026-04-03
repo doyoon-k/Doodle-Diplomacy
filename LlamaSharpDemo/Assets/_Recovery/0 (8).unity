@@ -2251,7 +2251,7 @@ MonoBehaviour:
   prompt: a clean illustrated object
   promptTemplate: Clean, Photo realistic
   negativePrompt: 
-  controlStrength: 0.75
+  controlStrength: 0.805
   steps: 20
   cfgScale: 7
   seed: 42

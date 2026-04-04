@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
-  m_Name: VisionImageSummary
+  m_Name: HumanImageHintPipeline
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
   model: Models/gemma-3-4b-it-q4_0.gguf
   format: 
@@ -18,14 +18,15 @@ MonoBehaviour:
   keepAlive: 
   visionProjectorModel: Models/mmproj-model-f16-4B.gguf
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: "The subject was given two objects and created a drawing
-    combining them into one scene. The subject is NOT part of the image. The subject
-    is the person who created the drawing. Describe the situation shown in the image.
-    Infer the relationship between the elements. What is the subject trying to do
-    with these two objects in this scene? Based on this, analyze what this suggests
-    about the subject\u2019s tendencies. Focus on the subject\u2019s intention behind
-    creating the scene, not the intentions of the objects in the image. Be explicit
-    about the intended action."
+  systemPromptTemplate: "You are a human assistant observing a drawing made by a
+    player.\n\nYour task is NOT to give a correct answer, but to guess how this drawing
+    might be interpreted at first glance.\n\nRules:\n- Speak as an uncertain human
+    observer.\n- Never speak with certainty.\n- Do NOT explain everything. Keep it
+    short.\n- Focus on what action or relationship the drawing suggests.\n- Use phrases
+    like \u201Cit looks like\u2026\u201D, \u201Cit seems\u2026\u201D, \u201Cmaybe\u2026\u201D.\n-
+    End your response by asking the player if your interpretation matches their intention.\n-
+    Ignore if there are any letters in the picture\n\nOutput format:\nOne short sentence
+    describing your interpretation, followed by a short question."
   jsonSchemaDeliveryMode: 0
   jsonFields: []
   modelParams:
@@ -37,6 +38,6 @@ MonoBehaviour:
     seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 2048
+    contextSize: 1024
     gpuLayerCount: 999
     threads: 4

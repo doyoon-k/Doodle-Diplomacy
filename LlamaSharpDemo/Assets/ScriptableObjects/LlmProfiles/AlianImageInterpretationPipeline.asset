@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: AlianImageInterpretationPipeline
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  model: Models/gemma-3-4b-it-q4_0.gguf
+  format: 
+  stream: 0
+  keepAlive: 
+  visionProjectorModel: Models/mmproj-model-f16-4B.gguf
+  visionProjectorRelativeToStreamingAssets: 1
+  systemPromptTemplate: "The subject was given two objects and created a drawing
+    combining them into one scene. The subject is NOT part of the image. The subject
+    is the person who created the drawing. Describe the situation shown in the image.
+    Infer the relationship between the elements. What is the subject trying to do
+    with these two objects in this scene? Based on this, analyze what this suggests
+    about the subject\u2019s tendencies. Focus on the subject\u2019s intention behind
+    creating the scene, not the intentions of the objects in the image. Be explicit
+    about the intended action."
+  jsonSchemaDeliveryMode: 0
+  jsonFields: []
+  modelParams:
+    temperature: 0.2
+    top_p: 0.9
+    top_k: 40
+    num_predict: 400
+    repeat_penalty: 1.05
+    seed: 0
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 1024
+    gpuLayerCount: 999
+    threads: 4

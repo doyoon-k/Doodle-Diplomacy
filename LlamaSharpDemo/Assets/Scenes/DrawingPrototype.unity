@@ -2269,7 +2269,7 @@ MonoBehaviour:
   logGenerationSummary: 1
   selectedStylePresetIndex: 0
   extractTransparentStickers: 1
-  backgroundRemovalTolerance: 0.08
+  backgroundRemovalTolerance: 0.18
   stickerTrimPadding: 4
   stickerFilterMode: 1
   maxStoredStickerCandidates: 24
@@ -3899,7 +3899,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 16, y: -116}
-  m_SizeDelta: {x: 398, y: 96}
+  m_SizeDelta: {x: 398, y: 572.2784}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1555347091
 MonoBehaviour:
@@ -4299,8 +4299,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1473, y: -691}
-  m_SizeDelta: {x: 430, y: 228}
+  m_AnchoredPosition: {x: 20, y: -355}
+  m_SizeDelta: {x: 430, y: 707.8328}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1746886263
 MonoBehaviour:

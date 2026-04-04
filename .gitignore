@@ -81,3 +81,9 @@ LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.safetensors.meta
 # Ignore OpenRouter config
 openrouter_config.json
 openrouter_config.example.json
+
+LlamaSharpDemo/Assets/StreamingAssets/Models.zip
+
+LlamaSharpDemo/Assets/StreamingAssets/SDModels (2).zip
+
+LlamaSharpDemo/Assets/StreamingAssets/SDModels.zip

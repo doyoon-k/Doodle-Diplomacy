@@ -20,8 +20,8 @@ MonoBehaviour:
   defaultHeight: 512
   defaultSteps: 1
   defaultCfgScale: 1
-  defaultSeed: 42
-  defaultSampler: euler
-  defaultScheduler: discrete
+  defaultSeed: 50409
+  defaultSampler: dpm++2s_a
+  defaultScheduler: karras
   defaultNegativePrompt: 
   defaultControlStrength: 0.9

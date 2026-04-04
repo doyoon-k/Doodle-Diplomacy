@@ -95,8 +95,9 @@ MonoBehaviour:
     top_k: 40
     num_predict: 128
     repeat_penalty: 1.1
+    seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 2048
+    contextSize: 1024
     gpuLayerCount: 999
     threads: 4

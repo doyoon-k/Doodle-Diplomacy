@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "lqEIRo7F+dU=",
+  "dgSpecHash": "IpmJEAJ/FJA=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Doyoon Kim\\Documents\\Digipen\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\StableDiffusionCppSidecarWorker.csproj",
+  "projectFilePath": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\Tools\\StableDiffusionCppSidecarWorker\\StableDiffusionCppSidecarWorker.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

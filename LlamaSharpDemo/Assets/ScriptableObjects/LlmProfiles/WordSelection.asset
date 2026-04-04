@@ -23,7 +23,7 @@ MonoBehaviour:
     Select 2 objects
     and respond in JSON only. Do not include any other text.
 
-    
+
 
     Rules:
 
@@ -60,6 +60,6 @@ MonoBehaviour:
     seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 2048
+    contextSize: 1024
     gpuLayerCount: 999
     threads: 4

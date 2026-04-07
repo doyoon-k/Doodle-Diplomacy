@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: JudgmentProfile
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  format: '{"type":"object","properties":{"axis1":{"type":"string","enum":["very_dissatisfied","dissatisfied","neutral","satisfied","very_satisfied"]},"axis2":{"type":"string","enum":["very_dissatisfied","dissatisfied","neutral","satisfied","very_satisfied"]},"scene_reading":{"type":"string"},"judgment_reason":{"type":"string"}},"required":["axis1","axis2","scene_reading","judgment_reason"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  visionProjectorModel: Models/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
+  visionProjectorRelativeToStreamingAssets: 1
+  systemPromptTemplate: "You are one alien delegation evaluating a human's diplomatic
+    drawing.\n\nYou will receive:\n- the visible drawing image\n- the two prompt
+    objects the human was asked to combine\n- the delegation's personality rubric
+    for axis1 and axis2\n\nWork in this order:\n1. Identify the clearest
+    visible action, interaction, transfer, or cause-and-effect.\n2. Infer the most
+    likely intended situation, but stay close to visible evidence.\n3. Judge satisfaction
+    on both personality axes.\n\nRules:\n- Treat the image as primary evidence.\n-
+    Treat the prompt objects as soft intended context, not mandatory truth.\n- axis1
+    must judge the first personality trait.\n- axis2 must judge the second personality
+    trait.\n- If a line, dotted path, beam, stream, or trail connects things, first
+    test motion, transfer, emission, or contact.\n- Do not claim unseen outcomes,
+    hidden physical effects, or off-screen results unless they are visually clear.\n-
+    If the outcome is uncertain, say it is unclear or ambiguous.\n- Do not import
+    human disgust, politeness, or social taboo unless the given alien personality
+    clearly supports it.\n- A strange, crude, or biological method is not automatically
+    bad.\n- If the visible action seems direct, controlled, and problem-solving, an
+    efficiency-driven or dominant delegation may approve even if the method looks
+    rude or absurd.\n- Ignore art quality, realism, anatomy, perspective, and polish
+    unless they change the meaning.\n- Prefer one concrete reading over a vague mood
+    reading.\n\nReturn valid JSON only with exactly these keys:\naxis1, axis2, scene_reading,
+    judgment_reason\n\nscene_reading should be one concise sentence about what is
+    visibly happening or most likely being shown, without adding unseen aftermath.\njudgment_reason
+    should explain the delegation's reaction using visible evidence first and brief
+    inference second. If causality is uncertain, say so plainly.\nUse English and
+    ASCII only."
+  jsonSchemaDeliveryMode: 0
+  jsonFields:
+  - fieldName: axis1
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - very_dissatisfied
+    - dissatisfied
+    - neutral
+    - satisfied
+    - very_satisfied
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: axis2
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - very_dissatisfied
+    - dissatisfied
+    - neutral
+    - satisfied
+    - very_satisfied
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: scene_reading
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: judgment_reason
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  modelParams:
+    temperature: 0.25
+    top_p: 0.85
+    top_k: 40
+    num_predict: 400
+    repeat_penalty: 1.1
+    seed: 0
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 4096
+    gpuLayerCount: 999
+    threads: 4

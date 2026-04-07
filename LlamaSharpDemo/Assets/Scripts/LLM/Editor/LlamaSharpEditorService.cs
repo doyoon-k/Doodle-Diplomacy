@@ -124,11 +124,13 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
 
         CancellationTokenSource timeoutCts = CreateOperationCancellationSource(_inferenceTimeoutSeconds);
         Task<string> inferenceTask = Task.Run(() =>
-            LlamaSharpInterop.InferToStringAsync(
-                executor,
-                prompt,
-                LlamaSharpInterop.CreateInferenceParams(settings),
-                timeoutCts.Token),
+            LlamaSharpInterop.SanitizeCompletion(
+                LlamaSharpInterop.InferToStringAsync(
+                    executor,
+                    prompt,
+                    LlamaSharpInterop.CreateInferenceParams(settings),
+                    timeoutCts.Token).GetAwaiter().GetResult(),
+                settings),
             timeoutCts.Token);
         RegisterActiveInference(inferenceTask, timeoutCts);
 
@@ -364,10 +366,12 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         {
             _mtmdWeights.ClearMedia();
             _mtmdWeights.LoadMedia(imageBytes);
-            return LlamaSharpInterop
-                .InferToStringAsync(executor, prompt, LlamaSharpInterop.CreateInferenceParams(settings), cancellationToken)
-                .GetAwaiter()
-                .GetResult();
+            return LlamaSharpInterop.SanitizeCompletion(
+                LlamaSharpInterop
+                    .InferToStringAsync(executor, prompt, LlamaSharpInterop.CreateInferenceParams(settings), cancellationToken)
+                    .GetAwaiter()
+                    .GetResult(),
+                settings);
         }
     }
 

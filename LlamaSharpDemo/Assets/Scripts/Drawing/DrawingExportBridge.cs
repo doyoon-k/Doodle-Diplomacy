@@ -25,6 +25,7 @@ public class DrawingExportBridge : MonoBehaviour
     public Texture2D CurrentTexture => drawingBoard != null ? drawingBoard.GetCompositeTextureForExport() : null;
     public PromptPipelineAsset PipelineAsset => pipelineAsset;
     public string ImageStateKey => imageStateKey;
+    public bool HasVisibleDrawing => drawingBoard != null && drawingBoard.HasCanvasMarks;
 
     private void Awake()
     {
@@ -51,6 +52,21 @@ public class DrawingExportBridge : MonoBehaviour
             return false;
         }
 
+        return true;
+    }
+
+    public bool TryHasVisibleDrawing(out bool hasVisibleDrawing, out string error)
+    {
+        hasVisibleDrawing = false;
+        error = null;
+
+        if (drawingBoard == null)
+        {
+            error = "DrawingBoardController reference is missing.";
+            return false;
+        }
+
+        hasVisibleDrawing = drawingBoard.HasCanvasMarks;
         return true;
     }
 

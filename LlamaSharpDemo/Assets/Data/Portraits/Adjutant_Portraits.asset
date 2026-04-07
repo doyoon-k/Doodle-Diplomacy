@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981db292e108e7c48a7406be83504779, type: 3}
+  m_Name: Adjutant_Portraits
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.PortraitSet
+  entries:
+  - emotionID: angry
+    texture: {fileID: 2800000, guid: dd1c19dbc93db8d4cb63100260bfe7ab, type: 2}
+  - emotionID: satisfied
+    texture: {fileID: 2800000, guid: 2e0afb5e3bdc1e14687e4f03a1d3b362, type: 2}
+  - emotionID: neutral
+    texture: {fileID: 2800000, guid: 53f8bfef451deda4ba7ca61c9458273c, type: 2}

@@ -190,11 +190,13 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
         CancellationTokenSource timeoutCts = CreateOperationCancellationSource(inferenceTimeoutSeconds);
         Task<string> inferenceTask = Task.Run(() =>
             RunWithOptionalNativeBootstrap(() =>
-                LlamaSharpInterop.InferToStringAsync(
+                LlamaSharpInterop.SanitizeCompletion(
+                    LlamaSharpInterop.InferToStringAsync(
                     executor,
                     prompt,
                     LlamaSharpInterop.CreateInferenceParams(settings),
-                    timeoutCts.Token).GetAwaiter().GetResult()),
+                    timeoutCts.Token).GetAwaiter().GetResult(),
+                    settings)),
             timeoutCts.Token);
         RegisterActiveInference(inferenceTask, timeoutCts);
 
@@ -631,10 +633,12 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
 
             _mtmdWeights.ClearMedia();
             _mtmdWeights.LoadMedia(imageBytes);
-            return LlamaSharpInterop
-                .InferToStringAsync(executor, prompt, LlamaSharpInterop.CreateInferenceParams(settings), cancellationToken)
-                .GetAwaiter()
-                .GetResult();
+            return LlamaSharpInterop.SanitizeCompletion(
+                LlamaSharpInterop
+                    .InferToStringAsync(executor, prompt, LlamaSharpInterop.CreateInferenceParams(settings), cancellationToken)
+                    .GetAwaiter()
+                    .GetResult(),
+                settings);
         }
     }
 

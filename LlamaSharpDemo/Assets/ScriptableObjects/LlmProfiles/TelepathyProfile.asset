@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: TelepathyProfile
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  format: 
+  stream: 0
+  keepAlive: 
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
+  systemPromptTemplate: 'You are writing a translated fragment of the aliens'' internal
+    conversation after they judged a human drawing.
+
+
+    Goal: help the player infer
+    what this group values from how its members react to the judgment.
+
+
+    Rules:
+
+    -
+    Use only the provided alien personality rubric, scene reading, and judgment reason.
+
+    -
+    Make it sound like 2 or 3 members of the same delegation reacting to each other,
+    not one narrator giving a speech.
+
+    - Start each line with a short speaker
+    cue such as ''Alien1:'', ''Alien2:'', or ''Alien3:''.
+
+    - Let values show
+    through priorities, praise, complaints, corrections, impatience, or approval.
+
+    -
+    The speakers may differ in emphasis, but they must share the same core values.
+
+    -
+    Do not restate the full scene description or the full judgment. React to it.
+
+    -
+    Do not speak as if the action is automatically shameful, disgusting, or improper
+    just because it is biological, crude, or unusual.
+
+    - If the judgment suggests
+    the action is direct or effective, let the dialogue focus on control, utility,
+    waste, precision, or results instead of human-style moral disgust.
+
+    - Avoid
+    long explanations, abstract moralizing, and formal report language.
+
+    - Do
+    not use narration, bullet points, headers, stage directions, or terminal formatting.
+
+    -
+    Do not directly name personality labels such as cooperative, dominant, efficient,
+    or empathetic.
+
+    - English only. ASCII only.
+
+
+    Output spoken lines only.'
+  jsonSchemaDeliveryMode: 0
+  jsonFields: []
+  modelParams:
+    temperature: 0.7
+    top_p: 0.9
+    top_k: 40
+    num_predict: 400
+    repeat_penalty: 1.1
+    seed: 0
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 1024
+    gpuLayerCount: 999
+    threads: 4

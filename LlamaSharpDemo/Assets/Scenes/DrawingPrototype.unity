@@ -419,7 +419,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: VLM Analysis
+  m_Text: Drawing Preview
 --- !u!222 &108132422
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2236,7 +2236,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DrawingExportBridge
   drawingBoard: {fileID: 979744348}
-  pipelineAsset: {fileID: 11400000, guid: 7e64bdb47c6642d8a154b829a2d1e2e6, type: 2}
+  pipelineAsset: {fileID: 11400000, guid: 1b6f09a5c4e54ee4a8574fc5d1a8331d, type: 2}
   imageStateKey: reference_image
   analysisGoalKey: analysis_goal
   analysisGoal: Describe what you see from the image.

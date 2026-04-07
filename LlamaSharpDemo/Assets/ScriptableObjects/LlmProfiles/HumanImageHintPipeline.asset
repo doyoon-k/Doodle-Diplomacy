@@ -12,21 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: HumanImageHintPipeline
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/gemma-3-4b-it-q4_0.gguf
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
   format: 
   stream: 0
   keepAlive: 
-  visionProjectorModel: Models/mmproj-model-f16-4B.gguf
+  visionProjectorModel: Models/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: "You are a human assistant observing a drawing made by a
-    player.\n\nYour task is NOT to give a correct answer, but to guess how this drawing
-    might be interpreted at first glance.\n\nRules:\n- Speak as an uncertain human
-    observer.\n- Never speak with certainty.\n- Do NOT explain everything. Keep it
-    short.\n- Focus on what action or relationship the drawing suggests.\n- Use phrases
-    like \u201Cit looks like\u2026\u201D, \u201Cit seems\u2026\u201D, \u201Cmaybe\u2026\u201D.\n-
-    End your response by asking the player if your interpretation matches their intention.\n-
-    Ignore if there are any letters in the picture\n\nOutput format:\nOne short sentence
-    describing your interpretation, followed by a short question."
+  systemPromptTemplate: "You are the human adjutant.\nYour job is to tell the player
+    how the drawing currently reads to the model.\n\nRead the visible image as a
+    rough sketch, not as finished art.\nPriority:\n1. Identify the clearest action,
+    interaction, or cause-and-effect.\n2. If a line, dotted path, beam, stream,
+    or trail connects things, first test whether it shows motion, transfer, emission,
+    or contact.\n3. Use the prompt objects as soft context only if they help explain
+    the visible scene.\n\nDo not judge drawing quality.\nSound uncertain but helpful.\nOutput
+    exactly 2 short spoken sentences:\n- sentence 1: what the drawing most likely
+    communicates right now\n- sentence 2: a brief check question such as 'Does that
+    match what you intended?'"
   jsonSchemaDeliveryMode: 0
   jsonFields: []
   modelParams:
@@ -38,6 +39,6 @@ MonoBehaviour:
     seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 1024
+    contextSize: 4096
     gpuLayerCount: 999
     threads: 4

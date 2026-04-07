@@ -65,8 +65,14 @@ public class StableDiffusionCppSettings : ScriptableObject
     [Tooltip("Extra raw command-line arguments appended to every sd-cli invocation after the generated arguments. Use this as an escape hatch for stable-diffusion.cpp options that are not exposed by dedicated UI fields. Invalid or conflicting flags can break generation, so keep it empty unless you know the exact CLI arguments you want.")]
     public string globalAdditionalArguments = string.Empty;
 
-    [Tooltip("If enabled, runtime image generation prefers a persistent sidecar worker process that keeps one sd_ctx loaded across requests outside the Unity process. Unsupported raw CLI/cache options still fall back to launching sd-cli per request.")]
+    [Tooltip("If enabled, runtime image generation prefers a persistent backend process instead of launching sd-cli for every compatible request. With the bundled sd-server backend enabled below, supported txt2img requests keep one server process warm across requests while unsupported cases still fall back to one-shot sd-cli.")]
     public bool preferPersistentNativeWorker = true;
+
+    [Tooltip("If enabled, compatible persistent runtime requests use the bundled stable-diffusion.cpp HTTP server (sd-server.exe). This path currently targets preview-disabled txt2img requests and keeps behavior closer to sd-cli while avoiding per-request process startup.")]
+    public bool preferSdServerBackend = true;
+
+    [Tooltip("If enabled, live preview remains requested for runtime generation. The current bundled sd-server build does not expose preview/progress endpoints, so enabling this causes compatible persistent requests to fall back to one-shot sd-cli instead of the persistent server backend.")]
+    public bool enablePersistentWorkerProgressPreview = true;
 
     [Tooltip("Relative subfolder under Application.persistentDataPath where runtime-generated images are written when no explicit output directory override is provided. Example: generated/sdcpp stores files under <persistentDataPath>/generated/sdcpp.")]
     public string runtimeOutputSubfolder = "generated/sdcpp";

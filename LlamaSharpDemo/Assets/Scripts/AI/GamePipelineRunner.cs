@@ -15,7 +15,7 @@ public class GamePipelineRunner : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        if (_runtimeService == null) _runtimeService = GetComponent<RuntimeLlamaSharpService>();
+        EnsureRuntimeService();
     }
 
     public void StopGeneration()
@@ -37,8 +37,28 @@ public class GamePipelineRunner : MonoBehaviour
 
     public void RunPipeline(PromptPipelineAsset asset, PipelineState initialState, Action<PipelineState> onComplete)
     {
+        EnsureRuntimeService();
         StopGeneration();
         _currentRoutine = StartCoroutine(RunRoutine(asset, initialState, onComplete));
+    }
+
+    private void EnsureRuntimeService()
+    {
+        if (_runtimeService == null)
+            _runtimeService = GetComponent<RuntimeLlamaSharpService>();
+
+        if (_runtimeService == null)
+            _runtimeService = FindFirstObjectByType<RuntimeLlamaSharpService>();
+
+        if (_runtimeService == null)
+        {
+            var serviceObject = new GameObject("RuntimeLlamaSharpService");
+            _runtimeService = serviceObject.AddComponent<RuntimeLlamaSharpService>();
+            Debug.LogWarning("[GamePipelineRunner] RuntimeLlamaSharpService was missing. Created a fallback runtime service.");
+        }
+
+        if (_runtimeService != null && LlmServiceLocator.Current == null)
+            LlmServiceLocator.Register(_runtimeService);
     }
 
     private IEnumerator RunRoutine(PromptPipelineAsset asset, PipelineState initialState, Action<PipelineState> onComplete)

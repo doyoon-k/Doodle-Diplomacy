@@ -35,6 +35,8 @@ MonoBehaviour:
   processTimeoutSeconds: 600
   globalAdditionalArguments: 
   preferPersistentNativeWorker: 1
+  preferSdServerBackend: 1
+  enablePersistentWorkerProgressPreview: 0
   runtimeOutputSubfolder: generated/sdcpp
   enableGpuTelemetry: 1
   gpuTelemetryPollIntervalMs: 500

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: IntroSequence
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: Intro
+  lines:
+  - characterID: Adjutant
+    text: Ambassador, the alien delegation has arrived.
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2
+  - characterID: Adjutant
+    text: 'They cannot understand our language.
+
+      We must communicate through
+      drawings.'
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2
+  - characterID: Adjutant
+    text: Press the button in front of the alien to begin negotiations.
+    displayMode: 1
+    portraitID: 
+    advanceType: 1
+    autoDelay: 2

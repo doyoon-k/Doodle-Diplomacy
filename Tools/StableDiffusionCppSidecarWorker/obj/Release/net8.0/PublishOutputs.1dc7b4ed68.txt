@@ -1,5 +1,0 @@
-C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\publish\StableDiffusionCppSidecarWorker.exe
-C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\publish\StableDiffusionCppSidecarWorker.dll
-C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\publish\StableDiffusionCppSidecarWorker.deps.json
-C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\publish\StableDiffusionCppSidecarWorker.runtimeconfig.json
-C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\Tools\StableDiffusionCppSidecarWorker\bin\Release\net8.0\publish\StableDiffusionCppSidecarWorker.pdb

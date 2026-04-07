@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Runs the configured drawing analysis pipeline and renders status/results into a small UGUI panel.
+/// Runs the configured drawing pipeline and renders status/results into a small UGUI panel.
 /// </summary>
 public class DrawingAnalysisPanelController : MonoBehaviour
 {
@@ -95,7 +95,7 @@ public class DrawingAnalysisPanelController : MonoBehaviour
 
         if (analysisResultText != null)
         {
-            analysisResultText.text = "Vision model is processing the current board texture.";
+            analysisResultText.text = "The configured pipeline is processing the current board texture.";
         }
 
         RefreshButtonState();
@@ -149,7 +149,7 @@ public class DrawingAnalysisPanelController : MonoBehaviour
 
         if (analysisResultText != null)
         {
-            analysisResultText.text = "VLM output will appear here.";
+            analysisResultText.text = "Pipeline output will appear here.";
         }
     }
 

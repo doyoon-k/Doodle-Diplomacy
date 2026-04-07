@@ -38,6 +38,7 @@ public class DrawingBoardController : MonoBehaviour
     [SerializeField] private Camera drawingCamera;
     [SerializeField] private int textureWidth = 512;
     [SerializeField] private int textureHeight = 512;
+    [SerializeField] private bool autoMatchCanvasResolutionToBoardAspect = true;
     [SerializeField] private FilterMode filterMode = FilterMode.Bilinear;
     [SerializeField] private string texturePropertyName = "_BaseMap";
     [SerializeField] private Vector2 boardTextureScale = new(-1f, -1f);
@@ -45,12 +46,17 @@ public class DrawingBoardController : MonoBehaviour
 
     [Header("Brush")]
     [SerializeField] private Color backgroundColor = Color.white;
+    [SerializeField] private Color nonPaintAreaDisplayColor = new(0.88f, 0.90f, 0.94f, 1f);
+    [SerializeField] private Color paintAreaDividerColor = new(0.73f, 0.77f, 0.84f, 1f);
+    [SerializeField] [Range(0f, 0.02f)] private float paintAreaDividerWidthNormalized = 0.003f;
     [SerializeField] private Color brushColor = Color.black;
     [SerializeField] private int brushRadius = 6;
     [SerializeField] private int minBrushRadius = 1;
     [SerializeField] private int maxBrushRadius = 24;
     [SerializeField] private float scrollRadiusStep = 1f;
+    [SerializeField] private bool autoReturnToBrushAfterFill = true;
     [SerializeField] private bool blockPointerWhenOverUi = true;
+    [SerializeField] private Rect normalizedPaintArea = new(0.40f, 0.02f, 0.58f, 0.96f);
 
     [Header("Preview")]
     [SerializeField] private bool showBrushPreview = true;
@@ -87,6 +93,7 @@ public class DrawingBoardController : MonoBehaviour
     private DrawingCanvas _exportCanvas;
     private DrawingHistory _history;
     private Material _runtimeMaterial;
+    private MeshCollider _runtimeDrawingSurfaceCollider;
     private LineRenderer _brushPreviewRenderer;
     private Material _brushPreviewMaterial;
     private Material _originalSharedMaterial;
@@ -114,6 +121,7 @@ public class DrawingBoardController : MonoBehaviour
     public Texture2D CanvasTexture => _canvas?.Texture;
     public Texture2D GuideTexture => _guideCanvas?.Texture;
     public Texture2D DisplayTexture => _displayCanvas?.Texture;
+    public bool HasCanvasMarks => _canvas != null && _canvas.TryGetNonBackgroundBounds(out _);
     public int BrushRadius => brushRadius;
     public bool IsEraserEnabled => _useEraser;
     public bool IsFillToolEnabled => _useFillTool;
@@ -134,30 +142,22 @@ public class DrawingBoardController : MonoBehaviour
 
     private void Awake()
     {
-        if (boardRenderer == null)
-        {
-            boardRenderer = GetComponent<Renderer>();
-        }
+        ResolveRuntimeReferences();
+    }
 
-        if (drawingSurfaceCollider == null)
-        {
-            drawingSurfaceCollider = GetComponent<Collider>();
-        }
-
-        if (drawingCamera == null)
-        {
-            drawingCamera = Camera.main;
-        }
+    private void OnEnable()
+    {
+        EnsureRuntimeReady();
     }
 
     private void Start()
     {
-        InitializeCanvas();
-        InitializeBrushPreview();
+        EnsureRuntimeReady();
     }
 
     private void Update()
     {
+        EnsureRuntimeReady();
         if (_canvas == null || _guideCanvas == null || _displayCanvas == null ||
             drawingSurfaceCollider == null || drawingCamera == null)
         {
@@ -907,10 +907,12 @@ public class DrawingBoardController : MonoBehaviour
         _history?.Clear();
         ReleaseRuntimeMaterial();
         CleanupBrushPreview();
+        CleanupRuntimeDrawingSurfaceCollider();
     }
 
     private void InitializeCanvas()
     {
+        ResolveRuntimeReferences();
         if (boardRenderer == null)
         {
             Debug.LogError("[DrawingBoardController] Board renderer is missing.");
@@ -929,10 +931,11 @@ public class DrawingBoardController : MonoBehaviour
         _guideCanvas?.Dispose();
         _displayCanvas?.Dispose();
         _exportCanvas?.Dispose();
-        _canvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
-        _guideCanvas = new DrawingCanvas(textureWidth, textureHeight, Color.clear, filterMode);
-        _displayCanvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
-        _exportCanvas = new DrawingCanvas(textureWidth, textureHeight, backgroundColor, filterMode);
+        GetResolvedCanvasDimensions(out int resolvedWidth, out int resolvedHeight);
+        _canvas = new DrawingCanvas(resolvedWidth, resolvedHeight, backgroundColor, filterMode);
+        _guideCanvas = new DrawingCanvas(resolvedWidth, resolvedHeight, Color.clear, filterMode);
+        _displayCanvas = new DrawingCanvas(resolvedWidth, resolvedHeight, backgroundColor, filterMode);
+        _exportCanvas = new DrawingCanvas(resolvedWidth, resolvedHeight, backgroundColor, filterMode);
         _history = new DrawingHistory(maxHistoryEntries);
         EnsureStickerRoot();
         ResetStrokeHistory();
@@ -1004,6 +1007,11 @@ public class DrawingBoardController : MonoBehaviour
             if (_useFillTool)
             {
                 ApplyFill(startPixel);
+                if (autoReturnToBrushAfterFill)
+                {
+                    SetFillToolEnabled(false);
+                }
+
                 _isDrawing = false;
                 return;
             }
@@ -1080,15 +1088,42 @@ public class DrawingBoardController : MonoBehaviour
     {
         pixel = default;
 
-        if (!TryGetPointerHit(out RaycastHit hit))
+        if (!TryGetPointerCanvasUv(out Vector2 canvasUv))
         {
             return false;
         }
 
-        Vector2 canvasUv = SurfaceUvToCanvasUv(hit.textureCoord);
         int x = Mathf.Clamp(Mathf.FloorToInt(canvasUv.x * _canvas.Width), 0, _canvas.Width - 1);
         int y = Mathf.Clamp(Mathf.FloorToInt(canvasUv.y * _canvas.Height), 0, _canvas.Height - 1);
         pixel = new Vector2Int(x, y);
+        return true;
+    }
+
+    private bool TryGetPointerCanvasUv(out Vector2 canvasUv)
+    {
+        canvasUv = default;
+
+        if (_canvas == null || !TryGetPointerHit(out RaycastHit hit))
+        {
+            return false;
+        }
+
+        Vector2 surfaceUv;
+        if (hit.collider is MeshCollider)
+        {
+            surfaceUv = hit.textureCoord;
+        }
+        else if (!TryGetSurfaceUvFromBoardLocalHit(hit.point, out surfaceUv))
+        {
+            return false;
+        }
+
+        canvasUv = SurfaceUvToCanvasUv(surfaceUv);
+        if (!IsCanvasUvInPaintArea(canvasUv))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -1108,6 +1143,103 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         return true;
+    }
+
+    private bool TryGetSurfaceUvFromBoardLocalHit(Vector3 worldPoint, out Vector2 surfaceUv)
+    {
+        surfaceUv = default;
+
+        Bounds bounds = GetBoardMeshBounds();
+        if (bounds.size.x <= 0.0001f || bounds.size.z <= 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 localPoint = transform.InverseTransformPoint(worldPoint);
+        surfaceUv = new Vector2(
+            1f - Mathf.InverseLerp(bounds.min.x, bounds.max.x, localPoint.x),
+            1f - Mathf.InverseLerp(bounds.min.z, bounds.max.z, localPoint.z));
+        return true;
+    }
+
+    private bool IsCanvasUvInPaintArea(Vector2 canvasUv)
+    {
+        Rect clampedArea = GetClampedPaintArea();
+        return clampedArea.Contains(canvasUv);
+    }
+
+    private Rect GetClampedPaintArea()
+    {
+        float x = Mathf.Clamp01(normalizedPaintArea.x);
+        float y = Mathf.Clamp01(normalizedPaintArea.y);
+        float width = Mathf.Clamp(normalizedPaintArea.width, 0.01f, 1f - x);
+        float height = Mathf.Clamp(normalizedPaintArea.height, 0.01f, 1f - y);
+        return new Rect(x, y, width, height);
+    }
+
+    private void GetResolvedCanvasDimensions(out int resolvedWidth, out int resolvedHeight)
+    {
+        resolvedWidth = Mathf.Max(1, textureWidth);
+        resolvedHeight = Mathf.Max(1, textureHeight);
+
+        if (!autoMatchCanvasResolutionToBoardAspect)
+        {
+            return;
+        }
+
+        float boardAspect = ResolveCanvasWorldAspect();
+        if (boardAspect <= 0.0001f)
+        {
+            return;
+        }
+
+        int referenceResolution = Mathf.Max(resolvedWidth, resolvedHeight);
+        if (boardAspect >= 1f)
+        {
+            resolvedWidth = Mathf.Max(1, Mathf.RoundToInt(referenceResolution * boardAspect));
+            resolvedHeight = referenceResolution;
+        }
+        else
+        {
+            resolvedWidth = referenceResolution;
+            resolvedHeight = Mathf.Max(1, Mathf.RoundToInt(referenceResolution / boardAspect));
+        }
+    }
+
+    private float ResolveCanvasWorldAspect()
+    {
+        float scaleX = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
+        if (!TryGetBoardWorldSurfaceSize(out float boardWorldWidth, out float boardWorldHeight))
+        {
+            return 1f;
+        }
+
+        float worldWidth = boardWorldWidth / scaleX;
+        float worldHeight = boardWorldHeight / scaleY;
+        if (worldHeight <= 0.0001f)
+        {
+            return 1f;
+        }
+
+        return Mathf.Max(0.01f, worldWidth / worldHeight);
+    }
+
+    private bool TryGetBoardWorldSurfaceSize(out float worldWidth, out float worldHeight)
+    {
+        worldWidth = 1f;
+        worldHeight = 1f;
+
+        Bounds localBounds = GetBoardMeshBounds();
+        if (localBounds.size.x <= 0.0001f || localBounds.size.z <= 0.0001f)
+        {
+            return false;
+        }
+
+        Transform referenceTransform = boardRenderer != null ? boardRenderer.transform : transform;
+        worldWidth = referenceTransform.TransformVector(new Vector3(localBounds.size.x, 0f, 0f)).magnitude;
+        worldHeight = referenceTransform.TransformVector(new Vector3(0f, 0f, localBounds.size.z)).magnitude;
+        return worldWidth > 0.0001f && worldHeight > 0.0001f;
     }
 
     private void UpdateBrushRadiusFromScroll()
@@ -1683,6 +1815,36 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         Color32[] compositePixels = _canvas.CopyRegion(region);
+        Rect paintArea = GetClampedPaintArea();
+        int dividerPixelWidth = Mathf.Max(1, Mathf.RoundToInt(_canvas.Width * paintAreaDividerWidthNormalized));
+        int dividerStart = Mathf.Clamp(Mathf.RoundToInt(paintArea.xMin * _canvas.Width) - dividerPixelWidth, 0, _canvas.Width);
+        int dividerEnd = Mathf.Clamp(Mathf.RoundToInt(paintArea.xMin * _canvas.Width) + dividerPixelWidth, 0, _canvas.Width);
+        Color32 nonPaintColor32 = nonPaintAreaDisplayColor;
+        Color32 dividerColor32 = paintAreaDividerColor;
+
+        for (int localY = 0; localY < region.height; localY++)
+        {
+            int absoluteY = region.y + localY;
+            float canvasV = (absoluteY + 0.5f) / _canvas.Height;
+            for (int localX = 0; localX < region.width; localX++)
+            {
+                int absoluteX = region.x + localX;
+                int pixelIndex = (localY * region.width) + localX;
+                float canvasU = (absoluteX + 0.5f) / _canvas.Width;
+
+                if (!paintArea.Contains(new Vector2(canvasU, canvasV)))
+                {
+                    compositePixels[pixelIndex] = nonPaintColor32;
+                    continue;
+                }
+
+                if (absoluteX >= dividerStart && absoluteX < dividerEnd)
+                {
+                    compositePixels[pixelIndex] = dividerColor32;
+                }
+            }
+        }
+
         if (_guideCanvas != null)
         {
             Color32[] guidePixels = _guideCanvas.CopyRegion(region);
@@ -1761,6 +1923,28 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         if (_useFillTool || pointerOverUi || _isInteractionLocked || !TryGetPointerHit(out RaycastHit hit))
+        {
+            _brushPreviewRenderer.enabled = false;
+            return;
+        }
+
+        Vector2 previewCanvasUv;
+        if (hit.collider is MeshCollider)
+        {
+            previewCanvasUv = SurfaceUvToCanvasUv(hit.textureCoord);
+        }
+        else
+        {
+            if (!TryGetSurfaceUvFromBoardLocalHit(hit.point, out Vector2 previewSurfaceUv))
+            {
+                _brushPreviewRenderer.enabled = false;
+                return;
+            }
+
+            previewCanvasUv = SurfaceUvToCanvasUv(previewSurfaceUv);
+        }
+
+        if (!IsCanvasUvInPaintArea(previewCanvasUv))
         {
             _brushPreviewRenderer.enabled = false;
             return;
@@ -1847,6 +2031,25 @@ public class DrawingBoardController : MonoBehaviour
 
             _brushPreviewMaterial = null;
         }
+    }
+
+    private void CleanupRuntimeDrawingSurfaceCollider()
+    {
+        if (_runtimeDrawingSurfaceCollider == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(_runtimeDrawingSurfaceCollider);
+        }
+        else
+        {
+            DestroyImmediate(_runtimeDrawingSurfaceCollider);
+        }
+
+        _runtimeDrawingSurfaceCollider = null;
     }
 
     private void CaptureOriginalMaterial()
@@ -2056,6 +2259,78 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         return new Bounds(Vector3.zero, new Vector3(10f, 0f, 10f));
+    }
+
+    private void ResolveRuntimeReferences()
+    {
+        if (boardRenderer == null)
+        {
+            boardRenderer = GetComponent<Renderer>();
+        }
+
+        if (drawingCamera == null)
+        {
+            drawingCamera = Camera.main;
+        }
+
+        drawingSurfaceCollider = ResolveDrawingSurfaceCollider();
+    }
+
+    private void EnsureRuntimeReady()
+    {
+        ResolveRuntimeReferences();
+
+        if ((_canvas == null || _guideCanvas == null || _displayCanvas == null) &&
+            boardRenderer != null &&
+            drawingSurfaceCollider != null)
+        {
+            InitializeCanvas();
+        }
+
+        if (_brushPreviewRenderer == null && boardRenderer != null)
+        {
+            InitializeBrushPreview();
+        }
+    }
+
+    private Collider ResolveDrawingSurfaceCollider()
+    {
+        if (drawingSurfaceCollider is MeshCollider meshCollider && meshCollider.sharedMesh != null)
+        {
+            return meshCollider;
+        }
+
+        if (TryGetComponent(out MeshCollider existingMeshCollider) && existingMeshCollider.sharedMesh != null)
+        {
+            return existingMeshCollider;
+        }
+
+        MeshFilter meshFilter = null;
+        if (boardRenderer != null)
+        {
+            meshFilter = boardRenderer.GetComponent<MeshFilter>();
+        }
+
+        if (meshFilter == null)
+        {
+            meshFilter = GetComponent<MeshFilter>();
+        }
+
+        // Drawing needs mesh UVs; a runtime MeshCollider preserves the actual board mapping.
+        if (meshFilter != null && meshFilter.sharedMesh != null)
+        {
+            if (_runtimeDrawingSurfaceCollider == null)
+            {
+                _runtimeDrawingSurfaceCollider = gameObject.AddComponent<MeshCollider>();
+                _runtimeDrawingSurfaceCollider.hideFlags = RuntimeHideFlags;
+            }
+
+            _runtimeDrawingSurfaceCollider.sharedMesh = meshFilter.sharedMesh;
+            _runtimeDrawingSurfaceCollider.convex = false;
+            return _runtimeDrawingSurfaceCollider;
+        }
+
+        return drawingSurfaceCollider != null ? drawingSurfaceCollider : GetComponent<Collider>();
     }
 
     private static RectInt UnionRegions(RectInt left, RectInt right)
@@ -2307,6 +2582,13 @@ public class DrawingBoardController : MonoBehaviour
         if (Keyboard.current != null)
         {
             bool controlPressed = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
+            bool shiftPressed = Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+#if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                return !controlPressed && !shiftPressed && Keyboard.current.zKey.wasPressedThisFrame;
+            }
+#endif
             if (controlPressed && Keyboard.current.zKey.wasPressedThisFrame)
             {
                 return true;
@@ -2316,6 +2598,13 @@ public class DrawingBoardController : MonoBehaviour
 
 #if ENABLE_LEGACY_INPUT_MANAGER
         bool controlPressed = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        bool shiftPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+#if UNITY_EDITOR
+        if (Application.isEditor)
+        {
+            return !controlPressed && !shiftPressed && Input.GetKeyDown(KeyCode.Z);
+        }
+#endif
         return controlPressed && Input.GetKeyDown(KeyCode.Z);
 #else
         return false;
@@ -2329,6 +2618,22 @@ public class DrawingBoardController : MonoBehaviour
         {
             bool controlPressed = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
             bool shiftPressed = Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+#if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                if (!controlPressed && Keyboard.current.yKey.wasPressedThisFrame)
+                {
+                    return true;
+                }
+
+                if (!controlPressed && shiftPressed && Keyboard.current.zKey.wasPressedThisFrame)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+#endif
             if (controlPressed && Keyboard.current.yKey.wasPressedThisFrame)
             {
                 return true;
@@ -2344,6 +2649,13 @@ public class DrawingBoardController : MonoBehaviour
 #if ENABLE_LEGACY_INPUT_MANAGER
         bool controlPressed = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         bool shiftPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+#if UNITY_EDITOR
+        if (Application.isEditor)
+        {
+            return (!controlPressed && Input.GetKeyDown(KeyCode.Y)) ||
+                   (!controlPressed && shiftPressed && Input.GetKeyDown(KeyCode.Z));
+        }
+#endif
         return (controlPressed && Input.GetKeyDown(KeyCode.Y)) ||
                (controlPressed && shiftPressed && Input.GetKeyDown(KeyCode.Z));
 #else

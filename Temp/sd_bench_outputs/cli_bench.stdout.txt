@@ -1,0 +1,36 @@
+ggml_extend.hpp:78   - ggml_cuda_init: found 1 CUDA devices:
+[INFO ] ggml_extend.hpp:78   -   Device 0: NVIDIA GeForce RTX 4070, compute capability 8.9, VMM: yes
+[INFO ] stable-diffusion.cpp:255  - loading model from 'c:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\LlamaSharpDemo\Assets\StreamingAssets\SDModels\sd_turbo-f16-q8_0.gguf'
+[INFO ] model.cpp:366  - load c:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\LlamaSharpDemo\Assets\StreamingAssets\SDModels\sd_turbo-f16-q8_0.gguf using gguf format
+[INFO ] stable-diffusion.cpp:340  - Version: SD 2.x 
+[INFO ] stable-diffusion.cpp:368  - Weight type stat:                      f32: 614  |     f16: 170  |    q8_0: 539  
+[INFO ] stable-diffusion.cpp:369  - Conditioner weight type stat:          f32: 193  |    q8_0: 196  
+[INFO ] stable-diffusion.cpp:370  - Diffusion model weight type stat:      f32: 297  |     f16: 98   |    q8_0: 291  
+[INFO ] stable-diffusion.cpp:371  - VAE weight type stat:                  f32: 124  |     f16: 72   |    q8_0: 52   
+[INFO ] stable-diffusion.cpp:738  - Using flash attention in the diffusion model
+[INFO ] model.cpp:1622 - unknown tensor 'cond_stage_model.transformer.text_model.text_projection | q8_0 | 2 [1024, 1024, 1, 1, 1]' in model file
+[INFO ]   |>                                                 | 21/1323 - 21000.00it/s[K  |================================>                 | 872/1323 - 4113.21it/s[K  |============================================>     | 1184/1323 - 2779.34it/s[K  |==================================================| 1323/1323 - 2110.05it/s[K
+model.cpp:1595 - loading tensors completed, taking 0.63s (process: 0.00s, read: 0.48s, memcpy: 0.00s, convert: 0.00s, copy_to_backend: 0.00s)
+[INFO ] stable-diffusion.cpp:879  - total params memory size = 1864.28MB (VRAM 1864.28MB, RAM 0.00MB): text_encoders 358.79MB(VRAM), diffusion_model 1411.02MB(VRAM), vae 94.47MB(VRAM), controlnet 0.00MB(VRAM), pmid 0.00MB(VRAM)
+[INFO ] ggml_extend.hpp:1865 - unet offload params (1411.07 MB, 686 tensors) to runtime backend (CUDA0), taking 2.79s
+[INFO ] stable-diffusion.cpp:933  - running in eps-prediction mode
+[INFO ] stable-diffusion.cpp:3549 - sampling using DPM++ (2M) method
+[INFO ] denoiser.hpp:498  - get_sigmas with Karras scheduler
+[INFO ] stable-diffusion.cpp:3676 - TXT2IMG
+[INFO ] ggml_extend.hpp:1865 - clip offload params (358.79 MB, 388 tensors) to runtime backend (CUDA0), taking 0.79s
+[INFO ] ggml_extend.hpp:1865 - clip offload params (358.79 MB, 388 tensors) to runtime backend (CUDA0), taking 0.76s
+[INFO ] stable-diffusion.cpp:3290 - get_learned_condition completed, taking 1617 ms
+[INFO ] stable-diffusion.cpp:3401 - generating image: 1/1 - seed 50409
+[INFO ] stable-diffusion.cpp:1689 - EasyCache requested but not supported for this model type
+[WARN ] ggml_extend.hpp:1865 - unet offload params (1411.07 MB, 686 tensors) to runtime backend (CUDA0), taking 2.71s
+[INFO ]   |=========================>                        | 1/2 - 2.92s/it[K  |==================================================| 2/2 - 1.56s/it[K
+stable-diffusion.cpp:3443 - sampling completed, taking 3.13s
+[INFO ] stable-diffusion.cpp:3454 - generating 1 latent images completed, taking 3.18s
+[INFO ] stable-diffusion.cpp:3457 - decoding 1 latents
+[INFO ] ggml_extend.hpp:1865 - vae offload params ( 94.47 MB, 140 tensors) to runtime backend (CUDA0), taking 0.22s
+[INFO ] stable-diffusion.cpp:3467 - latent 1 decoded, taking 0.75s
+[INFO ] stable-diffusion.cpp:3471 - decode_first_stage completed, taking 0.75s
+[INFO ] stable-diffusion.cpp:3784 - generate_image completed in 5.55s
+[INFO ] main.cpp:424  - save result image 0 to 'c:\Dev\digipen\cs394\Unity_LLM_Integration\Unity_LLM_Integration\Temp\sd_bench_outputs\cli_bench.png' (failure)
+[INFO ] main.cpp:473  - 0/1 images saved
+[INFO ] 

@@ -39,7 +39,7 @@ public static class StableDiffusionCppRuntime
     {
         get
         {
-            if (StableDiffusionCppSidecarWorker.IsBusy)
+            if (StableDiffusionCppSdServerWorker.IsBusy)
             {
                 return true;
             }
@@ -53,7 +53,7 @@ public static class StableDiffusionCppRuntime
 
     public static void CancelActiveGeneration()
     {
-        StableDiffusionCppSidecarWorker.CancelActiveGeneration();
+        StableDiffusionCppSdServerWorker.CancelActiveGeneration();
 
         lock (ActiveProcessLock)
         {
@@ -63,12 +63,47 @@ public static class StableDiffusionCppRuntime
 
     public static void ReleasePersistentWorker()
     {
-        StableDiffusionCppSidecarWorker.ReleaseContext();
+        StableDiffusionCppSdServerWorker.ReleaseContext();
     }
 
     internal static void PublishProgress(StableDiffusionCppWorkerProgressResponse progress)
     {
         ProgressChanged?.Invoke(progress);
+    }
+
+    public static async Task<bool> PrewarmTxt2ImgAsync(
+        StableDiffusionCppSettings settings,
+        StableDiffusionCppGenerationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (settings == null || request == null)
+        {
+            return false;
+        }
+
+        StableDiffusionCppGenerationRequest requestCopy = request.Clone();
+        requestCopy.mode = StableDiffusionCppGenerationMode.Txt2Img;
+
+        if (!TryNormalizeRequestForGeneration(settings, requestCopy, out _))
+        {
+            return false;
+        }
+
+        StableDiffusionCppPreparationResult prep = PrepareRuntime(
+            settings,
+            forceReinstall: false,
+            modelPathOverride: requestCopy.modelPathOverride);
+        if (!prep.Success)
+        {
+            return false;
+        }
+
+        if (!StableDiffusionCppSdServerWorker.CanUsePersistentServer(settings, prep, requestCopy))
+        {
+            return false;
+        }
+
+        return await StableDiffusionCppSdServerWorker.PrewarmAsync(prep, requestCopy, cancellationToken);
     }
 
     public static StableDiffusionCppPreparationResult PrepareRuntime(
@@ -440,14 +475,17 @@ public static class StableDiffusionCppRuntime
         string cliOutputPath = ResolveOutputPath(cliOutputDirectory, requestCopy.outputFileName, requestCopy.outputFormat);
 
         string args = BuildArguments(settings, prep, requestCopy, cliOutputPath);
-        if (StableDiffusionCppSidecarWorker.CanUsePersistentWorker(settings, prep, requestCopy))
+        if (StableDiffusionCppSdServerWorker.CanUsePersistentServer(settings, prep, requestCopy))
         {
-            string workerCommandLine = "[persistent-sidecar-worker] " + prep.NativeLibraryPath + " " + args;
-            return await StableDiffusionCppSidecarWorker.GenerateAsync(
+            string serverCommandLine =
+                "[bundled-sd-server] " +
+                Path.Combine(prep.RuntimeInstallDirectory ?? string.Empty, "sd-server.exe") +
+                " " + args;
+            return await StableDiffusionCppSdServerWorker.GenerateAsync(
                 settings,
                 prep,
                 requestCopy,
-                workerCommandLine,
+                serverCommandLine,
                 cliOutputDirectory,
                 cliOutputPath,
                 requestedOutputDirectory,
@@ -456,7 +494,7 @@ public static class StableDiffusionCppRuntime
                 cancellationToken);
         }
 
-        if (StableDiffusionCppSidecarWorker.IsBusy)
+        if (StableDiffusionCppSdServerWorker.IsBusy)
         {
             return StableDiffusionCppGenerationResult.Failed(
                 "Generation is already running. Wait for completion or cancel first.",
@@ -468,7 +506,7 @@ public static class StableDiffusionCppRuntime
                 DateTime.UtcNow - startUtc);
         }
 
-        StableDiffusionCppSidecarWorker.ReleaseContext();
+        StableDiffusionCppSdServerWorker.ReleaseContext();
 
         var startInfo = new ProcessStartInfo
         {

@@ -17,7 +17,7 @@ MonoBehaviour:
   steps:
   - stepName: StatAndDescriptionChange
     stepKind: 0
-    llmProfile: {fileID: 11400000, guid: f223fef346f752e4d8c7cb70dfa28e2d, type: 2}
+    llmProfile: {fileID: 0}
     userPromptTemplate: '[CONTEXT]
 
       Item: {{item_name}}
@@ -64,7 +64,7 @@ MonoBehaviour:
     nextStepGuid: d62a622c-3398-47df-a9c7-2e5812fb4ad9
   - stepName: SkillGeneration
     stepKind: 0
-    llmProfile: {fileID: 11400000, guid: 943b4e34f94c7cd46991bc6d70dce1b6, type: 2}
+    llmProfile: {fileID: 0}
     userPromptTemplate: '[CONTEXT]
 
       Item: {{item_name}}

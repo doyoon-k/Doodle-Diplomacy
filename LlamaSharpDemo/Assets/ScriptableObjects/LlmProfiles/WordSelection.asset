@@ -12,32 +12,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: WordSelection
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/gemma-3-4b-it-q4_0.gguf
-  format: '{"type":"object","properties":{"words":{"type":"array","items":{"type":"string"}}},"required":["words"],"additionalProperties":false}'
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  format: '{"type":"object","properties":{"words":{"type":"array","items":{"type":"string"},"minItems":2,"maxItems":2}},"required":["words"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: 'You are a quiz word-pair generator.
+  systemPromptTemplate: 'You generate exactly two object words for a drawing prompt
+    game.
 
-    Select 2 objects
-    and respond in JSON only. Do not include any other text.
-
+    Respond in JSON only as {"words":["word1","word2"]}.
 
 
     Rules:
 
-    -
-    Pick one from each of two different domains (nature / man-made / food / body
-    / science / history / mythology / etc.)
+    - Return exactly two concrete physical things
 
-    - No direct associations between
-    the two (toothbrush + toothpaste X)
+    - Pick them from clearly different domains
 
-    - Common enough to be recognizable,
-    but not too obvious
+    - Avoid obvious functional pairs or close associations (toothbrush + toothpaste,
+    lock + key, etc.)
 
-    - Concrete nouns only (no abstract concepts)'
+    - Make them recognizable but not too trivial
+
+    - Prefer short noun phrases over long descriptions'
   jsonSchemaDeliveryMode: 0
   jsonFields:
   - fieldName: words
@@ -49,13 +47,13 @@ MonoBehaviour:
     maxValue: 
     minLength: 
     maxLength: 
-    minItems: 
-    maxItems: 
+    minItems: 2
+    maxItems: 2
   modelParams:
     temperature: 0.7
     top_p: 0.9
     top_k: 40
-    num_predict: 0
+    num_predict: 100
     repeat_penalty: 1.1
     seed: 0
   runtimeParams:

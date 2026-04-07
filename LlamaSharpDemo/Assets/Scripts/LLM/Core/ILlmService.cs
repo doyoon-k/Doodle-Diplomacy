@@ -62,10 +62,17 @@ public static class LlamaSharpInterop
     private const int AutoThreadCap = 4;
     private const int AutoBatchThreadCap = 1;
     private const string FallbackVisionMarker = "<image>";
+    private const string QwenVisionMarker = "<|vision_start|><|image_pad|><|vision_end|>";
     private static readonly SemaphoreSlim InferenceGate = new SemaphoreSlim(1, 1);
     private static readonly object GrammarCacheLock = new object();
     private static readonly Dictionary<string, GrammarCacheEntry> GrammarCache =
         new Dictionary<string, GrammarCacheEntry>(StringComparer.Ordinal);
+    private static readonly IReadOnlyList<string> QwenAntiPrompts = new[]
+    {
+        "<|im_end|>",
+        "<|im_start|>user",
+        "<|im_start|>system"
+    };
 
     public static string ResolveModelPath(LlmGenerationProfile settings)
     {
@@ -140,12 +147,17 @@ public static class LlamaSharpInterop
             UseGpu = Mathf.Max(0, runtime.gpuLayerCount) > 0,
             PrintTimings = false,
             Warmup = false,
-            MediaMarker = ResolveVisionMarker()
+            MediaMarker = ResolveVisionMarker(settings)
         };
     }
 
-    public static string ResolveVisionMarker()
+    public static string ResolveVisionMarker(LlmGenerationProfile settings = null)
     {
+        if (UsesQwenChatTemplate(settings))
+        {
+            return QwenVisionMarker;
+        }
+
         try
         {
             string nativeMarker = NativeApi.MtmdDefaultMarker();
@@ -196,10 +208,13 @@ public static class LlamaSharpInterop
             sampling.Seed = (uint)source.seed;
         }
 
+        bool useQwenChatTemplate = UsesQwenChatTemplate(settings);
         return new InferenceParams
         {
             MaxTokens = source.num_predict > 0 ? source.num_predict : -1,
-            SamplingPipeline = sampling
+            SamplingPipeline = sampling,
+            AntiPrompts = useQwenChatTemplate ? QwenAntiPrompts : null,
+            DecodeSpecialTokens = useQwenChatTemplate
         };
     }
 
@@ -221,17 +236,13 @@ public static class LlamaSharpInterop
         string systemPrompt = null,
         bool includeVisionMarker = false)
     {
-        var builder = new StringBuilder();
-        if (includeVisionMarker)
+        string userContent = BuildUserContent(settings, userPrompt, requiresJson);
+        if (UsesQwenChatTemplate(settings))
         {
-            string visionMarker = ResolveVisionMarker();
-            if (!string.IsNullOrWhiteSpace(visionMarker))
-            {
-                builder.AppendLine(visionMarker);
-                builder.AppendLine();
-            }
+            return BuildQwenPrompt(settings, userContent, systemPrompt, includeVisionMarker);
         }
 
+        var builder = new StringBuilder();
         if (!string.IsNullOrWhiteSpace(systemPrompt))
         {
             builder.AppendLine("System:");
@@ -239,29 +250,64 @@ public static class LlamaSharpInterop
             builder.AppendLine();
         }
 
-        builder.AppendLine(userPrompt ?? string.Empty);
-
-        if (requiresJson && settings != null)
+        if (includeVisionMarker)
         {
-            bool shouldAppendSchema = ShouldAppendSchemaToPrompt(settings.jsonSchemaDeliveryMode);
-            if (settings.jsonSchemaDeliveryMode == JsonSchemaDeliveryMode.Auto)
+            string visionMarker = ResolveVisionMarker(settings);
+            if (!string.IsNullOrWhiteSpace(visionMarker))
             {
-                shouldAppendSchema = !TryGetJsonGrammar(settings, out _);
-            }
-
-            if (shouldAppendSchema)
-            {
+                builder.AppendLine(visionMarker);
                 builder.AppendLine();
-                builder.AppendLine("Respond with only valid JSON.");
-                if (!string.IsNullOrWhiteSpace(settings.format))
-                {
-                    builder.AppendLine("Match this JSON schema:");
-                    builder.Append(settings.format);
-                }
             }
         }
 
+        builder.Append(userContent);
+
         return builder.ToString();
+    }
+
+    public static string SanitizeCompletion(string completion, LlmGenerationProfile settings)
+    {
+        if (string.IsNullOrWhiteSpace(completion))
+        {
+            return string.Empty;
+        }
+
+        string sanitized = completion.Trim();
+        if (!UsesQwenChatTemplate(settings))
+        {
+            return sanitized;
+        }
+
+        const string AssistantPrefix = "<|im_start|>assistant";
+        while (sanitized.StartsWith(AssistantPrefix, StringComparison.Ordinal))
+        {
+            sanitized = sanitized.Substring(AssistantPrefix.Length).TrimStart('\r', '\n', ' ');
+        }
+
+        int endMarkerIndex = sanitized.IndexOf("<|im_end|>", StringComparison.Ordinal);
+        if (endMarkerIndex >= 0)
+        {
+            sanitized = sanitized.Substring(0, endMarkerIndex);
+        }
+
+        int turnMarkerIndex = sanitized.IndexOf("<|im_start|>", StringComparison.Ordinal);
+        if (turnMarkerIndex >= 0)
+        {
+            sanitized = sanitized.Substring(0, turnMarkerIndex);
+        }
+
+        return sanitized.Trim();
+    }
+
+    public static bool UsesQwenChatTemplate(LlmGenerationProfile settings)
+    {
+        if (settings == null)
+        {
+            return false;
+        }
+
+        return ContainsIgnoreCase(settings.model, "qwen") ||
+               ContainsIgnoreCase(settings.visionProjectorModel, "qwen");
     }
 
     private static bool RequiresJsonSchema(LlmGenerationProfile settings)
@@ -277,6 +323,79 @@ public static class LlamaSharpInterop
     private static bool ShouldAppendSchemaToPrompt(JsonSchemaDeliveryMode mode)
     {
         return mode == JsonSchemaDeliveryMode.PromptAppendOnly;
+    }
+
+    private static string BuildUserContent(
+        LlmGenerationProfile settings,
+        string userPrompt,
+        bool requiresJson)
+    {
+        var builder = new StringBuilder();
+        builder.Append(userPrompt ?? string.Empty);
+
+        if (requiresJson && settings != null)
+        {
+            bool shouldAppendSchema = ShouldAppendSchemaToPrompt(settings.jsonSchemaDeliveryMode);
+            if (settings.jsonSchemaDeliveryMode == JsonSchemaDeliveryMode.Auto)
+            {
+                shouldAppendSchema = !TryGetJsonGrammar(settings, out _);
+            }
+
+            if (shouldAppendSchema)
+            {
+                builder.AppendLine();
+                builder.AppendLine();
+                builder.AppendLine("Respond with only valid JSON.");
+                if (!string.IsNullOrWhiteSpace(settings.format))
+                {
+                    builder.AppendLine("Match this JSON schema:");
+                    builder.Append(settings.format);
+                }
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildQwenPrompt(
+        LlmGenerationProfile settings,
+        string userContent,
+        string systemPrompt,
+        bool includeVisionMarker)
+    {
+        var builder = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(systemPrompt))
+        {
+            builder.AppendLine("<|im_start|>system");
+            builder.AppendLine(systemPrompt.Trim());
+            builder.AppendLine("<|im_end|>");
+        }
+
+        builder.AppendLine("<|im_start|>user");
+        if (includeVisionMarker)
+        {
+            builder.AppendLine(ResolveVisionMarker(settings));
+            if (!string.IsNullOrWhiteSpace(userContent))
+            {
+                builder.AppendLine();
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(userContent))
+        {
+            builder.Append(userContent.Trim());
+            builder.AppendLine();
+        }
+
+        builder.AppendLine("<|im_end|>");
+        builder.Append("<|im_start|>assistant\n");
+        return builder.ToString();
+    }
+
+    private static bool ContainsIgnoreCase(string source, string value)
+    {
+        return !string.IsNullOrWhiteSpace(source) &&
+               source.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     public static void ConfigureExecutor(ILLamaExecutor executor, string systemPrompt)

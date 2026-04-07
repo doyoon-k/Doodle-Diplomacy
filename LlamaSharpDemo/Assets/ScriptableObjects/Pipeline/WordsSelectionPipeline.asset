@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WordsSelectionPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: WordsSelection
-  description: 
+  description: Choose two unrelated prompt objects.
   steps:
   - stepName: Step 1
     stepKind: 0
@@ -23,7 +23,7 @@ MonoBehaviour:
     jsonRetryDelaySeconds: 0.1
     useVision: 0
     imageStateKey: 
-    requireImage: 1
+    requireImage: 0
     resizeLongestSide: 1024
     customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
       PublicKeyToken=null
@@ -43,8 +43,8 @@ MonoBehaviour:
     outputNodePosition: {x: 244, y: 52}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 498, y: -156, z: 0}
-    viewScale: {x: 0.57175326, y: 0.57175326, z: 1}
+    viewPosition: {x: 886, y: -1, z: 0}
+    viewScale: {x: 1.15, y: 1.15, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 39, y: 43}

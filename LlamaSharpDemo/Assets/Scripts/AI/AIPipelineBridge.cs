@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DoodleDiplomacy.Core;
@@ -17,6 +18,11 @@ namespace DoodleDiplomacy.AI
         private const int LeftObjectSlot = 0;
         private const int RightObjectSlot = 1;
         private const string TelepathyHeader = "[TRANSLATOR v1.0]";
+        private const string DefaultSatisfactionStateKey = "satisfaction";
+        private const string PreviewSceneReadingStateKey = "preview_scene_reading";
+        private const string PreviewVisibleRelationsStateKey = "preview_visible_relations";
+        private const string PreviewOverallMoodStateKey = "preview_overall_mood";
+        private const string PreviewUncertaintyStateKey = "preview_uncertainty";
 
         private enum ObjectGenerationAvailabilityState
         {
@@ -39,24 +45,30 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private string sdNegativePrompt = "low quality, blurry, text, watermark, humans, faces";
 
         [Header("LLM Pipelines")]
-        [Tooltip("Adjutant preview dialogue pipeline. Expected output key: response")]
+        [Tooltip("Adjutant preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_overall_mood, preview_uncertainty")]
         [SerializeField] private PromptPipelineAsset previewDialoguePipeline;
-        [Tooltip("Judgment pipeline. Expected output keys: axis1, axis2, scene_reading, judgment_reason")]
+        [Tooltip("Judgment pipeline. Expected output keys: satisfaction, scene_reading, judgment_reason")]
         [SerializeField] private PromptPipelineAsset judgmentPipeline;
         [Tooltip("Telepathy transcript pipeline. Expected output key: response")]
         [SerializeField] private PromptPipelineAsset telepathyPipeline;
+        [Tooltip("Round keyword selection pipeline. Expected output key: words")]
+        [SerializeField] private PromptPipelineAsset wordsSelectionPipeline;
+        [Tooltip("Curated word pair pool. When assigned, pairs are drawn from here first and the LLM pipeline is skipped.")]
+        [SerializeField] private DoodleDiplomacy.Data.WordPairPool wordPairPool;
         [Header("Pipeline State Keys")]
         [SerializeField] private string drawingImageKey = "reference_image";
         [SerializeField] private string alienPersonalityKey = "alien_personality";
         [SerializeField] private string targetObjectsKey = "target_objects";
-        [SerializeField] private string judgmentAxis1Key = "axis1";
-        [SerializeField] private string judgmentAxis2Key = "axis2";
+        [SerializeField] private string judgmentSatisfactionKey = "satisfaction";
         [SerializeField] private string judgmentSceneReadingKey = "scene_reading";
         [SerializeField] private string judgmentReasonKey = "judgment_reason";
+        [SerializeField] private string wordsSelectionWordsKey = "words";
+        [SerializeField] private string selectedKeywordPromptTemplate = "studio photo of a single {0}, centered, isolated, plain background, simple lighting";
 
         [Header("References")]
         [SerializeField] private SharedMonitorDisplay monitorDisplay;
         [SerializeField] private DrawingExportBridge drawingExportBridge;
+        [SerializeField] private AlienPersonality[] alienPersonalityProfiles = Array.Empty<AlienPersonality>();
         [SerializeField] private AlienPersonality alienPersonality;
 
         [Header("Telepathy Postprocess")]
@@ -80,8 +92,12 @@ namespace DoodleDiplomacy.AI
         };
 
         public string LastPreviewDialogue { get; private set; } = "";
-        public SatisfactionLevel LastAxis1 { get; private set; } = SatisfactionLevel.Neutral;
-        public SatisfactionLevel LastAxis2 { get; private set; } = SatisfactionLevel.Neutral;
+        public string LastPreviewSceneReading { get; private set; } = "";
+        public string LastPreviewVisibleRelations { get; private set; } = "";
+        public string LastPreviewOverallMood { get; private set; } = "";
+        public string LastPreviewUncertainty { get; private set; } = "";
+        public bool HasPreviewStructuredRead { get; private set; }
+        public SatisfactionLevel LastSatisfaction { get; private set; } = SatisfactionLevel.Neutral;
         public string LastJudgmentSceneReading { get; private set; } = "";
         public string LastJudgmentReason { get; private set; } = "";
         public string LastTelepathy { get; private set; } = "";
@@ -91,8 +107,17 @@ namespace DoodleDiplomacy.AI
         public bool IsObjectGenerationReady => _objectGenerationAvailability == ObjectGenerationAvailabilityState.Ready;
         public bool IsObjectGenerationPreparing => _objectGenerationAvailability == ObjectGenerationAvailabilityState.Preparing;
         public bool HasObjectGenerationPreparationFailed => _objectGenerationAvailability == ObjectGenerationAvailabilityState.Failed;
+        public bool IsRoundKeywordSelectionInProgress => _isRoundKeywordSelectionInProgress;
+        public bool IsRoundKeywordsReady =>
+            !_isRoundKeywordSelectionInProgress &&
+            !string.IsNullOrWhiteSpace(GetCurrentObjectPromptA()) &&
+            !string.IsNullOrWhiteSpace(GetCurrentObjectPromptB());
+        public bool IsRoundStartReady => IsObjectGenerationReady && IsRoundKeywordsReady;
+        public string CurrentRoundKeywordA => _currentRoundKeywordA;
+        public string CurrentRoundKeywordB => _currentRoundKeywordB;
 
         public event Action<bool> ObjectGenerationReadinessChanged;
+        public event Action<bool> RoundStartReadinessChanged;
 
         private Texture2D _lastObjTexA;
         private Texture2D _lastObjTexB;
@@ -102,6 +127,11 @@ namespace DoodleDiplomacy.AI
         private bool _sdPrewarmStarted;
         private Task _sdPrewarmTask;
         private ObjectGenerationAvailabilityState _objectGenerationAvailability = ObjectGenerationAvailabilityState.Unknown;
+        private bool _isRoundKeywordSelectionInProgress;
+        private string _currentObjectPromptA;
+        private string _currentObjectPromptB;
+        private string _currentRoundKeywordA = string.Empty;
+        private string _currentRoundKeywordB = string.Empty;
 
         private readonly object _sdProgressLock = new object();
         private int _activeSdSlot = -1;
@@ -122,6 +152,11 @@ namespace DoodleDiplomacy.AI
             }
 
             Instance = this;
+            SelectAlienPersonalityProfile();
+            _currentObjectPromptA = objectPromptA;
+            _currentObjectPromptB = objectPromptB;
+            _currentRoundKeywordA = SimplifyTargetObjectPrompt(_currentObjectPromptA);
+            _currentRoundKeywordB = SimplifyTargetObjectPrompt(_currentObjectPromptB);
         }
 
         private void OnEnable()
@@ -168,7 +203,7 @@ namespace DoodleDiplomacy.AI
             StartCoroutine(GetPreviewRoutine(onComplete));
         }
 
-        public void GetJudgment(Action<SatisfactionLevel, SatisfactionLevel> onComplete = null)
+        public void GetJudgment(Action<SatisfactionLevel> onComplete = null)
         {
             StartCoroutine(GetJudgmentRoutine(onComplete));
         }
@@ -193,13 +228,18 @@ namespace DoodleDiplomacy.AI
             ReplaceSlotProgressTexture(LeftObjectSlot, null);
             ReplaceSlotProgressTexture(RightObjectSlot, null);
             monitorDisplay?.SetIdle();
+            SetRoundKeywordSelectionInProgress(false, notifyListeners: true);
         }
 
         public void ResetRound()
         {
             LastPreviewDialogue = "";
-            LastAxis1 = SatisfactionLevel.Neutral;
-            LastAxis2 = SatisfactionLevel.Neutral;
+            LastPreviewSceneReading = "";
+            LastPreviewVisibleRelations = "";
+            LastPreviewOverallMood = "";
+            LastPreviewUncertainty = "";
+            HasPreviewStructuredRead = false;
+            LastSatisfaction = SatisfactionLevel.Neutral;
             LastJudgmentSceneReading = "";
             LastJudgmentReason = "";
             LastTelepathy = "";
@@ -210,10 +250,34 @@ namespace DoodleDiplomacy.AI
         {
             if (alienPersonality == null)
             {
-                return "Alien personality: no profile assigned";
+                return "Alien personality: no archetype assigned";
             }
 
             return $"Alien personality: {BuildAlienPersonalityLabel()}";
+        }
+
+        private void SelectAlienPersonalityProfile()
+        {
+            if (alienPersonalityProfiles == null || alienPersonalityProfiles.Length == 0)
+            {
+                return;
+            }
+
+            var validProfiles = new List<AlienPersonality>();
+            foreach (AlienPersonality profile in alienPersonalityProfiles)
+            {
+                if (profile != null)
+                {
+                    validProfiles.Add(profile);
+                }
+            }
+
+            if (validProfiles.Count == 0)
+            {
+                return;
+            }
+
+            alienPersonality = validProfiles[UnityEngine.Random.Range(0, validProfiles.Count)];
         }
 
         public void EnsureObjectGenerationPreparation(bool forceRetry = false)
@@ -270,6 +334,62 @@ namespace DoodleDiplomacy.AI
             return "Object generator is not ready yet.";
         }
 
+        public string GetRoundStartAvailabilityMessage()
+        {
+            if (IsRoundKeywordSelectionInProgress)
+            {
+                return "Preparing the round objects. Wait until the alien becomes interactable.";
+            }
+
+            if (!IsObjectGenerationReady)
+            {
+                return GetObjectGenerationAvailabilityMessage();
+            }
+
+            string keywords = GetCurrentRoundKeywordsLabel();
+            if (!string.IsNullOrWhiteSpace(keywords))
+            {
+                return "Study the two object images. Click the alien to begin the round.";
+            }
+
+            return "Click the alien to begin the round.";
+        }
+
+        public string GetCurrentRoundKeywordsLabel()
+        {
+            if (string.IsNullOrWhiteSpace(_currentRoundKeywordA) && string.IsNullOrWhiteSpace(_currentRoundKeywordB))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(_currentRoundKeywordA))
+            {
+                return _currentRoundKeywordB;
+            }
+
+            if (string.IsNullOrWhiteSpace(_currentRoundKeywordB))
+            {
+                return _currentRoundKeywordA;
+            }
+
+            return $"{_currentRoundKeywordA}, {_currentRoundKeywordB}";
+        }
+
+        public void PrepareRoundKeywords(bool forceRefresh = true)
+        {
+            if (_isRoundKeywordSelectionInProgress)
+            {
+                return;
+            }
+
+            if (!forceRefresh && IsRoundKeywordsReady)
+            {
+                return;
+            }
+
+            StartCoroutine(PrepareRoundKeywordsRoutine());
+        }
+
         private IEnumerator GenerateObjectsRoutine(Action<bool> onComplete)
         {
             LastObjectGenerationError = string.Empty;
@@ -294,7 +414,7 @@ namespace DoodleDiplomacy.AI
 
             yield return GenerateObjectIntoSlotRoutine(
                 LeftObjectSlot,
-                objectPromptA,
+                GetCurrentObjectPromptA(),
                 () => null,
                 () => texB,
                 token,
@@ -318,7 +438,7 @@ namespace DoodleDiplomacy.AI
 
             yield return GenerateObjectIntoSlotRoutine(
                 RightObjectSlot,
-                objectPromptB,
+                GetCurrentObjectPromptB(),
                 () => texA,
                 () => null,
                 token,
@@ -486,8 +606,7 @@ namespace DoodleDiplomacy.AI
 
         private string BuildAlienPersonalityLabel()
         {
-            return $"{DescribeCooperationVsDomination(alienPersonality.cooperationVsDomination)}, " +
-                   $"{DescribeEfficiencyVsEmpathy(alienPersonality.efficiencyVsEmpathy)}";
+            return GetArchetypeLabel(alienPersonality.archetype);
         }
 
         private string BuildAlienPersonalityPromptContext()
@@ -497,28 +616,80 @@ namespace DoodleDiplomacy.AI
                 return string.Empty;
             }
 
-            string axis1 = DescribeCooperationVsDomination(alienPersonality.cooperationVsDomination);
-            string axis2 = DescribeEfficiencyVsEmpathy(alienPersonality.efficiencyVsEmpathy);
+            AlienPersonalityArchetype archetype = alienPersonality.archetype;
+            var builder = new StringBuilder();
+            builder.AppendLine($"archetype: {GetArchetypeLabel(archetype)}");
+            builder.AppendLine($"core values: {GetArchetypeCoreValues(archetype)}");
+            builder.AppendLine($"likes: {GetArchetypeLikes(archetype)}");
+            builder.AppendLine($"dislikes: {GetArchetypeDislikes(archetype)}");
+            builder.AppendLine("judgment note: satisfaction is not a task-completion score. It measures how pleasing or off-putting the visible scene feels to this archetype.");
+            builder.AppendLine("debiasing note: do not judge with your own moral framework or generic human ethics. Judge strictly by this archetype's values, even when they conflict with ordinary moral approval or disapproval.");
+            builder.Append("evidence note: stay close to visible evidence. If the image is ambiguous or requires extra assumptions, prefer neutral.");
 
-            string axis1Guide = axis1 == "dominant"
-                ? "axis1 (dominant): values power, pressure, command, pursuit, threat, coercion, attack, and imposing control over others; dislikes passive retreat, yielding, equal footing, and loss of control."
-                : "axis1 (cooperative): values coordination, mutual benefit, shared action, restraint, and non-coercive alignment; dislikes needless force, domination, intimidation, and unilateral control.";
+            string designerNote = alienPersonality.description?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(designerNote))
+            {
+                builder.AppendLine();
+                builder.Append($"designer note: {designerNote}");
+            }
 
-            string axis2Guide = axis2 == "efficiency-driven"
-                ? "axis2 (efficiency-driven): values direct cause and effect, low waste, speed, utility, and reliable outcomes; dislikes delay, waste, decorative noise, and muddled results."
-                : "axis2 (empathetic): values protection, comfort, emotional clarity, reassurance, and visible care; dislikes cruelty, indifference, avoidable harm, and cold optimization.";
-
-            return $"{axis1Guide}\n{axis2Guide}\ninterpretation notes: dominance is about power over others or forcing outcomes, not just moving fast. retreat can be efficient without being dominant. strange or biological methods are acceptable if they are controlled and effective.";
+            return builder.ToString();
         }
 
-        private static string DescribeCooperationVsDomination(float value)
+        private static string GetArchetypeLabel(AlienPersonalityArchetype archetype)
         {
-            return value < 0f ? "cooperative" : "dominant";
+            return archetype switch
+            {
+                AlienPersonalityArchetype.Conqueror => "Conqueror",
+                AlienPersonalityArchetype.Guardian => "Guardian",
+                AlienPersonalityArchetype.Harmonizer => "Harmonizer",
+                AlienPersonalityArchetype.Perfectionist => "Perfectionist",
+                AlienPersonalityArchetype.Trickster => "Trickster",
+                AlienPersonalityArchetype.Nurturer => "Nurturer",
+                _ => "Conqueror"
+            };
         }
 
-        private static string DescribeEfficiencyVsEmpathy(float value)
+        private static string GetArchetypeCoreValues(AlienPersonalityArchetype archetype)
         {
-            return value < 0f ? "efficiency-driven" : "empathetic";
+            return archetype switch
+            {
+                AlienPersonalityArchetype.Conqueror => "power, domination, intimidation",
+                AlienPersonalityArchetype.Guardian => "protective strength, sacrifice, rescue",
+                AlienPersonalityArchetype.Harmonizer => "balance, coexistence, mutual respect",
+                AlienPersonalityArchetype.Perfectionist => "precision, order, efficiency",
+                AlienPersonalityArchetype.Trickster => "wit, reversals, cunning",
+                AlienPersonalityArchetype.Nurturer => "care, comfort, empathy",
+                _ => "power, domination, intimidation"
+            };
+        }
+
+        private static string GetArchetypeLikes(AlienPersonalityArchetype archetype)
+        {
+            return archetype switch
+            {
+                AlienPersonalityArchetype.Conqueror => "domination, pursuit, intimidation, forced submission, and obvious control over others",
+                AlienPersonalityArchetype.Guardian => "a strong being defending or rescuing a weaker being, protective force, and sacrifice",
+                AlienPersonalityArchetype.Harmonizer => "cooperation, reciprocity, shared effort, peaceful coexistence, and non-coercive balance",
+                AlienPersonalityArchetype.Perfectionist => "direct, economical, orderly, low-waste, and effective scenes",
+                AlienPersonalityArchetype.Trickster => "deception, traps, reversals, and clever problem solving",
+                AlienPersonalityArchetype.Nurturer => "protection, comfort, reassurance, easing pain, and warm care",
+                _ => "domination, pursuit, intimidation, forced submission, and obvious control over others"
+            };
+        }
+
+        private static string GetArchetypeDislikes(AlienPersonalityArchetype archetype)
+        {
+            return archetype switch
+            {
+                AlienPersonalityArchetype.Conqueror => "yielding, equality, hesitation, resistance, and loss of control",
+                AlienPersonalityArchetype.Guardian => "abandonment, indifference, ignored danger, and the strong exploiting the weak",
+                AlienPersonalityArchetype.Harmonizer => "bullying, intimidation, domination, abandonment, imbalance, and unilateral control",
+                AlienPersonalityArchetype.Perfectionist => "chaos, waste, delay, clutter, friction, and roundabout methods",
+                AlienPersonalityArchetype.Trickster => "straight-line force, predictability, rigidity, and lack of imagination",
+                AlienPersonalityArchetype.Nurturer => "pain, fear, harshness, neglect, and cold optimization",
+                _ => "yielding, equality, hesitation, resistance, and loss of control"
+            };
         }
 
         private string FormatTelepathyTerminalOutput(string rawTranscript)
@@ -623,6 +794,8 @@ namespace DoodleDiplomacy.AI
                 state.SetString(judgmentReasonKey, LastJudgmentReason);
             }
 
+            SetSatisfactionStateValue(state, LastSatisfaction);
+
             if (alienPersonality != null)
             {
                 state.SetString(alienPersonalityKey, BuildAlienPersonalityPromptContext());
@@ -663,8 +836,8 @@ namespace DoodleDiplomacy.AI
 
         private string BuildTargetObjectsSummary()
         {
-            string left = SimplifyTargetObjectPrompt(objectPromptA);
-            string right = SimplifyTargetObjectPrompt(objectPromptB);
+            string left = SimplifyTargetObjectPrompt(GetCurrentObjectPromptA());
+            string right = SimplifyTargetObjectPrompt(GetCurrentObjectPromptB());
 
             if (string.IsNullOrWhiteSpace(left) && string.IsNullOrWhiteSpace(right))
             {
@@ -724,13 +897,14 @@ namespace DoodleDiplomacy.AI
                 return string.Empty;
             }
 
-            string personalityLabel = BuildAlienPersonalityLabel();
-            return personalityLabel switch
+            return alienPersonality.archetype switch
             {
-                "cooperative, efficiency-driven" => "Coordination and clear results matter more than intimidation.",
-                "cooperative, empathetic" => "Mutual care and emotional clarity matter more than force.",
-                "dominant, efficiency-driven" => "Control over others and obvious results matter most.",
-                "dominant, empathetic" => "Protective authority, recognition, and emotional weight matter most.",
+                AlienPersonalityArchetype.Conqueror => "This delegation prizes domination, intimidation, and visible control.",
+                AlienPersonalityArchetype.Guardian => "This delegation values rescue, protection, and sacrifice.",
+                AlienPersonalityArchetype.Harmonizer => "This delegation values reciprocity, balance, and non-coercive coexistence.",
+                AlienPersonalityArchetype.Perfectionist => "This delegation values precision, order, and waste-free execution.",
+                AlienPersonalityArchetype.Trickster => "This delegation values cunning, surprise, and clever reversals.",
+                AlienPersonalityArchetype.Nurturer => "This delegation values comfort, reassurance, and relief from distress.",
                 _ => string.Empty
             };
         }
@@ -742,18 +916,15 @@ namespace DoodleDiplomacy.AI
                 return "The delegation cannot judge an empty submission.";
             }
 
-            int combinedScore = ToAxisScore(LastAxis1) + ToAxisScore(LastAxis2);
-            if (combinedScore >= 3)
+            return LastSatisfaction switch
             {
-                return "This satisfies the delegation.";
-            }
-
-            if (combinedScore <= -3)
-            {
-                return "This does not satisfy the delegation.";
-            }
-
-            return "The delegation remains unconvinced.";
+                SatisfactionLevel.VerySatisfied => "This strongly satisfies the delegation.",
+                SatisfactionLevel.Satisfied => "This satisfies the delegation.",
+                SatisfactionLevel.Neutral => "The delegation remains unconvinced.",
+                SatisfactionLevel.Dissatisfied => "This dissatisfies the delegation.",
+                SatisfactionLevel.VeryDissatisfied => "This strongly dissatisfies the delegation.",
+                _ => "The delegation remains unconvinced."
+            };
         }
 
         private bool TryGetCurrentDrawingForPipeline(out Texture2D texture)
@@ -797,10 +968,137 @@ namespace DoodleDiplomacy.AI
             return "It is hard to read this drawing clearly. Is that what you intended?";
         }
 
+        private void SetPreviewRead(
+            string sceneReading,
+            string visibleRelations,
+            string overallMood = null,
+            string uncertainty = null,
+            string previewDialogue = null)
+        {
+            LastPreviewSceneReading = sceneReading?.Trim() ?? string.Empty;
+            LastPreviewVisibleRelations = visibleRelations?.Trim() ?? string.Empty;
+            LastPreviewOverallMood = overallMood?.Trim() ?? string.Empty;
+            LastPreviewUncertainty = uncertainty?.Trim() ?? string.Empty;
+            LastPreviewDialogue = SanitizePreviewDialogue(BuildPreviewDialogueFromRead(
+                LastPreviewSceneReading,
+                previewDialogue));
+        }
+
+        private void SetFallbackPreviewRead(bool isBlankDrawing)
+        {
+            HasPreviewStructuredRead = false;
+
+            if (isBlankDrawing)
+            {
+                SetPreviewRead(
+                    "The submitted drawing is blank.",
+                    "No visible action, interaction, or connection is shown.",
+                    "The scene feels empty and unfinished.",
+                    "There is not enough visible information to interpret the scene.",
+                    BuildFallbackPreviewDialogue(true));
+                return;
+            }
+
+            SetPreviewRead(
+                "The drawing is hard to read.",
+                "No clear interaction or cause-and-effect is visible.",
+                "The overall mood is unclear.",
+                "The main action and intent are ambiguous.",
+                BuildFallbackPreviewDialogue(false));
+        }
+
+        private static string BuildPreviewDialogueFromRead(
+            string sceneReading,
+            string explicitPreviewDialogue = null)
+        {
+            if (!string.IsNullOrWhiteSpace(explicitPreviewDialogue))
+            {
+                return explicitPreviewDialogue;
+            }
+
+            string sentence = sceneReading?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(sentence))
+            {
+                return BuildFallbackPreviewDialogue(false);
+            }
+
+            sentence = sentence.TrimEnd();
+            if (sentence.Length == 0)
+            {
+                return BuildFallbackPreviewDialogue(false);
+            }
+
+            char lastChar = sentence[sentence.Length - 1];
+            if (lastChar is not '.' and not '!' and not '?')
+            {
+                sentence += ".";
+            }
+
+            return $"{sentence} Does that match what you intended?";
+        }
+
+        private void ApplyPreviewReadFromState(PipelineState finalState)
+        {
+            string sceneReading = finalState != null &&
+                                  finalState.TryGetString(PreviewSceneReadingStateKey, out string sceneValue)
+                ? sceneValue
+                : string.Empty;
+
+            string visibleRelations = finalState != null &&
+                                      finalState.TryGetString(PreviewVisibleRelationsStateKey, out string relationValue)
+                ? relationValue
+                : string.Empty;
+
+            string overallMood = finalState != null &&
+                                 finalState.TryGetString(PreviewOverallMoodStateKey, out string moodValue)
+                ? moodValue
+                : string.Empty;
+
+            string uncertainty = finalState != null &&
+                                 finalState.TryGetString(PreviewUncertaintyStateKey, out string uncertaintyValue)
+                ? uncertaintyValue
+                : string.Empty;
+
+            HasPreviewStructuredRead =
+                !string.IsNullOrWhiteSpace(sceneReading) ||
+                !string.IsNullOrWhiteSpace(visibleRelations) ||
+                !string.IsNullOrWhiteSpace(overallMood) ||
+                !string.IsNullOrWhiteSpace(uncertainty);
+
+            if (string.IsNullOrWhiteSpace(sceneReading))
+            {
+                sceneReading = "The drawing is hard to read.";
+            }
+
+            if (string.IsNullOrWhiteSpace(visibleRelations))
+            {
+                visibleRelations = "No clear interaction or cause-and-effect is visible.";
+            }
+
+            if (string.IsNullOrWhiteSpace(overallMood))
+            {
+                overallMood = "The overall mood is unclear.";
+            }
+
+            if (string.IsNullOrWhiteSpace(uncertainty))
+            {
+                uncertainty = "The main action and intent are ambiguous.";
+            }
+
+            SetPreviewRead(sceneReading, visibleRelations, overallMood, uncertainty);
+        }
+
+        private bool HasPreviewReadContext()
+        {
+            return !string.IsNullOrWhiteSpace(LastPreviewSceneReading) ||
+                   !string.IsNullOrWhiteSpace(LastPreviewVisibleRelations) ||
+                   !string.IsNullOrWhiteSpace(LastPreviewOverallMood) ||
+                   !string.IsNullOrWhiteSpace(LastPreviewUncertainty);
+        }
+
         private void SetNeutralJudgmentFallback(string sceneReading, string judgmentReason)
         {
-            LastAxis1 = SatisfactionLevel.Neutral;
-            LastAxis2 = SatisfactionLevel.Neutral;
+            LastSatisfaction = SatisfactionLevel.Neutral;
             LastJudgmentSceneReading = sceneReading?.Trim() ?? string.Empty;
             LastJudgmentReason = judgmentReason?.Trim() ?? string.Empty;
 
@@ -1195,7 +1493,7 @@ namespace DoodleDiplomacy.AI
             out bool requiresPrewarm,
             out string error)
         {
-            request = BuildObjectGenerationRequest(objectPromptA);
+            request = BuildObjectGenerationRequest(GetCurrentObjectPromptA());
             requiresPrewarm = false;
             error = string.Empty;
 
@@ -1292,6 +1590,7 @@ namespace DoodleDiplomacy.AI
             string logMessage)
         {
             bool oldReady = IsObjectGenerationReady;
+            bool oldRoundStartReady = IsRoundStartReady;
             _objectGenerationAvailability = nextState;
             LastObjectGenerationError = error ?? string.Empty;
 
@@ -1304,12 +1603,244 @@ namespace DoodleDiplomacy.AI
             if (oldReady != newReady)
             {
                 ObjectGenerationReadinessChanged?.Invoke(newReady);
+                NotifyRoundStartReadinessChanged(oldRoundStartReady, forceNotify: true);
                 return;
             }
 
             if (nextState is ObjectGenerationAvailabilityState.Failed or ObjectGenerationAvailabilityState.Preparing)
             {
                 ObjectGenerationReadinessChanged?.Invoke(newReady);
+                NotifyRoundStartReadinessChanged(oldRoundStartReady, forceNotify: true);
+            }
+        }
+
+        private IEnumerator PrepareRoundKeywordsRoutine()
+        {
+            bool oldRoundStartReady = IsRoundStartReady;
+            _currentRoundKeywordA = string.Empty;
+            _currentRoundKeywordB = string.Empty;
+            _currentObjectPromptA = string.Empty;
+            _currentObjectPromptB = string.Empty;
+            SetRoundKeywordSelectionInProgress(true, notifyListeners: true, previousRoundStartReady: oldRoundStartReady);
+
+            // Curated pool takes priority over LLM pipeline
+            if (wordPairPool != null && wordPairPool.TryGetRandomPair(out string poolWordA, out string poolWordB))
+            {
+                ApplySelectedRoundKeywords(poolWordA, poolWordB);
+                yield break;
+            }
+
+            if (wordsSelectionPipeline == null || GamePipelineRunner.Instance == null)
+            {
+                ApplyFallbackRoundKeywords("Round keyword selection pipeline is not assigned. Using fallback prompts.");
+                yield break;
+            }
+
+            bool done = false;
+            PipelineState finalState = null;
+            var wordsState = new PipelineState();
+            if (alienPersonality != null)
+            {
+                wordsState.SetString(alienPersonalityKey, BuildAlienPersonalityPromptContext());
+            }
+            GamePipelineRunner.Instance.RunPipeline(wordsSelectionPipeline, wordsState, result =>
+            {
+                finalState = result;
+                done = true;
+            });
+            yield return new WaitUntil(() => done);
+
+            string error = string.Empty;
+            string wordsJson = string.Empty;
+            string keywordA = string.Empty;
+            string keywordB = string.Empty;
+            if (finalState == null)
+            {
+                error = "Round keyword selection returned no state.";
+            }
+            else if (!finalState.TryGetString(wordsSelectionWordsKey, out wordsJson) ||
+                     !TryParseRoundKeywords(wordsJson, out keywordA, out keywordB))
+            {
+                if (finalState.TryGetString(PromptPipelineConstants.ErrorKey, out string pipelineError) &&
+                    !string.IsNullOrWhiteSpace(pipelineError))
+                {
+                    error = pipelineError;
+                }
+                else
+                {
+                    error = "Round keyword selection returned invalid words JSON.";
+                }
+            }
+            else
+            {
+                ApplySelectedRoundKeywords(keywordA, keywordB);
+                yield break;
+            }
+
+            ApplyFallbackRoundKeywords(error);
+        }
+
+        private void ApplySelectedRoundKeywords(string keywordA, string keywordB)
+        {
+            bool oldRoundStartReady = IsRoundStartReady;
+            _currentRoundKeywordA = keywordA?.Trim() ?? string.Empty;
+            _currentRoundKeywordB = keywordB?.Trim() ?? string.Empty;
+            _currentObjectPromptA = BuildObjectPromptFromKeyword(_currentRoundKeywordA, objectPromptA);
+            _currentObjectPromptB = BuildObjectPromptFromKeyword(_currentRoundKeywordB, objectPromptB);
+
+            Debug.Log($"[AIPipelineBridge] Round keywords selected: {_currentRoundKeywordA}, {_currentRoundKeywordB}");
+            SetRoundKeywordSelectionInProgress(false, notifyListeners: true, previousRoundStartReady: oldRoundStartReady);
+        }
+
+        private void ApplyFallbackRoundKeywords(string reason)
+        {
+            bool oldRoundStartReady = IsRoundStartReady;
+            _currentObjectPromptA = objectPromptA;
+            _currentObjectPromptB = objectPromptB;
+            _currentRoundKeywordA = SimplifyTargetObjectPrompt(_currentObjectPromptA);
+            _currentRoundKeywordB = SimplifyTargetObjectPrompt(_currentObjectPromptB);
+
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                Debug.LogWarning($"[AIPipelineBridge] {reason}");
+            }
+
+            SetRoundKeywordSelectionInProgress(false, notifyListeners: true, previousRoundStartReady: oldRoundStartReady);
+        }
+
+        private void SetRoundKeywordSelectionInProgress(
+            bool inProgress,
+            bool notifyListeners,
+            bool? previousRoundStartReady = null)
+        {
+            bool oldRoundStartReady = previousRoundStartReady ?? IsRoundStartReady;
+            _isRoundKeywordSelectionInProgress = inProgress;
+
+            if (notifyListeners)
+            {
+                NotifyRoundStartReadinessChanged(oldRoundStartReady, forceNotify: true);
+            }
+        }
+
+        private void NotifyRoundStartReadinessChanged(bool oldRoundStartReady, bool forceNotify = false)
+        {
+            bool newRoundStartReady = IsRoundStartReady;
+            if (forceNotify || oldRoundStartReady != newRoundStartReady)
+            {
+                RoundStartReadinessChanged?.Invoke(newRoundStartReady);
+            }
+        }
+
+        private string GetCurrentObjectPromptA()
+        {
+            return string.IsNullOrWhiteSpace(_currentObjectPromptA) ? objectPromptA : _currentObjectPromptA;
+        }
+
+        private string GetCurrentObjectPromptB()
+        {
+            return string.IsNullOrWhiteSpace(_currentObjectPromptB) ? objectPromptB : _currentObjectPromptB;
+        }
+
+        private string BuildObjectPromptFromKeyword(string keyword, string fallbackPrompt)
+        {
+            string normalizedKeyword = keyword?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(normalizedKeyword))
+            {
+                return fallbackPrompt;
+            }
+
+            string template = string.IsNullOrWhiteSpace(selectedKeywordPromptTemplate)
+                ? "{0}"
+                : selectedKeywordPromptTemplate.Trim();
+
+            string renderKeyword = GetKeywordRenderPrompt(normalizedKeyword);
+
+            return template.Contains("{0}", StringComparison.Ordinal)
+                ? template.Replace("{0}", renderKeyword)
+                : $"{template} {renderKeyword}".Trim();
+        }
+
+        private static string GetKeywordRenderPrompt(string keyword)
+        {
+            return keyword.Trim().ToLowerInvariant() switch
+            {
+                "chain" => "heavy iron chain",
+                "rope" => "coiled rope",
+                "crown" => "gold royal crown",
+                "torch" => "wooden torch with visible flame",
+                "bell" => "brass hand bell",
+                "cup" => "ceramic drinking cup",
+                "bowl" => "ceramic bowl",
+                "cloak" => "hooded cloth cloak",
+                "mask" => "decorative face mask",
+                "chest" => "wooden treasure chest",
+                "basket" => "woven basket",
+                "bucket" => "metal bucket",
+                "cauldron" => "black iron cauldron",
+                "anchor" => "large iron ship anchor",
+                "saddle" => "leather horse saddle",
+                "helmet" => "metal knight helmet",
+                "lantern" => "metal lantern with glass panels",
+                "barrel" => "wooden barrel",
+                "cage" => "metal cage",
+                "mirror" => "hand mirror",
+                "wine" => "glass wine bottle",
+                _ => keyword
+            };
+        }
+
+        private static bool TryParseRoundKeywords(string rawWordsJson, out string keywordA, out string keywordB)
+        {
+            keywordA = string.Empty;
+            keywordB = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(rawWordsJson))
+            {
+                return false;
+            }
+
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(rawWordsJson);
+                if (document.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    return false;
+                }
+
+                List<string> keywords = new();
+                foreach (JsonElement element in document.RootElement.EnumerateArray())
+                {
+                    if (element.ValueKind != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    string value = element.GetString()?.Trim() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(value))
+                    {
+                        continue;
+                    }
+
+                    keywords.Add(value);
+                    if (keywords.Count == 2)
+                    {
+                        break;
+                    }
+                }
+
+                if (keywords.Count != 2 ||
+                    string.Equals(keywords[0], keywords[1], StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                keywordA = keywords[0];
+                keywordB = keywords[1];
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
             }
         }
 
@@ -1319,7 +1850,7 @@ namespace DoodleDiplomacy.AI
 
             if (LastDrawingWasBlank)
             {
-                LastPreviewDialogue = BuildFallbackPreviewDialogue(true);
+                SetFallbackPreviewRead(true);
                 onComplete?.Invoke(LastPreviewDialogue);
                 yield break;
             }
@@ -1327,14 +1858,14 @@ namespace DoodleDiplomacy.AI
             if (previewDialoguePipeline == null || GamePipelineRunner.Instance == null)
             {
                 Debug.LogWarning("[AIPipelineBridge] Preview dialogue pipeline is not assigned. Using fallback preview dialogue.");
-                LastPreviewDialogue = BuildFallbackPreviewDialogue(false);
+                SetFallbackPreviewRead(false);
                 onComplete?.Invoke(LastPreviewDialogue);
                 yield break;
             }
 
             if (!hasDrawingTexture)
             {
-                LastPreviewDialogue = BuildFallbackPreviewDialogue(false);
+                SetFallbackPreviewRead(false);
                 onComplete?.Invoke(LastPreviewDialogue);
                 yield break;
             }
@@ -1356,28 +1887,22 @@ namespace DoodleDiplomacy.AI
             });
             yield return new WaitUntil(() => done);
 
-            LastPreviewDialogue = finalState != null &&
-                                  finalState.TryGetString(PromptPipelineConstants.AnswerKey, out string previewDialogue)
-                ? previewDialogue
-                : BuildFallbackPreviewDialogue(false);
-
-            LastPreviewDialogue = SanitizePreviewDialogue(LastPreviewDialogue);
+            ApplyPreviewReadFromState(finalState);
 
             Debug.Log($"[AIPipelineBridge] Preview dialogue generation finished. Length={LastPreviewDialogue.Length}");
             onComplete?.Invoke(LastPreviewDialogue);
         }
 
-        private IEnumerator GetJudgmentRoutine(Action<SatisfactionLevel, SatisfactionLevel> onComplete)
+        private IEnumerator GetJudgmentRoutine(Action<SatisfactionLevel> onComplete)
         {
             if (judgmentPipeline == null || GamePipelineRunner.Instance == null)
             {
                 Debug.LogWarning("[AIPipelineBridge] Judgment pipeline is not assigned. Using Neutral fallback.");
-                LastAxis1 = SatisfactionLevel.Neutral;
-                LastAxis2 = SatisfactionLevel.Neutral;
+                LastSatisfaction = SatisfactionLevel.Neutral;
                 LastJudgmentSceneReading = "";
                 LastJudgmentReason = "";
                 LastTelepathy = "";
-                onComplete?.Invoke(LastAxis1, LastAxis2);
+                onComplete?.Invoke(LastSatisfaction);
                 yield break;
             }
 
@@ -1389,7 +1914,7 @@ namespace DoodleDiplomacy.AI
                     "The submitted drawing is blank.",
                     "No visible action, relationship, or object combination was communicated.");
                 Debug.Log("[AIPipelineBridge] Judgment skipped because the drawing is blank.");
-                onComplete?.Invoke(LastAxis1, LastAxis2);
+                onComplete?.Invoke(LastSatisfaction);
                 yield break;
             }
 
@@ -1399,16 +1924,41 @@ namespace DoodleDiplomacy.AI
                     "The submitted drawing could not be read.",
                     "No drawing texture was available for the alien evaluation.");
                 Debug.LogWarning("[AIPipelineBridge] Judgment skipped because no drawing texture was available.");
-                onComplete?.Invoke(LastAxis1, LastAxis2);
+                onComplete?.Invoke(LastSatisfaction);
                 yield break;
             }
 
+            if (!HasPreviewReadContext())
+            {
+                yield return GetPreviewRoutine(_ => { });
+            }
+
             var state = new PipelineState();
-            state.SetImage(drawingImageKey, drawingTexture);
             string targetObjects = BuildTargetObjectsSummary();
             if (!string.IsNullOrWhiteSpace(targetObjects))
             {
                 state.SetString(targetObjectsKey, targetObjects);
+            }
+
+            // Judgment is text-only. Reuse the Stage 1 description instead of rereading the image.
+            if (!string.IsNullOrWhiteSpace(LastPreviewSceneReading))
+            {
+                state.SetString(PreviewSceneReadingStateKey, LastPreviewSceneReading);
+            }
+
+            if (!string.IsNullOrWhiteSpace(LastPreviewVisibleRelations))
+            {
+                state.SetString(PreviewVisibleRelationsStateKey, LastPreviewVisibleRelations);
+            }
+
+            if (!string.IsNullOrWhiteSpace(LastPreviewOverallMood))
+            {
+                state.SetString(PreviewOverallMoodStateKey, LastPreviewOverallMood);
+            }
+
+            if (!string.IsNullOrWhiteSpace(LastPreviewUncertainty))
+            {
+                state.SetString(PreviewUncertaintyStateKey, LastPreviewUncertainty);
             }
 
             if (alienPersonality != null)
@@ -1425,16 +1975,13 @@ namespace DoodleDiplomacy.AI
             });
             yield return new WaitUntil(() => done);
 
-            LastAxis1 = SatisfactionLevel.Neutral;
-            LastAxis2 = SatisfactionLevel.Neutral;
+            LastSatisfaction = SatisfactionLevel.Neutral;
             LastJudgmentSceneReading = "";
             LastJudgmentReason = "";
             if (finalState != null)
             {
-                if (finalState.TryGetString(judgmentAxis1Key, out string a1))
-                    LastAxis1 = ParseSatisfaction(a1);
-                if (finalState.TryGetString(judgmentAxis2Key, out string a2))
-                    LastAxis2 = ParseSatisfaction(a2);
+                if (TryReadSatisfactionStateValue(finalState, out SatisfactionLevel satisfaction))
+                    LastSatisfaction = satisfaction;
                 if (finalState.TryGetString(judgmentSceneReadingKey, out string sceneReading))
                     LastJudgmentSceneReading = sceneReading?.Trim() ?? string.Empty;
                 if (finalState.TryGetString(judgmentReasonKey, out string judgmentReason))
@@ -1452,8 +1999,8 @@ namespace DoodleDiplomacy.AI
                 ? string.Empty
                 : FormatTelepathyTerminalOutput(rawTranscript);
 
-            Debug.Log($"[AIPipelineBridge] Judgment finished. axis1={LastAxis1}, axis2={LastAxis2}");
-            onComplete?.Invoke(LastAxis1, LastAxis2);
+            Debug.Log($"[AIPipelineBridge] Judgment finished. satisfaction={LastSatisfaction}");
+            onComplete?.Invoke(LastSatisfaction);
         }
 
         private IEnumerator GetTelepathyRoutine(Action<string> onComplete)
@@ -1625,16 +2172,62 @@ namespace DoodleDiplomacy.AI
             };
         }
 
-        private static int ToAxisScore(SatisfactionLevel value)
+        private void SetSatisfactionStateValue(PipelineState state, SatisfactionLevel satisfaction)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            string formatted = FormatSatisfactionForPrompt(satisfaction);
+            state.SetString(GetSatisfactionStateKey(), formatted);
+        }
+
+        private bool TryReadSatisfactionStateValue(PipelineState state, out SatisfactionLevel satisfaction)
+        {
+            satisfaction = SatisfactionLevel.Neutral;
+            if (state == null)
+            {
+                return false;
+            }
+
+            if (TryReadStateString(state, GetSatisfactionStateKey(), out string rawValue))
+            {
+                satisfaction = ParseSatisfaction(rawValue);
+                return true;
+            }
+
+            return false;
+        }
+
+        private string GetSatisfactionStateKey()
+        {
+            return string.IsNullOrWhiteSpace(judgmentSatisfactionKey)
+                ? DefaultSatisfactionStateKey
+                : judgmentSatisfactionKey.Trim();
+        }
+
+        private static bool TryReadStateString(PipelineState state, string key, out string value)
+        {
+            value = string.Empty;
+            if (state == null || string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+            return state.TryGetString(key, out value) && !string.IsNullOrWhiteSpace(value);
+        }
+
+        private static string FormatSatisfactionForPrompt(SatisfactionLevel value)
         {
             return value switch
             {
-                SatisfactionLevel.VeryDissatisfied => -2,
-                SatisfactionLevel.Dissatisfied => -1,
-                SatisfactionLevel.Neutral => 0,
-                SatisfactionLevel.Satisfied => 1,
-                SatisfactionLevel.VerySatisfied => 2,
-                _ => 0
+                SatisfactionLevel.VeryDissatisfied => "very_dissatisfied",
+                SatisfactionLevel.Dissatisfied => "dissatisfied",
+                SatisfactionLevel.Neutral => "neutral",
+                SatisfactionLevel.Satisfied => "satisfied",
+                SatisfactionLevel.VerySatisfied => "very_satisfied",
+                _ => "neutral"
             };
         }
 

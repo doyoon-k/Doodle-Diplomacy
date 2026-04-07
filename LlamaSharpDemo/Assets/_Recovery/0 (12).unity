@@ -9912,10 +9912,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.AI.AIPipelineBridge
   sdSettings: {fileID: 11400000, guid: f4f329f6c6584f6fb4d74f3cfa77b1e2, type: 2}
   sdModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
-  objectPromptA: studio photo of a single dog, centered, isolated, plain background,
-    simple lighting
-  objectPromptB: studio photo of a single lantern, centered, isolated, plain background,
-    simple lighting
+  objectPromptA: picture of a dog
+  objectPromptB: picture of a lantern
   sdNegativePrompt: low quality, blurry, text, watermark, humans, faces
   previewDialoguePipeline: {fileID: 11400000, guid: 1b6f09a5c4e54ee4a8574fc5d1a8331d, type: 2}
   judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
@@ -9925,20 +9923,19 @@ MonoBehaviour:
   drawingImageKey: reference_image
   alienPersonalityKey: alien_personality
   targetObjectsKey: target_objects
-  judgmentSatisfactionKey: satisfaction
+  judgmentAxis1Key: axis1
+  judgmentAxis2Key: axis2
   judgmentSceneReadingKey: scene_reading
   judgmentReasonKey: judgment_reason
   wordsSelectionWordsKey: words
-  selectedKeywordPromptTemplate: Picture of {0}
+  selectedKeywordPromptTemplate: picture of {0}
   monitorDisplay: {fileID: 1651293743}
   drawingExportBridge: {fileID: 97547043}
   alienPersonalityProfiles:
   - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  - {fileID: 11400000, guid: 9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f, type: 2}
   - {fileID: 11400000, guid: 7f1a2c9d4b6e4a5f8c1d2e3f4a5b6c7d, type: 2}
-  - {fileID: 11400000, guid: 2a4c6e8f0b1d3f5a7c9e1b2d4f6a8c0e, type: 2}
-  - {fileID: 11400000, guid: 3b5d7f9a1c2e4f6a8b0d2f4e6a8c1d3f, type: 2}
   - {fileID: 11400000, guid: 1e3d5c7b9a0f4e6d8c2b1a3f5d7c9e0a, type: 2}
+  - {fileID: 11400000, guid: 9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f, type: 2}
   alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
   telepathyCorruptedLineRatio: 0
   telepathyCorruptionStrength: 0

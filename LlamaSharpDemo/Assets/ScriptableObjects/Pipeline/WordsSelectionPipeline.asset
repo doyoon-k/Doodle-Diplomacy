@@ -18,7 +18,15 @@ MonoBehaviour:
   - stepName: Step 1
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: 7dc8bb6a3ce8b1f4fa62b64af7d23363, type: 2}
-    userPromptTemplate: 
+    userPromptTemplate: 'The alien this round has the following personality:
+
+      {{alien_personality}}
+
+
+      Pick
+      two objects that are especially fun to draw for this alien''s taste. The player
+      should be able to clearly express this alien''s preferred attitude through
+      how they arrange and use the objects in their drawing.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 0

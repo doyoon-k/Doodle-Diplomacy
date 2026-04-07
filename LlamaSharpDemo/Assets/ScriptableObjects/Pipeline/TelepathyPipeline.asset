@@ -18,17 +18,15 @@ MonoBehaviour:
   - stepName: TelepathyDecode
     stepKind: 1
     llmProfile: {fileID: 11400000, guid: f44274f93505fb446aee8a284c3ee7e3, type: 2}
-    userPromptTemplate: 'Alien personality rubric:
-      {{alien_personality}}
+    userPromptTemplate: 'Judgment summary:
 
-      Current reading:
-      {{scene_reading}}
+      satisfaction={{satisfaction}}
 
-      Reaction reason:
-      {{judgment_reason}}
+      scene_reading={{scene_reading}}
 
-      Write only 4 to 6 short alien dialogue lines.
-      React to the judgment. Do not summarize it again.'
+      judgment_reason={{judgment_reason}}
+
+      Reconstruct the delegation''s meeting dialogue.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 0
@@ -53,8 +51,8 @@ MonoBehaviour:
     outputNodePosition: {x: 625, y: -37}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 238, y: 171, z: 0}
-    viewScale: {x: 0.49717674, y: 0.49717674, z: 1}
+    viewPosition: {x: 441, y: 30, z: 0}
+    viewScale: {x: 1.15, y: 1.15, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 404, y: -37}

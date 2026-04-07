@@ -11,18 +11,18 @@ namespace DoodleDiplomacy.Data
         public float lastRoundMultiplier = 1.5f;
 
         [Header("Ending Thresholds")]
-        [Tooltip("이 값 이하면 멸망")]
-        public int destructionMax = -9;
-        [Tooltip("이 값 이하면 추방 (destructionMax 초과)")]
+        [Tooltip("Inclusive upper bound for Destruction.")]
+        public int destructionMax = -5;
+        [Tooltip("Inclusive upper bound for Exile (above destructionMax).")]
         public int exileMax = 0;
-        [Tooltip("이 값 이하면 수교 (exileMax 초과), 초과하면 동맹")]
-        public int diplomacyMax = 12;
+        [Tooltip("Inclusive upper bound for Diplomacy (above exileMax). Alliance is anything higher.")]
+        public int diplomacyMax = 6;
 
         public EndingType EvaluateEnding(int score)
         {
             if (score <= destructionMax) return EndingType.Destruction;
-            if (score <= exileMax)      return EndingType.Exile;
-            if (score <= diplomacyMax)  return EndingType.Diplomacy;
+            if (score <= exileMax) return EndingType.Exile;
+            if (score <= diplomacyMax) return EndingType.Diplomacy;
             return EndingType.Alliance;
         }
     }

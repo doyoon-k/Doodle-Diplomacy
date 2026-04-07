@@ -1,0 +1,135 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f8a1c2b4d5e6f7a8b9c0d1e2f3a4b5c, type: 3}
+  m_Name: WordPairPool
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.WordPairPool
+  pairs:
+  - wordA: dog
+    wordB: lantern
+  - wordA: wolf
+    wordB: rope
+  - wordA: crow
+    wordB: bell
+  - wordA: snake
+    wordB: torch
+  - wordA: horse
+    wordB: chest
+  - wordA: fish
+    wordB: barrel
+  - wordA: bear
+    wordB: drum
+  - wordA: owl
+    wordB: pillow
+  - wordA: sword
+    wordB: cloak
+  - wordA: torch
+    wordB: cage
+  - wordA: rope
+    wordB: crown
+  - wordA: axe
+    wordB: wheel
+  - wordA: shield
+    wordB: flower
+  - wordA: hammer
+    wordB: bell
+  - wordA: spear
+    wordB: bowl
+  - wordA: knife
+    wordB: bread
+  - wordA: chain
+    wordB: helmet
+  - wordA: staff
+    wordB: boat
+  - wordA: boat
+    wordB: cage
+  - wordA: tent
+    wordB: lantern
+  - wordA: throne
+    wordB: rope
+  - wordA: ladder
+    wordB: drum
+  - wordA: chest
+    wordB: bread
+  - wordA: cart
+    wordB: barrel
+  - wordA: cage
+    wordB: flower
+  - wordA: bucket
+    wordB: rope
+  - wordA: basket
+    wordB: torch
+  - wordA: cauldron
+    wordB: apple
+  - wordA: wine
+    wordB: crown
+  - wordA: cup
+    wordB: sword
+  - wordA: apple
+    wordB: shield
+  - wordA: egg
+    wordB: basket
+  - wordA: bowl
+    wordB: torch
+  - wordA: cloak
+    wordB: crown
+  - wordA: mask
+    wordB: bell
+  - wordA: helmet
+    wordB: flower
+  - wordA: bell
+    wordB: chain
+  - wordA: mirror
+    wordB: shield
+  - wordA: cannon
+    wordB: nest
+  - wordA: wheel
+    wordB: bucket
+  - wordA: bone
+    wordB: cage
+  - wordA: mushroom
+    wordB: lantern
+  - wordA: anchor
+    wordB: bell
+  - wordA: anvil
+    wordB: flower
+  - wordA: saddle
+    wordB: crown
+  - wordA: barrel
+    wordB: rope
+  - wordA: tent
+    wordB: bell
+  - wordA: boat
+    wordB: cloak
+  - wordA: dog
+    wordB: chest
+  - wordA: horse
+    wordB: lantern
+  - wordA: fish
+    wordB: torch
+  - wordA: bear
+    wordB: cage
+  - wordA: owl
+    wordB: drum
+  - wordA: snake
+    wordB: bell
+  - wordA: crow
+    wordB: mask
+  - wordA: wolf
+    wordB: shield
+  - wordA: spear
+    wordB: cage
+  - wordA: hammer
+    wordB: bucket
+  - wordA: knife
+    wordB: cup
+  - wordA: staff
+    wordB: helmet

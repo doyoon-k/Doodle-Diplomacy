@@ -13,20 +13,22 @@ MonoBehaviour:
   m_Name: AdjutantPreviewPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: AdjutantPreviewPipeline
-  description: Generate the adjutant's preview line directly from the drawing.
+  description: Generate a Stage 1 structured scene description directly from the
+    drawing.
   steps:
   - stepName: AdjutantPreview
-    stepKind: 1
+    stepKind: 0
     llmProfile: {fileID: 11400000, guid: f40e4c6dcfeff664bb7f044018b3e88f, type: 2}
-    userPromptTemplate: 'Prompt objects (soft context):
+    userPromptTemplate: 'Objects (soft context):
 
       {{target_objects}}
 
-      Based on the visible drawing image, tell the player what the drawing most likely
-      communicates right now.
-      Follow the image first.
-      Prefer the main action or interaction over a parts list.
-      Reply only with the adjutant''s spoken line.'
+      Describe
+      the visible drawing scene freely before any judgment.
+
+      Cover what is
+      present, what each thing seems to be doing, how the main elements relate, and
+      the overall mood.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1
@@ -51,7 +53,7 @@ MonoBehaviour:
     outputNodePosition: {x: 625, y: -37}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 873, y: -42, z: 0}
+    viewPosition: {x: 599, y: 157, z: 0}
     viewScale: {x: 0.65751624, y: 0.65751624, z: 1}
     viewInitialized: 1
     snapshotPositions:

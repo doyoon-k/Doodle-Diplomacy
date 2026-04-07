@@ -33,30 +33,31 @@ namespace DoodleDiplomacy.Core
                 Destroy(gameObject);
                 return;
             }
+
             Instance = this;
         }
 
         private void OnDestroy()
         {
             if (Instance == this)
+            {
                 Instance = null;
+            }
         }
 
         /// <summary>
-        /// 현재 라운드의 만족도 두 축을 받아 점수를 계산하고 기록.
-        /// 마지막 라운드는 ScoreConfig.lastRoundMultiplier 가중치 적용.
-        /// 기록 후 currentRound 증가.
+        /// Records one round using the alien's single satisfaction score.
+        /// The last round applies ScoreConfig.lastRoundMultiplier before storing the value.
         /// </summary>
-        public void RecordRound(SatisfactionLevel axis1, SatisfactionLevel axis2)
+        public void RecordRound(SatisfactionLevel satisfaction)
         {
             if (config == null)
             {
-                Debug.LogError("[ScoreManager] ScoreConfig가 할당되지 않았습니다.");
+                Debug.LogError("[ScoreManager] ScoreConfig is not assigned.");
                 return;
             }
 
-            int baseScore = (int)axis1 + (int)axis2;
-
+            int baseScore = (int)satisfaction;
             bool isLastRound = _currentRound == config.totalRounds - 1;
             int roundScore = isLastRound
                 ? Mathf.RoundToInt(baseScore * config.lastRoundMultiplier)
@@ -66,17 +67,17 @@ namespace DoodleDiplomacy.Core
             _totalScore += roundScore;
             _currentRound++;
 
-            Debug.Log($"[ScoreManager] 라운드 {_currentRound} 완료 — " +
-                      $"기본점수: {baseScore}, 라운드점수: {roundScore}" +
-                      (isLastRound ? $" (가중치 ×{config.lastRoundMultiplier})" : "") +
-                      $", 누적: {_totalScore}");
+            Debug.Log($"[ScoreManager] Round {_currentRound} recorded. " +
+                      $"satisfaction={satisfaction}, baseScore={baseScore}, roundScore={roundScore}" +
+                      (isLastRound ? $" (x{config.lastRoundMultiplier})" : string.Empty) +
+                      $", total={_totalScore}");
 
             OnScoreUpdated?.Invoke(_totalScore);
 
             if (_currentRound >= config.totalRounds)
             {
                 EndingType ending = GetEndingType();
-                Debug.Log($"[ScoreManager] 게임 종료 — 결말: {ending} (총점: {_totalScore})");
+                Debug.Log($"[ScoreManager] Game finished with ending {ending} (totalScore={_totalScore}).");
                 OnEndingDetermined?.Invoke(ending);
             }
         }
@@ -89,9 +90,10 @@ namespace DoodleDiplomacy.Core
         {
             if (config == null)
             {
-                Debug.LogError("[ScoreManager] ScoreConfig가 할당되지 않았습니다.");
+                Debug.LogError("[ScoreManager] ScoreConfig is not assigned.");
                 return EndingType.Diplomacy;
             }
+
             return config.EvaluateEnding(_totalScore);
         }
 
@@ -100,7 +102,7 @@ namespace DoodleDiplomacy.Core
             _currentRound = 0;
             _roundScores.Clear();
             _totalScore = 0;
-            Debug.Log("[ScoreManager] 초기화 완료.");
+            Debug.Log("[ScoreManager] Score state reset.");
         }
     }
 }

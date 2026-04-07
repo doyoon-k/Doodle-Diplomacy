@@ -10,49 +10,52 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
-  m_Name: HumanImageHintPipeline
+  m_Name: AlienSceneReadProfile
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
   model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
-  format: '{"type":"object","properties":{"preview_scene_reading":{"type":"string"},"preview_visible_relations":{"type":"string"},"preview_overall_mood":{"type":"string"},"preview_uncertainty":{"type":"string"}},"required":["preview_scene_reading","preview_visible_relations","preview_overall_mood","preview_uncertainty"],"additionalProperties":false}'
+  format: '{"type":"object","properties":{"alien_scene_reading":{"type":"string"},"reaction_cues":{"type":"string"},"alien_read_uncertainty":{"type":"string"}},"required":["alien_scene_reading","reaction_cues","alien_read_uncertainty"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
   visionProjectorModel: Models/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: 'You are observing a rough sketch and describing only what
-    is visible.
+  systemPromptTemplate: 'You are one alien delegation defined by this single archetype:
 
-    Return valid JSON only.
+    {{alien_personality}}
 
-    - preview_scene_reading: one short sentence describing what is present and what
-    seems to be happening.
+    This is an intermediate read before final scoring.
 
-    - preview_visible_relations: one short sentence for the clearest interaction,
-    motion, contact, or spatial relationship.
+    Look at the visible drawing image and describe what this delegation thinks it
+    is seeing, plus what in the scene feels appealing or off-putting to this archetype.
 
-    - preview_overall_mood: one short sentence for the overall mood or atmosphere.
-    If unclear, say the mood is unclear.
+    Judge by the archetype''s values, not by your own moral framework or generic
+    human ethics.
 
-    - preview_uncertainty: one short sentence about the main ambiguity, or say the
-    read is mostly clear.
+    Return valid JSON only with alien_scene_reading, reaction_cues, alien_read_uncertainty.
+
+    - alien_scene_reading: one short sentence about the main visible scene and action.
+
+    - reaction_cues: one short sentence about what in the scene this delegation likes or dislikes.
+
+    - alien_read_uncertainty: one short sentence about the main ambiguity, or say the read is mostly clear.
 
     Rules:
 
     - image first
 
-    - prompt objects are soft context only
+    - prompt objects and human pre-read are soft context only
 
-    - freely describe the scene before any judgment
+    - do not give final satisfaction yet
 
     - stay close to visible evidence
 
-    - do not infer hidden motives beyond what is visible
+    - note both positive and negative cues when relevant
 
-    - do not judge art quality
+    - if visible evidence is weak or ambiguous, prefer caution over invention
 
     - English and ASCII only.'
   jsonSchemaDeliveryMode: 0
   jsonFields:
-  - fieldName: preview_scene_reading
+  - fieldName: alien_scene_reading
     fieldType: 0
     arrayElementType: 0
     children: []
@@ -63,7 +66,7 @@ MonoBehaviour:
     maxLength: 
     minItems: 
     maxItems: 
-  - fieldName: preview_visible_relations
+  - fieldName: reaction_cues
     fieldType: 0
     arrayElementType: 0
     children: []
@@ -74,18 +77,7 @@ MonoBehaviour:
     maxLength: 
     minItems: 
     maxItems: 
-  - fieldName: preview_overall_mood
-    fieldType: 0
-    arrayElementType: 0
-    children: []
-    enumOptions: []
-    minValue: 
-    maxValue: 
-    minLength: 
-    maxLength: 
-    minItems: 
-    maxItems: 
-  - fieldName: preview_uncertainty
+  - fieldName: alien_read_uncertainty
     fieldType: 0
     arrayElementType: 0
     children: []

@@ -109,7 +109,7 @@ namespace DoodleDiplomacy.Interaction
         {
             HashSet<InteractionType> allowed = GetAllowedTypes(state);
             SetInputLocked(allowed.Count == 0);
-            bool objectGenerationReady = AIPipelineBridge.Instance != null && AIPipelineBridge.Instance.IsObjectGenerationReady;
+            bool roundStartReady = AIPipelineBridge.Instance != null && AIPipelineBridge.Instance.IsRoundStartReady;
             bool telepathyReady = AIPipelineBridge.Instance != null && AIPipelineBridge.Instance.HasTelepathyResult;
 
             foreach (var obj in _registered)
@@ -117,7 +117,7 @@ namespace DoodleDiplomacy.Interaction
                 bool isAllowedByState = allowed.Contains(obj.interactionType);
                 bool passesRuntimeGuard = state != GameState.WaitingForRound ||
                                           obj.interactionType != InteractionType.Alien ||
-                                          objectGenerationReady;
+                                          roundStartReady;
                 passesRuntimeGuard = passesRuntimeGuard &&
                                     (state != GameState.InterpreterReady ||
                                      obj.interactionType != InteractionType.Terminal ||

@@ -874,6 +874,10 @@ MonoBehaviour:
   previewSegments: 48
   previewBrushColor: {r: 0, g: 0, b: 0, a: 0.9}
   previewEraserColor: {r: 0.15, g: 0.55, b: 1, a: 0.95}
+  selectionOutlineColor: {r: 0.12, g: 0.72, b: 0.95, a: 0.96}
+  selectionSurfaceOffset: 0.012
+  selectionLineWidth: 0.01
+  selectionPasteOffsetPixels: 18
   sketchGuideStrokeColor: {r: 0, g: 0, b: 0, a: 1}
   sketchGuideOverlayColor: {r: 0.05, g: 0.8, b: 1, a: 0.85}
   sketchGuideRegionPadding: 24
@@ -942,6 +946,7 @@ MonoBehaviour:
   autoFitCanvasToSurface: 0
   preserveSquareCanvasPixels: 1
   applyPlacementToSceneAuthoredCanvas: 0
+  reuseSceneAuthoredCanvas: 0
   panelColor: {r: 0.09, g: 0.11, b: 0.14, a: 0.94}
   sectionColor: {r: 0.16, g: 0.18, b: 0.23, a: 1}
   activeButtonColor: {r: 0.15, g: 0.59, b: 0.49, a: 1}
@@ -9925,7 +9930,8 @@ MonoBehaviour:
   drawingImageKey: reference_image
   alienPersonalityKey: alien_personality
   targetObjectsKey: target_objects
-  judgmentSatisfactionKey: satisfaction
+  judgmentAxis1Key: axis1
+  judgmentAxis2Key: axis2
   judgmentSceneReadingKey: scene_reading
   judgmentReasonKey: judgment_reason
   wordsSelectionWordsKey: words
@@ -9934,11 +9940,9 @@ MonoBehaviour:
   drawingExportBridge: {fileID: 97547043}
   alienPersonalityProfiles:
   - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  - {fileID: 11400000, guid: 9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f, type: 2}
   - {fileID: 11400000, guid: 7f1a2c9d4b6e4a5f8c1d2e3f4a5b6c7d, type: 2}
-  - {fileID: 11400000, guid: 2a4c6e8f0b1d3f5a7c9e1b2d4f6a8c0e, type: 2}
-  - {fileID: 11400000, guid: 3b5d7f9a1c2e4f6a8b0d2f4e6a8c1d3f, type: 2}
   - {fileID: 11400000, guid: 1e3d5c7b9a0f4e6d8c2b1a3f5d7c9e0a, type: 2}
+  - {fileID: 11400000, guid: 9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f, type: 2}
   alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
   telepathyCorruptedLineRatio: 0
   telepathyCorruptionStrength: 0

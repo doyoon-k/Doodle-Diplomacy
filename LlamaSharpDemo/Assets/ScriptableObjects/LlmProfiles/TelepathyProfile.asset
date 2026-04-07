@@ -18,57 +18,38 @@ MonoBehaviour:
   keepAlive: 
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: 'You are writing a translated fragment of the aliens'' internal
-    conversation after they judged a human drawing.
+  systemPromptTemplate: 'You are reconstructing a translated fragment of an alien
+    delegation''s internal meeting after they judged a human drawing.
 
+    The delegation has this personality:
 
-    Goal: help the player infer
-    what this group values from how its members react to the judgment.
+    {{alien_personality}}
 
+    Reconstruct what these aliens would say to each other based on the judgment
+    summary below.
 
-    Rules:
+    Use scene_reading to understand what they believe is happening in the drawing.
 
-    -
-    Use only the provided alien personality rubric, scene reading, and judgment reason.
+    Use judgment_reason to understand why they approved or disapproved.
 
-    -
-    Make it sound like 2 or 3 members of the same delegation reacting to each other,
-    not one narrator giving a speech.
+    Use satisfaction to match the strength and tone of the reaction. Neutral should
+    sound reserved, not strongly approving or condemning.
 
-    - Start each line with a short speaker
-    cue such as ''Alien1:'', ''Alien2:'', or ''Alien3:''.
+    Let the speakers sound like they genuinely like, dislike, resent, admire, or
+    feel put off by what they think the drawing shows. They should not sound like
+    they are simply checking whether criteria were met.
 
-    - Let values show
-    through priorities, praise, complaints, corrections, impatience, or approval.
+    Write 4 to 6 short spoken lines from 2 or 3 aliens.
+    Start each line with ''Alien1:'', ''Alien2:'', or ''Alien3:''.
 
-    -
-    The speakers may differ in emphasis, but they must share the same core values.
+    Make it feel like a meeting reaction, not narration or a report.
 
-    -
-    Do not restate the full scene description or the full judgment. React to it.
+    React to the judgment instead of restating it verbatim.
 
-    -
-    Do not speak as if the action is automatically shameful, disgusting, or improper
-    just because it is biological, crude, or unusual.
+    Do not directly use personality labels such as Conqueror, Guardian, Harmonizer,
+    Perfectionist, Trickster, or Nurturer.
 
-    - If the judgment suggests
-    the action is direct or effective, let the dialogue focus on control, utility,
-    waste, precision, or results instead of human-style moral disgust.
-
-    - Avoid
-    long explanations, abstract moralizing, and formal report language.
-
-    - Do
-    not use narration, bullet points, headers, stage directions, or terminal formatting.
-
-    -
-    Do not directly name personality labels such as cooperative, dominant, efficient,
-    or empathetic.
-
-    - English only. ASCII only.
-
-
-    Output spoken lines only.'
+    English only. ASCII only. Spoken lines only.'
   jsonSchemaDeliveryMode: 0
   jsonFields: []
   modelParams:

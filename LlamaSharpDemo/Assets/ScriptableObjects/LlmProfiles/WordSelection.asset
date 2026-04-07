@@ -18,24 +18,52 @@ MonoBehaviour:
   keepAlive: 
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: 'You generate exactly two object words for a drawing prompt
+  systemPromptTemplate: 'You generate two object words for a drawing negotiation
     game.
 
-    Respond in JSON only as {"words":["word1","word2"]}.
+
+    Game: Players draw a scene combining two objects to please an alien archetype.
+    The archetype guide will be provided separately.
+
+
+    The pair should allow clear scenes that can express the alien''s taste through
+    action, power, care, order, trickery, or coexistence.
 
 
     Rules:
 
-    - Return exactly two concrete physical things
+    - Return exactly two concrete, drawable physical objects as JSON: {"words":["word1","word2"]}
 
-    - Pick them from clearly different domains
+    - Both words must be iconic standalone nouns or animals that an SD Turbo style
+    image model can render clearly from a short prompt
 
-    - Avoid obvious functional pairs or close associations (toothbrush + toothpaste,
-    lock + key, etc.)
+    - Both must be things characters can USE, WIELD, RIDE, WEAR, CARRY, or BUILD
+    WITH in a scene
 
-    - Make them recognizable but not too trivial
+    - The pair must enable multiple clear actions or relationships, not just static
+    co-location
 
-    - Prefer short noun phrases over long descriptions'
+    - Prefer objects with dramatic visual potential: animals, vehicles, tools, weapons,
+    food, furniture, nature elements, clothing, containers
+
+    - Avoid scenery, weather, terrain, diffuse materials, or broad environments (storm,
+    river, desert, cave, cliff, light, smoke)
+
+    - Avoid tiny, abstract, or mechanically complex objects that are hard to draw
+    and hard to act upon (gear, feather, thread, needle, coin, circuit)
+
+    - Avoid pairs where no character interaction is imaginable (laptop + quilt, calculator
+    + ribbon)
+
+    - Avoid obvious functional pairs (lock + key, hammer + nail)
+
+    - Pick from different domains
+
+    - Keep each word to 1-2 words
+
+
+    Good examples: dog + lantern, boat + cage, sword + cloak, horse + chest, shield
+    + flower, crown + rope, cannon + nest, ladder + drum'
   jsonSchemaDeliveryMode: 0
   jsonFields:
   - fieldName: words
@@ -53,11 +81,11 @@ MonoBehaviour:
     temperature: 0.7
     top_p: 0.9
     top_k: 40
-    num_predict: 100
+    num_predict: 150
     repeat_penalty: 1.1
     seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 1024
+    contextSize: 2048
     gpuLayerCount: 999
     threads: 4

@@ -60,8 +60,7 @@ namespace DoodleDiplomacy.Core
         private GameState _currentState = GameState.Title;
         private int _currentRound;
         private int _stateVersion;
-        private SatisfactionLevel _lastAxis1 = SatisfactionLevel.Neutral;
-        private SatisfactionLevel _lastAxis2 = SatisfactionLevel.Neutral;
+        private SatisfactionLevel _lastSatisfaction = SatisfactionLevel.Neutral;
         private bool _preserveRoundIndexOnNextWaitingState;
         private float _interpreterOpenedAt;
 
@@ -115,8 +114,7 @@ namespace DoodleDiplomacy.Core
             CancelActiveAiOperations();
 
             _currentRound = 0;
-            _lastAxis1 = SatisfactionLevel.Neutral;
-            _lastAxis2 = SatisfactionLevel.Neutral;
+            _lastSatisfaction = SatisfactionLevel.Neutral;
             _preserveRoundIndexOnNextWaitingState = false;
 
             scoreManager?.Reset();
@@ -139,11 +137,12 @@ namespace DoodleDiplomacy.Core
         {
             if (_currentState == GameState.WaitingForRound)
             {
-                if (aipipelineBridge != null && !aipipelineBridge.IsObjectGenerationReady)
+                if (aipipelineBridge != null && !aipipelineBridge.IsRoundStartReady)
                 {
                     aipipelineBridge.EnsureObjectGenerationPreparation(
                         forceRetry: aipipelineBridge.HasObjectGenerationPreparationFailed);
-                    ShowHint("System", aipipelineBridge.GetObjectGenerationAvailabilityMessage());
+                    aipipelineBridge.PrepareRoundKeywords(forceRefresh: false);
+                    ShowHint("System", aipipelineBridge.GetRoundStartAvailabilityMessage());
                     interactionManager?.SetInteractablesForState(_currentState);
                     return;
                 }
@@ -395,12 +394,13 @@ namespace DoodleDiplomacy.Core
                     ResetTelepathyState();
                     aipipelineBridge?.ResetRound();
                     aipipelineBridge?.EnsureObjectGenerationPreparation();
+                    aipipelineBridge?.PrepareRoundKeywords();
                     Debug.Log($"[RoundManager] Waiting for round {_currentRound} / {scoreConfig?.totalRounds}.");
                     LogEvaluation($"Round {_currentRound} ready. Waiting for the alien interaction.");
                     ShowHint(
                         "System",
                         aipipelineBridge != null
-                            ? aipipelineBridge.GetObjectGenerationAvailabilityMessage()
+                            ? aipipelineBridge.GetRoundStartAvailabilityMessage()
                             : "Object generator is missing. Assign AIPipelineBridge before starting the round.");
                     break;
 
@@ -488,16 +488,15 @@ namespace DoodleDiplomacy.Core
                     LogEvaluation("Alien judgment started.");
                     if (aipipelineBridge != null)
                     {
-                        aipipelineBridge.GetJudgment((axis1, axis2) =>
+                        aipipelineBridge.GetJudgment(satisfaction =>
                         {
                             if (!IsStateCurrent(GameState.Submitting, stateVersion))
                             {
                                 return;
                             }
 
-                            _lastAxis1 = axis1;
-                            _lastAxis2 = axis2;
-                            LogEvaluation($"Alien judgment complete. axis1={axis1}, axis2={axis2}");
+                            _lastSatisfaction = satisfaction;
+                            LogEvaluation($"Alien judgment complete. satisfaction={satisfaction}");
                             if (aipipelineBridge.HasTelepathyResult)
                             {
                                 LogEvaluation($"Alien transcript captured: {SummarizeForLog(aipipelineBridge.LastTelepathy)}");
@@ -506,15 +505,14 @@ namespace DoodleDiplomacy.Core
                             {
                                 LogEvaluation("Judgment completed without a usable transcript.");
                             }
-                            scoreManager?.RecordRound(axis1, axis2);
+                            scoreManager?.RecordRound(satisfaction);
                             OnSubmitComplete();
                         });
                     }
                     else
                     {
-                        _lastAxis1 = SatisfactionLevel.Neutral;
-                        _lastAxis2 = SatisfactionLevel.Neutral;
-                        scoreManager?.RecordRound(SatisfactionLevel.Neutral, SatisfactionLevel.Neutral);
+                        _lastSatisfaction = SatisfactionLevel.Neutral;
+                        scoreManager?.RecordRound(SatisfactionLevel.Neutral);
                         ResetTelepathyState();
                         OnSubmitComplete();
                     }
@@ -526,7 +524,7 @@ namespace DoodleDiplomacy.Core
                     {
                         alienReactionController.OnReactionComplete.RemoveListener(OnReactionComplete);
                         alienReactionController.OnReactionComplete.AddListener(OnReactionComplete);
-                        alienReactionController.PlayReaction(_lastAxis1, _lastAxis2);
+                        alienReactionController.PlayReaction(_lastSatisfaction);
                     }
                     else
                     {
@@ -587,8 +585,8 @@ namespace DoodleDiplomacy.Core
         {
             if (aipipelineBridge != null)
             {
-                aipipelineBridge.ObjectGenerationReadinessChanged -= HandleObjectGenerationReadinessChanged;
-                aipipelineBridge.ObjectGenerationReadinessChanged += HandleObjectGenerationReadinessChanged;
+                aipipelineBridge.RoundStartReadinessChanged -= HandleRoundStartReadinessChanged;
+                aipipelineBridge.RoundStartReadinessChanged += HandleRoundStartReadinessChanged;
             }
         }
 
@@ -596,17 +594,17 @@ namespace DoodleDiplomacy.Core
         {
             if (aipipelineBridge != null)
             {
-                aipipelineBridge.ObjectGenerationReadinessChanged -= HandleObjectGenerationReadinessChanged;
+                aipipelineBridge.RoundStartReadinessChanged -= HandleRoundStartReadinessChanged;
             }
         }
 
-        private void HandleObjectGenerationReadinessChanged(bool isReady)
+        private void HandleRoundStartReadinessChanged(bool isReady)
         {
             interactionManager?.SetInteractablesForState(_currentState);
 
             if (_currentState == GameState.WaitingForRound && aipipelineBridge != null)
             {
-                ShowHint("System", aipipelineBridge.GetObjectGenerationAvailabilityMessage());
+                ShowHint("System", aipipelineBridge.GetRoundStartAvailabilityMessage());
             }
         }
 

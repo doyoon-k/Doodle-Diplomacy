@@ -53,7 +53,6 @@ public class DrawingBoardController : MonoBehaviour
     [SerializeField] private int brushRadius = 6;
     [SerializeField] private int minBrushRadius = 1;
     [SerializeField] private int maxBrushRadius = 24;
-    [SerializeField] private float scrollRadiusStep = 1f;
     [SerializeField] private bool blockPointerWhenOverUi = true;
     [SerializeField] private Rect normalizedPaintArea = new(0.40f, 0.02f, 0.58f, 0.96f);
 
@@ -161,11 +160,6 @@ public class DrawingBoardController : MonoBehaviour
             drawingSurfaceCollider == null || drawingCamera == null)
         {
             return;
-        }
-
-        if (_selectedSticker == null || _useStickerMaskErase)
-        {
-            UpdateBrushRadiusFromScroll();
         }
 
         HandlePointerInput();
@@ -1249,17 +1243,6 @@ public class DrawingBoardController : MonoBehaviour
         worldWidth = referenceTransform.TransformVector(new Vector3(localBounds.size.x, 0f, 0f)).magnitude;
         worldHeight = referenceTransform.TransformVector(new Vector3(0f, 0f, localBounds.size.z)).magnitude;
         return worldWidth > 0.0001f && worldHeight > 0.0001f;
-    }
-
-    private void UpdateBrushRadiusFromScroll()
-    {
-        float scrollDelta = GetScrollDelta();
-        if (Mathf.Abs(scrollDelta) < 0.01f)
-        {
-            return;
-        }
-
-        SetBrushRadius(brushRadius + Mathf.Sign(scrollDelta) * scrollRadiusStep);
     }
 
     private void HandleHistoryShortcuts()

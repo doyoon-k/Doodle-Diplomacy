@@ -9,7 +9,9 @@ public class DrawingColorPickerInteractionZone : MonoBehaviour, IPointerDownHand
     public enum ZoneKind
     {
         ColorField,
-        ValueSlider
+        ValueSlider,
+        HueWheel,
+        SvTriangle
     }
 
     [SerializeField] private DrawingColorPickerController picker;
@@ -68,6 +70,12 @@ public class DrawingColorPickerInteractionZone : MonoBehaviour, IPointerDownHand
                 break;
             case ZoneKind.ValueSlider:
                 picker.SetValue(normalizedY);
+                break;
+            case ZoneKind.HueWheel:
+                picker.SetHueFromWheel(normalizedX, normalizedY);
+                break;
+            case ZoneKind.SvTriangle:
+                picker.SetSaturationValueFromTriangle(normalizedX, normalizedY);
                 break;
         }
     }

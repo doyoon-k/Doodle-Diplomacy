@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67bd54e28395c0e479d381741f8e4007, type: 3}
-  m_Name: AlienPersonality_Nurturer
+  m_Name: AlienPersonality_Engineer
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
-  archetype: 5
-  description: Values care, comfort, reassurance, and the easing of another being's pain or fear.
+  archetype: 3
+  description: Values precision, proper function, efficient problem-solving, and clean structural execution.

@@ -28,7 +28,10 @@ MonoBehaviour:
 
       Cover what is
       present, what each thing seems to be doing, how the main elements relate, and
-      the overall mood.'
+      the overall mood.
+
+      Also report whether Object A and Object B are visible, unclear, or missing.
+      Only mark visible when the drawing itself provides clear evidence.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1

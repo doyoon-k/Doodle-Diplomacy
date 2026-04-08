@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67bd54e28395c0e479d381741f8e4007, type: 3}
-  m_Name: AlienPersonality_Harmonizer
+  m_Name: AlienPersonality_Collaborator
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
   archetype: 2
-  description: Values balance, coexistence, shared effort, and non-coercive harmony.
+  description: Values cooperation, mutual contribution, shared effort, and building something together without coercion.

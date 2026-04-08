@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: AlienPersonality_Trickster
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
   archetype: 4
-  description: Values wit, deception, traps, reversals, and clever unexpected solutions.
+  description: Values deception, baiting, traps, reversals, and clever indirect solutions.

@@ -6,10 +6,10 @@ namespace DoodleDiplomacy.Data
     {
         Conqueror,
         Guardian,
-        Harmonizer,
-        Perfectionist,
+        Collaborator,
+        Engineer,
         Trickster,
-        Nurturer
+        Caretaker
     }
 
     [CreateAssetMenu(fileName = "AlienPersonality", menuName = "DoodleDiplomacy/Alien Personality")]

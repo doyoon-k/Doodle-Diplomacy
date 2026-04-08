@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: AlienPersonality_Guardian
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
   archetype: 1
-  description: Values protective strength, rescue, sacrifice, and the strong defending the weak.
+  description: Values protective strength, rescue, sacrifice, and standing between danger and the vulnerable.

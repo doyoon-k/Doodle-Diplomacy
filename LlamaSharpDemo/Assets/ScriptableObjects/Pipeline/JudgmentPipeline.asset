@@ -18,7 +18,7 @@ MonoBehaviour:
   - stepName: AlienJudgment
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: bd3032636c9d2b845b1acd25bc6a30be, type: 2}
-    userPromptTemplate: 'Objects shown this round (soft context):
+    userPromptTemplate: 'Requested prompt objects:
 
       {{target_objects}}
 
@@ -27,10 +27,17 @@ MonoBehaviour:
       - visible relations: {{preview_visible_relations}}
       - overall mood: {{preview_overall_mood}}
       - uncertainty: {{preview_uncertainty}}
+      - object A presence: {{preview_object_a_presence}}
+      - object B presence: {{preview_object_b_presence}}
 
-      React to this scene as your alien delegation.
-      Base the judgment on the description above, not on an unseen image.
-      Find the interpretation that connects most strongly to your archetype''s values.'
+      Judge how this scene would actually land with your alien delegation.
+      Use the Stage 1 description as the full evidence.
+      Use the object-presence labels to understand whether the requested objects
+      were clearly represented, unclear, or omitted.
+      Choose the most straightforward archetype-based reading supported by that evidence.
+      Rate the scene by how directly and naturally it expresses your values.
+      If the fit is weak, ordinary, mixed, or only speculative, keep the score near
+      neutral or dissatisfied instead of forcing a stronger interpretation.'
     jsonMaxRetries: 2
     jsonRetryDelaySeconds: 0.5
     useVision: 0

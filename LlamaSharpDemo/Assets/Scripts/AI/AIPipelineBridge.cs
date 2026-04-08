@@ -23,6 +23,8 @@ namespace DoodleDiplomacy.AI
         private const string PreviewVisibleRelationsStateKey = "preview_visible_relations";
         private const string PreviewOverallMoodStateKey = "preview_overall_mood";
         private const string PreviewUncertaintyStateKey = "preview_uncertainty";
+        private const string PreviewObjectAPresenceStateKey = "preview_object_a_presence";
+        private const string PreviewObjectBPresenceStateKey = "preview_object_b_presence";
 
         private enum ObjectGenerationAvailabilityState
         {
@@ -30,6 +32,14 @@ namespace DoodleDiplomacy.AI
             Preparing,
             Ready,
             Failed
+        }
+
+        private enum PreviewObjectPresence
+        {
+            Unknown,
+            Visible,
+            Unclear,
+            Missing
         }
 
         public static AIPipelineBridge Instance { get; private set; }
@@ -45,7 +55,7 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private string sdNegativePrompt = "low quality, blurry, text, watermark, humans, faces";
 
         [Header("LLM Pipelines")]
-        [Tooltip("Adjutant preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_overall_mood, preview_uncertainty")]
+        [Tooltip("Adjutant preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_overall_mood, preview_uncertainty, preview_object_a_presence, preview_object_b_presence")]
         [SerializeField] private PromptPipelineAsset previewDialoguePipeline;
         [Tooltip("Judgment pipeline. Expected output keys: satisfaction, scene_reading, judgment_reason")]
         [SerializeField] private PromptPipelineAsset judgmentPipeline;
@@ -96,6 +106,8 @@ namespace DoodleDiplomacy.AI
         public string LastPreviewVisibleRelations { get; private set; } = "";
         public string LastPreviewOverallMood { get; private set; } = "";
         public string LastPreviewUncertainty { get; private set; } = "";
+        public string LastPreviewObjectAPresence => FormatPreviewObjectPresence(_lastPreviewObjectAPresence);
+        public string LastPreviewObjectBPresence => FormatPreviewObjectPresence(_lastPreviewObjectBPresence);
         public bool HasPreviewStructuredRead { get; private set; }
         public SatisfactionLevel LastSatisfaction { get; private set; } = SatisfactionLevel.Neutral;
         public string LastJudgmentSceneReading { get; private set; } = "";
@@ -142,6 +154,8 @@ namespace DoodleDiplomacy.AI
         private int _pendingPreviewHeight;
         private int _pendingPreviewChannels;
         private byte[] _pendingPreviewBytes;
+        private PreviewObjectPresence _lastPreviewObjectAPresence = PreviewObjectPresence.Unknown;
+        private PreviewObjectPresence _lastPreviewObjectBPresence = PreviewObjectPresence.Unknown;
 
         private void Awake()
         {
@@ -238,6 +252,8 @@ namespace DoodleDiplomacy.AI
             LastPreviewVisibleRelations = "";
             LastPreviewOverallMood = "";
             LastPreviewUncertainty = "";
+            _lastPreviewObjectAPresence = PreviewObjectPresence.Unknown;
+            _lastPreviewObjectBPresence = PreviewObjectPresence.Unknown;
             HasPreviewStructuredRead = false;
             LastSatisfaction = SatisfactionLevel.Neutral;
             LastJudgmentSceneReading = "";
@@ -642,10 +658,10 @@ namespace DoodleDiplomacy.AI
             {
                 AlienPersonalityArchetype.Conqueror => "Conqueror",
                 AlienPersonalityArchetype.Guardian => "Guardian",
-                AlienPersonalityArchetype.Harmonizer => "Harmonizer",
-                AlienPersonalityArchetype.Perfectionist => "Perfectionist",
+                AlienPersonalityArchetype.Collaborator => "Collaborator",
+                AlienPersonalityArchetype.Engineer => "Engineer",
                 AlienPersonalityArchetype.Trickster => "Trickster",
-                AlienPersonalityArchetype.Nurturer => "Nurturer",
+                AlienPersonalityArchetype.Caretaker => "Caretaker",
                 _ => "Conqueror"
             };
         }
@@ -654,13 +670,13 @@ namespace DoodleDiplomacy.AI
         {
             return archetype switch
             {
-                AlienPersonalityArchetype.Conqueror => "power, domination, intimidation",
-                AlienPersonalityArchetype.Guardian => "protective strength, sacrifice, rescue",
-                AlienPersonalityArchetype.Harmonizer => "balance, coexistence, mutual respect",
-                AlienPersonalityArchetype.Perfectionist => "precision, order, efficiency",
-                AlienPersonalityArchetype.Trickster => "wit, reversals, cunning",
-                AlienPersonalityArchetype.Nurturer => "care, comfort, empathy",
-                _ => "power, domination, intimidation"
+                AlienPersonalityArchetype.Conqueror => "domination, intimidation, pursuit, exertion of power",
+                AlienPersonalityArchetype.Guardian => "protective strength, rescue, sacrifice, shielding the vulnerable",
+                AlienPersonalityArchetype.Collaborator => "cooperation, mutual contribution, shared effort, non-coercive building",
+                AlienPersonalityArchetype.Engineer => "precision, proper function, efficient problem-solving, structural execution",
+                AlienPersonalityArchetype.Trickster => "deception, baiting, traps, reversals, indirect solutions",
+                AlienPersonalityArchetype.Caretaker => "comfort, healing, reassurance, easing pain and distress",
+                _ => "domination, intimidation, pursuit, exertion of power"
             };
         }
 
@@ -668,13 +684,13 @@ namespace DoodleDiplomacy.AI
         {
             return archetype switch
             {
-                AlienPersonalityArchetype.Conqueror => "domination, pursuit, intimidation, forced submission, and obvious control over others",
-                AlienPersonalityArchetype.Guardian => "a strong being defending or rescuing a weaker being, protective force, and sacrifice",
-                AlienPersonalityArchetype.Harmonizer => "cooperation, reciprocity, shared effort, peaceful coexistence, and non-coercive balance",
-                AlienPersonalityArchetype.Perfectionist => "direct, economical, orderly, low-waste, and effective scenes",
-                AlienPersonalityArchetype.Trickster => "deception, traps, reversals, and clever problem solving",
-                AlienPersonalityArchetype.Nurturer => "protection, comfort, reassurance, easing pain, and warm care",
-                _ => "domination, pursuit, intimidation, forced submission, and obvious control over others"
+                AlienPersonalityArchetype.Conqueror => "domination, intimidation, pursuit, and the clear exertion of power over others",
+                AlienPersonalityArchetype.Guardian => "protective force, rescue, sacrifice, and standing between danger and the vulnerable",
+                AlienPersonalityArchetype.Collaborator => "cooperation, mutual contribution, shared effort, and building something together without coercion",
+                AlienPersonalityArchetype.Engineer => "precision, proper function, efficient problem-solving, and clean structural execution",
+                AlienPersonalityArchetype.Trickster => "deception, baiting, traps, reversals, and clever indirect solutions",
+                AlienPersonalityArchetype.Caretaker => "comfort, healing, reassurance, and the easing of pain, fear, or distress",
+                _ => "domination, intimidation, pursuit, and the clear exertion of power over others"
             };
         }
 
@@ -684,10 +700,10 @@ namespace DoodleDiplomacy.AI
             {
                 AlienPersonalityArchetype.Conqueror => "yielding, equality, hesitation, resistance, and loss of control",
                 AlienPersonalityArchetype.Guardian => "abandonment, indifference, ignored danger, and the strong exploiting the weak",
-                AlienPersonalityArchetype.Harmonizer => "bullying, intimidation, domination, abandonment, imbalance, and unilateral control",
-                AlienPersonalityArchetype.Perfectionist => "chaos, waste, delay, clutter, friction, and roundabout methods",
+                AlienPersonalityArchetype.Collaborator => "coercion, unilateral control, withheld effort, sabotage, and imposed hierarchy",
+                AlienPersonalityArchetype.Engineer => "malfunction, waste, sloppiness, inefficiency, and structurally unsound solutions",
                 AlienPersonalityArchetype.Trickster => "straight-line force, predictability, rigidity, and lack of imagination",
-                AlienPersonalityArchetype.Nurturer => "pain, fear, harshness, neglect, and cold optimization",
+                AlienPersonalityArchetype.Caretaker => "pain, fear, neglect, harshness, and callous indifference to suffering",
                 _ => "yielding, equality, hesitation, resistance, and loss of control"
             };
         }
@@ -901,10 +917,10 @@ namespace DoodleDiplomacy.AI
             {
                 AlienPersonalityArchetype.Conqueror => "This delegation prizes domination, intimidation, and visible control.",
                 AlienPersonalityArchetype.Guardian => "This delegation values rescue, protection, and sacrifice.",
-                AlienPersonalityArchetype.Harmonizer => "This delegation values reciprocity, balance, and non-coercive coexistence.",
-                AlienPersonalityArchetype.Perfectionist => "This delegation values precision, order, and waste-free execution.",
+                AlienPersonalityArchetype.Collaborator => "This delegation values cooperation, mutual contribution, and non-coercive shared effort.",
+                AlienPersonalityArchetype.Engineer => "This delegation values precision, proper function, and clean structural execution.",
                 AlienPersonalityArchetype.Trickster => "This delegation values cunning, surprise, and clever reversals.",
-                AlienPersonalityArchetype.Nurturer => "This delegation values comfort, reassurance, and relief from distress.",
+                AlienPersonalityArchetype.Caretaker => "This delegation values comfort, healing, and relief from fear or distress.",
                 _ => string.Empty
             };
         }
@@ -973,12 +989,16 @@ namespace DoodleDiplomacy.AI
             string visibleRelations,
             string overallMood = null,
             string uncertainty = null,
-            string previewDialogue = null)
+            string previewDialogue = null,
+            PreviewObjectPresence objectAPresence = PreviewObjectPresence.Unknown,
+            PreviewObjectPresence objectBPresence = PreviewObjectPresence.Unknown)
         {
             LastPreviewSceneReading = sceneReading?.Trim() ?? string.Empty;
             LastPreviewVisibleRelations = visibleRelations?.Trim() ?? string.Empty;
             LastPreviewOverallMood = overallMood?.Trim() ?? string.Empty;
             LastPreviewUncertainty = uncertainty?.Trim() ?? string.Empty;
+            _lastPreviewObjectAPresence = objectAPresence;
+            _lastPreviewObjectBPresence = objectBPresence;
             LastPreviewDialogue = SanitizePreviewDialogue(BuildPreviewDialogueFromRead(
                 LastPreviewSceneReading,
                 previewDialogue));
@@ -995,7 +1015,9 @@ namespace DoodleDiplomacy.AI
                     "No visible action, interaction, or connection is shown.",
                     "The scene feels empty and unfinished.",
                     "There is not enough visible information to interpret the scene.",
-                    BuildFallbackPreviewDialogue(true));
+                    BuildFallbackPreviewDialogue(true),
+                    PreviewObjectPresence.Missing,
+                    PreviewObjectPresence.Missing);
                 return;
             }
 
@@ -1004,7 +1026,9 @@ namespace DoodleDiplomacy.AI
                 "No clear interaction or cause-and-effect is visible.",
                 "The overall mood is unclear.",
                 "The main action and intent are ambiguous.",
-                BuildFallbackPreviewDialogue(false));
+                BuildFallbackPreviewDialogue(false),
+                PreviewObjectPresence.Unclear,
+                PreviewObjectPresence.Unclear);
         }
 
         private static string BuildPreviewDialogueFromRead(
@@ -1058,12 +1082,22 @@ namespace DoodleDiplomacy.AI
                                  finalState.TryGetString(PreviewUncertaintyStateKey, out string uncertaintyValue)
                 ? uncertaintyValue
                 : string.Empty;
+            PreviewObjectPresence objectAPresence = finalState != null &&
+                                                    finalState.TryGetString(PreviewObjectAPresenceStateKey, out string objectAValue)
+                ? ParsePreviewObjectPresence(objectAValue)
+                : PreviewObjectPresence.Unknown;
+            PreviewObjectPresence objectBPresence = finalState != null &&
+                                                    finalState.TryGetString(PreviewObjectBPresenceStateKey, out string objectBValue)
+                ? ParsePreviewObjectPresence(objectBValue)
+                : PreviewObjectPresence.Unknown;
 
             HasPreviewStructuredRead =
                 !string.IsNullOrWhiteSpace(sceneReading) ||
                 !string.IsNullOrWhiteSpace(visibleRelations) ||
                 !string.IsNullOrWhiteSpace(overallMood) ||
-                !string.IsNullOrWhiteSpace(uncertainty);
+                !string.IsNullOrWhiteSpace(uncertainty) ||
+                objectAPresence != PreviewObjectPresence.Unknown ||
+                objectBPresence != PreviewObjectPresence.Unknown;
 
             if (string.IsNullOrWhiteSpace(sceneReading))
             {
@@ -1085,7 +1119,13 @@ namespace DoodleDiplomacy.AI
                 uncertainty = "The main action and intent are ambiguous.";
             }
 
-            SetPreviewRead(sceneReading, visibleRelations, overallMood, uncertainty);
+            SetPreviewRead(
+                sceneReading,
+                visibleRelations,
+                overallMood,
+                uncertainty,
+                objectAPresence: objectAPresence,
+                objectBPresence: objectBPresence);
         }
 
         private bool HasPreviewReadContext()
@@ -1889,7 +1929,9 @@ namespace DoodleDiplomacy.AI
 
             ApplyPreviewReadFromState(finalState);
 
-            Debug.Log($"[AIPipelineBridge] Preview dialogue generation finished. Length={LastPreviewDialogue.Length}");
+            Debug.Log(
+                $"[AIPipelineBridge] Preview dialogue generation finished. Length={LastPreviewDialogue.Length}, " +
+                $"objectA={LastPreviewObjectAPresence}, objectB={LastPreviewObjectBPresence}");
             onComplete?.Invoke(LastPreviewDialogue);
         }
 
@@ -1959,6 +2001,16 @@ namespace DoodleDiplomacy.AI
             if (!string.IsNullOrWhiteSpace(LastPreviewUncertainty))
             {
                 state.SetString(PreviewUncertaintyStateKey, LastPreviewUncertainty);
+            }
+
+            if (_lastPreviewObjectAPresence != PreviewObjectPresence.Unknown)
+            {
+                state.SetString(PreviewObjectAPresenceStateKey, LastPreviewObjectAPresence);
+            }
+
+            if (_lastPreviewObjectBPresence != PreviewObjectPresence.Unknown)
+            {
+                state.SetString(PreviewObjectBPresenceStateKey, LastPreviewObjectBPresence);
             }
 
             if (alienPersonality != null)
@@ -2216,6 +2268,33 @@ namespace DoodleDiplomacy.AI
             }
 
             return state.TryGetString(key, out value) && !string.IsNullOrWhiteSpace(value);
+        }
+
+        private static PreviewObjectPresence ParsePreviewObjectPresence(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return PreviewObjectPresence.Unknown;
+            }
+
+            return value.Trim().ToLowerInvariant() switch
+            {
+                "visible" or "present" or "seen" => PreviewObjectPresence.Visible,
+                "unclear" or "ambiguous" or "partial" or "maybe" => PreviewObjectPresence.Unclear,
+                "missing" or "absent" or "not_visible" or "not visible" => PreviewObjectPresence.Missing,
+                _ => PreviewObjectPresence.Unknown
+            };
+        }
+
+        private static string FormatPreviewObjectPresence(PreviewObjectPresence value)
+        {
+            return value switch
+            {
+                PreviewObjectPresence.Visible => "visible",
+                PreviewObjectPresence.Unclear => "unclear",
+                PreviewObjectPresence.Missing => "missing",
+                _ => "unknown"
+            };
         }
 
         private static string FormatSatisfactionForPrompt(SatisfactionLevel value)

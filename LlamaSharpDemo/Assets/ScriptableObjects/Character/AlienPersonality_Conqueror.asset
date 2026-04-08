@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: AlienPersonality_Conqueror
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
   archetype: 0
-  description: Values power, domination, intimidation, pursuit, and obvious control over others.
+  description: Values domination, intimidation, pursuit, and the clear exertion of power over others.

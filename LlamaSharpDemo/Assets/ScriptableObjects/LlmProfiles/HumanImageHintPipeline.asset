@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: HumanImageHintPipeline
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
   model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
-  format: '{"type":"object","properties":{"preview_scene_reading":{"type":"string"},"preview_visible_relations":{"type":"string"},"preview_overall_mood":{"type":"string"},"preview_uncertainty":{"type":"string"}},"required":["preview_scene_reading","preview_visible_relations","preview_overall_mood","preview_uncertainty"],"additionalProperties":false}'
+  format: '{"type":"object","properties":{"preview_scene_reading":{"type":"string"},"preview_visible_relations":{"type":"string"},"preview_overall_mood":{"type":"string"},"preview_uncertainty":{"type":"string"},"preview_object_a_presence":{"type":"string","enum":["visible","unclear","missing"]},"preview_object_b_presence":{"type":"string","enum":["visible","unclear","missing"]}},"required":["preview_scene_reading","preview_visible_relations","preview_overall_mood","preview_uncertainty","preview_object_a_presence","preview_object_b_presence"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
   visionProjectorModel: Models/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
@@ -35,11 +35,24 @@ MonoBehaviour:
     - preview_uncertainty: one short sentence about the main ambiguity, or say the
     read is mostly clear.
 
+    - preview_object_a_presence: visible, unclear, or missing for Object A based
+    on image evidence.
+
+    - preview_object_b_presence: visible, unclear, or missing for Object B based
+    on image evidence.
+
     Rules:
 
     - image first
 
     - prompt objects are soft context only
+
+    - mark visible only when the drawing clearly supports it
+
+    - if an object is only vaguely suggested or partially resembles the prompt, use
+    unclear instead of visible
+
+    - if you do not see enough evidence for an object, mark it missing
 
     - freely describe the scene before any judgment
 
@@ -90,6 +103,34 @@ MonoBehaviour:
     arrayElementType: 0
     children: []
     enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: preview_object_a_presence
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - visible
+    - unclear
+    - missing
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: preview_object_b_presence
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - visible
+    - unclear
+    - missing
     minValue: 
     maxValue: 
     minLength: 

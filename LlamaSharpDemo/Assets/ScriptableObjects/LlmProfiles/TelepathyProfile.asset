@@ -46,8 +46,8 @@ MonoBehaviour:
 
     React to the judgment instead of restating it verbatim.
 
-    Do not directly use personality labels such as Conqueror, Guardian, Harmonizer,
-    Perfectionist, Trickster, or Nurturer.
+    Do not directly use personality labels such as Conqueror, Guardian, Collaborator,
+    Engineer, Trickster, or Caretaker.
 
     English only. ASCII only. Spoken lines only.'
   jsonSchemaDeliveryMode: 0

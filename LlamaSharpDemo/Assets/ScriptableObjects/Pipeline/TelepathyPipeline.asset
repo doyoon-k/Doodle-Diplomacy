@@ -26,7 +26,8 @@ MonoBehaviour:
 
       judgment_reason={{judgment_reason}}
 
-      Reconstruct the delegation''s meeting dialogue.'
+      Reconstruct
+      the delegation''s meeting dialogue.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 0
@@ -51,7 +52,7 @@ MonoBehaviour:
     outputNodePosition: {x: 625, y: -37}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 441, y: 30, z: 0}
+    viewPosition: {x: 488, y: 166, z: 0}
     viewScale: {x: 1.15, y: 1.15, z: 1}
     viewInitialized: 1
     snapshotPositions:

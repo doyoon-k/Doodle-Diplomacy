@@ -54,7 +54,6 @@ public class DrawingBoardController : MonoBehaviour
     [SerializeField] private int minBrushRadius = 1;
     [SerializeField] private int maxBrushRadius = 24;
     [SerializeField] private float scrollRadiusStep = 1f;
-    [SerializeField] private bool autoReturnToBrushAfterFill = true;
     [SerializeField] private bool blockPointerWhenOverUi = true;
     [SerializeField] private Rect normalizedPaintArea = new(0.40f, 0.02f, 0.58f, 0.96f);
 
@@ -1007,11 +1006,6 @@ public class DrawingBoardController : MonoBehaviour
             if (_useFillTool)
             {
                 ApplyFill(startPixel);
-                if (autoReturnToBrushAfterFill)
-                {
-                    SetFillToolEnabled(false);
-                }
-
                 _isDrawing = false;
                 return;
             }
@@ -1177,6 +1171,21 @@ public class DrawingBoardController : MonoBehaviour
         return new Rect(x, y, width, height);
     }
 
+    private RectInt GetPaintAreaPixelRect()
+    {
+        if (_canvas == null)
+        {
+            return default;
+        }
+
+        Rect paintArea = GetClampedPaintArea();
+        int minX = Mathf.Clamp(Mathf.FloorToInt(paintArea.xMin * _canvas.Width), 0, _canvas.Width - 1);
+        int minY = Mathf.Clamp(Mathf.FloorToInt(paintArea.yMin * _canvas.Height), 0, _canvas.Height - 1);
+        int maxX = Mathf.Clamp(Mathf.CeilToInt(paintArea.xMax * _canvas.Width), minX + 1, _canvas.Width);
+        int maxY = Mathf.Clamp(Mathf.CeilToInt(paintArea.yMax * _canvas.Height), minY + 1, _canvas.Height);
+        return new RectInt(minX, minY, maxX - minX, maxY - minY);
+    }
+
     private void GetResolvedCanvasDimensions(out int resolvedWidth, out int resolvedHeight)
     {
         resolvedWidth = Mathf.Max(1, textureWidth);
@@ -1274,12 +1283,19 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
+        RectInt fillBounds = GetPaintAreaPixelRect();
+        if (fillBounds.width <= 0 || fillBounds.height <= 0)
+        {
+            return false;
+        }
+
         bool filled = _canvas.FloodFill(
             pixel,
             GetActiveDrawColor(),
             out RectInt dirtyRegion,
             out Color32[] beforePixels,
-            out Color32[] afterPixels);
+            out Color32[] afterPixels,
+            fillBounds);
         if (filled)
         {
             RecordHistory(dirtyRegion, beforePixels, afterPixels);

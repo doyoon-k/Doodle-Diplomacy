@@ -62,8 +62,10 @@ namespace DoodleDiplomacy.Camera
         private InteractableObject _activeFocus;
         private float _hoverCandidateElapsed;
         private float _browseYaw;
+        private bool _isCustomViewActive;
 
         public CameraMode CurrentMode => _currentMode;
+        public UnityEngine.Camera TargetCamera => targetCamera;
 
         private void Awake()
         {
@@ -96,7 +98,7 @@ namespace DoodleDiplomacy.Camera
 
         private void Update()
         {
-            if (_currentMode != CameraMode.FreeLook || _isTransitioning || targetCamera == null)
+            if (_isCustomViewActive || _currentMode != CameraMode.FreeLook || _isTransitioning || targetCamera == null)
             {
                 return;
             }
@@ -111,7 +113,7 @@ namespace DoodleDiplomacy.Camera
 
         public void SetMode(CameraMode mode)
         {
-            if (_currentMode == mode)
+            if (_currentMode == mode && !_isCustomViewActive)
             {
                 return;
             }
@@ -121,12 +123,35 @@ namespace DoodleDiplomacy.Camera
                 StopCoroutine(_transitionRoutine);
             }
 
+            _isCustomViewActive = false;
             _currentMode = mode;
             ResetHoverFocusState();
             _transitionRoutine = StartCoroutine(TransitionRoutine(GetPreset(mode)));
         }
 
+        public void SetCustomView(Vector3 position, Quaternion rotation, float fieldOfView)
+        {
+            if (targetCamera == null)
+            {
+                return;
+            }
+
+            if (_transitionRoutine != null)
+            {
+                StopCoroutine(_transitionRoutine);
+            }
+
+            _isCustomViewActive = true;
+            ResetHoverFocusState();
+            _transitionRoutine = StartCoroutine(TransitionRoutine(position, rotation, fieldOfView));
+        }
+
         private IEnumerator TransitionRoutine(CameraPreset target)
+        {
+            yield return TransitionRoutine(target.position, target.Rotation, target.fieldOfView);
+        }
+
+        private IEnumerator TransitionRoutine(Vector3 targetPosition, Quaternion targetRotation, float targetFieldOfView)
         {
             _isTransitioning = true;
 
@@ -140,16 +165,16 @@ namespace DoodleDiplomacy.Camera
                 elapsed += Time.deltaTime;
                 float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / transitionDuration));
 
-                targetCamera.transform.position = Vector3.Lerp(startPos, target.position, t);
-                targetCamera.transform.rotation = Quaternion.Slerp(startRot, target.Rotation, t);
-                targetCamera.fieldOfView = Mathf.Lerp(startFov, target.fieldOfView, t);
+                targetCamera.transform.position = Vector3.Lerp(startPos, targetPosition, t);
+                targetCamera.transform.rotation = Quaternion.Slerp(startRot, targetRotation, t);
+                targetCamera.fieldOfView = Mathf.Lerp(startFov, targetFieldOfView, t);
 
                 yield return null;
             }
 
-            targetCamera.transform.position = target.position;
-            targetCamera.transform.rotation = target.Rotation;
-            targetCamera.fieldOfView = target.fieldOfView;
+            targetCamera.transform.position = targetPosition;
+            targetCamera.transform.rotation = targetRotation;
+            targetCamera.fieldOfView = targetFieldOfView;
 
             _isTransitioning = false;
             _transitionRoutine = null;

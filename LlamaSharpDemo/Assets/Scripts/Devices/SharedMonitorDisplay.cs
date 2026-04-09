@@ -31,6 +31,9 @@ namespace DoodleDiplomacy.Devices
         private Coroutine _fadeRoutine;
 
         public MonitorState CurrentState { get; private set; } = MonitorState.Idle;
+        public bool HasInspectableImage =>
+            CurrentState == MonitorState.DisplayObjects ||
+            CurrentState == MonitorState.DisplaySubmission;
 
         private void Awake()
         {

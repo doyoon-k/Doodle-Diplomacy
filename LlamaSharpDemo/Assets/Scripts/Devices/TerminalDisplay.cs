@@ -45,9 +45,34 @@ namespace DoodleDiplomacy.Devices
 
         public void ShowText(string text)
         {
+            ShowText(text, false);
+        }
+
+        public void ShowText(string text, bool instant)
+        {
             if (_typingRoutine != null) StopCoroutine(_typingRoutine);
             if (_cursorRoutine != null) { StopCoroutine(_cursorRoutine); _cursorRoutine = null; }
-            _typingRoutine = StartCoroutine(TypingRoutine(text));
+
+            string resolvedText = text ?? string.Empty;
+            if (instant)
+            {
+                _isTyping = false;
+                _currentText = resolvedText;
+                if (textMesh != null)
+                {
+                    textMesh.text = _currentText + (showCursor ? "?? " : "");
+                }
+
+                if (showCursor)
+                {
+                    _cursorRoutine = StartCoroutine(CursorBlink());
+                }
+
+                OnTypingComplete?.Invoke();
+                return;
+            }
+
+            _typingRoutine = StartCoroutine(TypingRoutine(resolvedText));
         }
 
         public void Clear()

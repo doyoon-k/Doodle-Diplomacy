@@ -3,7 +3,7 @@ using UnityEngine.Events;
 
 namespace DoodleDiplomacy.Interaction
 {
-    public enum InteractionType { Alien, Tablet, Adjutant, Terminal }
+    public enum InteractionType { Alien, Tablet, Adjutant, Terminal, Monitor }
 
     public class InteractableObject : MonoBehaviour
     {

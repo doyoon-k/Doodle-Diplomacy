@@ -24,9 +24,18 @@ namespace DoodleDiplomacy.Interaction
         public InteractableObject HoveredObject => _hoveredObject;
 
         private static readonly HashSet<InteractionType> s_WaitingAllowed = new() { InteractionType.Alien };
-        private static readonly HashSet<InteractionType> s_ObjectPresentedAllowed = new() { InteractionType.Tablet };
+        private static readonly HashSet<InteractionType> s_ObjectPresentedAllowed = new()
+        {
+            InteractionType.Tablet,
+            InteractionType.Monitor
+        };
         private static readonly HashSet<InteractionType> s_DrawingAllowed = new() { InteractionType.Tablet };
-        private static readonly HashSet<InteractionType> s_PreviewReadyAllowed = new() { InteractionType.Tablet, InteractionType.Adjutant };
+        private static readonly HashSet<InteractionType> s_PreviewReadyAllowed = new()
+        {
+            InteractionType.Tablet,
+            InteractionType.Adjutant,
+            InteractionType.Monitor
+        };
         private static readonly HashSet<InteractionType> s_InterpReadyAllowed = new() { InteractionType.Alien, InteractionType.Terminal };
         private static readonly HashSet<InteractionType> s_InterpreterAllowed = new() { InteractionType.Terminal };
         private static readonly HashSet<InteractionType> s_NoneAllowed = new();

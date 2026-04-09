@@ -43,7 +43,6 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private SubtitleDisplay subtitleDisplay;
         [SerializeField] private EndingController endingController;
         [SerializeField] private TitleScreenController titleScreenController;
-        [SerializeField] private EvaluationLogOverlay evaluationLogOverlay;
 
         [Header("Sequences")]
         [SerializeField] private DialogueSequence introSequence;
@@ -81,7 +80,6 @@ namespace DoodleDiplomacy.Core
         private void Start()
         {
             SubscribeToBridgeEvents();
-            EnsureEvaluationLogOverlay();
             interactionManager?.SetInteractablesForState(_currentState);
             ApplyCameraMode(_currentState);
         }
@@ -120,8 +118,6 @@ namespace DoodleDiplomacy.Core
             scoreManager?.Reset();
             aipipelineBridge?.ResetRound();
             ResetTelepathyState();
-            evaluationLogOverlay?.Clear();
-            LogEvaluation("Game started. Waiting for round 1.");
             ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
         }
 
@@ -129,7 +125,6 @@ namespace DoodleDiplomacy.Core
         {
             CancelActiveAiOperations();
             ResetTelepathyState();
-            evaluationLogOverlay?.Clear();
             ChangeState(GameState.Title);
         }
 
@@ -396,7 +391,6 @@ namespace DoodleDiplomacy.Core
                     aipipelineBridge?.EnsureObjectGenerationPreparation();
                     aipipelineBridge?.PrepareRoundKeywords();
                     Debug.Log($"[RoundManager] Waiting for round {_currentRound} / {scoreConfig?.totalRounds}.");
-                    LogEvaluation($"Round {_currentRound} ready. Waiting for the alien interaction.");
                     ShowHint(
                         "System",
                         aipipelineBridge != null
@@ -455,7 +449,6 @@ namespace DoodleDiplomacy.Core
 
                 case GameState.PreviewAnalyzing:
                     subtitleDisplay?.Show("Adjutant", "Let me review the drawing.");
-                    LogEvaluation("Preview analysis started.");
                     if (aipipelineBridge != null)
                     {
                         aipipelineBridge.GetPreview(analysis =>
@@ -478,14 +471,11 @@ namespace DoodleDiplomacy.Core
 
                 case GameState.Preview:
                     ShowPreviewResult(aipipelineBridge != null ? aipipelineBridge.LastPreviewDialogue : PreviewFallbackText);
-                    LogEvaluation($"Preview complete: {SummarizeForLog(aipipelineBridge != null ? aipipelineBridge.LastPreviewDialogue : PreviewFallbackText)}");
                     Debug.Log("[RoundManager] Preview analysis complete. Waiting for submit or modify.");
                     break;
 
                 case GameState.Submitting:
                     ShowHint("System", "Submitting the drawing for judgment...");
-                    LogAlienPersonality();
-                    LogEvaluation("Alien judgment started.");
                     if (aipipelineBridge != null)
                     {
                         aipipelineBridge.GetJudgment(satisfaction =>
@@ -496,15 +486,6 @@ namespace DoodleDiplomacy.Core
                             }
 
                             _lastSatisfaction = satisfaction;
-                            LogEvaluation($"Alien judgment complete. satisfaction={satisfaction}");
-                            if (aipipelineBridge.HasTelepathyResult)
-                            {
-                                LogEvaluation($"Alien transcript captured: {SummarizeForLog(aipipelineBridge.LastTelepathy)}");
-                            }
-                            else
-                            {
-                                LogEvaluation("Judgment completed without a usable transcript.");
-                            }
                             scoreManager?.RecordRound(satisfaction);
                             OnSubmitComplete();
                         });
@@ -536,12 +517,10 @@ namespace DoodleDiplomacy.Core
                 case GameState.InterpreterReady:
                     if (aipipelineBridge != null && aipipelineBridge.HasTelepathyResult)
                     {
-                        LogEvaluation("Telepathy signal is ready at the terminal.");
                         ShowHint("System", TerminalSignalReadyMessage);
                     }
                     else
                     {
-                        LogEvaluation("No telepathy signal was recovered for this round.");
                         ShowHint("System", NoSignalMessage);
                     }
 
@@ -550,7 +529,6 @@ namespace DoodleDiplomacy.Core
 
                 case GameState.Interpreter:
                     subtitleDisplay?.Hide();
-                    LogEvaluation("Terminal opened.");
                     if (aipipelineBridge != null && aipipelineBridge.HasTelepathyResult)
                     {
                         terminalDisplay?.ShowText(aipipelineBridge.LastTelepathy);
@@ -631,7 +609,6 @@ namespace DoodleDiplomacy.Core
         {
             ResetTelepathyState();
             terminalDisplay?.Clear();
-            LogEvaluation("Drawing resumed. Cleared cached preview, judgment, and transcript.");
         }
 
         private void ShowPreviewResult(string analysis)
@@ -651,53 +628,6 @@ namespace DoodleDiplomacy.Core
             }
 
             subtitleDisplay.Show(speaker, text);
-        }
-
-        private void EnsureEvaluationLogOverlay()
-        {
-            if (evaluationLogOverlay != null)
-            {
-                return;
-            }
-
-            evaluationLogOverlay = FindFirstObjectByType<EvaluationLogOverlay>();
-            if (evaluationLogOverlay != null)
-            {
-                return;
-            }
-
-            var overlayObject = new GameObject("EvaluationLogOverlay");
-            evaluationLogOverlay = overlayObject.AddComponent<EvaluationLogOverlay>();
-        }
-
-        private void LogEvaluation(string message)
-        {
-            evaluationLogOverlay?.Log(message);
-        }
-
-        private void LogAlienPersonality()
-        {
-            if (aipipelineBridge == null)
-            {
-                LogEvaluation("Alien personality: pipeline unavailable");
-                return;
-            }
-
-            LogEvaluation(aipipelineBridge.GetAlienPersonalitySummary());
-        }
-
-        private static string SummarizeForLog(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return "(empty)";
-            }
-
-            string normalized = text.Replace('\n', ' ').Replace('\r', ' ').Trim();
-            const int maxLength = 96;
-            return normalized.Length <= maxLength
-                ? normalized
-                : normalized.Substring(0, maxLength - 3) + "...";
         }
 
         private void ApplyCameraMode(GameState state)

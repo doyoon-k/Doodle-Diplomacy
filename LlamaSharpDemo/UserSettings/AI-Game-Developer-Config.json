@@ -449,5 +449,5 @@
   "timeoutMs": 10000,
   "keepConnected": true,
   "generateSkillFiles": false,
-  "skillsPath": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\LlamaSharpDemo\\.agents\\skills"
+  "skillsPath": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\LlamaSharpDemo\\.agent\\skills"
 }

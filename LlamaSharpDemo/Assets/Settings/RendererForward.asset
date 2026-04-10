@@ -67,11 +67,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7c0ab78995618740abb922f990e53e4, type: 3}
   m_Name: ShaderGlassRendererFeature
   m_EditorClassIdentifier: ShaderGlass.URP::ShaderGlassRendererFeature
-  m_Active: 0
+  m_Active: 1
   settings:
-    preset: {fileID: 11400000, guid: 4e5fe3ce28b64da6a9969a6feec98cd2, type: 2}
+    preset: {fileID: 11400000, guid: 998929f8e8194797998cedc0698b9f2e, type: 2}
     renderPassEvent: 550
-    targetInputResolution: {x: 424, y: 240}
+    targetInputResolution: {x: 640, y: 480}
     outputScale: 1
     freeScale: 0
     flipHorizontal: 0

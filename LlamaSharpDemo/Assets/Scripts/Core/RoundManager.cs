@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using DoodleDiplomacy.AI;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Character;
@@ -40,6 +39,10 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private AlienReactionController alienReactionController;
         [SerializeField] private TerminalDisplay terminalDisplay;
         [SerializeField] private SharedMonitorDisplay sharedMonitorDisplay;
+
+        [Header("Interaction Targets (Inspector Wiring)")]
+        [SerializeField] private InteractableObject sharedMonitorInteractable;
+        [SerializeField] private InteractableObject[] terminalInteractables = Array.Empty<InteractableObject>();
 
         [Header("UI")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
@@ -94,12 +97,7 @@ namespace DoodleDiplomacy.Core
 
         private void Start()
         {
-            if (sharedMonitorDisplay == null)
-            {
-                sharedMonitorDisplay = FindFirstObjectByType<SharedMonitorDisplay>();
-            }
-
-            EnsureSharedMonitorInteractionBinding();
+            BindInspectorInteractions();
             SubscribeToBridgeEvents();
             interactionManager?.SetInteractablesForState(_currentState);
             ApplyCameraMode(_currentState);
@@ -107,6 +105,7 @@ namespace DoodleDiplomacy.Core
 
         private void OnDestroy()
         {
+            UnbindInspectorInteractions();
             UnsubscribeFromBridgeEvents();
 
             if (Instance == this)
@@ -254,82 +253,60 @@ namespace DoodleDiplomacy.Core
         public void OnReactionComplete() => TryTransition(GameState.AlienReaction, GameState.InterpreterReady);
         public void OnInterpreterClose() => TryTransition(GameState.Interpreter, GameState.InterpreterReady);
 
-        private void EnsureSharedMonitorInteractionBinding()
+        private void BindInspectorInteractions()
         {
-            if (sharedMonitorDisplay == null)
+            if (sharedMonitorInteractable != null)
             {
+                sharedMonitorInteractable.interactionType = InteractionType.Monitor;
+                sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
+                sharedMonitorInteractable.OnInteracted.AddListener(OnSharedMonitorClicked);
+            }
+            else
+            {
+                Debug.LogWarning("[RoundManager] sharedMonitorInteractable is not assigned. Monitor click zoom will be disabled.");
+            }
+
+            if (terminalInteractables == null || terminalInteractables.Length == 0)
+            {
+                Debug.LogWarning("[RoundManager] terminalInteractables is empty. Terminal click interaction must be wired in inspector.");
                 return;
             }
 
-            GameObject monitorObject = sharedMonitorDisplay.gameObject;
-            InteractableObject monitorInteractable = monitorObject.GetComponent<InteractableObject>();
-            if (monitorInteractable == null)
+            for (int i = 0; i < terminalInteractables.Length; i++)
             {
-                monitorInteractable = monitorObject.AddComponent<InteractableObject>();
-            }
-
-            monitorInteractable.interactionType = InteractionType.Monitor;
-            monitorInteractable.OnInteracted.RemoveListener(OnTerminalClicked);
-            monitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
-            monitorInteractable.OnInteracted.AddListener(OnSharedMonitorClicked);
-
-            InteractableHighlighter monitorHighlighter = monitorObject.GetComponent<InteractableHighlighter>();
-            if (monitorHighlighter == null)
-            {
-                monitorHighlighter = monitorObject.AddComponent<InteractableHighlighter>();
-            }
-
-            if (monitorHighlighter == null)
-            {
-                return;
-            }
-
-            InteractableHighlighter template = FindTerminalHighlighterTemplate(monitorHighlighter);
-            if (template == null)
-            {
-                return;
-            }
-
-            CopyHighlighterField(template, monitorHighlighter, "outlineMaterial");
-            CopyHighlighterField(template, monitorHighlighter, "hoverCursor");
-            CopyHighlighterField(template, monitorHighlighter, "cursorHotspot");
-        }
-
-        private static InteractableHighlighter FindTerminalHighlighterTemplate(InteractableHighlighter exclude)
-        {
-            InteractableHighlighter[] highlighters = FindObjectsByType<InteractableHighlighter>(FindObjectsSortMode.None);
-            for (int i = 0; i < highlighters.Length; i++)
-            {
-                InteractableHighlighter candidate = highlighters[i];
-                if (candidate == null || candidate == exclude)
+                InteractableObject terminalInteractable = terminalInteractables[i];
+                if (terminalInteractable == null)
                 {
                     continue;
                 }
 
-                InteractableObject interactable = candidate.GetComponent<InteractableObject>();
-                if (interactable != null && interactable.interactionType == InteractionType.Terminal)
-                {
-                    return candidate;
-                }
+                terminalInteractable.interactionType = InteractionType.Terminal;
+                terminalInteractable.OnInteracted.RemoveListener(OnTerminalClicked);
+                terminalInteractable.OnInteracted.AddListener(OnTerminalClicked);
             }
-
-            return null;
         }
 
-        private static void CopyHighlighterField(
-            InteractableHighlighter source,
-            InteractableHighlighter destination,
-            string fieldName)
+        private void UnbindInspectorInteractions()
         {
-            const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            FieldInfo field = typeof(InteractableHighlighter).GetField(fieldName, Flags);
-            if (field == null)
+            if (sharedMonitorInteractable != null)
+            {
+                sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
+            }
+
+            if (terminalInteractables == null)
             {
                 return;
             }
 
-            object value = field.GetValue(source);
-            field.SetValue(destination, value);
+            for (int i = 0; i < terminalInteractables.Length; i++)
+            {
+                if (terminalInteractables[i] == null)
+                {
+                    continue;
+                }
+
+                terminalInteractables[i].OnInteracted.RemoveListener(OnTerminalClicked);
+            }
         }
 
         private bool CanUseSharedMonitorZoom()

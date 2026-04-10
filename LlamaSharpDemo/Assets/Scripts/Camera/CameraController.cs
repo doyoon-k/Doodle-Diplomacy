@@ -15,12 +15,37 @@ namespace DoodleDiplomacy.Camera
     [Serializable]
     public class CameraPreset
     {
-        public Vector3 position;
-        public Vector3 eulerAngles;
+        [Tooltip("Camera anchor transform. Camera moves to this position and aligns forward to this transform's world-space +Z.")]
+        public Transform target;
         [Range(10f, 120f)]
         public float fieldOfView = 60f;
 
-        public Quaternion Rotation => Quaternion.Euler(eulerAngles);
+        public bool TryGetPose(out Vector3 position, out Quaternion rotation)
+        {
+            if (target == null)
+            {
+                position = Vector3.zero;
+                rotation = Quaternion.identity;
+                return false;
+            }
+
+            Vector3 forward = target.forward;
+            if (forward.sqrMagnitude < 0.0001f)
+            {
+                forward = Vector3.forward;
+            }
+
+            position = target.position;
+
+            Vector3 up = target.up;
+            if (up.sqrMagnitude < 0.0001f)
+            {
+                up = Vector3.up;
+            }
+
+            rotation = Quaternion.LookRotation(forward.normalized, up.normalized);
+            return true;
+        }
     }
 
     [Serializable]
@@ -126,7 +151,10 @@ namespace DoodleDiplomacy.Camera
             _isCustomViewActive = false;
             _currentMode = mode;
             ResetHoverFocusState();
-            _transitionRoutine = StartCoroutine(TransitionRoutine(GetPreset(mode)));
+            if (TryResolvePresetPose(mode, out Vector3 targetPosition, out Quaternion targetRotation, out float targetFov))
+            {
+                _transitionRoutine = StartCoroutine(TransitionRoutine(targetPosition, targetRotation, targetFov));
+            }
         }
 
         public void SetCustomView(Vector3 position, Quaternion rotation, float fieldOfView)
@@ -144,11 +172,6 @@ namespace DoodleDiplomacy.Camera
             _isCustomViewActive = true;
             ResetHoverFocusState();
             _transitionRoutine = StartCoroutine(TransitionRoutine(position, rotation, fieldOfView));
-        }
-
-        private IEnumerator TransitionRoutine(CameraPreset target)
-        {
-            yield return TransitionRoutine(target.position, target.Rotation, target.fieldOfView);
         }
 
         private IEnumerator TransitionRoutine(Vector3 targetPosition, Quaternion targetRotation, float targetFieldOfView)
@@ -258,8 +281,48 @@ namespace DoodleDiplomacy.Camera
                 }
             }
 
-            Vector3 baseEuler = freeLookPreset.eulerAngles;
+            Quaternion baseRotation = ResolvePresetRotation(freeLookPreset);
+            Vector3 baseEuler = baseRotation.eulerAngles;
             return Quaternion.Euler(baseEuler.x, baseEuler.y + _browseYaw, baseEuler.z);
+        }
+
+        private bool TryResolvePresetPose(
+            CameraMode mode,
+            out Vector3 position,
+            out Quaternion rotation,
+            out float fieldOfView)
+        {
+            CameraPreset preset = GetPreset(mode);
+            return TryResolvePresetPose(preset, out position, out rotation, out fieldOfView);
+        }
+
+        private bool TryResolvePresetPose(
+            CameraPreset preset,
+            out Vector3 position,
+            out Quaternion rotation,
+            out float fieldOfView)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            fieldOfView = 60f;
+
+            if (preset == null)
+            {
+                return false;
+            }
+
+            fieldOfView = preset.fieldOfView;
+            return preset.TryGetPose(out position, out rotation);
+        }
+
+        private static Quaternion ResolvePresetRotation(CameraPreset preset)
+        {
+            if (preset != null && preset.TryGetPose(out _, out Quaternion rotation))
+            {
+                return rotation;
+            }
+
+            return Quaternion.identity;
         }
 
         private void ResetHoverFocusState()

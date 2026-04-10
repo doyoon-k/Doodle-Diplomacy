@@ -13,123 +13,123 @@ MonoBehaviour:
   m_Name: WordPairPool
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.WordPairPool
   pairs:
-  - wordA: dog
-    wordB: lantern
   - wordA: wolf
-    wordB: rope
-  - wordA: crow
-    wordB: bell
-  - wordA: snake
-    wordB: torch
-  - wordA: horse
-    wordB: chest
-  - wordA: fish
-    wordB: barrel
-  - wordA: bear
-    wordB: drum
-  - wordA: owl
-    wordB: pillow
+    wordB: sheep
   - wordA: sword
-    wordB: cloak
-  - wordA: torch
-    wordB: cage
-  - wordA: rope
-    wordB: crown
-  - wordA: axe
-    wordB: wheel
-  - wordA: shield
-    wordB: flower
-  - wordA: hammer
-    wordB: bell
-  - wordA: spear
-    wordB: bowl
-  - wordA: knife
-    wordB: bread
-  - wordA: chain
-    wordB: helmet
-  - wordA: staff
-    wordB: boat
-  - wordA: boat
-    wordB: cage
-  - wordA: tent
-    wordB: lantern
-  - wordA: throne
-    wordB: rope
-  - wordA: ladder
-    wordB: drum
-  - wordA: chest
-    wordB: bread
-  - wordA: cart
-    wordB: barrel
-  - wordA: cage
-    wordB: flower
-  - wordA: bucket
-    wordB: rope
-  - wordA: basket
-    wordB: torch
-  - wordA: cauldron
-    wordB: apple
-  - wordA: wine
-    wordB: crown
-  - wordA: cup
-    wordB: sword
-  - wordA: apple
-    wordB: shield
-  - wordA: egg
-    wordB: basket
-  - wordA: bowl
-    wordB: torch
-  - wordA: cloak
-    wordB: crown
-  - wordA: mask
-    wordB: bell
-  - wordA: helmet
-    wordB: flower
-  - wordA: bell
-    wordB: chain
-  - wordA: mirror
-    wordB: shield
-  - wordA: cannon
-    wordB: nest
-  - wordA: wheel
-    wordB: bucket
-  - wordA: bone
-    wordB: cage
-  - wordA: mushroom
-    wordB: lantern
-  - wordA: anchor
-    wordB: bell
-  - wordA: anvil
-    wordB: flower
-  - wordA: saddle
-    wordB: crown
-  - wordA: barrel
-    wordB: rope
-  - wordA: tent
-    wordB: bell
-  - wordA: boat
-    wordB: cloak
+    wordB: tree
+  - wordA: cat
+    wordB: fish
+  - wordA: spider
+    wordB: butterfly
   - wordA: dog
-    wordB: chest
-  - wordA: horse
-    wordB: lantern
-  - wordA: fish
-    wordB: torch
+    wordB: bone
+  - wordA: dragon
+    wordB: castle
+  - wordA: eagle
+    wordB: rabbit
+  - wordA: shield
+    wordB: arrow
   - wordA: bear
-    wordB: cage
-  - wordA: owl
-    wordB: drum
+    wordB: bee
   - wordA: snake
-    wordB: bell
-  - wordA: crow
-    wordB: mask
-  - wordA: wolf
-    wordB: shield
-  - wordA: spear
-    wordB: cage
+    wordB: frog
+  - wordA: fire
+    wordB: ice
+  - wordA: robot
+    wordB: flower
+  - wordA: turtle
+    wordB: wave
+  - wordA: elephant
+    wordB: mouse
+  - wordA: pirate ship
+    wordB: lighthouse
+  - wordA: key
+    wordB: box
   - wordA: hammer
-    wordB: bucket
-  - wordA: knife
-    wordB: cup
-  - wordA: staff
-    wordB: helmet
+    wordB: egg
+  - wordA: umbrella
+    wordB: lightning
+  - wordA: owl
+    wordB: moon
+  - wordA: rope
+    wordB: monkey
+  - wordA: balloon
+    wordB: cactus
+  - wordA: mirror
+    wordB: hummingbird
+  - wordA: candle
+    wordB: moth
+  - wordA: fishing rod
+    wordB: star
+  - wordA: parrot
+    wordB: padlock
+  - wordA: octopus
+    wordB: bottle
+  - wordA: magnifying glass
+    wordB: ladybug
+  - wordA: scissors
+    wordB: cloth
+  - wordA: windmill
+    wordB: crow
+  - wordA: kite
+    wordB: whale
+  - wordA: anchor
+    wordB: seagull
+  - wordA: gear
+    wordB: sunflower
+  - wordA: submarine
+    wordB: coral
+  - wordA: feather
+    wordB: rock
+  - wordA: torch
+    wordB: bat
+  - wordA: candle
+    wordB: crab
+  - wordA: compass
+    wordB: fox
+  - wordA: map
+    wordB: magpie
+  - wordA: net
+    wordB: shark
+  - wordA: chain
+    wordB: pigeon
+  - wordA: bell
+    wordB: crane
+  - wordA: wheel
+    wordB: squirrel
+  - wordA: catapult
+    wordB: watermelon
+  - wordA: telescope
+    wordB: hawk
+  - wordA: crocodile
+    wordB: bridge
+  - wordA: book
+    wordB: lantern
+  - wordA: ladder
+    wordB: cloud
+  - wordA: flowerpot
+    wordB: iguana
+  - wordA: seashell
+    wordB: otter
+  - wordA: crown
+    wordB: toad
+  - wordA: piano
+    wordB: sparrow
+  - wordA: chess piece
+    wordB: hedgehog
+  - wordA: clock
+    wordB: lizard
+  - wordA: volcano
+    wordB: penguin
+  - wordA: scale
+    wordB: chameleon
+  - wordA: puzzle piece
+    wordB: raccoon
+  - wordA: hourglass
+    wordB: scorpion
+  - wordA: flag
+    wordB: mole
+  - wordA: stamp
+    wordB: snail
+  - wordA: rainbow
+    wordB: deer

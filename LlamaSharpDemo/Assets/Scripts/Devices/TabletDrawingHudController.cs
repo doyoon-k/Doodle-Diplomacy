@@ -34,7 +34,17 @@ namespace DoodleDiplomacy.Devices
             public Text LabelText;
         }
 
+        private sealed class BrushSizePreset
+        {
+            public int BrushSize;
+            public Button Button;
+            public Image ButtonImage;
+            public Text LabelText;
+        }
+
         private const int CustomSlotCount = 4;
+        private const string BrushPreviewGlyph = "\u25CF";
+        private const string BrushPresetButtonNamePrefix = "BrushPreset_";
         private const float CanvasWidth = 1320f;
         private const float CanvasHeight = 820f;
         private const float PanelWidth = 360f;
@@ -66,8 +76,10 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private Color swatchBorderColor = new(0.52f, 0.56f, 0.63f, 1f);
         [SerializeField] private Color swatchSelectedColor = new(0.92f, 0.95f, 0.98f, 1f);
         [SerializeField] private Color emptySwatchColor = new(1f, 1f, 1f, 0.08f);
+        [SerializeField] private int[] brushSizePresets = { 2, 4, 6, 8, 12, 16, 20, 24 };
 
         private readonly List<PaletteSwatch> _paletteSwatches = new();
+        private readonly List<BrushSizePreset> _brushSizePresetButtons = new();
         private readonly Color32[] _customSlotColors = new Color32[CustomSlotCount];
         private readonly bool[] _customSlotAssigned = new bool[CustomSlotCount];
 
@@ -295,6 +307,17 @@ namespace DoodleDiplomacy.Devices
             _doneButton = FindNamedComponent<Button>(existingRoot, "DoneButton");
             RectTransform brushSizeSliderRoot = FindNamedComponent<RectTransform>(existingRoot, "BrushSizeSlider");
             _brushSizeSlider = ResolveBrushSizeSlider(brushSizeSliderRoot);
+            ResolveBrushSizePresetButtons(existingRoot);
+            if (_brushSizePresetButtons.Count == 0)
+            {
+                BuildRuntimeBrushSizePresetButtons(_mainPanel, new Vector2(16f, -222f), new Vector2(34f, 30f), 6f);
+            }
+
+            if (_brushSizePresetButtons.Count > 0 && brushSizeSliderRoot != null)
+            {
+                brushSizeSliderRoot.gameObject.SetActive(false);
+            }
+
             _brushSizeValueText = FindNamedComponent<Text>(existingRoot, "BrushSizeValue");
             _customColorPreview = FindNamedComponent<Image>(existingRoot, "CustomColorPreview");
             _customSlotLabelText = FindNamedComponent<Text>(existingRoot, "CustomSlotLabel");
@@ -308,7 +331,7 @@ namespace DoodleDiplomacy.Devices
             _mainPanel = CreatePanel("DrawingHudPanel", (RectTransform)_canvas.transform, panelColor, new Vector2(20f, -20f), new Vector2(PanelWidth, PanelHeight));
 
             CreateText("HudTitleText", _mainPanel, "Tablet Paint", 20, FontStyle.Bold, TextAnchor.UpperLeft, new Vector2(16f, -16f), new Vector2(PanelWidth - 32f, 26f));
-            CreateText("HudHintText", _mainPanel, "Pick a color, draw on the tablet, and use Fill for one tap only.", 13, FontStyle.Normal, TextAnchor.UpperLeft, new Vector2(16f, -44f), new Vector2(PanelWidth - 32f, 40f));
+            CreateText("HudHintText", _mainPanel, "Pick a color, draw on the tablet, and toggle Fill on/off when needed.", 13, FontStyle.Normal, TextAnchor.UpperLeft, new Vector2(16f, -44f), new Vector2(PanelWidth - 32f, 40f));
 
             RectTransform previewCard = CreatePanel("PreviewCard", _mainPanel, sectionColor, new Vector2(16f, -92f), new Vector2(98f, 98f));
             _activeColorPreview = CreateImage("ActiveColorPreview", previewCard, Color.black, new Vector2(21f, -14f), new Vector2(56f, 56f));
@@ -323,8 +346,9 @@ namespace DoodleDiplomacy.Devices
             grid.constraintCount = 6;
 
             CreateText("BrushSizeLabel", _mainPanel, "Brush Size", 13, FontStyle.Bold, TextAnchor.UpperLeft, new Vector2(16f, -198f), new Vector2(120f, 18f));
-            _brushSizeSlider = CreateSlider("BrushSizeSlider", _mainPanel, new Vector2(16f, -222f), new Vector2(188f, 20f), 1f, 24f);
-            _brushSizeValueText = CreateText("BrushSizeValue", _mainPanel, "6", 15, FontStyle.Bold, TextAnchor.MiddleLeft, new Vector2(212f, -224f), new Vector2(28f, 20f));
+            _brushSizeValueText = CreateText("BrushSizeValue", _mainPanel, "6", 15, FontStyle.Bold, TextAnchor.MiddleLeft, new Vector2(138f, -198f), new Vector2(40f, 18f));
+            BuildRuntimeBrushSizePresetButtons(_mainPanel, new Vector2(16f, -222f), new Vector2(34f, 30f), 6f);
+            _brushSizeSlider = null;
 
             _eraserButton = CreateButton("EraserButton", _mainPanel, "Eraser", neutralButtonColor, new Vector2(16f, -262f), new Vector2(100f, 36f), out _eraserButtonText, out _eraserButtonImage);
             _fillButton = CreateButton("FillButton", _mainPanel, "Fill", neutralButtonColor, new Vector2(130f, -262f), new Vector2(100f, 36f), out _fillButtonText, out _fillButtonImage);
@@ -388,37 +412,146 @@ namespace DoodleDiplomacy.Devices
 
         private void BuildCustomPanel()
         {
-            _customPanel = CreatePanel("CustomColorPanel", (RectTransform)_canvas.transform, panelColor, new Vector2(20f, -472f), new Vector2(308f, 274f));
+            _customPanel = CreatePanel("CustomColorPanel", (RectTransform)_canvas.transform, panelColor, new Vector2(20f, -472f), new Vector2(308f, 364f));
 
             CreateText("CustomPanelTitle", _customPanel, "Pick Any Color", 18, FontStyle.Bold, TextAnchor.UpperLeft, new Vector2(16f, -16f), new Vector2(220f, 24f));
             _customColorPreview = CreateImage("CustomColorPreview", _customPanel, _customColor, new Vector2(16f, -48f), new Vector2(48f, 48f));
-            CreateText("CustomPanelHint", _customPanel, "Drag on the color pad, then save it if you want to keep it.", 12, FontStyle.Normal, TextAnchor.UpperLeft, new Vector2(76f, -50f), new Vector2(214f, 34f));
+            CreateText("CustomPanelHint", _customPanel, "Drag ring = hue, drag triangle = saturation/value.", 12, FontStyle.Normal, TextAnchor.UpperLeft, new Vector2(76f, -50f), new Vector2(214f, 34f));
             _customSlotLabelText = CreateText("CustomSlotLabel", _customPanel, "Saving to first empty slot", 12, FontStyle.Normal, TextAnchor.UpperLeft, new Vector2(76f, -84f), new Vector2(214f, 20f));
 
-            RectTransform pickerFrame = CreatePanel("ColorPickerFrame", _customPanel, sectionColor, new Vector2(16f, -112f), new Vector2(276f, 94f));
-            RawImage colorField = CreateRawImage("ColorFieldImage", pickerFrame, new Vector2(10f, -8f), new Vector2(218f, 78f));
-            RawImage valueSlider = CreateRawImage("ValueSliderImage", pickerFrame, new Vector2(236f, -8f), new Vector2(24f, 78f));
+            RectTransform pickerFrame = CreatePanel("ColorPickerFrame", _customPanel, sectionColor, new Vector2(16f, -106f), new Vector2(276f, 178f));
+            RawImage hueWheel = CreateRawImage("HueWheelImage", pickerFrame, new Vector2(68f, -8f), new Vector2(136f, 136f));
+            RawImage svTriangle = CreateRawImage("SvTriangleImage", pickerFrame, new Vector2(88f, -28f), new Vector2(96f, 96f));
+            hueWheel.color = Color.white;
+            svTriangle.color = Color.white;
 
-            RectTransform colorCursor = CreateCursor("ColorFieldCursor", colorField.rectTransform, new Vector2(14f, 14f), new Color(1f, 1f, 1f, 0.10f));
-            colorCursor.anchorMin = Vector2.zero;
-            colorCursor.anchorMax = Vector2.zero;
-            colorCursor.pivot = new Vector2(0.5f, 0.5f);
+            RectTransform hueWheelCursor = CreateCursor("HueWheelCursor", hueWheel.rectTransform, new Vector2(14f, 14f), new Color(1f, 1f, 1f, 0.16f));
+            hueWheelCursor.anchorMin = new Vector2(0.5f, 0.5f);
+            hueWheelCursor.anchorMax = new Vector2(0.5f, 0.5f);
+            hueWheelCursor.pivot = new Vector2(0.5f, 0.5f);
 
-            RectTransform valueCursor = CreateCursor("ValueSliderCursor", valueSlider.rectTransform, new Vector2(30f, 10f), new Color(1f, 1f, 1f, 0.18f));
-            valueCursor.anchorMin = new Vector2(0.5f, 0f);
-            valueCursor.anchorMax = new Vector2(0.5f, 0f);
-            valueCursor.pivot = new Vector2(0.5f, 0.5f);
+            RectTransform svTriangleCursor = CreateCursor("SvTriangleCursor", svTriangle.rectTransform, new Vector2(16f, 16f), new Color(1f, 1f, 1f, 0.12f));
+            svTriangleCursor.anchorMin = new Vector2(0.5f, 0.5f);
+            svTriangleCursor.anchorMax = new Vector2(0.5f, 0.5f);
+            svTriangleCursor.pivot = new Vector2(0.5f, 0.5f);
 
-            CreateButton("SaveCustomSlotButton", _customPanel, "Save Slot", activeButtonColor, new Vector2(16f, -220f), new Vector2(126f, 34f), out _, out _);
-            CreateButton("CloseCustomButton", _customPanel, "Close", neutralButtonColor, new Vector2(166f, -220f), new Vector2(126f, 34f), out _, out _);
+            CreateButton("SaveCustomSlotButton", _customPanel, "Save Slot", activeButtonColor, new Vector2(16f, -312f), new Vector2(126f, 34f), out _, out _);
+            CreateButton("CloseCustomButton", _customPanel, "Close", neutralButtonColor, new Vector2(166f, -312f), new Vector2(126f, 34f), out _, out _);
 
             _customColorPicker = _customPanel.gameObject.AddComponent<DrawingColorPickerController>();
-            var colorFieldZone = colorField.gameObject.AddComponent<DrawingColorPickerInteractionZone>();
-            colorFieldZone.Configure(_customColorPicker, DrawingColorPickerInteractionZone.ZoneKind.ColorField);
-            var valueSliderZone = valueSlider.gameObject.AddComponent<DrawingColorPickerInteractionZone>();
-            valueSliderZone.Configure(_customColorPicker, DrawingColorPickerInteractionZone.ZoneKind.ValueSlider);
+            var hueWheelZone = hueWheel.gameObject.AddComponent<DrawingColorPickerInteractionZone>();
+            hueWheelZone.Configure(_customColorPicker, DrawingColorPickerInteractionZone.ZoneKind.HueWheel);
+            var svTriangleZone = svTriangle.gameObject.AddComponent<DrawingColorPickerInteractionZone>();
+            svTriangleZone.Configure(_customColorPicker, DrawingColorPickerInteractionZone.ZoneKind.SvTriangle);
 
             _customPanel.gameObject.SetActive(false);
+        }
+
+        private void BuildRuntimeBrushSizePresetButtons(RectTransform parent, Vector2 startAnchoredPosition, Vector2 buttonSize, float spacing)
+        {
+            if (parent == null)
+            {
+                return;
+            }
+
+            int[] presetValues = GetNormalizedBrushSizePresets();
+            if (presetValues.Length == 0)
+            {
+                return;
+            }
+
+            _brushSizePresetButtons.Clear();
+            for (int i = 0; i < presetValues.Length; i++)
+            {
+                int brushSize = presetValues[i];
+                Vector2 anchoredPosition = new(
+                    startAnchoredPosition.x + i * (buttonSize.x + spacing),
+                    startAnchoredPosition.y);
+
+                Button button = CreateButton(
+                    $"{BrushPresetButtonNamePrefix}{brushSize}",
+                    parent,
+                    brushSize.ToString(),
+                    neutralButtonColor,
+                    anchoredPosition,
+                    buttonSize,
+                    out Text labelText,
+                    out Image buttonImage);
+
+                _brushSizePresetButtons.Add(new BrushSizePreset
+                {
+                    BrushSize = brushSize,
+                    Button = button,
+                    ButtonImage = buttonImage,
+                    LabelText = labelText
+                });
+            }
+
+            ConfigureBrushPresetVisuals();
+        }
+
+        private void ResolveBrushSizePresetButtons(Transform root)
+        {
+            _brushSizePresetButtons.Clear();
+            if (root == null)
+            {
+                return;
+            }
+
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button button = buttons[i];
+                if (button == null || !TryParseBrushPresetSize(button.name, out int brushSize))
+                {
+                    continue;
+                }
+
+                _brushSizePresetButtons.Add(new BrushSizePreset
+                {
+                    BrushSize = brushSize,
+                    Button = button,
+                    ButtonImage = button.GetComponent<Image>(),
+                    LabelText = button.GetComponentInChildren<Text>(true)
+                });
+            }
+
+            _brushSizePresetButtons.Sort((left, right) => left.BrushSize.CompareTo(right.BrushSize));
+            ConfigureBrushPresetVisuals();
+        }
+
+        private int[] GetNormalizedBrushSizePresets()
+        {
+            int[] source = brushSizePresets != null && brushSizePresets.Length > 0
+                ? brushSizePresets
+                : new[] { 2, 4, 6, 8, 12, 16, 20, 24 };
+
+            var values = new List<int>(source.Length);
+            for (int i = 0; i < source.Length; i++)
+            {
+                int normalized = Mathf.Max(1, source[i]);
+                if (!values.Contains(normalized))
+                {
+                    values.Add(normalized);
+                }
+            }
+
+            values.Sort();
+            return values.ToArray();
+        }
+
+        private static bool TryParseBrushPresetSize(string buttonName, out int brushSize)
+        {
+            brushSize = 0;
+            if (string.IsNullOrEmpty(buttonName) ||
+                !buttonName.StartsWith(BrushPresetButtonNamePrefix) ||
+                buttonName.Length <= BrushPresetButtonNamePrefix.Length)
+            {
+                return false;
+            }
+
+            return int.TryParse(buttonName.Substring(BrushPresetButtonNamePrefix.Length), out brushSize) &&
+                   brushSize > 0;
         }
 
         private void BindControls()
@@ -426,7 +559,23 @@ namespace DoodleDiplomacy.Devices
             if (_brushSizeSlider != null)
             {
                 _brushSizeSlider.OnValueChanged.RemoveAllListeners();
-                _brushSizeSlider.OnValueChanged.AddListener(OnBrushSizeChanged);
+                if (_brushSizePresetButtons.Count == 0)
+                {
+                    _brushSizeSlider.OnValueChanged.AddListener(OnBrushSizeChanged);
+                }
+            }
+
+            for (int i = 0; i < _brushSizePresetButtons.Count; i++)
+            {
+                BrushSizePreset preset = _brushSizePresetButtons[i];
+                if (preset.Button == null)
+                {
+                    continue;
+                }
+
+                int targetSize = preset.BrushSize;
+                preset.Button.onClick.RemoveAllListeners();
+                preset.Button.onClick.AddListener(() => OnBrushSizePresetClicked(targetSize));
             }
 
             if (_eraserButton != null)
@@ -565,6 +714,12 @@ namespace DoodleDiplomacy.Devices
             SyncUi();
         }
 
+        private void OnBrushSizePresetClicked(int targetSize)
+        {
+            drawingBoard?.SetBrushRadius(targetSize);
+            SyncUi();
+        }
+
         private void OnEraserClicked()
         {
             drawingBoard?.ToggleEraser();
@@ -682,7 +837,7 @@ namespace DoodleDiplomacy.Devices
 
             RefreshCanvasPlacement();
             RefreshCanvasCamera();
-            if (_brushSizeSlider != null)
+            if (_brushSizeSlider != null && _brushSizePresetButtons.Count == 0)
             {
                 _brushSizeSlider.SetValueWithoutNotify(drawingBoard.BrushRadius);
             }
@@ -708,10 +863,90 @@ namespace DoodleDiplomacy.Devices
                 };
             }
 
+            RefreshBrushPresetButtons();
             RefreshToolButtons();
             RefreshHistoryButtons();
             RefreshPaletteSelection();
             RefreshCustomPanel();
+        }
+
+        private void RefreshBrushPresetButtons()
+        {
+            if (_brushSizePresetButtons.Count == 0)
+            {
+                return;
+            }
+
+            int currentBrushSize = drawingBoard.BrushRadius;
+            int selectedIndex = -1;
+            int smallestDistance = int.MaxValue;
+
+            for (int i = 0; i < _brushSizePresetButtons.Count; i++)
+            {
+                int distance = Mathf.Abs(_brushSizePresetButtons[i].BrushSize - currentBrushSize);
+                if (distance < smallestDistance)
+                {
+                    smallestDistance = distance;
+                    selectedIndex = i;
+                }
+            }
+
+            for (int i = 0; i < _brushSizePresetButtons.Count; i++)
+            {
+                BrushSizePreset preset = _brushSizePresetButtons[i];
+                bool isSelected = i == selectedIndex;
+
+                if (preset.ButtonImage != null)
+                {
+                    preset.ButtonImage.color = isSelected ? activeButtonColor : neutralButtonColor;
+                }
+
+                if (preset.LabelText != null)
+                {
+                    preset.LabelText.color = isSelected ? Color.white : new Color(0.88f, 0.91f, 0.96f, 1f);
+                }
+            }
+        }
+
+        private void ConfigureBrushPresetVisuals()
+        {
+            if (_brushSizePresetButtons.Count == 0)
+            {
+                return;
+            }
+
+            int maxBrushSize = 1;
+            for (int i = 0; i < _brushSizePresetButtons.Count; i++)
+            {
+                maxBrushSize = Mathf.Max(maxBrushSize, _brushSizePresetButtons[i].BrushSize);
+            }
+
+            float maxActualDiameter = maxBrushSize * 2f + 1f;
+            for (int i = 0; i < _brushSizePresetButtons.Count; i++)
+            {
+                BrushSizePreset preset = _brushSizePresetButtons[i];
+                if (preset.LabelText == null)
+                {
+                    continue;
+                }
+
+                preset.LabelText.text = BrushPreviewGlyph;
+                preset.LabelText.alignment = TextAnchor.MiddleCenter;
+                preset.LabelText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                preset.LabelText.verticalOverflow = VerticalWrapMode.Overflow;
+                preset.LabelText.raycastTarget = false;
+
+                RectTransform buttonRect = preset.Button != null ? preset.Button.transform as RectTransform : null;
+                float buttonExtent = buttonRect != null
+                    ? Mathf.Min(buttonRect.rect.width, buttonRect.rect.height)
+                    : 30f;
+                float maxPreviewDiameter = Mathf.Max(8f, buttonExtent - 8f);
+                float minPreviewDiameter = Mathf.Clamp(buttonExtent * 0.22f, 4f, maxPreviewDiameter);
+                float actualDiameter = preset.BrushSize * 2f + 1f;
+                float normalized = Mathf.Clamp01(actualDiameter / maxActualDiameter);
+                float previewDiameter = Mathf.Lerp(minPreviewDiameter, maxPreviewDiameter, normalized);
+                preset.LabelText.fontSize = Mathf.Max(6, Mathf.RoundToInt(previewDiameter));
+            }
         }
 
         private void RefreshToolButtons()

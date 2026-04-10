@@ -19,14 +19,25 @@ namespace DoodleDiplomacy.Interaction
         private readonly HashSet<InteractableObject> _registered = new();
         private UnityEngine.Camera _mainCamera;
         private InteractableObject _hoveredObject;
+        private InteractableObject _lastInteractedObject;
         private bool _inputLocked;
 
         public InteractableObject HoveredObject => _hoveredObject;
+        public InteractableObject LastInteractedObject => _lastInteractedObject;
 
         private static readonly HashSet<InteractionType> s_WaitingAllowed = new() { InteractionType.Alien };
-        private static readonly HashSet<InteractionType> s_ObjectPresentedAllowed = new() { InteractionType.Tablet };
+        private static readonly HashSet<InteractionType> s_ObjectPresentedAllowed = new()
+        {
+            InteractionType.Tablet,
+            InteractionType.Monitor
+        };
         private static readonly HashSet<InteractionType> s_DrawingAllowed = new() { InteractionType.Tablet };
-        private static readonly HashSet<InteractionType> s_PreviewReadyAllowed = new() { InteractionType.Tablet, InteractionType.Adjutant };
+        private static readonly HashSet<InteractionType> s_PreviewReadyAllowed = new()
+        {
+            InteractionType.Tablet,
+            InteractionType.Adjutant,
+            InteractionType.Monitor
+        };
         private static readonly HashSet<InteractionType> s_InterpReadyAllowed = new() { InteractionType.Alien, InteractionType.Terminal };
         private static readonly HashSet<InteractionType> s_InterpreterAllowed = new() { InteractionType.Terminal };
         private static readonly HashSet<InteractionType> s_NoneAllowed = new();
@@ -137,7 +148,7 @@ namespace DoodleDiplomacy.Interaction
             Ray ray = _mainCamera.ScreenPointToRay(screenPos);
             if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance, interactableLayer))
             {
-                InteractableObject obj = hit.collider.GetComponent<InteractableObject>();
+                InteractableObject obj = hit.collider.GetComponentInParent<InteractableObject>();
                 if (obj != null && obj.isActive)
                 {
                     newHover = obj;
@@ -164,10 +175,11 @@ namespace DoodleDiplomacy.Interaction
             Ray ray = _mainCamera.ScreenPointToRay(screenPos);
             if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance, interactableLayer))
             {
-                InteractableObject interactable = hit.collider.GetComponent<InteractableObject>();
+                InteractableObject interactable = hit.collider.GetComponentInParent<InteractableObject>();
                 if (interactable != null)
                 {
                     Debug.Log($"[InteractionManager] Click: {interactable.name} ({interactable.interactionType})");
+                    _lastInteractedObject = interactable;
                     interactable.Interact();
                 }
             }

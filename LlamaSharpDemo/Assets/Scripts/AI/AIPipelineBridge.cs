@@ -73,7 +73,7 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private string judgmentSceneReadingKey = "scene_reading";
         [SerializeField] private string judgmentReasonKey = "judgment_reason";
         [SerializeField] private string wordsSelectionWordsKey = "words";
-        [SerializeField] private string selectedKeywordPromptTemplate = "studio photo of a single {0}, centered, isolated, plain background, simple lighting";
+        [SerializeField] private string selectedKeywordPromptTemplate = "cartoon illustration of a single {0}, centered, isolated, plain white background, clear silhouette, vibrant colors";
 
         [Header("References")]
         [SerializeField] private SharedMonitorDisplay monitorDisplay;

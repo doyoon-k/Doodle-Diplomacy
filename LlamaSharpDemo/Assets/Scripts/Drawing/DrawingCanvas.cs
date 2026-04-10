@@ -147,14 +147,38 @@ public sealed class DrawingCanvas : IDisposable
         Color color,
         out RectInt dirtyRegion,
         out Color32[] beforePixels,
-        out Color32[] afterPixels)
+        out Color32[] afterPixels,
+        RectInt? fillBounds = null)
     {
         dirtyRegion = default;
         beforePixels = null;
         afterPixels = null;
 
-        int startX = Mathf.Clamp(startPixel.x, 0, Width - 1);
-        int startY = Mathf.Clamp(startPixel.y, 0, Height - 1);
+        int fillMinX = 0;
+        int fillMinY = 0;
+        int fillMaxX = Width - 1;
+        int fillMaxY = Height - 1;
+        if (fillBounds.HasValue)
+        {
+            if (!TryClampRegion(fillBounds.Value, out RectInt clampedBounds))
+            {
+                return false;
+            }
+
+            fillMinX = clampedBounds.xMin;
+            fillMinY = clampedBounds.yMin;
+            fillMaxX = clampedBounds.xMax - 1;
+            fillMaxY = clampedBounds.yMax - 1;
+        }
+
+        int startX = Mathf.Clamp(startPixel.x, fillMinX, fillMaxX);
+        int startY = Mathf.Clamp(startPixel.y, fillMinY, fillMaxY);
+        if (startPixel.x < fillMinX || startPixel.x > fillMaxX ||
+            startPixel.y < fillMinY || startPixel.y > fillMaxY)
+        {
+            return false;
+        }
+
         int startIndex = (startY * Width) + startX;
 
         Color32 targetColor = _pixels[startIndex];
@@ -193,22 +217,22 @@ public sealed class DrawingCanvas : IDisposable
             if (x > maxX) maxX = x;
             if (y > maxY) maxY = y;
 
-            if (x > 0)
+            if (x > fillMinX)
             {
                 pixelsToVisit.Push(index - 1);
             }
 
-            if (x < Width - 1)
+            if (x < fillMaxX)
             {
                 pixelsToVisit.Push(index + 1);
             }
 
-            if (y > 0)
+            if (y > fillMinY)
             {
                 pixelsToVisit.Push(index - Width);
             }
 
-            if (y < Height - 1)
+            if (y < fillMaxY)
             {
                 pixelsToVisit.Push(index + Width);
             }

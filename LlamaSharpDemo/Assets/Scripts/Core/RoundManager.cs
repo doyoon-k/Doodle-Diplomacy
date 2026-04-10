@@ -38,12 +38,16 @@ namespace DoodleDiplomacy.Core
         [Header("Characters & Devices")]
         [SerializeField] private AlienReactionController alienReactionController;
         [SerializeField] private TerminalDisplay terminalDisplay;
+        [SerializeField] private SharedMonitorDisplay sharedMonitorDisplay;
+
+        [Header("Interaction Targets (Inspector Wiring)")]
+        [SerializeField] private InteractableObject sharedMonitorInteractable;
+        [SerializeField] private InteractableObject[] terminalInteractables = Array.Empty<InteractableObject>();
 
         [Header("UI")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
         [SerializeField] private EndingController endingController;
         [SerializeField] private TitleScreenController titleScreenController;
-        [SerializeField] private EvaluationLogOverlay evaluationLogOverlay;
 
         [Header("Sequences")]
         [SerializeField] private DialogueSequence introSequence;
@@ -53,6 +57,17 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private KeyCode exitDrawingKey = KeyCode.Escape;
         [Tooltip("Input used to leave the terminal view after reading the translation.")]
         [SerializeField] private KeyCode exitInterpreterKey = KeyCode.Escape;
+        [Tooltip("Input used to leave the monitor zoom view after inspecting generated objects.")]
+        [SerializeField] private KeyCode exitMonitorZoomKey = KeyCode.Escape;
+
+        [Header("Monitor Zoom")]
+        [Range(20f, 70f)]
+        [SerializeField] private float monitorZoomFieldOfView = 38f;
+        [Range(1f, 1.5f)]
+        [SerializeField] private float monitorZoomFramingPadding = 1.08f;
+        [SerializeField] private float monitorZoomVerticalOffset = 0.05f;
+        [SerializeField] private float monitorZoomMinDistance = 0.8f;
+        [SerializeField] private float monitorZoomMaxDistance = 6f;
 
         [Header("Events")]
         public GameStateUnityEvent OnStateChanged;
@@ -63,6 +78,8 @@ namespace DoodleDiplomacy.Core
         private SatisfactionLevel _lastSatisfaction = SatisfactionLevel.Neutral;
         private bool _preserveRoundIndexOnNextWaitingState;
         private float _interpreterOpenedAt;
+        private bool _isSharedMonitorZoomActive;
+        private bool _hasOpenedInterpreterThisRound;
 
         public GameState CurrentState => _currentState;
         public int CurrentRound => _currentRound;
@@ -80,14 +97,15 @@ namespace DoodleDiplomacy.Core
 
         private void Start()
         {
+            BindInspectorInteractions();
             SubscribeToBridgeEvents();
-            EnsureEvaluationLogOverlay();
             interactionManager?.SetInteractablesForState(_currentState);
             ApplyCameraMode(_currentState);
         }
 
         private void OnDestroy()
         {
+            UnbindInspectorInteractions();
             UnsubscribeFromBridgeEvents();
 
             if (Instance == this)
@@ -98,6 +116,12 @@ namespace DoodleDiplomacy.Core
 
         private void Update()
         {
+            if (_isSharedMonitorZoomActive && WasKeyPressed(exitMonitorZoomKey))
+            {
+                ExitSharedMonitorZoom();
+                return;
+            }
+
             if (_currentState == GameState.Drawing && WasKeyPressed(exitDrawingKey))
             {
                 OnDrawingComplete();
@@ -116,12 +140,11 @@ namespace DoodleDiplomacy.Core
             _currentRound = 0;
             _lastSatisfaction = SatisfactionLevel.Neutral;
             _preserveRoundIndexOnNextWaitingState = false;
+            _hasOpenedInterpreterThisRound = false;
 
             scoreManager?.Reset();
             aipipelineBridge?.ResetRound();
             ResetTelepathyState();
-            evaluationLogOverlay?.Clear();
-            LogEvaluation("Game started. Waiting for round 1.");
             ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
         }
 
@@ -129,7 +152,7 @@ namespace DoodleDiplomacy.Core
         {
             CancelActiveAiOperations();
             ResetTelepathyState();
-            evaluationLogOverlay?.Clear();
+            _hasOpenedInterpreterThisRound = false;
             ChangeState(GameState.Title);
         }
 
@@ -190,6 +213,28 @@ namespace DoodleDiplomacy.Core
             }
         }
 
+        public void OnSharedMonitorClicked()
+        {
+            if (!(_currentState == GameState.ObjectPresented || _currentState == GameState.PreviewReady))
+            {
+                return;
+            }
+
+            if (!CanUseSharedMonitorZoom())
+            {
+                return;
+            }
+
+            if (_isSharedMonitorZoomActive)
+            {
+                ExitSharedMonitorZoom();
+            }
+            else
+            {
+                EnterSharedMonitorZoom();
+            }
+        }
+
         public void OnIntroComplete() => TryTransition(GameState.Intro, GameState.WaitingForRound);
         public void OnPresentingComplete() => TryTransition(GameState.Presenting, GameState.ObjectPresented);
         public void OnDrawingComplete() => TryTransition(GameState.Drawing, GameState.PreviewReady);
@@ -207,6 +252,162 @@ namespace DoodleDiplomacy.Core
         public void OnSubmitComplete() => TryTransition(GameState.Submitting, GameState.AlienReaction);
         public void OnReactionComplete() => TryTransition(GameState.AlienReaction, GameState.InterpreterReady);
         public void OnInterpreterClose() => TryTransition(GameState.Interpreter, GameState.InterpreterReady);
+
+        private void BindInspectorInteractions()
+        {
+            if (sharedMonitorInteractable != null)
+            {
+                sharedMonitorInteractable.interactionType = InteractionType.Monitor;
+                sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
+                sharedMonitorInteractable.OnInteracted.AddListener(OnSharedMonitorClicked);
+            }
+            else
+            {
+                Debug.LogWarning("[RoundManager] sharedMonitorInteractable is not assigned. Monitor click zoom will be disabled.");
+            }
+
+            if (terminalInteractables == null || terminalInteractables.Length == 0)
+            {
+                Debug.LogWarning("[RoundManager] terminalInteractables is empty. Terminal click interaction must be wired in inspector.");
+                return;
+            }
+
+            for (int i = 0; i < terminalInteractables.Length; i++)
+            {
+                InteractableObject terminalInteractable = terminalInteractables[i];
+                if (terminalInteractable == null)
+                {
+                    continue;
+                }
+
+                terminalInteractable.interactionType = InteractionType.Terminal;
+                terminalInteractable.OnInteracted.RemoveListener(OnTerminalClicked);
+                terminalInteractable.OnInteracted.AddListener(OnTerminalClicked);
+            }
+        }
+
+        private void UnbindInspectorInteractions()
+        {
+            if (sharedMonitorInteractable != null)
+            {
+                sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
+            }
+
+            if (terminalInteractables == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < terminalInteractables.Length; i++)
+            {
+                if (terminalInteractables[i] == null)
+                {
+                    continue;
+                }
+
+                terminalInteractables[i].OnInteracted.RemoveListener(OnTerminalClicked);
+            }
+        }
+
+        private bool CanUseSharedMonitorZoom()
+        {
+            return sharedMonitorDisplay != null && sharedMonitorDisplay.HasInspectableImage;
+        }
+
+        private void EnterSharedMonitorZoom()
+        {
+            if (cameraController == null)
+            {
+                return;
+            }
+
+            if (!TryGetSharedMonitorZoomPose(out Vector3 zoomPosition, out Quaternion zoomRotation))
+            {
+                return;
+            }
+
+            _isSharedMonitorZoomActive = true;
+            cameraController.SetCustomView(zoomPosition, zoomRotation, monitorZoomFieldOfView);
+        }
+
+        private void ExitSharedMonitorZoom()
+        {
+            if (!_isSharedMonitorZoomActive)
+            {
+                return;
+            }
+
+            _isSharedMonitorZoomActive = false;
+            if (cameraController != null)
+            {
+                ApplyCameraMode(_currentState);
+            }
+        }
+
+        private bool TryGetSharedMonitorZoomPose(out Vector3 position, out Quaternion rotation)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+
+            if (sharedMonitorDisplay == null)
+            {
+                return false;
+            }
+
+            Transform monitorTransform = sharedMonitorDisplay.transform;
+            Bounds monitorBounds = new Bounds(monitorTransform.position, Vector3.one);
+            bool hasBounds = false;
+
+            if (sharedMonitorDisplay.TryGetComponent(out Renderer renderer))
+            {
+                monitorBounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else if (sharedMonitorDisplay.TryGetComponent(out Collider collider))
+            {
+                monitorBounds = collider.bounds;
+                hasBounds = true;
+            }
+
+            Vector3 focusPoint = hasBounds ? monitorBounds.center : monitorTransform.position;
+            focusPoint += monitorTransform.up * monitorZoomVerticalOffset;
+
+            float distance = 2.2f;
+            if (hasBounds)
+            {
+                float cameraAspect = cameraController != null && cameraController.TargetCamera != null
+                    ? Mathf.Max(0.1f, cameraController.TargetCamera.aspect)
+                    : 16f / 9f;
+                float halfHeight = Mathf.Max(0.12f, monitorBounds.extents.y);
+                float halfWidthAsHeight = Mathf.Max(0.12f, monitorBounds.extents.x / cameraAspect);
+                float halfFrame = Mathf.Max(halfHeight, halfWidthAsHeight);
+                float halfFovRad = Mathf.Deg2Rad * Mathf.Clamp(monitorZoomFieldOfView, 10f, 120f) * 0.5f;
+                float tanHalfFov = Mathf.Max(0.01f, Mathf.Tan(halfFovRad));
+                distance = halfFrame / tanHalfFov * Mathf.Max(1f, monitorZoomFramingPadding);
+            }
+
+            distance = Mathf.Clamp(distance, monitorZoomMinDistance, monitorZoomMaxDistance);
+
+            Vector3 normal = monitorTransform.forward.normalized;
+            Vector3 candidateA = focusPoint + normal * distance;
+            Vector3 candidateB = focusPoint - normal * distance;
+
+            Vector3 currentCameraPosition = cameraController != null && cameraController.TargetCamera != null
+                ? cameraController.TargetCamera.transform.position
+                : candidateB;
+            position = (currentCameraPosition - candidateA).sqrMagnitude <= (currentCameraPosition - candidateB).sqrMagnitude
+                ? candidateA
+                : candidateB;
+
+            Vector3 lookDirection = focusPoint - position;
+            if (lookDirection.sqrMagnitude < 0.0001f)
+            {
+                return false;
+            }
+
+            rotation = Quaternion.LookRotation(lookDirection.normalized, Vector3.up);
+            return true;
+        }
 
         [ContextMenu("Debug: Advance State")]
         public void Debug_AdvanceState()
@@ -339,6 +540,11 @@ namespace DoodleDiplomacy.Core
                 return;
             }
 
+            if (_isSharedMonitorZoomActive)
+            {
+                _isSharedMonitorZoomActive = false;
+            }
+
             GameState oldState = _currentState;
             int newStateVersion = _stateVersion + 1;
 
@@ -382,6 +588,7 @@ namespace DoodleDiplomacy.Core
 
                 case GameState.WaitingForRound:
                     subtitleDisplay?.Hide();
+                    _hasOpenedInterpreterThisRound = false;
                     if (_preserveRoundIndexOnNextWaitingState)
                     {
                         _preserveRoundIndexOnNextWaitingState = false;
@@ -396,7 +603,6 @@ namespace DoodleDiplomacy.Core
                     aipipelineBridge?.EnsureObjectGenerationPreparation();
                     aipipelineBridge?.PrepareRoundKeywords();
                     Debug.Log($"[RoundManager] Waiting for round {_currentRound} / {scoreConfig?.totalRounds}.");
-                    LogEvaluation($"Round {_currentRound} ready. Waiting for the alien interaction.");
                     ShowHint(
                         "System",
                         aipipelineBridge != null
@@ -455,7 +661,6 @@ namespace DoodleDiplomacy.Core
 
                 case GameState.PreviewAnalyzing:
                     subtitleDisplay?.Show("Adjutant", "Let me review the drawing.");
-                    LogEvaluation("Preview analysis started.");
                     if (aipipelineBridge != null)
                     {
                         aipipelineBridge.GetPreview(analysis =>
@@ -478,14 +683,11 @@ namespace DoodleDiplomacy.Core
 
                 case GameState.Preview:
                     ShowPreviewResult(aipipelineBridge != null ? aipipelineBridge.LastPreviewDialogue : PreviewFallbackText);
-                    LogEvaluation($"Preview complete: {SummarizeForLog(aipipelineBridge != null ? aipipelineBridge.LastPreviewDialogue : PreviewFallbackText)}");
                     Debug.Log("[RoundManager] Preview analysis complete. Waiting for submit or modify.");
                     break;
 
                 case GameState.Submitting:
                     ShowHint("System", "Submitting the drawing for judgment...");
-                    LogAlienPersonality();
-                    LogEvaluation("Alien judgment started.");
                     if (aipipelineBridge != null)
                     {
                         aipipelineBridge.GetJudgment(satisfaction =>
@@ -496,15 +698,6 @@ namespace DoodleDiplomacy.Core
                             }
 
                             _lastSatisfaction = satisfaction;
-                            LogEvaluation($"Alien judgment complete. satisfaction={satisfaction}");
-                            if (aipipelineBridge.HasTelepathyResult)
-                            {
-                                LogEvaluation($"Alien transcript captured: {SummarizeForLog(aipipelineBridge.LastTelepathy)}");
-                            }
-                            else
-                            {
-                                LogEvaluation("Judgment completed without a usable transcript.");
-                            }
                             scoreManager?.RecordRound(satisfaction);
                             OnSubmitComplete();
                         });
@@ -536,12 +729,10 @@ namespace DoodleDiplomacy.Core
                 case GameState.InterpreterReady:
                     if (aipipelineBridge != null && aipipelineBridge.HasTelepathyResult)
                     {
-                        LogEvaluation("Telepathy signal is ready at the terminal.");
                         ShowHint("System", TerminalSignalReadyMessage);
                     }
                     else
                     {
-                        LogEvaluation("No telepathy signal was recovered for this round.");
                         ShowHint("System", NoSignalMessage);
                     }
 
@@ -550,16 +741,19 @@ namespace DoodleDiplomacy.Core
 
                 case GameState.Interpreter:
                     subtitleDisplay?.Hide();
-                    LogEvaluation("Terminal opened.");
+                    bool instantTerminalDisplay = _hasOpenedInterpreterThisRound;
                     if (aipipelineBridge != null && aipipelineBridge.HasTelepathyResult)
                     {
-                        terminalDisplay?.ShowText(aipipelineBridge.LastTelepathy);
+                        terminalDisplay?.ShowText(aipipelineBridge.LastTelepathy, instantTerminalDisplay);
                     }
                     else if (terminalDisplay != null)
                     {
                         terminalDisplay.ShowText(
-                            "[TRANSLATOR v1.0]\n> No captured alien signal.\n> _");
+                            "[TRANSLATOR v1.0]\n> No captured alien signal.\n> _",
+                            instantTerminalDisplay);
                     }
+
+                    _hasOpenedInterpreterThisRound = true;
                     break;
 
                 case GameState.Ending:
@@ -631,7 +825,6 @@ namespace DoodleDiplomacy.Core
         {
             ResetTelepathyState();
             terminalDisplay?.Clear();
-            LogEvaluation("Drawing resumed. Cleared cached preview, judgment, and transcript.");
         }
 
         private void ShowPreviewResult(string analysis)
@@ -651,53 +844,6 @@ namespace DoodleDiplomacy.Core
             }
 
             subtitleDisplay.Show(speaker, text);
-        }
-
-        private void EnsureEvaluationLogOverlay()
-        {
-            if (evaluationLogOverlay != null)
-            {
-                return;
-            }
-
-            evaluationLogOverlay = FindFirstObjectByType<EvaluationLogOverlay>();
-            if (evaluationLogOverlay != null)
-            {
-                return;
-            }
-
-            var overlayObject = new GameObject("EvaluationLogOverlay");
-            evaluationLogOverlay = overlayObject.AddComponent<EvaluationLogOverlay>();
-        }
-
-        private void LogEvaluation(string message)
-        {
-            evaluationLogOverlay?.Log(message);
-        }
-
-        private void LogAlienPersonality()
-        {
-            if (aipipelineBridge == null)
-            {
-                LogEvaluation("Alien personality: pipeline unavailable");
-                return;
-            }
-
-            LogEvaluation(aipipelineBridge.GetAlienPersonalitySummary());
-        }
-
-        private static string SummarizeForLog(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return "(empty)";
-            }
-
-            string normalized = text.Replace('\n', ' ').Replace('\r', ' ').Trim();
-            const int maxLength = 96;
-            return normalized.Length <= maxLength
-                ? normalized
-                : normalized.Substring(0, maxLength - 3) + "...";
         }
 
         private void ApplyCameraMode(GameState state)

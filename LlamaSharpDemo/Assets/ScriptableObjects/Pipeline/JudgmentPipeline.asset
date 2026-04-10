@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: JudgmentPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: JudgmentPipeline
-  description: Judge the Stage 1 scene description from the alien archetype perspective without rereading the image.
+  description: Judge the Stage 1 scene description from the alien archetype perspective
+    without rereading the image.
   steps:
   - stepName: AlienJudgment
     stepKind: 0
@@ -22,22 +23,20 @@ MonoBehaviour:
 
       {{target_objects}}
 
-      Stage 1 scene description:
-      - scene: {{preview_scene_reading}}
-      - visible relations: {{preview_visible_relations}}
-      - overall mood: {{preview_overall_mood}}
-      - uncertainty: {{preview_uncertainty}}
-      - object A presence: {{preview_object_a_presence}}
+      Stage
+      1 scene description: - scene: {{preview_scene_reading}} - visible relations:
+      {{preview_visible_relations}} - overall mood: {{preview_overall_mood}} - uncertainty:
+      {{preview_uncertainty}} - object A presence: {{preview_object_a_presence}}
       - object B presence: {{preview_object_b_presence}}
 
-      Judge how this scene would actually land with your alien delegation.
-      Use the Stage 1 description as the full evidence.
-      Use the object-presence labels to understand whether the requested objects
-      were clearly represented, unclear, or omitted.
-      Choose the most straightforward archetype-based reading supported by that evidence.
-      Rate the scene by how directly and naturally it expresses your values.
-      If the fit is weak, ordinary, mixed, or only speculative, keep the score near
-      neutral or dissatisfied instead of forcing a stronger interpretation.'
+      Judge how this scene
+      would actually land with your alien delegation. Use the Stage 1 description
+      as the full evidence. Use the object-presence labels to understand whether
+      the requested objects were clearly represented, unclear, or omitted. Choose
+      the most straightforward archetype-based reading supported by that evidence.
+      Rate the scene by how directly and naturally it expresses your values. If the
+      fit is weak, ordinary, mixed, or only speculative, keep the score near neutral
+      or dissatisfied instead of forcing a stronger interpretation.'
     jsonMaxRetries: 2
     jsonRetryDelaySeconds: 0.5
     useVision: 0

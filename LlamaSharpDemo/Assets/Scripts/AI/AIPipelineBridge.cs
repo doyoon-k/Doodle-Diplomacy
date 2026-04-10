@@ -1722,40 +1722,9 @@ namespace DoodleDiplomacy.AI
                 ? "{0}"
                 : selectedKeywordPromptTemplate.Trim();
 
-            string renderKeyword = GetKeywordRenderPrompt(normalizedKeyword);
-
             return template.Contains("{0}", StringComparison.Ordinal)
-                ? template.Replace("{0}", renderKeyword)
-                : $"{template} {renderKeyword}".Trim();
-        }
-
-        private static string GetKeywordRenderPrompt(string keyword)
-        {
-            return keyword.Trim().ToLowerInvariant() switch
-            {
-                "chain" => "heavy iron chain",
-                "rope" => "coiled rope",
-                "crown" => "gold royal crown",
-                "torch" => "wooden torch with visible flame",
-                "bell" => "brass hand bell",
-                "cup" => "ceramic drinking cup",
-                "bowl" => "ceramic bowl",
-                "cloak" => "hooded cloth cloak",
-                "mask" => "decorative face mask",
-                "chest" => "wooden treasure chest",
-                "basket" => "woven basket",
-                "bucket" => "metal bucket",
-                "cauldron" => "black iron cauldron",
-                "anchor" => "large iron ship anchor",
-                "saddle" => "leather horse saddle",
-                "helmet" => "metal knight helmet",
-                "lantern" => "metal lantern with glass panels",
-                "barrel" => "wooden barrel",
-                "cage" => "metal cage",
-                "mirror" => "hand mirror",
-                "wine" => "glass wine bottle",
-                _ => keyword
-            };
+                ? template.Replace("{0}", normalizedKeyword)
+                : $"{template} {normalizedKeyword}".Trim();
         }
 
         private static bool TryParseRoundKeywords(string rawWordsJson, out string keywordA, out string keywordB)

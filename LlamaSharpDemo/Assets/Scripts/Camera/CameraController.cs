@@ -123,7 +123,20 @@ namespace DoodleDiplomacy.Camera
 
         private void Update()
         {
-            if (_isCustomViewActive || _currentMode != CameraMode.FreeLook || _isTransitioning || targetCamera == null)
+            if (targetCamera == null)
+            {
+                return;
+            }
+
+            // Tablet anchor is intentionally parented under the tablet, so keep following it
+            // after transitions to avoid stale one-time snapshots.
+            if (!_isCustomViewActive && _currentMode == CameraMode.TabletView && !_isTransitioning)
+            {
+                UpdateTabletViewFollowPose();
+                return;
+            }
+
+            if (_isCustomViewActive || _currentMode != CameraMode.FreeLook || _isTransitioning)
             {
                 return;
             }
@@ -134,6 +147,19 @@ namespace DoodleDiplomacy.Camera
             Quaternion desiredRotation = ResolveFreeLookRotation();
             float t = 1f - Mathf.Exp(-Mathf.Max(0.01f, hoverLookLerpSpeed) * Time.deltaTime);
             targetCamera.transform.rotation = Quaternion.Slerp(targetCamera.transform.rotation, desiredRotation, t);
+        }
+
+        private void UpdateTabletViewFollowPose()
+        {
+            CameraPreset preset = GetPreset(CameraMode.TabletView);
+            if (preset == null || !preset.TryGetPose(out Vector3 position, out Quaternion rotation))
+            {
+                return;
+            }
+
+            targetCamera.transform.position = position;
+            targetCamera.transform.rotation = rotation;
+            targetCamera.fieldOfView = preset.fieldOfView;
         }
 
         public void SetMode(CameraMode mode)
@@ -181,10 +207,19 @@ namespace DoodleDiplomacy.Camera
             Vector3 startPos = targetCamera.transform.position;
             Quaternion startRot = targetCamera.transform.rotation;
             float startFov = targetCamera.fieldOfView;
+            bool shouldFollowDynamicPreset = !_isCustomViewActive && _currentMode == CameraMode.TabletView;
 
             float elapsed = 0f;
             while (elapsed < transitionDuration)
             {
+                if (shouldFollowDynamicPreset &&
+                    TryResolvePresetPose(CameraMode.TabletView, out Vector3 dynamicPosition, out Quaternion dynamicRotation, out float dynamicFov))
+                {
+                    targetPosition = dynamicPosition;
+                    targetRotation = dynamicRotation;
+                    targetFieldOfView = dynamicFov;
+                }
+
                 elapsed += Time.deltaTime;
                 float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / transitionDuration));
 

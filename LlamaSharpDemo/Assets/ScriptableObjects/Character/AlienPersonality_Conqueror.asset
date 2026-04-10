@@ -12,5 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67bd54e28395c0e479d381741f8e4007, type: 3}
   m_Name: AlienPersonality_Conqueror
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
-  archetype: 0
+  label: Conqueror
+  coreValues: domination, intimidation, pursuit, exertion of power
+  likes: domination, intimidation, pursuit, and the clear exertion of power over others
+  dislikes: yielding, equality, hesitation, resistance, and loss of control
+  fallbackJudgmentPriority: This delegation prizes domination, intimidation, and visible control.
   description: Values domination, intimidation, pursuit, and the clear exertion of power over others.

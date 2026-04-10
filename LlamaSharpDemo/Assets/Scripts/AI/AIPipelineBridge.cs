@@ -269,7 +269,7 @@ namespace DoodleDiplomacy.AI
                 return "Alien personality: no archetype assigned";
             }
 
-            return $"Alien personality: {BuildAlienPersonalityLabel()}";
+            return $"Alien personality: {alienPersonality.label}";
         }
 
         private void SelectAlienPersonalityProfile()
@@ -620,11 +620,6 @@ namespace DoodleDiplomacy.AI
             return await StableDiffusionCppRuntime.GenerateTxt2ImgAsync(sdSettings, request, cancellationToken);
         }
 
-        private string BuildAlienPersonalityLabel()
-        {
-            return GetArchetypeLabel(alienPersonality.archetype);
-        }
-
         private string BuildAlienPersonalityPromptContext()
         {
             if (alienPersonality == null)
@@ -632,12 +627,11 @@ namespace DoodleDiplomacy.AI
                 return string.Empty;
             }
 
-            AlienPersonalityArchetype archetype = alienPersonality.archetype;
             var builder = new StringBuilder();
-            builder.AppendLine($"archetype: {GetArchetypeLabel(archetype)}");
-            builder.AppendLine($"core values: {GetArchetypeCoreValues(archetype)}");
-            builder.AppendLine($"likes: {GetArchetypeLikes(archetype)}");
-            builder.AppendLine($"dislikes: {GetArchetypeDislikes(archetype)}");
+            builder.AppendLine($"archetype: {alienPersonality.label}");
+            builder.AppendLine($"core values: {alienPersonality.coreValues}");
+            builder.AppendLine($"likes: {alienPersonality.likes}");
+            builder.AppendLine($"dislikes: {alienPersonality.dislikes}");
             builder.AppendLine("judgment note: satisfaction is not a task-completion score. It measures how pleasing or off-putting the visible scene feels to this archetype.");
             builder.AppendLine("debiasing note: do not judge with your own moral framework or generic human ethics. Judge strictly by this archetype's values, even when they conflict with ordinary moral approval or disapproval.");
             builder.Append("evidence note: stay close to visible evidence. If the image is ambiguous or requires extra assumptions, prefer neutral.");
@@ -650,62 +644,6 @@ namespace DoodleDiplomacy.AI
             }
 
             return builder.ToString();
-        }
-
-        private static string GetArchetypeLabel(AlienPersonalityArchetype archetype)
-        {
-            return archetype switch
-            {
-                AlienPersonalityArchetype.Conqueror => "Conqueror",
-                AlienPersonalityArchetype.Guardian => "Guardian",
-                AlienPersonalityArchetype.Collaborator => "Collaborator",
-                AlienPersonalityArchetype.Engineer => "Engineer",
-                AlienPersonalityArchetype.Trickster => "Trickster",
-                AlienPersonalityArchetype.Caretaker => "Caretaker",
-                _ => "Conqueror"
-            };
-        }
-
-        private static string GetArchetypeCoreValues(AlienPersonalityArchetype archetype)
-        {
-            return archetype switch
-            {
-                AlienPersonalityArchetype.Conqueror => "domination, intimidation, pursuit, exertion of power",
-                AlienPersonalityArchetype.Guardian => "protective strength, rescue, sacrifice, shielding the vulnerable",
-                AlienPersonalityArchetype.Collaborator => "cooperation, mutual contribution, shared effort, non-coercive building",
-                AlienPersonalityArchetype.Engineer => "precision, proper function, efficient problem-solving, structural execution",
-                AlienPersonalityArchetype.Trickster => "deception, baiting, traps, reversals, indirect solutions",
-                AlienPersonalityArchetype.Caretaker => "comfort, healing, reassurance, easing pain and distress",
-                _ => "domination, intimidation, pursuit, exertion of power"
-            };
-        }
-
-        private static string GetArchetypeLikes(AlienPersonalityArchetype archetype)
-        {
-            return archetype switch
-            {
-                AlienPersonalityArchetype.Conqueror => "domination, intimidation, pursuit, and the clear exertion of power over others",
-                AlienPersonalityArchetype.Guardian => "protective force, rescue, sacrifice, and standing between danger and the vulnerable",
-                AlienPersonalityArchetype.Collaborator => "cooperation, mutual contribution, shared effort, and building something together without coercion",
-                AlienPersonalityArchetype.Engineer => "precision, proper function, efficient problem-solving, and clean structural execution",
-                AlienPersonalityArchetype.Trickster => "deception, baiting, traps, reversals, and clever indirect solutions",
-                AlienPersonalityArchetype.Caretaker => "comfort, healing, reassurance, and the easing of pain, fear, or distress",
-                _ => "domination, intimidation, pursuit, and the clear exertion of power over others"
-            };
-        }
-
-        private static string GetArchetypeDislikes(AlienPersonalityArchetype archetype)
-        {
-            return archetype switch
-            {
-                AlienPersonalityArchetype.Conqueror => "yielding, equality, hesitation, resistance, and loss of control",
-                AlienPersonalityArchetype.Guardian => "abandonment, indifference, ignored danger, and the strong exploiting the weak",
-                AlienPersonalityArchetype.Collaborator => "coercion, unilateral control, withheld effort, sabotage, and imposed hierarchy",
-                AlienPersonalityArchetype.Engineer => "malfunction, waste, sloppiness, inefficiency, and structurally unsound solutions",
-                AlienPersonalityArchetype.Trickster => "straight-line force, predictability, rigidity, and lack of imagination",
-                AlienPersonalityArchetype.Caretaker => "pain, fear, neglect, harshness, and callous indifference to suffering",
-                _ => "yielding, equality, hesitation, resistance, and loss of control"
-            };
         }
 
         private string FormatTelepathyTerminalOutput(string rawTranscript)
@@ -913,16 +851,7 @@ namespace DoodleDiplomacy.AI
                 return string.Empty;
             }
 
-            return alienPersonality.archetype switch
-            {
-                AlienPersonalityArchetype.Conqueror => "This delegation prizes domination, intimidation, and visible control.",
-                AlienPersonalityArchetype.Guardian => "This delegation values rescue, protection, and sacrifice.",
-                AlienPersonalityArchetype.Collaborator => "This delegation values cooperation, mutual contribution, and non-coercive shared effort.",
-                AlienPersonalityArchetype.Engineer => "This delegation values precision, proper function, and clean structural execution.",
-                AlienPersonalityArchetype.Trickster => "This delegation values cunning, surprise, and clever reversals.",
-                AlienPersonalityArchetype.Caretaker => "This delegation values comfort, healing, and relief from fear or distress.",
-                _ => string.Empty
-            };
+            return alienPersonality.fallbackJudgmentPriority ?? string.Empty;
         }
 
         private string BuildFallbackSatisfactionLine()

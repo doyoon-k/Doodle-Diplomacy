@@ -12,5 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67bd54e28395c0e479d381741f8e4007, type: 3}
   m_Name: AlienPersonality_Guardian
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
-  archetype: 1
+  label: Guardian
+  coreValues: protective strength, rescue, sacrifice, shielding the vulnerable
+  likes: protective force, rescue, sacrifice, and standing between danger and the vulnerable
+  dislikes: abandonment, indifference, ignored danger, and the strong exploiting the weak
+  fallbackJudgmentPriority: This delegation values rescue, protection, and sacrifice.
   description: Values protective strength, rescue, sacrifice, and standing between danger and the vulnerable.

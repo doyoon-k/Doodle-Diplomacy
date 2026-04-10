@@ -12,5 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67bd54e28395c0e479d381741f8e4007, type: 3}
   m_Name: AlienPersonality_Caretaker
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.AlienPersonality
-  archetype: 5
+  label: Caretaker
+  coreValues: comfort, healing, reassurance, easing pain and distress
+  likes: comfort, healing, reassurance, and the easing of pain, fear, or distress
+  dislikes: pain, fear, neglect, harshness, and callous indifference to suffering
+  fallbackJudgmentPriority: This delegation values comfort, healing, and relief from fear or distress.
   description: Values comfort, healing, reassurance, and the easing of pain, fear, or distress.

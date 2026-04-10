@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hidden_ShaderGlass_PS1_QuantizeDither
+  m_Shader: {fileID: 4800000, guid: c9b6747cbee843e6991cf6c66334cbab, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - Brightness: 0.026
+    - ChromaShift: 1.109
+    - ColorSteps: 17.8
+    - Contrast: 0.96
+    - DitherStrength: 1.174
+    - FrameCount: 0
+    - JitterStrength: 0.324
+    - NoiseStrength: 0.0688
+    - Saturation: 0.9
+    - ScanlineStrength: 0.125
+    - TimestampDay: 9
+    - TimestampEnable: 1
+    - TimestampHour: 23
+    - TimestampJitter: 0.08
+    - TimestampMinute: 17
+    - TimestampMonth: 4
+    - TimestampOpacity: 0.477
+    - TimestampPosX: 0.754
+    - TimestampPosY: 0.06
+    - TimestampScale: 2.7
+    - TimestampSecond: 45
+    - TimestampYear: 86
+    m_Colors:
+    - OriginalSize: {r: 1, g: 1, b: 1, a: 1}
+    - OutputSize: {r: 1, g: 1, b: 1, a: 1}
+    - SourceSize: {r: 1, g: 1, b: 1, a: 1}
+    - TimestampColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

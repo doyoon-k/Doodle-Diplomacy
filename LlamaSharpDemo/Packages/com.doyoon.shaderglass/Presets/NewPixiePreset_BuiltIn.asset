@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf24ab999e84033419647d03c59655f1, type: 3}
+  m_Name: NewPixiePreset_BuiltIn
+  m_EditorClassIdentifier: Assembly-CSharp::ShaderGlassPreset
+  passes:
+  - material: {fileID: 2100000, guid: 948ee386480d45afa1df2a04b81f2400, type: 2}
+    materialPassIndex: 0
+    alias: accum1
+    scaleTypeX: 0
+    scaleTypeY: 0
+    scaleX: 1
+    scaleY: 1
+    format: 0
+    filterMode: 1
+    wrapMode: 1
+    frameCountMod: 0
+    floatOverrides: []
+    vectorOverrides: []
+  - material: {fileID: 2100000, guid: b23fa4039ff140bd8732135796a58f10, type: 2}
+    materialPassIndex: 0
+    alias: blur1
+    scaleTypeX: 0
+    scaleTypeY: 0
+    scaleX: 1
+    scaleY: 1
+    format: 0
+    filterMode: 1
+    wrapMode: 1
+    frameCountMod: 0
+    floatOverrides: []
+    vectorOverrides: []
+  - material: {fileID: 2100000, guid: ba930c644e744d6cbe3a9c8145716ef9, type: 2}
+    materialPassIndex: 0
+    alias: blur2
+    scaleTypeX: 0
+    scaleTypeY: 0
+    scaleX: 1
+    scaleY: 1
+    format: 0
+    filterMode: 1
+    wrapMode: 1
+    frameCountMod: 0
+    floatOverrides: []
+    vectorOverrides: []
+  - material: {fileID: 2100000, guid: acf47df3ae2547ab8e36df2be8cf6767, type: 2}
+    materialPassIndex: 0
+    alias: NewPixieCRT
+    scaleTypeX: 1
+    scaleTypeY: 1
+    scaleX: 1
+    scaleY: 1
+    format: 0
+    filterMode: 1
+    wrapMode: 1
+    frameCountMod: 0
+    floatOverrides: []
+    vectorOverrides: []
+  textures:
+  - name: frametexture
+    texture: {fileID: 2800000, guid: 4598fdc44f59e224c8562222ce2192ed, type: 3}
+  floatOverrides: []
+  vectorOverrides: []
+  enableFeedback: 1
+  historyCount: 0

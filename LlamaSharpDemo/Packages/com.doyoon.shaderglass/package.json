@@ -1,0 +1,7 @@
+{
+  "name": "com.doyoon.shaderglass",
+  "version": "0.1.0",
+  "displayName": "ShaderGlass",
+  "description": "ShaderGlass-style CRT post-process for URP and Built-in.",
+  "unity": "6000.0"
+}

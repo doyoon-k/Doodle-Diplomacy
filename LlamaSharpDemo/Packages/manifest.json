@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.doyoon.shaderglass": "file:C:/Dev/RetroArch/ShaderGlassPackage/com.doyoon.shaderglass",
+    "com.doyoon.shaderglass": "file:../Packages/com.doyoon.shaderglass",
     "com.ivanmurzak.unity.mcp": "0.63.3",
     "com.unity.2d.animation": "12.0.2",
     "com.unity.2d.aseprite": "2.0.2",
@@ -67,3 +67,4 @@
     }
   ]
 }
+

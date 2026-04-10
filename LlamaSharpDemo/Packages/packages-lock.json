@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "com.doyoon.shaderglass": {
-      "version": "file:C:/Dev/RetroArch/ShaderGlassPackage/com.doyoon.shaderglass",
+      "version": "file:com.doyoon.shaderglass",
       "depth": 0,
-      "source": "local",
+      "source": "embedded",
       "dependencies": {}
     },
     "com.ivanmurzak.unity.mcp": {

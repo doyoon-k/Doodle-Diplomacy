@@ -2888,7 +2888,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.7, g: 0.5, b: 0.1, a: 1}
+  m_Color: {r: 0.7, g: 0.5, b: 0.1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -8440,7 +8440,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.5}
+  m_Color: {r: 0, g: 0, b: 0, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -9428,7 +9428,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.2, g: 0.7, b: 0.3, a: 1}
+  m_Color: {r: 0.2, g: 0.7, b: 0.3, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -12873,7 +12873,7 @@ MonoBehaviour:
     simple lighting
   objectPromptB: studio photo of a single lantern, centered, isolated, plain background,
     simple lighting
-  sdNegativePrompt: low quality, blurry, text, watermark, humans, faces
+  sdNegativePrompt: low quality, blurry, text, watermark
   previewDialoguePipeline: {fileID: 11400000, guid: 1b6f09a5c4e54ee4a8574fc5d1a8331d, type: 2}
   judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
   telepathyPipeline: {fileID: 11400000, guid: d6a1fbcfc287e004c8d88d504212d82e, type: 2}
@@ -12886,16 +12886,14 @@ MonoBehaviour:
   judgmentSceneReadingKey: scene_reading
   judgmentReasonKey: judgment_reason
   wordsSelectionWordsKey: words
-  selectedKeywordPromptTemplate: 
+  selectedKeywordPromptTemplate: 'simple child-like sketch drawing of a single {0},
+    as if drawn by a young child, very clear and instantly recognizable silhouette,
+    bold clean outlines, simple shapes, minimal details, centered composition, isolated
+    on pure white background, high contrast, no shading, no text '
   monitorDisplay: {fileID: 1651293743}
   drawingExportBridge: {fileID: 97547043}
   alienPersonalityProfiles:
-  - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  - {fileID: 11400000, guid: 9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f, type: 2}
-  - {fileID: 11400000, guid: 7f1a2c9d4b6e4a5f8c1d2e3f4a5b6c7d, type: 2}
-  - {fileID: 11400000, guid: 2a4c6e8f0b1d3f5a7c9e1b2d4f6a8c0e, type: 2}
-  - {fileID: 11400000, guid: 3b5d7f9a1c2e4f6a8b0d2f4e6a8c1d3f, type: 2}
-  - {fileID: 11400000, guid: 1e3d5c7b9a0f4e6d8c2b1a3f5d7c9e0a, type: 2}
+  - {fileID: 11400000, guid: 2047f81de674b2e4f8a1f67dab998a8f, type: 2}
   alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
   telepathyCorruptedLineRatio: 0
   telepathyCorruptionStrength: 0
@@ -13676,7 +13674,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.7}
+  m_Color: {r: 0, g: 0, b: 0, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -14857,13 +14855,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2079062242}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.500948, y: -0, z: -0, w: 0.8654773}
-  m_LocalPosition: {x: 0, y: 18.43849, z: -1.0423855}
+  m_LocalRotation: {x: 0.7101546, y: 0, z: 0, w: 0.7040458}
+  m_LocalPosition: {x: 0.004999978, y: 15.01, z: -0.0069}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 97547040}
-  m_LocalEulerAnglesHint: {x: 24.949, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 90.495, y: 0, z: 0}
 --- !u!114 &2079062244
 MonoBehaviour:
   m_ObjectHideFlags: 0

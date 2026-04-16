@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using DoodleDiplomacy.AI;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Character;
@@ -20,8 +21,9 @@ namespace DoodleDiplomacy.Core
     {
         private const string PreviewFallbackText = "(analysis unavailable)";
         private const string TerminalSignalReadyMessage = "A signal has reached the terminal. Click the terminal to inspect it.";
-        private const string NoSignalMessage = "No readable signal was recovered. Click the alien to continue.";
+        private const string NoSignalMessage = "No readable signal was recovered. Open the terminal to continue.";
         private const float TerminalCloseGuardSeconds = 0.15f;
+        private const float DefaultFirstRoundPrefetchTimeoutSeconds = 180f;
 
         public static RoundManager Instance { get; private set; }
 
@@ -39,6 +41,7 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private AlienReactionController alienReactionController;
         [SerializeField] private TerminalDisplay terminalDisplay;
         [SerializeField] private SharedMonitorDisplay sharedMonitorDisplay;
+        [SerializeField] private DrawingBoardController drawingBoard;
 
         [Header("Interaction Targets (Inspector Wiring)")]
         [SerializeField] private InteractableObject sharedMonitorInteractable;
@@ -69,6 +72,10 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private float monitorZoomMinDistance = 0.8f;
         [SerializeField] private float monitorZoomMaxDistance = 6f;
 
+        [Header("Startup")]
+        [Min(0f)]
+        [SerializeField] private float firstRoundPrefetchTimeoutSeconds = DefaultFirstRoundPrefetchTimeoutSeconds;
+
         [Header("Events")]
         public GameStateUnityEvent OnStateChanged;
 
@@ -80,9 +87,11 @@ namespace DoodleDiplomacy.Core
         private float _interpreterOpenedAt;
         private bool _isSharedMonitorZoomActive;
         private bool _hasOpenedInterpreterThisRound;
+        private Coroutine _startGameRoutine;
 
         public GameState CurrentState => _currentState;
         public int CurrentRound => _currentRound;
+        public bool HasOpenedInterpreterThisRound => _hasOpenedInterpreterThisRound;
 
         private void Awake()
         {
@@ -97,6 +106,7 @@ namespace DoodleDiplomacy.Core
 
         private void Start()
         {
+            drawingBoard ??= FindFirstObjectByType<DrawingBoardController>();
             BindInspectorInteractions();
             SubscribeToBridgeEvents();
             interactionManager?.SetInteractablesForState(_currentState);
@@ -105,6 +115,7 @@ namespace DoodleDiplomacy.Core
 
         private void OnDestroy()
         {
+            StopStartGameRoutine();
             UnbindInspectorInteractions();
             UnsubscribeFromBridgeEvents();
 
@@ -135,6 +146,7 @@ namespace DoodleDiplomacy.Core
 
         public void StartGame(bool isFirstPlay = true)
         {
+            StopStartGameRoutine();
             CancelActiveAiOperations();
 
             _currentRound = 0;
@@ -145,15 +157,97 @@ namespace DoodleDiplomacy.Core
             scoreManager?.Reset();
             aipipelineBridge?.ResetRound();
             ResetTelepathyState();
-            ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
+
+            if (aipipelineBridge == null)
+            {
+                ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
+                return;
+            }
+
+            _startGameRoutine = StartCoroutine(StartGameAfterFirstRoundPrefetchRoutine(isFirstPlay));
         }
 
         public void ChangeToTitle()
         {
+            StopStartGameRoutine();
             CancelActiveAiOperations();
             ResetTelepathyState();
             _hasOpenedInterpreterThisRound = false;
             ChangeState(GameState.Title);
+        }
+
+        private IEnumerator StartGameAfterFirstRoundPrefetchRoutine(bool isFirstPlay)
+        {
+            try
+            {
+                if (aipipelineBridge == null)
+                {
+                    ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
+                    yield break;
+                }
+
+                Debug.Log("[RoundManager] Preparing first-round objects and LLM runtime before starting gameplay.");
+                aipipelineBridge.EnsureObjectGenerationPreparation(
+                    forceRetry: aipipelineBridge.HasObjectGenerationPreparationFailed);
+                aipipelineBridge.EnsureLlmPreparation(forceRetry: aipipelineBridge.HasLlmPreparationFailed);
+                aipipelineBridge.StartNextRoundPrefetch();
+
+                float timeout = Mathf.Max(0f, firstRoundPrefetchTimeoutSeconds);
+                float elapsed = 0f;
+                while (aipipelineBridge.IsNextRoundPrefetchRunning)
+                {
+                    aipipelineBridge.RefreshLlmPreparationStatus();
+                    if (timeout > 0f && elapsed >= timeout)
+                    {
+                        break;
+                    }
+
+                    elapsed += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                aipipelineBridge.RefreshLlmPreparationStatus();
+
+                if (aipipelineBridge.IsNextRoundPrefetchReady)
+                {
+                    Debug.Log("[RoundManager] First-round prefetch finished. Starting gameplay.");
+                }
+                else if (aipipelineBridge.HasNextRoundPrefetchFailed)
+                {
+                    Debug.LogWarning(
+                        $"[RoundManager] First-round prefetch failed before start: {aipipelineBridge.NextRoundPrefetchError}. " +
+                        "Will fall back to normal presenting generation.");
+                }
+                else if (aipipelineBridge.IsNextRoundPrefetchRunning)
+                {
+                    Debug.LogWarning(
+                        $"[RoundManager] First-round prefetch timed out after {timeout:0.##}s. " +
+                        "Will fall back to normal presenting generation.");
+                }
+
+                if (aipipelineBridge.IsLlmPreparationReady)
+                {
+                    Debug.Log("[RoundManager] LLM preload finished. Starting gameplay.");
+                }
+                else if (aipipelineBridge.HasLlmPreparationFailed)
+                {
+                    Debug.LogWarning(
+                        $"[RoundManager] LLM preload failed before start: {aipipelineBridge.LastLlmPreparationError}. " +
+                        "Gameplay will continue and LLM calls may fall back or stall.");
+                }
+                else if (aipipelineBridge.IsLlmPreparationRunning)
+                {
+                    Debug.Log(
+                        "[RoundManager] LLM preload is still running in background. " +
+                        "Gameplay starts now and first LLM call may still warm up.");
+                }
+
+                ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
+            }
+            finally
+            {
+                _startGameRoutine = null;
+            }
         }
 
         public void OnAlienClicked()
@@ -176,9 +270,16 @@ namespace DoodleDiplomacy.Core
 
             if (_currentState == GameState.InterpreterReady)
             {
+                if (!_hasOpenedInterpreterThisRound)
+                {
+                    ShowHint("System", "Open the terminal first.");
+                    return;
+                }
+
                 bool isLastRound = scoreConfig != null && _currentRound >= scoreConfig.totalRounds;
                 ChangeState(isLastRound ? GameState.Ending : GameState.WaitingForRound);
             }
+
         }
 
         public void OnTabletClicked()
@@ -601,7 +702,11 @@ namespace DoodleDiplomacy.Core
                     ResetTelepathyState();
                     aipipelineBridge?.ResetRound();
                     aipipelineBridge?.EnsureObjectGenerationPreparation();
-                    aipipelineBridge?.PrepareRoundKeywords();
+                    bool adoptedPrefetch = aipipelineBridge != null && aipipelineBridge.TryAdoptPrefetchedRound();
+                    if (!adoptedPrefetch)
+                    {
+                        aipipelineBridge?.PrepareRoundKeywords();
+                    }
                     Debug.Log($"[RoundManager] Waiting for round {_currentRound} / {scoreConfig?.totalRounds}.");
                     ShowHint(
                         "System",
@@ -648,9 +753,11 @@ namespace DoodleDiplomacy.Core
                 case GameState.ObjectPresented:
                     ShowHint("System", "Click the tablet to start drawing.");
                     Debug.Log("[RoundManager] Objects are ready. Waiting for tablet interaction.");
+                    aipipelineBridge?.StartNextRoundPrefetch();
                     break;
 
                 case GameState.Drawing:
+                    EnsureDrawingBoardReadyForEditing();
                     ShowHint("System", $"Press {exitDrawingKey} when the drawing is ready.");
                     break;
 
@@ -813,6 +920,17 @@ namespace DoodleDiplomacy.Core
             aipipelineBridge?.CancelActiveOperations();
         }
 
+        private void StopStartGameRoutine()
+        {
+            if (_startGameRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_startGameRoutine);
+            _startGameRoutine = null;
+        }
+
         private void ResetTelepathyState(bool clearCachedText = true)
         {
             if (clearCachedText)
@@ -846,6 +964,18 @@ namespace DoodleDiplomacy.Core
             subtitleDisplay.Show(speaker, text);
         }
 
+        private void EnsureDrawingBoardReadyForEditing()
+        {
+            drawingBoard ??= FindFirstObjectByType<DrawingBoardController>();
+            if (drawingBoard == null)
+            {
+                return;
+            }
+
+            drawingBoard.enabled = true;
+            drawingBoard.SetInteractionLocked(false);
+        }
+
         private void ApplyCameraMode(GameState state)
         {
             if (cameraController == null)
@@ -860,6 +990,7 @@ namespace DoodleDiplomacy.Core
                 GameState.PreviewReady => CameraMode.FreeLook,
                 GameState.PreviewAnalyzing => CameraMode.FreeLook,
                 GameState.Preview => CameraMode.FreeLook,
+                GameState.AlienReaction => CameraMode.AlienReaction,
                 GameState.InterpreterReady => CameraMode.FreeLook,
                 GameState.Interpreter => CameraMode.TerminalZoom,
                 _ => CameraMode.Default

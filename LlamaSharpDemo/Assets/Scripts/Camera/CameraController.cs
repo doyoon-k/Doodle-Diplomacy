@@ -10,7 +10,7 @@ using UnityEngine.InputSystem;
 
 namespace DoodleDiplomacy.Camera
 {
-    public enum CameraMode { Default, FreeLook, TabletView, TerminalZoom }
+    public enum CameraMode { Default, FreeLook, TabletView, TerminalZoom, AlienReaction }
 
     [Serializable]
     public class CameraPreset
@@ -62,6 +62,7 @@ namespace DoodleDiplomacy.Camera
         [SerializeField] private CameraPreset freeLookPreset = new() { fieldOfView = 60f };
         [SerializeField] private CameraPreset tabletViewPreset = new() { fieldOfView = 45f };
         [SerializeField] private CameraPreset terminalZoomPreset = new() { fieldOfView = 35f };
+        [SerializeField] private CameraPreset alienReactionPreset = new() { fieldOfView = 42f };
 
         [Header("Transition")]
         [SerializeField] private float transitionDuration = 0.5f;
@@ -374,6 +375,7 @@ namespace DoodleDiplomacy.Camera
             CameraMode.FreeLook => freeLookPreset,
             CameraMode.TabletView => tabletViewPreset,
             CameraMode.TerminalZoom => terminalZoomPreset,
+            CameraMode.AlienReaction => alienReactionPreset,
             _ => defaultPreset
         };
 

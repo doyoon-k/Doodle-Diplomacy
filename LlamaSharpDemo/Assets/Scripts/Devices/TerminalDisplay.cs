@@ -2,10 +2,13 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using DoodleDiplomacy.Core;
 
 namespace DoodleDiplomacy.Devices
 {
+    [DisallowMultipleComponent]
     public class TerminalDisplay : MonoBehaviour
     {
         [Header("Display")]
@@ -13,9 +16,9 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private GameObject screenPanel;
 
         [Header("Typing")]
-        [Tooltip("글자당 대기 시간 (초)")]
+        [Tooltip("Per-character typing delay in seconds.")]
         [SerializeField] private float typingSpeed = 0.05f;
-        [Tooltip("해석 노이즈 효과 — 랜덤 문자가 잠깐 표시됩니다")]
+        [Tooltip("When enabled, briefly flashes random noise characters while typing.")]
         [SerializeField] private bool useNoise = true;
         [SerializeField] private float noiseDisplayTime = 0.02f;
 
@@ -23,13 +26,25 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private bool showCursor = true;
         [SerializeField] private float cursorBlinkRate = 0.5f;
 
+        [Header("Scroll")]
+        [Tooltip("Allows dragging and mouse-wheel scrolling when text exceeds the panel height.")]
+        [SerializeField] private bool enableScroll = true;
+        [SerializeField, Min(1f)] private float scrollSensitivity = 24f;
+        [SerializeField] private bool autoFollowLatestLine = true;
+        [SerializeField, Range(0f, 0.1f)] private float bottomSnapThreshold = 0.01f;
+
         [Header("Events")]
         public UnityEvent OnTypingComplete = new();
 
         private Coroutine _typingRoutine;
         private Coroutine _cursorRoutine;
-        private string _currentText = "";
+        private string _currentText = string.Empty;
         private bool _isTyping;
+        private ScrollRect _scrollRect;
+        private RectTransform _panelRect;
+        private RectTransform _textRect;
+        private LayoutElement _textLayoutElement;
+        private bool _scrollInitialized;
 
         private static readonly char[] NoiseChars =
             "!@#$%^&*<>?/\\|~`0123456789ABCDEFXYZabcxyz".ToCharArray();
@@ -38,10 +53,31 @@ namespace DoodleDiplomacy.Devices
 
         private void Awake()
         {
+            EnsureScrollViewConfigured();
             Clear();
         }
 
-        // ── 공개 API ──────────────────────────────────────────────────────────
+        private void OnEnable()
+        {
+            EnsureScrollViewConfigured();
+        }
+
+        private void OnValidate()
+        {
+            scrollSensitivity = Mathf.Max(1f, scrollSensitivity);
+            bottomSnapThreshold = Mathf.Clamp(bottomSnapThreshold, 0f, 0.1f);
+
+            if (_scrollRect != null)
+                _scrollRect.scrollSensitivity = scrollSensitivity;
+        }
+
+        private void OnRectTransformDimensionsChange()
+        {
+            if (!_scrollInitialized || _textLayoutElement == null || _panelRect == null)
+                return;
+
+            _textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
+        }
 
         public void ShowText(string text)
         {
@@ -50,23 +86,26 @@ namespace DoodleDiplomacy.Devices
 
         public void ShowText(string text, bool instant)
         {
-            if (_typingRoutine != null) StopCoroutine(_typingRoutine);
-            if (_cursorRoutine != null) { StopCoroutine(_cursorRoutine); _cursorRoutine = null; }
+            if (_typingRoutine != null)
+                StopCoroutine(_typingRoutine);
+
+            if (_cursorRoutine != null)
+            {
+                StopCoroutine(_cursorRoutine);
+                _cursorRoutine = null;
+            }
 
             string resolvedText = text ?? string.Empty;
             if (instant)
             {
                 _isTyping = false;
+                _typingRoutine = null;
                 _currentText = resolvedText;
                 if (textMesh != null)
-                {
-                    textMesh.text = _currentText + (showCursor ? "?? " : "");
-                }
+                    ApplyRenderedText(_currentText + (showCursor ? "_" : string.Empty), true);
 
                 if (showCursor)
-                {
                     _cursorRoutine = StartCoroutine(CursorBlink());
-                }
 
                 OnTypingComplete?.Invoke();
                 return;
@@ -77,24 +116,24 @@ namespace DoodleDiplomacy.Devices
 
         public void Clear()
         {
-            if (_typingRoutine != null) { StopCoroutine(_typingRoutine); _typingRoutine = null; }
-            if (_cursorRoutine != null) { StopCoroutine(_cursorRoutine); _cursorRoutine = null; }
+            if (_typingRoutine != null)
+            {
+                StopCoroutine(_typingRoutine);
+                _typingRoutine = null;
+            }
+
+            if (_cursorRoutine != null)
+            {
+                StopCoroutine(_cursorRoutine);
+                _cursorRoutine = null;
+            }
+
             _isTyping = false;
-            _currentText = "";
-            if (textMesh != null) textMesh.text = "";
+            _currentText = string.Empty;
+            if (textMesh != null)
+                ApplyRenderedText(string.Empty, true);
         }
 
-        /// <summary>
-        /// RoundManager.OnStateChanged에 연결.
-        /// Interpreter 진입: 더미 텍스트 타이핑 시작.
-        /// InterpreterReady/WaitingForRound: 화면 초기화.
-        /// </summary>
-        /// <summary>
-        /// RoundManager.OnStateChanged 이벤트 수신용.
-        /// Interpreter 상태의 텍스트는 AIPipelineBridge 결과를 받아
-        /// RoundManager가 ShowText()를 직접 호출한다.
-        /// 이 메서드는 상태 퇴장 시 정리(Clear)만 담당한다.
-        /// </summary>
         public void OnGameStateChanged(GameState state)
         {
             switch (state)
@@ -106,40 +145,35 @@ namespace DoodleDiplomacy.Devices
             }
         }
 
-        // ── 내부 ─────────────────────────────────────────────────────────────
-
         private IEnumerator TypingRoutine(string fullText)
         {
             _isTyping = true;
-            _currentText = "";
+            _currentText = string.Empty;
 
             if (showCursor)
                 _cursorRoutine = StartCoroutine(CursorBlink());
 
             for (int i = 0; i < fullText.Length; i++)
             {
-                // 노이즈 효과: 특수 문자가 잠깐 보였다 사라짐
                 if (useNoise && fullText[i] != '\n' && fullText[i] != ' ' && Random.value < 0.25f)
                 {
                     char noise = NoiseChars[Random.Range(0, NoiseChars.Length)];
                     if (textMesh != null)
-                        textMesh.text = _currentText + noise + (showCursor ? "▌" : "");
+                        ApplyRenderedText(_currentText + noise + (showCursor ? "_" : string.Empty));
+
                     yield return new WaitForSeconds(noiseDisplayTime);
                 }
 
                 _currentText += fullText[i];
                 if (textMesh != null)
-                    textMesh.text = _currentText + (showCursor ? "▌" : "");
+                    ApplyRenderedText(_currentText + (showCursor ? "_" : string.Empty));
 
-                // 개행·공백은 빠르게 처리
                 float delay = fullText[i] is '\n' or ' ' ? typingSpeed * 0.3f : typingSpeed;
                 yield return new WaitForSeconds(delay);
             }
 
             _isTyping = false;
             _typingRoutine = null;
-            // _cursorRoutine은 계속 유지해 커서 깜빡임 지속
-
             OnTypingComplete?.Invoke();
         }
 
@@ -149,16 +183,115 @@ namespace DoodleDiplomacy.Devices
             while (true)
             {
                 yield return new WaitForSeconds(cursorBlinkRate);
-                // 타이핑 중에는 TypingRoutine이 텍스트를 갱신하므로 개입하지 않음
                 if (!_isTyping && textMesh != null)
                 {
                     visible = !visible;
-                    textMesh.text = _currentText + (visible ? "▌" : "");
+                    ApplyRenderedText(_currentText + (visible ? "_" : string.Empty));
                 }
             }
         }
 
-        // ── Inspector 컨텍스트 메뉴 테스트 ───────────────────────────────────
+        private void EnsureScrollViewConfigured()
+        {
+            if (_scrollInitialized || !enableScroll || textMesh == null || screenPanel == null)
+                return;
+
+            _panelRect = screenPanel.GetComponent<RectTransform>();
+            _textRect = textMesh.rectTransform;
+            if (_panelRect == null || _textRect == null)
+                return;
+
+            Canvas sourceCanvas = _panelRect.GetComponentInParent<Canvas>();
+            if (sourceCanvas != null)
+            {
+                if (sourceCanvas.GetComponent<GraphicRaycaster>() == null)
+                    sourceCanvas.gameObject.AddComponent<GraphicRaycaster>();
+
+                if (sourceCanvas.renderMode == RenderMode.WorldSpace && sourceCanvas.worldCamera == null)
+                    sourceCanvas.worldCamera = UnityEngine.Camera.main;
+            }
+
+            if (EventSystem.current == null)
+                Debug.LogWarning("[TerminalDisplay] EventSystem is missing. Drag scroll will not receive pointer input.", this);
+
+            if (screenPanel.GetComponent<RectMask2D>() == null)
+                screenPanel.AddComponent<RectMask2D>();
+
+            if (_textRect.parent != _panelRect)
+                _textRect.SetParent(_panelRect, false);
+
+            _textRect.anchorMin = new Vector2(0f, 1f);
+            _textRect.anchorMax = new Vector2(1f, 1f);
+            _textRect.pivot = new Vector2(0.5f, 1f);
+            _textRect.anchoredPosition = Vector2.zero;
+            _textRect.offsetMin = new Vector2(0f, _textRect.offsetMin.y);
+            _textRect.offsetMax = Vector2.zero;
+
+            ContentSizeFitter sizeFitter = textMesh.GetComponent<ContentSizeFitter>();
+            if (sizeFitter == null)
+                sizeFitter = textMesh.gameObject.AddComponent<ContentSizeFitter>();
+
+            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            _textLayoutElement = textMesh.GetComponent<LayoutElement>();
+            if (_textLayoutElement == null)
+                _textLayoutElement = textMesh.gameObject.AddComponent<LayoutElement>();
+
+            _textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
+            _textLayoutElement.flexibleHeight = 0f;
+
+            _scrollRect = screenPanel.GetComponent<ScrollRect>();
+            if (_scrollRect == null)
+                _scrollRect = screenPanel.AddComponent<ScrollRect>();
+
+            _scrollRect.viewport = _panelRect;
+            _scrollRect.content = _textRect;
+            _scrollRect.horizontal = false;
+            _scrollRect.vertical = true;
+            _scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            _scrollRect.inertia = false;
+            _scrollRect.scrollSensitivity = scrollSensitivity;
+
+            _scrollInitialized = true;
+            RefreshScrollLayout(true);
+        }
+
+        private bool ShouldFollowBottom()
+        {
+            if (!autoFollowLatestLine || _scrollRect == null)
+                return false;
+
+            return _scrollRect.verticalNormalizedPosition <= bottomSnapThreshold;
+        }
+
+        private void RefreshScrollLayout(bool forceToBottom)
+        {
+            if (!_scrollInitialized || _scrollRect == null)
+                return;
+
+            if (_textLayoutElement != null && _panelRect != null)
+                _textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
+
+            Canvas.ForceUpdateCanvases();
+            if (forceToBottom)
+                _scrollRect.verticalNormalizedPosition = 0f;
+        }
+
+        private void ApplyRenderedText(string renderedText, bool forceFollowBottom = false)
+        {
+            if (textMesh == null)
+                return;
+
+            if (enableScroll)
+                EnsureScrollViewConfigured();
+
+            bool followBottom = forceFollowBottom || ShouldFollowBottom();
+            textMesh.text = renderedText;
+
+            if (_scrollInitialized)
+                RefreshScrollLayout(followBottom);
+        }
 
         [ContextMenu("Test: ShowDummyText")]
         private void TestShow() =>

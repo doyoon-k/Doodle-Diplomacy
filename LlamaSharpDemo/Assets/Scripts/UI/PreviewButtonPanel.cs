@@ -21,6 +21,12 @@ namespace DoodleDiplomacy.UI
         private void Awake()
         {
             if (panel == null) panel = gameObject;
+            if (panel != null && panel.TryGetComponent(out Image panelImage))
+            {
+                // Keep only button graphics as raycast targets; transparent panel backgrounds
+                // can otherwise block drawing input after returning from preview.
+                panelImage.raycastTarget = false;
+            }
 
             EnsureEventSystem();
             submitButton?.onClick.AddListener(OnSubmit);

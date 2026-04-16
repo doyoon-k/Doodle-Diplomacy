@@ -766,6 +766,11 @@ public class ShaderGlassRendererFeature : ScriptableRendererFeature
         var cameraType = renderingData.cameraData.cameraType;
         if (cameraType == CameraType.Preview || cameraType == CameraType.Reflection)
             return;
+        
+        // Skip off-screen capture cameras (for monitor/terminal RenderTexture pipelines).
+        var camera = renderingData.cameraData.camera;
+        if (camera != null && camera.targetTexture != null)
+            return;
 
         if (settings == null || settings.preset == null || settings.preset.passes.Count == 0)
             return;

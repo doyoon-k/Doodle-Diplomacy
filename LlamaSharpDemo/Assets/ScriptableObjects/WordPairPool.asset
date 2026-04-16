@@ -13,123 +13,83 @@ MonoBehaviour:
   m_Name: WordPairPool
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.WordPairPool
   pairs:
-  - wordA: wolf
-    wordB: sheep
-  - wordA: sword
-    wordB: tree
-  - wordA: cat
-    wordB: fish
-  - wordA: spider
-    wordB: butterfly
-  - wordA: dog
-    wordB: bone
-  - wordA: dragon
-    wordB: castle
-  - wordA: eagle
-    wordB: rabbit
-  - wordA: shield
-    wordB: arrow
-  - wordA: bear
-    wordB: bee
-  - wordA: snake
-    wordB: frog
-  - wordA: fire
-    wordB: ice
-  - wordA: robot
-    wordB: flower
-  - wordA: turtle
-    wordB: wave
-  - wordA: elephant
-    wordB: mouse
-  - wordA: pirate ship
-    wordB: lighthouse
-  - wordA: key
-    wordB: box
-  - wordA: hammer
-    wordB: egg
-  - wordA: umbrella
-    wordB: lightning
-  - wordA: owl
-    wordB: moon
-  - wordA: rope
-    wordB: monkey
-  - wordA: balloon
-    wordB: cactus
-  - wordA: mirror
-    wordB: hummingbird
-  - wordA: candle
-    wordB: moth
-  - wordA: fishing rod
-    wordB: star
-  - wordA: parrot
-    wordB: padlock
-  - wordA: octopus
-    wordB: bottle
-  - wordA: magnifying glass
-    wordB: ladybug
-  - wordA: scissors
-    wordB: cloth
-  - wordA: windmill
-    wordB: crow
-  - wordA: kite
-    wordB: whale
-  - wordA: anchor
-    wordB: seagull
-  - wordA: gear
-    wordB: sunflower
-  - wordA: submarine
-    wordB: coral
-  - wordA: feather
-    wordB: rock
-  - wordA: torch
-    wordB: bat
-  - wordA: candle
-    wordB: crab
-  - wordA: compass
-    wordB: fox
-  - wordA: map
-    wordB: magpie
-  - wordA: net
-    wordB: shark
-  - wordA: chain
-    wordB: pigeon
-  - wordA: bell
-    wordB: crane
-  - wordA: wheel
-    wordB: squirrel
-  - wordA: catapult
-    wordB: watermelon
-  - wordA: telescope
-    wordB: hawk
-  - wordA: crocodile
-    wordB: bridge
-  - wordA: book
-    wordB: lantern
-  - wordA: ladder
-    wordB: cloud
-  - wordA: flowerpot
-    wordB: iguana
-  - wordA: seashell
-    wordB: otter
-  - wordA: crown
-    wordB: toad
-  - wordA: piano
-    wordB: sparrow
-  - wordA: chess piece
-    wordB: hedgehog
-  - wordA: clock
-    wordB: lizard
-  - wordA: volcano
-    wordB: penguin
-  - wordA: scale
-    wordB: chameleon
-  - wordA: puzzle piece
-    wordB: raccoon
-  - wordA: hourglass
-    wordB: scorpion
-  - wordA: flag
-    wordB: mole
-  - wordA: stamp
-    wordB: snail
-  - wordA: rainbow
-    wordB: deer
+  - wordA: fierce gray wolf with thick fur and bushy tail, standing alert, side view
+    wordB: cute fluffy white sheep with curly wool coat, standing, front view
+    labelA: wolf
+    labelB: sheep
+  - wordA: sleek orange fox with pointed ears and white chest fur, standing alert
+    wordB: plump white chicken with bright red comb and yellow beak, standing
+    labelA: fox
+    labelB: chicken
+  - wordA: majestic green dragon with large spread leather wings and long tail
+    wordB: tall gray stone medieval castle with multiple towers and battlements
+    labelA: dragon
+    labelB: castle
+  - wordA: large brown grizzly bear with thick fur, standing on hind legs, front view
+    wordB: small yellow and black striped bumble bee with translucent wings, flying
+    labelA: bear
+    labelB: bee
+  - wordA: massive gray elephant with large floppy ears and long curved trunk, side view
+    wordB: tiny brown field mouse with round ears and long thin tail, sitting
+    labelA: elephant
+    labelB: mouse
+  - wordA: shiny chrome humanoid robot with glowing blue eyes, standing upright, front view
+    wordB: vibrant red rose flower with green thorny stem and lush petals
+    labelA: robot
+    labelB: flower
+  - wordA: heavy steel claw hammer with smooth wooden handle, side view
+    wordB: single white chicken egg with smooth matte shell
+    labelA: hammer
+    labelB: egg
+  - wordA: shiny round red balloon with long white string, floating upward
+    wordB: tall green saguaro cactus with sharp white spines and two arms
+    labelA: balloon
+    labelB: cactus
+  - wordA: ornate metal bird cage with thin vertical bars and domed top
+    wordB: small bright yellow canary bird with orange beak, perched, side view
+    labelA: cage
+    labelB: bird
+  - wordA: vivid red octopus with eight curling suction-cup tentacles, front view
+    wordB: transparent green glass bottle with cork stopper
+    labelA: octopus
+    labelB: bottle
+  - wordA: large green crocodile with rough scaly skin and open toothy jaws, side view
+    wordB: rustic wooden arch bridge with rope railings over water
+    labelA: crocodile
+    labelB: bridge
+  - wordA: green sea turtle with patterned hexagonal shell, side view, walking slowly
+    wordB: fluffy white rabbit with long upright ears and cotton tail, sitting alert
+    labelA: turtle
+    labelB: rabbit
+  - wordA: tall rustic wooden ladder with worn rungs, leaning at an angle
+    wordB: soft white fluffy cumulus cloud with rounded billowy edges
+    labelA: ladder
+    labelB: cloud
+  - wordA: luxurious golden royal crown encrusted with red rubies and sparkling gems
+    wordB: warty olive-brown toad with bulging eyes, sitting on ground, front view
+    labelA: crown
+    labelB: toad
+  - wordA: soft white fluffy pillow with smooth fabric surface
+    wordB: classic round alarm clock with twin bells on top and hour markings
+    labelA: pillow
+    labelB: alarm clock
+  - wordA: warm glowing candle with bright orange flame on a brass holder
+    wordB: delicate monarch butterfly with orange and black patterned wings, flying
+    labelA: candle
+    labelB: butterfly
+  - wordA: sleek red and white space rocket with pointed nose cone and exhaust fins
+    wordB: small brown garden snail with spiral shell and antennae, crawling slowly
+    labelA: rocket
+    labelB: snail
+  - wordA: fierce gray shark with sharp teeth and dorsal fin, swimming, side view
+    wordB: small wooden rowboat with oars floating on water, side view
+    labelA: shark
+    labelB: boat
+  - wordA: heavy rusted iron ship anchor with thick chain attached
+    wordB: powerful brown bald eagle with white head and spread feathered wings, soaring
+    labelA: anchor
+    labelB: eagle
+  - wordA: luminous white full moon glowing softly against dark night sky
+    wordB: fierce gray wolf with thick fur howling upward, side view
+    labelA: moon
+    labelB: wolf

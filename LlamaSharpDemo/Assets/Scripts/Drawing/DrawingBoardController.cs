@@ -1069,7 +1069,19 @@ public class DrawingBoardController : MonoBehaviour
 
     private static bool IsPointerOverUi()
     {
-        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        if (EventSystem.current == null)
+        {
+            return false;
+        }
+
+#if ENABLE_INPUT_SYSTEM
+        if (Mouse.current != null && EventSystem.current.IsPointerOverGameObject(Mouse.current.deviceId))
+        {
+            return true;
+        }
+#endif
+
+        return EventSystem.current.IsPointerOverGameObject();
     }
 
     private bool TryGetPointerPixel(out Vector2Int pixel)
@@ -2286,9 +2298,29 @@ public class DrawingBoardController : MonoBehaviour
             InitializeCanvas();
         }
 
+        EnsureBoardMaterialBinding();
+
         if (_brushPreviewRenderer == null && boardRenderer != null)
         {
             InitializeBrushPreview();
+        }
+    }
+
+    private void EnsureBoardMaterialBinding()
+    {
+        if (boardRenderer == null || _runtimeMaterial == null || _displayCanvas == null)
+        {
+            return;
+        }
+
+        if (boardRenderer.sharedMaterial != _runtimeMaterial)
+        {
+            boardRenderer.sharedMaterial = _runtimeMaterial;
+        }
+
+        if (_runtimeMaterial.mainTexture != _displayCanvas.Texture)
+        {
+            AssignTexture(_runtimeMaterial, _displayCanvas.Texture, texturePropertyName);
         }
     }
 

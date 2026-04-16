@@ -238,7 +238,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   logTraffic: 1
-  useNativeBootstrap: 0
+  useNativeBootstrap: 1
   modelLoadTimeoutSeconds: 120
   inferenceTimeoutSeconds: 120
   shutdownDrainTimeoutSeconds: 0.75

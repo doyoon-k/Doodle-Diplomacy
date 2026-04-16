@@ -6,6 +6,14 @@ using UnityEngine;
 public class GamePipelineRunner : MonoBehaviour
 {
     public static GamePipelineRunner Instance;
+    public RuntimeLlamaSharpService RuntimeService
+    {
+        get
+        {
+            EnsureRuntimeService();
+            return _runtimeService;
+        }
+    }
 
     [Header("Dependencies")]
     [SerializeField] private RuntimeLlamaSharpService _runtimeService;

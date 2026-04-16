@@ -1,22 +1,35 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace DoodleDiplomacy.Interaction
 {
     /// <summary>
-    /// Adds a temporary outline material and optional cursor change while an interactable is hovered.
+    /// Changes emission color and optional cursor while an interactable is hovered.
     /// </summary>
     [RequireComponent(typeof(InteractableObject))]
     public class InteractableHighlighter : MonoBehaviour
     {
-        [Header("Outline")]
-        [Tooltip("Material used as an extra outline pass while hovered.")]
+        private const string EmissionKeyword = "_EMISSION";
+        private static readonly string[] EmissionPropertyNames = { "_EmissionColor", "_EmissiveColor" };
+
+        [Header("Emission Highlight")]
+        [Tooltip("Legacy outline material field kept for scene/prefab serialization compatibility.")]
         [FormerlySerializedAs("_outlineMaterial")]
+        [HideInInspector]
         [SerializeField] private Material outlineMaterial;
-        [Tooltip("Include renderers on child objects when applying the hover outline.")]
+        [Tooltip("Emission color applied while hovered.")]
+        [ColorUsage(false, true)]
+        [SerializeField] private Color hoverEmissionColor = new(0.15f, 0.9f, 1f, 1f);
+        [Tooltip("Multiplier applied to the emission color while hovered.")]
+        [Min(0f)]
+        [SerializeField] private float hoverEmissionIntensity = 1f;
+        [Tooltip("Include renderers on child objects when applying the hover highlight.")]
         [FormerlySerializedAs("_includeChildRenderers")]
         [SerializeField] private bool includeChildRenderers = true;
+        [Tooltip("Optional extra roots whose renderers should receive the same hover highlight.")]
+        [SerializeField] private Transform[] additionalRendererRoots = Array.Empty<Transform>();
 
         [Header("Cursor")]
         [Tooltip("Optional cursor to show while hovered.")]
@@ -26,20 +39,40 @@ namespace DoodleDiplomacy.Interaction
         [SerializeField] private Vector2 cursorHotspot = Vector2.zero;
 
         private Renderer[] _renderers;
-        private bool[] _highlightApplied;
         private DrawingBoardController _drawingBoard;
+        private readonly Dictionary<Material, EmissionSnapshot> _emissionSnapshots = new();
+        private bool _isHighlighted;
+
+        private readonly struct EmissionSnapshot
+        {
+            public EmissionSnapshot(string propertyName, Color color, bool keywordEnabled)
+            {
+                PropertyName = propertyName;
+                Color = color;
+                KeywordEnabled = keywordEnabled;
+            }
+
+            public string PropertyName { get; }
+            public Color Color { get; }
+            public bool KeywordEnabled { get; }
+        }
 
         private void Awake()
         {
-            _renderers = includeChildRenderers
-                ? GetComponentsInChildren<Renderer>()
-                : GetComponents<Renderer>();
-            _highlightApplied = new bool[_renderers.Length];
+            CacheRenderers();
             _drawingBoard = GetComponentInChildren<DrawingBoardController>();
 
             var interactable = GetComponent<InteractableObject>();
             interactable.OnHoverEntered.AddListener(ShowHighlight);
             interactable.OnHoverExited.AddListener(HideHighlight);
+        }
+
+        private void OnEnable()
+        {
+            if (_renderers == null || _renderers.Length == 0)
+            {
+                CacheRenderers();
+            }
         }
 
         private void OnDisable()
@@ -56,6 +89,44 @@ namespace DoodleDiplomacy.Interaction
             }
         }
 
+        private void CacheRenderers()
+        {
+            var rendererSet = new HashSet<Renderer>();
+            CollectRenderers(transform, rendererSet);
+
+            if (additionalRendererRoots != null)
+            {
+                foreach (Transform root in additionalRendererRoots)
+                {
+                    CollectRenderers(root, rendererSet);
+                }
+            }
+
+            _renderers = new Renderer[rendererSet.Count];
+            rendererSet.CopyTo(_renderers);
+            _isHighlighted = false;
+        }
+
+        private void CollectRenderers(Transform root, HashSet<Renderer> rendererSet)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            Renderer[] found = includeChildRenderers
+                ? root.GetComponentsInChildren<Renderer>()
+                : root.GetComponents<Renderer>();
+
+            foreach (Renderer renderer in found)
+            {
+                if (renderer != null)
+                {
+                    rendererSet.Add(renderer);
+                }
+            }
+        }
+
         private void ShowHighlight()
         {
             if (_drawingBoard != null && _drawingBoard.enabled)
@@ -63,37 +134,55 @@ namespace DoodleDiplomacy.Interaction
                 return;
             }
 
-            if (outlineMaterial != null)
+            if (_isHighlighted)
             {
-                for (int i = 0; i < _renderers.Length; i++)
+                return;
+            }
+
+            _emissionSnapshots.Clear();
+            bool appliedHighlight = false;
+            Color targetEmission = hoverEmissionColor * Mathf.Max(0f, hoverEmissionIntensity);
+
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                Renderer renderer = _renderers[i];
+                if (renderer == null)
                 {
-                    Renderer renderer = _renderers[i];
-                    if (renderer == null)
+                    continue;
+                }
+
+                Material[] currentMaterials = renderer.materials;
+                if (currentMaterials == null || currentMaterials.Length == 0)
+                {
+                    continue;
+                }
+
+                for (int materialIndex = 0; materialIndex < currentMaterials.Length; materialIndex++)
+                {
+                    Material material = currentMaterials[materialIndex];
+                    if (material == null || _emissionSnapshots.ContainsKey(material))
                     {
-                        _highlightApplied[i] = false;
                         continue;
                     }
 
-                    Material[] currentMaterials = renderer.sharedMaterials;
-                    if (currentMaterials == null || currentMaterials.Length == 0)
+                    if (!TryGetEmissionPropertyName(material, out string emissionPropertyName))
                     {
-                        _highlightApplied[i] = false;
                         continue;
                     }
 
-                    if (Array.IndexOf(currentMaterials, outlineMaterial) >= 0)
-                    {
-                        _highlightApplied[i] = false;
-                        continue;
-                    }
+                    _emissionSnapshots[material] = new EmissionSnapshot(
+                        emissionPropertyName,
+                        material.GetColor(emissionPropertyName),
+                        material.IsKeywordEnabled(EmissionKeyword));
 
-                    var nextMaterials = new Material[currentMaterials.Length + 1];
-                    Array.Copy(currentMaterials, nextMaterials, currentMaterials.Length);
-                    nextMaterials[currentMaterials.Length] = outlineMaterial;
-                    renderer.sharedMaterials = nextMaterials;
-                    _highlightApplied[i] = true;
+                    material.EnableKeyword(EmissionKeyword);
+                    material.globalIlluminationFlags &= ~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
+                    material.SetColor(emissionPropertyName, targetEmission);
+                    appliedHighlight = true;
                 }
             }
+
+            _isHighlighted = appliedHighlight;
 
             if (hoverCursor != null)
             {
@@ -103,59 +192,59 @@ namespace DoodleDiplomacy.Interaction
 
         private void HideHighlight()
         {
-            if (outlineMaterial != null)
+            if (_isHighlighted)
             {
-                for (int i = 0; i < _renderers.Length; i++)
+                foreach (KeyValuePair<Material, EmissionSnapshot> pair in _emissionSnapshots)
                 {
-                    if (!_highlightApplied[i])
+                    Material material = pair.Key;
+                    if (material == null)
                     {
                         continue;
                     }
 
-                    Renderer renderer = _renderers[i];
-                    if (renderer == null)
+                    EmissionSnapshot snapshot = pair.Value;
+                    if (material.HasProperty(snapshot.PropertyName))
                     {
-                        _highlightApplied[i] = false;
-                        continue;
+                        material.SetColor(snapshot.PropertyName, snapshot.Color);
                     }
 
-                    Material[] currentMaterials = renderer.sharedMaterials;
-                    int outlineIndex = Array.LastIndexOf(currentMaterials, outlineMaterial);
-                    if (outlineIndex < 0)
+                    if (snapshot.KeywordEnabled)
                     {
-                        _highlightApplied[i] = false;
-                        continue;
+                        material.EnableKeyword(EmissionKeyword);
                     }
-
-                    if (currentMaterials.Length == 1)
+                    else
                     {
-                        renderer.sharedMaterials = Array.Empty<Material>();
-                        _highlightApplied[i] = false;
-                        continue;
+                        material.DisableKeyword(EmissionKeyword);
                     }
-
-                    var nextMaterials = new Material[currentMaterials.Length - 1];
-                    if (outlineIndex > 0)
-                    {
-                        Array.Copy(currentMaterials, 0, nextMaterials, 0, outlineIndex);
-                    }
-
-                    if (outlineIndex < currentMaterials.Length - 1)
-                    {
-                        Array.Copy(
-                            currentMaterials,
-                            outlineIndex + 1,
-                            nextMaterials,
-                            outlineIndex,
-                            currentMaterials.Length - outlineIndex - 1);
-                    }
-
-                    renderer.sharedMaterials = nextMaterials;
-                    _highlightApplied[i] = false;
                 }
+
+                _emissionSnapshots.Clear();
+                _isHighlighted = false;
             }
 
             Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        }
+
+        private static bool TryGetEmissionPropertyName(Material material, out string propertyName)
+        {
+            if (material == null)
+            {
+                propertyName = string.Empty;
+                return false;
+            }
+
+            for (int i = 0; i < EmissionPropertyNames.Length; i++)
+            {
+                string emissionPropertyName = EmissionPropertyNames[i];
+                if (material.HasProperty(emissionPropertyName))
+                {
+                    propertyName = emissionPropertyName;
+                    return true;
+                }
+            }
+
+            propertyName = string.Empty;
+            return false;
         }
     }
 }

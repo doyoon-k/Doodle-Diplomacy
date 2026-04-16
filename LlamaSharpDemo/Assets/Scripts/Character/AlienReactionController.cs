@@ -7,11 +7,22 @@ using DoodleDiplomacy.Dialogue;
 
 namespace DoodleDiplomacy.Character
 {
+    [System.Serializable]
+    public class ReactionAnimationBinding
+    {
+        public SatisfactionLevel level = SatisfactionLevel.Neutral;
+        public AnimationClip clip;
+        public string stateName;
+    }
+
     public class AlienReactionController : MonoBehaviour
     {
-        [Header("Characters")]
-        [SerializeField] private PortraitDisplay alienLeaderPortrait;
-        [SerializeField] private List<PortraitDisplay> alienFollowerPortraits = new();
+        [Header("Animation")]
+        [SerializeField] private Animator targetAnimator;
+        [SerializeField] private List<ReactionAnimationBinding> reactionAnimations = new();
+        [SerializeField] private int animatorLayerIndex = 0;
+        [SerializeField] private float crossFadeDuration = 0.1f;
+        [SerializeField] private string idleStateName = "Idle";
 
         [Header("Dialogue")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
@@ -25,15 +36,6 @@ namespace DoodleDiplomacy.Character
         public UnityEvent OnReactionComplete = new();
 
         private Coroutine _reactionRoutine;
-
-        private static readonly Dictionary<SatisfactionLevel, string> EmotionMap = new()
-        {
-            { SatisfactionLevel.VeryDissatisfied, "angry" },
-            { SatisfactionLevel.Dissatisfied, "angry" },
-            { SatisfactionLevel.Neutral, "neutral" },
-            { SatisfactionLevel.Satisfied, "satisfied" },
-            { SatisfactionLevel.VerySatisfied, "satisfied" },
-        };
 
         private static readonly Dictionary<SatisfactionLevel, string> MutterMap = new()
         {
@@ -53,6 +55,19 @@ namespace DoodleDiplomacy.Character
             { SatisfactionLevel.VerySatisfied, "They seem quite impressed!" },
         };
 
+        private void Awake()
+        {
+            if (targetAnimator == null)
+            {
+                targetAnimator = GetComponent<Animator>();
+            }
+        }
+
+        private void Start()
+        {
+            PlayIdleIfAvailable();
+        }
+
         public void PlayReaction(SatisfactionLevel satisfaction)
         {
             if (_reactionRoutine != null)
@@ -67,44 +82,222 @@ namespace DoodleDiplomacy.Character
 
         private IEnumerator ReactionRoutine(SatisfactionLevel satisfaction)
         {
-            SetAllEmotions("neutral");
-            yield return new WaitForSeconds(lookAtMonitorDuration);
-
-            foreach (PortraitDisplay follower in alienFollowerPortraits)
+            if (TryResolveBinding(satisfaction, out ReactionAnimationBinding binding, out bool usedNeutralFallback))
             {
-                follower?.SetEmotion(EmotionMap[satisfaction]);
+                if (!TryPlayBinding(binding))
+                {
+                    if (!usedNeutralFallback &&
+                        satisfaction != SatisfactionLevel.Neutral &&
+                        TryResolveBinding(SatisfactionLevel.Neutral, out ReactionAnimationBinding neutralBinding, out _))
+                    {
+                        Debug.LogWarning(
+                            $"[AlienReactionController] State '{binding.stateName}' is invalid for '{satisfaction}'. Falling back to Neutral.",
+                            this);
+                        binding = neutralBinding;
+                        TryPlayBinding(binding);
+                    }
+                    else
+                    {
+                        Debug.LogWarning(
+                            $"[AlienReactionController] Could not play reaction state '{binding.stateName}' for '{satisfaction}'.",
+                            this);
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"[AlienReactionController] No animation binding configured for '{satisfaction}'.",
+                    this);
             }
 
-            subtitleDisplay?.Show("Adjutant", MutterMap[satisfaction]);
-            yield return new WaitForSeconds(mutterDuration);
+            float clipDuration = binding != null && binding.clip != null
+                ? Mathf.Max(0f, binding.clip.length)
+                : 0f;
 
-            alienLeaderPortrait?.SetEmotion(EmotionMap[satisfaction]);
+            float elapsed = 0f;
+            float lookWait = GetStageDuration(lookAtMonitorDuration, clipDuration, elapsed);
+            if (lookWait > 0f)
+            {
+                yield return new WaitForSeconds(lookWait);
+                elapsed += lookWait;
+            }
 
-            subtitleDisplay?.Show("Adjutant", NarrationMap[satisfaction]);
-            yield return new WaitForSeconds(narratorLingerDuration);
+            subtitleDisplay?.Show("Adjutant", GetMappedText(MutterMap, satisfaction));
+            float mutterWait = GetStageDuration(mutterDuration, clipDuration, elapsed);
+            if (mutterWait > 0f)
+            {
+                yield return new WaitForSeconds(mutterWait);
+                elapsed += mutterWait;
+            }
 
+            subtitleDisplay?.Show("Adjutant", GetMappedText(NarrationMap, satisfaction));
+            float narrationWait = GetStageDuration(narratorLingerDuration, clipDuration, elapsed);
+            if (narrationWait > 0f)
+            {
+                yield return new WaitForSeconds(narrationWait);
+                elapsed += narrationWait;
+            }
+
+            if (clipDuration > elapsed)
+            {
+                yield return new WaitForSeconds(clipDuration - elapsed);
+            }
+
+            PlayIdleIfAvailable();
             subtitleDisplay?.Hide();
 
             _reactionRoutine = null;
             OnReactionComplete?.Invoke();
         }
 
-        private void SetAllEmotions(string emotionId)
+        private bool TryResolveBinding(
+            SatisfactionLevel level,
+            out ReactionAnimationBinding binding,
+            out bool usedNeutralFallback)
         {
-            alienLeaderPortrait?.SetEmotion(emotionId);
-            foreach (PortraitDisplay follower in alienFollowerPortraits)
+            usedNeutralFallback = false;
+            binding = FindBinding(level);
+
+            if (binding != null)
             {
-                follower?.SetEmotion(emotionId);
+                return true;
             }
+
+            if (level == SatisfactionLevel.Neutral)
+            {
+                return false;
+            }
+
+            ReactionAnimationBinding neutralBinding = FindBinding(SatisfactionLevel.Neutral);
+            if (neutralBinding == null)
+            {
+                return false;
+            }
+
+            usedNeutralFallback = true;
+            binding = neutralBinding;
+            Debug.LogWarning(
+                $"[AlienReactionController] Missing clip/state for '{level}'. Falling back to Neutral.",
+                this);
+            return true;
+        }
+
+        private void PlayIdleIfAvailable()
+        {
+            if (targetAnimator == null || string.IsNullOrWhiteSpace(idleStateName))
+            {
+                return;
+            }
+
+            int hash = Animator.StringToHash(idleStateName);
+            if (!targetAnimator.HasState(animatorLayerIndex, hash))
+            {
+                return;
+            }
+
+            if (crossFadeDuration > 0f)
+            {
+                targetAnimator.CrossFadeInFixedTime(idleStateName, crossFadeDuration, animatorLayerIndex);
+            }
+            else
+            {
+                targetAnimator.Play(idleStateName, animatorLayerIndex, 0f);
+            }
+        }
+
+        private ReactionAnimationBinding FindBinding(SatisfactionLevel level)
+        {
+            if (reactionAnimations == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < reactionAnimations.Count; i++)
+            {
+                ReactionAnimationBinding candidate = reactionAnimations[i];
+                if (candidate == null || candidate.level != level)
+                {
+                    continue;
+                }
+
+                if (candidate.clip == null || string.IsNullOrWhiteSpace(candidate.stateName))
+                {
+                    return null;
+                }
+
+                return candidate;
+            }
+
+            return null;
+        }
+
+        private bool TryPlayBinding(ReactionAnimationBinding binding)
+        {
+            if (targetAnimator == null || binding == null || string.IsNullOrWhiteSpace(binding.stateName))
+            {
+                return false;
+            }
+
+            if (!targetAnimator.HasState(animatorLayerIndex, Animator.StringToHash(binding.stateName)))
+            {
+                return false;
+            }
+
+            if (crossFadeDuration > 0f)
+            {
+                targetAnimator.CrossFadeInFixedTime(binding.stateName, crossFadeDuration, animatorLayerIndex);
+            }
+            else
+            {
+                targetAnimator.Play(binding.stateName, animatorLayerIndex, 0f);
+            }
+
+            return true;
+        }
+
+        private static float GetStageDuration(float configuredDuration, float clipDuration, float elapsed)
+        {
+            float requested = Mathf.Max(0f, configuredDuration);
+            if (clipDuration <= 0f)
+            {
+                return requested;
+            }
+
+            float remaining = clipDuration - elapsed;
+            if (remaining <= 0f)
+            {
+                return 0f;
+            }
+
+            return Mathf.Min(requested, remaining);
+        }
+
+        private static string GetMappedText(Dictionary<SatisfactionLevel, string> map, SatisfactionLevel level)
+        {
+            if (map != null && map.TryGetValue(level, out string value))
+            {
+                return value;
+            }
+
+            return string.Empty;
         }
 
         [ContextMenu("Test: VeryDissatisfied")]
         private void TestVeryDissatisfied() =>
             PlayReaction(SatisfactionLevel.VeryDissatisfied);
 
+        [ContextMenu("Test: Dissatisfied")]
+        private void TestDissatisfied() =>
+            PlayReaction(SatisfactionLevel.Dissatisfied);
+
         [ContextMenu("Test: Neutral")]
         private void TestNeutral() =>
             PlayReaction(SatisfactionLevel.Neutral);
+
+        [ContextMenu("Test: Satisfied")]
+        private void TestSatisfied() =>
+            PlayReaction(SatisfactionLevel.Satisfied);
 
         [ContextMenu("Test: VerySatisfied")]
         private void TestVerySatisfied() =>

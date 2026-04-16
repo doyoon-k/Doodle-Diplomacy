@@ -10,6 +10,12 @@ namespace DoodleDiplomacy.Devices
     {
         private const int DefaultSlotWidth = 512;
         private const int DefaultSlotHeight = 512;
+        private const string BaseMapPropertyName = "_BaseMap";
+        private const string MainTexPropertyName = "_MainTex";
+        private const string BaseColorPropertyName = "_BaseColor";
+        private const string ColorPropertyName = "_Color";
+        private const string PixelResolutionPropertyName = "_PixelResolution";
+        private const string PixelateStrengthPropertyName = "_PixelateStrength";
 
         [Header("Renderer")]
         [SerializeField] private Renderer targetRenderer;
@@ -24,8 +30,13 @@ namespace DoodleDiplomacy.Devices
 
         [Header("Display")]
         [SerializeField] private bool flipSlotsVertically = true;
+        [SerializeField] private bool overridePixelResolution = true;
+        [SerializeField] private Vector2Int pixelResolution = new(320, 180);
+        [SerializeField, Range(0f, 1f)] private float pixelateStrength = 1f;
 
         private Material _materialInstance;
+        private string _resolvedTexturePropertyName;
+        private string _resolvedColorPropertyName;
         private Texture2D _splitTexture;
         private Color32[] _splitClearPixels;
         private Coroutine _fadeRoutine;
@@ -53,8 +64,20 @@ namespace DoodleDiplomacy.Devices
             if (idleTexture == null)
                 idleTexture = MakeSolidTexture(Color.black, 2, 2);
 
-            _materialInstance.SetTexture(texturePropertyName, idleTexture);
-            _materialInstance.SetColor("_BaseColor", Color.white);
+            _resolvedTexturePropertyName = ResolveTexturePropertyName(_materialInstance, texturePropertyName);
+            _resolvedColorPropertyName = ResolveColorPropertyName(_materialInstance);
+
+            if (string.IsNullOrEmpty(_resolvedTexturePropertyName))
+            {
+                Debug.LogWarning(
+                    "[SharedMonitorDisplay] Could not find texture property. " +
+                    "Tried configured name, _BaseMap, and _MainTex. Falling back to material.mainTexture.",
+                    this);
+            }
+
+            ApplyTexture(idleTexture);
+            SetTintColor(Color.white);
+            ApplyPixelSettings();
         }
 
         public void SetIdle()
@@ -108,7 +131,7 @@ namespace DoodleDiplomacy.Devices
         private void StartFade(Texture2D nextTex)
         {
             StopFade();
-            if (fadeDuration > 0f)
+            if (fadeDuration > 0f && !string.IsNullOrEmpty(_resolvedColorPropertyName))
                 _fadeRoutine = StartCoroutine(FadeRoutine(nextTex));
             else
                 ApplyTexture(nextTex);
@@ -122,8 +145,7 @@ namespace DoodleDiplomacy.Devices
                 _fadeRoutine = null;
             }
 
-            if (_materialInstance != null)
-                _materialInstance.SetColor("_BaseColor", Color.white);
+            SetTintColor(Color.white);
         }
 
         private IEnumerator FadeRoutine(Texture2D nextTex)
@@ -133,7 +155,7 @@ namespace DoodleDiplomacy.Devices
             {
                 t += Time.deltaTime;
                 float v = 1f - Mathf.Clamp01(t / fadeDuration);
-                _materialInstance.SetColor("_BaseColor", new Color(v, v, v));
+                SetTintColor(new Color(v, v, v));
                 yield return null;
             }
 
@@ -144,11 +166,11 @@ namespace DoodleDiplomacy.Devices
             {
                 t += Time.deltaTime;
                 float v = Mathf.Clamp01(t / fadeDuration);
-                _materialInstance.SetColor("_BaseColor", new Color(v, v, v));
+                SetTintColor(new Color(v, v, v));
                 yield return null;
             }
 
-            _materialInstance.SetColor("_BaseColor", Color.white);
+            SetTintColor(Color.white);
             _fadeRoutine = null;
         }
 
@@ -157,7 +179,81 @@ namespace DoodleDiplomacy.Devices
             if (_materialInstance == null)
                 return;
 
-            _materialInstance.SetTexture(texturePropertyName, tex != null ? tex : idleTexture);
+            Texture targetTexture = tex != null ? tex : idleTexture;
+            if (string.IsNullOrEmpty(_resolvedTexturePropertyName))
+            {
+                _materialInstance.mainTexture = targetTexture;
+                return;
+            }
+
+            _materialInstance.SetTexture(_resolvedTexturePropertyName, targetTexture);
+        }
+
+        private void SetTintColor(Color color)
+        {
+            if (_materialInstance == null || string.IsNullOrEmpty(_resolvedColorPropertyName))
+                return;
+
+            _materialInstance.SetColor(_resolvedColorPropertyName, color);
+        }
+
+        private static string ResolveTexturePropertyName(Material material, string preferredPropertyName)
+        {
+            if (material == null)
+                return string.Empty;
+
+            if (!string.IsNullOrEmpty(preferredPropertyName) && material.HasProperty(preferredPropertyName))
+                return preferredPropertyName;
+
+            if (material.HasProperty(BaseMapPropertyName))
+                return BaseMapPropertyName;
+
+            if (material.HasProperty(MainTexPropertyName))
+                return MainTexPropertyName;
+
+            return string.Empty;
+        }
+
+        private static string ResolveColorPropertyName(Material material)
+        {
+            if (material == null)
+                return string.Empty;
+
+            if (material.HasProperty(BaseColorPropertyName))
+                return BaseColorPropertyName;
+
+            if (material.HasProperty(ColorPropertyName))
+                return ColorPropertyName;
+
+            return string.Empty;
+        }
+
+        private void ApplyPixelSettings()
+        {
+            if (_materialInstance == null)
+                return;
+
+            if (_materialInstance.HasProperty(PixelateStrengthPropertyName))
+                _materialInstance.SetFloat(PixelateStrengthPropertyName, Mathf.Clamp01(pixelateStrength));
+
+            if (!overridePixelResolution || !_materialInstance.HasProperty(PixelResolutionPropertyName))
+                return;
+
+            int width = Mathf.Max(1, pixelResolution.x);
+            int height = Mathf.Max(1, pixelResolution.y);
+            _materialInstance.SetVector(PixelResolutionPropertyName, new Vector4(width, height, 0f, 0f));
+        }
+
+        public void SetPixelResolution(Vector2Int resolution)
+        {
+            pixelResolution = new Vector2Int(Mathf.Max(1, resolution.x), Mathf.Max(1, resolution.y));
+            ApplyPixelSettings();
+        }
+
+        public void SetPixelateStrength(float strength)
+        {
+            pixelateStrength = Mathf.Clamp01(strength);
+            ApplyPixelSettings();
         }
 
         private void OnDestroy()
@@ -165,6 +261,16 @@ namespace DoodleDiplomacy.Devices
             StopFade();
             if (_splitTexture != null)
                 Destroy(_splitTexture);
+        }
+
+        private void OnValidate()
+        {
+            pixelResolution.x = Mathf.Max(1, pixelResolution.x);
+            pixelResolution.y = Mathf.Max(1, pixelResolution.y);
+            pixelateStrength = Mathf.Clamp01(pixelateStrength);
+
+            if (_materialInstance != null)
+                ApplyPixelSettings();
         }
 
         private void UpdateSplitTexture(Texture2D leftTexture, Texture2D rightTexture)

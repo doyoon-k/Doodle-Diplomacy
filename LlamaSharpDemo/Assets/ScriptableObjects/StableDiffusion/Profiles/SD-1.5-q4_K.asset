@@ -18,9 +18,9 @@ MonoBehaviour:
   controlNetPath: SDModels/control_v11p_sd15_scribble-q4_K.gguf
   defaultWidth: 512
   defaultHeight: 512
-  defaultSteps: 20
+  defaultSteps: 25
   defaultCfgScale: 7
-  defaultSeed: 42
+  defaultSeed: 8242
   defaultSampler: dpm++2s_a
   defaultScheduler: karras
   defaultNegativePrompt: 

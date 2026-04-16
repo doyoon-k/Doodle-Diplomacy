@@ -34,6 +34,50 @@ namespace DoodleDiplomacy.AI
             Failed
         }
 
+        private enum LlmPreparationAvailabilityState
+        {
+            Unknown,
+            Preparing,
+            Ready,
+            Failed
+        }
+
+        private enum PrefetchedRoundState
+        {
+            Idle,
+            Running,
+            Ready,
+            Failed
+        }
+
+        private sealed class PrefetchedRoundData
+        {
+            public PrefetchedRoundState state;
+            public string keywordA = string.Empty;
+            public string keywordB = string.Empty;
+            public string objectPromptA = string.Empty;
+            public string objectPromptB = string.Empty;
+            public Texture2D objectTextureA;
+            public Texture2D objectTextureB;
+            public string error = string.Empty;
+            public bool adopted;
+        }
+
+        private sealed class RoundKeywordSelectionData
+        {
+            public string keywordA = string.Empty;
+            public string keywordB = string.Empty;
+            public string labelA = string.Empty;
+            public string labelB = string.Empty;
+            public string objectPromptA = string.Empty;
+            public string objectPromptB = string.Empty;
+            public string warning = string.Empty;
+
+            public bool IsValid =>
+                !string.IsNullOrWhiteSpace(objectPromptA) &&
+                !string.IsNullOrWhiteSpace(objectPromptB);
+        }
+
         private enum PreviewObjectPresence
         {
             Unknown,
@@ -52,7 +96,7 @@ namespace DoodleDiplomacy.AI
         [TextArea(1, 3)]
         [SerializeField] private string objectPromptB = "an alien crystal sphere, dark background, dramatic lighting, product photo";
         [TextArea(1, 2)]
-        [SerializeField] private string sdNegativePrompt = "low quality, blurry, text, watermark, humans, faces";
+        [SerializeField] private string sdNegativePrompt = "low quality, blurry, text, watermark, cropped, out of frame, partial object, close-up, zoomed in, occluded, cut off";
 
         [Header("LLM Pipelines")]
         [Tooltip("Adjutant preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_overall_mood, preview_uncertainty, preview_object_a_presence, preview_object_b_presence")]
@@ -73,7 +117,7 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private string judgmentSceneReadingKey = "scene_reading";
         [SerializeField] private string judgmentReasonKey = "judgment_reason";
         [SerializeField] private string wordsSelectionWordsKey = "words";
-        [SerializeField] private string selectedKeywordPromptTemplate = "cartoon illustration of a single {0}, centered, isolated, plain white background, clear silhouette, vibrant colors";
+        [SerializeField] private string selectedKeywordPromptTemplate = "best quality, studio product photo of a single {0}, iconic and instantly recognizable shape, centered composition, full object fully visible, isolated on a clean white background, sharp focus, even soft lighting, high-contrast silhouette, realistic texture, no extra objects, no text, no watermark";
 
         [Header("References")]
         [SerializeField] private SharedMonitorDisplay monitorDisplay;
@@ -116,17 +160,26 @@ namespace DoodleDiplomacy.AI
         public bool LastDrawingWasBlank { get; private set; }
         public bool HasTelepathyResult => !string.IsNullOrWhiteSpace(LastTelepathy);
         public string LastObjectGenerationError { get; private set; } = "";
+        public string LastLlmPreparationError { get; private set; } = "";
         public bool IsObjectGenerationReady => _objectGenerationAvailability == ObjectGenerationAvailabilityState.Ready;
         public bool IsObjectGenerationPreparing => _objectGenerationAvailability == ObjectGenerationAvailabilityState.Preparing;
         public bool HasObjectGenerationPreparationFailed => _objectGenerationAvailability == ObjectGenerationAvailabilityState.Failed;
+        public bool IsLlmPreparationReady => _llmPreparationAvailability == LlmPreparationAvailabilityState.Ready;
+        public bool IsLlmPreparationRunning => _llmPreparationAvailability == LlmPreparationAvailabilityState.Preparing;
+        public bool HasLlmPreparationFailed => _llmPreparationAvailability == LlmPreparationAvailabilityState.Failed;
         public bool IsRoundKeywordSelectionInProgress => _isRoundKeywordSelectionInProgress;
         public bool IsRoundKeywordsReady =>
             !_isRoundKeywordSelectionInProgress &&
             !string.IsNullOrWhiteSpace(GetCurrentObjectPromptA()) &&
             !string.IsNullOrWhiteSpace(GetCurrentObjectPromptB());
         public bool IsRoundStartReady => IsObjectGenerationReady && IsRoundKeywordsReady;
+        public bool IsNextRoundPrefetchRunning => _prefetchedRound.state == PrefetchedRoundState.Running;
+        public bool IsNextRoundPrefetchReady => _prefetchedRound.state == PrefetchedRoundState.Ready;
+        public bool HasNextRoundPrefetchFailed => _prefetchedRound.state == PrefetchedRoundState.Failed;
+        public string NextRoundPrefetchError => _prefetchedRound.error;
         public string CurrentRoundKeywordA => _currentRoundKeywordA;
         public string CurrentRoundKeywordB => _currentRoundKeywordB;
+        public WordPairPool CurrentWordPairPool => wordPairPool;
 
         public event Action<bool> ObjectGenerationReadinessChanged;
         public event Action<bool> RoundStartReadinessChanged;
@@ -136,9 +189,13 @@ namespace DoodleDiplomacy.AI
         private Texture2D _progressObjTexA;
         private Texture2D _progressObjTexB;
         private CancellationTokenSource _sdCts;
+        private CancellationTokenSource _prefetchCts;
+        private Coroutine _prefetchCoroutine;
         private bool _sdPrewarmStarted;
         private Task _sdPrewarmTask;
         private ObjectGenerationAvailabilityState _objectGenerationAvailability = ObjectGenerationAvailabilityState.Unknown;
+        private LlmPreparationAvailabilityState _llmPreparationAvailability = LlmPreparationAvailabilityState.Unknown;
+        private readonly PrefetchedRoundData _prefetchedRound = new PrefetchedRoundData();
         private bool _isRoundKeywordSelectionInProgress;
         private string _currentObjectPromptA;
         private string _currentObjectPromptB;
@@ -177,6 +234,7 @@ namespace DoodleDiplomacy.AI
         {
             StableDiffusionCppRuntime.ProgressChanged += HandleStableDiffusionProgress;
             EnsureObjectGenerationPreparation();
+            EnsureLlmPreparation();
         }
 
         private void OnDisable()
@@ -194,6 +252,8 @@ namespace DoodleDiplomacy.AI
             _sdCts?.Cancel();
             _sdCts?.Dispose();
             _sdCts = null;
+            CancelPrefetchGeneration("Bridge is being destroyed.");
+            ClearPrefetchedRoundData(destroyTextures: true);
 
             ClearActiveGenerationSlot();
             DestroyTexture(_lastObjTexA);
@@ -234,6 +294,8 @@ namespace DoodleDiplomacy.AI
             _sdCts?.Cancel();
             _sdCts?.Dispose();
             _sdCts = null;
+            CancelPrefetchGeneration("Cancelling active AI operations.");
+            ClearPrefetchedRoundData(destroyTextures: true);
 
             StableDiffusionCppRuntime.CancelActiveGeneration();
             GamePipelineRunner.Instance?.StopGeneration();
@@ -260,6 +322,65 @@ namespace DoodleDiplomacy.AI
             LastJudgmentReason = "";
             LastTelepathy = "";
             LastDrawingWasBlank = false;
+        }
+
+        public void StartNextRoundPrefetch()
+        {
+            if (_prefetchedRound.state is PrefetchedRoundState.Running or PrefetchedRoundState.Ready)
+            {
+                return;
+            }
+
+            if (sdSettings == null)
+            {
+                Debug.LogWarning("[AIPipelineBridge] Cannot prefetch next round objects because SD settings are missing.");
+                return;
+            }
+
+            if (_prefetchedRound.state != PrefetchedRoundState.Idle || _prefetchCoroutine != null || _prefetchCts != null)
+            {
+                CancelPrefetchGeneration("Restarting next-round prefetch.");
+            }
+            ClearPrefetchedRoundData(destroyTextures: true);
+            _prefetchedRound.state = PrefetchedRoundState.Running;
+            _prefetchedRound.error = string.Empty;
+            _prefetchedRound.adopted = false;
+
+            _prefetchCts = new CancellationTokenSource();
+            _prefetchCoroutine = StartCoroutine(PrefetchNextRoundRoutine(_prefetchCts, _prefetchCts.Token));
+        }
+
+        public bool TryAdoptPrefetchedRound()
+        {
+            switch (_prefetchedRound.state)
+            {
+                case PrefetchedRoundState.Ready:
+                {
+                    bool oldRoundStartReady = IsRoundStartReady;
+                    _currentRoundKeywordA = _prefetchedRound.keywordA;
+                    _currentRoundKeywordB = _prefetchedRound.keywordB;
+                    _currentObjectPromptA = _prefetchedRound.objectPromptA;
+                    _currentObjectPromptB = _prefetchedRound.objectPromptB;
+                    _prefetchedRound.adopted = true;
+                    SetRoundKeywordSelectionInProgress(false, notifyListeners: true, previousRoundStartReady: oldRoundStartReady);
+                    Debug.Log(
+                        $"[AIPipelineBridge] Adopted prefetched round keywords: {_currentRoundKeywordA}, {_currentRoundKeywordB}");
+                    return true;
+                }
+                case PrefetchedRoundState.Running:
+                    CancelPrefetchGeneration("Prefetch was still running at round start. Falling back to regular generation.");
+                    ClearPrefetchedRoundData(destroyTextures: true);
+                    return false;
+                case PrefetchedRoundState.Failed:
+                    if (!string.IsNullOrWhiteSpace(_prefetchedRound.error))
+                    {
+                        Debug.LogWarning($"[AIPipelineBridge] Discarding failed prefetched round: {_prefetchedRound.error}");
+                    }
+                    ClearPrefetchedRoundData(destroyTextures: true);
+                    return false;
+                default:
+                    return false;
+            }
         }
 
         public string GetAlienPersonalitySummary()
@@ -330,6 +451,59 @@ namespace DoodleDiplomacy.AI
             _sdPrewarmTask = PrewarmStableDiffusionBackendAsync(request);
         }
 
+        public void EnsureLlmPreparation(bool forceRetry = false)
+        {
+            RefreshLlmPreparationStatus();
+
+            if (IsLlmPreparationRunning && !forceRetry)
+            {
+                return;
+            }
+
+            if (IsLlmPreparationReady && !forceRetry)
+            {
+                return;
+            }
+
+            RuntimeLlamaSharpService runtimeService = ResolveRuntimeLlmService();
+            if (runtimeService == null)
+            {
+                SetLlmPreparationAvailability(
+                    LlmPreparationAvailabilityState.Failed,
+                    "RuntimeLlamaSharpService is missing.",
+                    "Cannot preload LLM because RuntimeLlamaSharpService is missing.");
+                return;
+            }
+
+            runtimeService.StartPreload();
+            UpdateLlmPreparationAvailabilityFromService(runtimeService);
+        }
+
+        public void RefreshLlmPreparationStatus()
+        {
+            if (_llmPreparationAvailability != LlmPreparationAvailabilityState.Preparing &&
+                _llmPreparationAvailability != LlmPreparationAvailabilityState.Unknown)
+            {
+                return;
+            }
+
+            RuntimeLlamaSharpService runtimeService = ResolveRuntimeLlmService();
+            if (runtimeService == null)
+            {
+                if (_llmPreparationAvailability == LlmPreparationAvailabilityState.Preparing)
+                {
+                    SetLlmPreparationAvailability(
+                        LlmPreparationAvailabilityState.Failed,
+                        "RuntimeLlamaSharpService disappeared while waiting for LLM preload.",
+                        "LLM preload failed because RuntimeLlamaSharpService became unavailable.");
+                }
+
+                return;
+            }
+
+            UpdateLlmPreparationAvailabilityFromService(runtimeService);
+        }
+
         public string GetObjectGenerationAvailabilityMessage()
         {
             if (IsObjectGenerationReady)
@@ -352,6 +526,7 @@ namespace DoodleDiplomacy.AI
 
         public string GetRoundStartAvailabilityMessage()
         {
+            RefreshLlmPreparationStatus();
             if (IsRoundKeywordSelectionInProgress)
             {
                 return "Preparing the round objects. Wait until the alien becomes interactable.";
@@ -369,6 +544,28 @@ namespace DoodleDiplomacy.AI
             }
 
             return "Click the alien to begin the round.";
+        }
+
+        public string GetLlmPreparationAvailabilityMessage()
+        {
+            RefreshLlmPreparationStatus();
+
+            if (IsLlmPreparationReady)
+            {
+                return "LLM runtime is ready.";
+            }
+
+            if (IsLlmPreparationRunning)
+            {
+                return "Loading LLM runtime. Game will start after preload completes.";
+            }
+
+            if (!string.IsNullOrWhiteSpace(LastLlmPreparationError))
+            {
+                return $"LLM preload failed: {LastLlmPreparationError}";
+            }
+
+            return "LLM runtime is not ready yet.";
         }
 
         public string GetCurrentRoundKeywordsLabel()
@@ -406,9 +603,93 @@ namespace DoodleDiplomacy.AI
             StartCoroutine(PrepareRoundKeywordsRoutine());
         }
 
+        public void DebugGenerateObjectsForPair(
+            string wordA,
+            string wordB,
+            string labelA = null,
+            string labelB = null,
+            Action<bool> onComplete = null)
+        {
+            StartCoroutine(DebugGenerateObjectsForPairRoutine(wordA, wordB, labelA, labelB, onComplete));
+        }
+
+        private IEnumerator DebugGenerateObjectsForPairRoutine(
+            string wordA,
+            string wordB,
+            string labelA,
+            string labelB,
+            Action<bool> onComplete)
+        {
+            string normalizedWordA = wordA?.Trim() ?? string.Empty;
+            string normalizedWordB = wordB?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(normalizedWordA) || string.IsNullOrWhiteSpace(normalizedWordB))
+            {
+                LastObjectGenerationError = "Debug pair generation requires two non-empty words.";
+                onComplete?.Invoke(false);
+                yield break;
+            }
+
+            StopCoroutine(nameof(PrepareRoundKeywordsRoutine));
+            _sdCts?.Cancel();
+            _sdCts?.Dispose();
+            _sdCts = null;
+            CancelPrefetchGeneration("Debug pair generation requested.");
+            ClearPrefetchedRoundData(destroyTextures: true);
+            StableDiffusionCppRuntime.CancelActiveGeneration();
+
+            _currentObjectPromptA = BuildObjectPromptFromKeyword(normalizedWordA, objectPromptA);
+            _currentObjectPromptB = BuildObjectPromptFromKeyword(normalizedWordB, objectPromptB);
+
+            _currentRoundKeywordA = string.IsNullOrWhiteSpace(labelA) ? normalizedWordA : labelA.Trim();
+            _currentRoundKeywordB = string.IsNullOrWhiteSpace(labelB) ? normalizedWordB : labelB.Trim();
+            if (string.IsNullOrWhiteSpace(_currentRoundKeywordA))
+            {
+                _currentRoundKeywordA = SimplifyTargetObjectPrompt(_currentObjectPromptA);
+            }
+
+            if (string.IsNullOrWhiteSpace(_currentRoundKeywordB))
+            {
+                _currentRoundKeywordB = SimplifyTargetObjectPrompt(_currentObjectPromptB);
+            }
+
+            SetRoundKeywordSelectionInProgress(false, notifyListeners: true);
+            Debug.Log(
+                $"[AIPipelineBridge] Debug pair generation requested: " +
+                $"label=({_currentRoundKeywordA}, {_currentRoundKeywordB}) sd=({normalizedWordA}, {normalizedWordB})");
+
+            bool success = false;
+            yield return GenerateObjectsRoutine(result => success = result);
+            onComplete?.Invoke(success);
+        }
+
         private IEnumerator GenerateObjectsRoutine(Action<bool> onComplete)
         {
             LastObjectGenerationError = string.Empty;
+
+            if (TryConsumePrefetchedRoundTexturesForCurrentRound(out Texture2D prefetchedA, out Texture2D prefetchedB))
+            {
+                DestroyTexture(_lastObjTexA);
+                DestroyTexture(_lastObjTexB);
+                _lastObjTexA = prefetchedA;
+                _lastObjTexB = prefetchedB;
+
+                DestroyTexture(_progressObjTexA);
+                DestroyTexture(_progressObjTexB);
+                _progressObjTexA = null;
+                _progressObjTexB = null;
+
+                monitorDisplay?.ShowObjects(prefetchedA, prefetchedB);
+                Debug.Log("[AIPipelineBridge] Consumed prefetched round objects for presenting.");
+                onComplete?.Invoke(true);
+                yield break;
+            }
+
+            if (_prefetchedRound.state == PrefetchedRoundState.Running)
+            {
+                CancelPrefetchGeneration("Prefetch not ready at presenting. Falling back to regular generation.");
+                ClearPrefetchedRoundData(destroyTextures: true);
+            }
+
             monitorDisplay?.ShowGenerating(null, null);
 
             if (sdSettings == null)
@@ -433,8 +714,11 @@ namespace DoodleDiplomacy.AI
                 GetCurrentObjectPromptA(),
                 () => null,
                 () => texB,
+                _sdCts,
                 token,
-                result => texA = result);
+                result => texA = result,
+                showOnMonitor: true,
+                updateLastObjectGenerationError: true);
 
             if (token.IsCancellationRequested)
             {
@@ -457,8 +741,11 @@ namespace DoodleDiplomacy.AI
                 GetCurrentObjectPromptB(),
                 () => texA,
                 () => null,
+                _sdCts,
                 token,
-                result => texB = result);
+                result => texB = result,
+                showOnMonitor: true,
+                updateLastObjectGenerationError: true);
 
             if (token.IsCancellationRequested || texB == null)
             {
@@ -490,11 +777,34 @@ namespace DoodleDiplomacy.AI
             string prompt,
             Func<Texture2D> stableLeftProvider,
             Func<Texture2D> stableRightProvider,
+            CancellationTokenSource requestCts,
             CancellationToken token,
-            Action<Texture2D> onResult)
+            Action<Texture2D> onResult,
+            bool showOnMonitor = true,
+            bool updateLastObjectGenerationError = true,
+            Action<string> onError = null)
         {
-            SetActiveGenerationSlot(slot);
-            UpdateMonitorProgress(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+            void ReportError(string message)
+            {
+                if (updateLastObjectGenerationError)
+                {
+                    LastObjectGenerationError = message;
+                }
+                onError?.Invoke(message);
+            }
+
+            Debug.Log(
+                $"[AIPipelineBridge] SD slot {slot} start " +
+                $"promptLen={prompt?.Length ?? 0}, showOnMonitor={showOnMonitor}, " +
+                $"preferSdServerBackend={sdSettings != null && sdSettings.preferSdServerBackend}, " +
+                $"preferPersistentNativeWorker={sdSettings != null && sdSettings.preferPersistentNativeWorker}, " +
+                $"progressPreview={sdSettings != null && sdSettings.enablePersistentWorkerProgressPreview}");
+
+            if (showOnMonitor)
+            {
+                SetActiveGenerationSlot(slot);
+                UpdateMonitorProgress(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+            }
 
             Task<StableDiffusionCppGenerationResult> task = GenerateSingleObjectAsync(prompt, token);
             float elapsed = 0f;
@@ -502,15 +812,21 @@ namespace DoodleDiplomacy.AI
             while (!task.IsCompleted)
             {
                 elapsed += Time.deltaTime;
-                ApplyPendingProgressPreview(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+                if (showOnMonitor)
+                {
+                    ApplyPendingProgressPreview(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+                }
 
                 if (elapsed >= SdTimeoutSeconds)
                 {
                     string timeoutError = $"SD object slot {slot} timed out while generating alien objects.";
                     Debug.LogWarning($"[AIPipelineBridge] {timeoutError}");
-                    LastObjectGenerationError = timeoutError;
-                    _sdCts?.Cancel();
-                    ClearActiveGenerationSlot();
+                    ReportError(timeoutError);
+                    requestCts?.Cancel();
+                    if (showOnMonitor)
+                    {
+                        ClearActiveGenerationSlot();
+                    }
                     onResult?.Invoke(null);
                     yield break;
                 }
@@ -518,42 +834,55 @@ namespace DoodleDiplomacy.AI
                 yield return null;
             }
 
-            ApplyPendingProgressPreview(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
-            ClearActiveGenerationSlot();
+            if (showOnMonitor)
+            {
+                ApplyPendingProgressPreview(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+                ClearActiveGenerationSlot();
+            }
 
             StableDiffusionCppGenerationResult result;
             if (task.IsCanceled || token.IsCancellationRequested)
             {
-                LastObjectGenerationError = "Alien object generation was cancelled.";
+                ReportError("Alien object generation was cancelled.");
                 Debug.LogWarning($"[AIPipelineBridge] SD slot {slot} was cancelled.");
-                ReplaceSlotProgressTexture(slot, null);
+                if (showOnMonitor)
+                {
+                    ReplaceSlotProgressTexture(slot, null);
+                }
                 onResult?.Invoke(null);
-                UpdateMonitorProgress(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+                if (showOnMonitor)
+                {
+                    UpdateMonitorProgress(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+                }
                 yield break;
             }
 
             if (task.IsFaulted)
             {
                 Exception failure = task.Exception?.GetBaseException() ?? task.Exception;
-                LastObjectGenerationError = failure?.Message ?? $"SD slot {slot} failed unexpectedly.";
+                ReportError(failure?.Message ?? $"SD slot {slot} failed unexpectedly.");
                 Debug.LogError($"[AIPipelineBridge] SD slot {slot} failed: {failure}");
-                ReplaceSlotProgressTexture(slot, null);
+                if (showOnMonitor)
+                {
+                    ReplaceSlotProgressTexture(slot, null);
+                }
                 onResult?.Invoke(null);
-                UpdateMonitorProgress(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+                if (showOnMonitor)
+                {
+                    UpdateMonitorProgress(stableLeftProvider?.Invoke(), stableRightProvider?.Invoke());
+                }
                 yield break;
             }
 
             result = task.Result;
             if (!result.Success)
             {
-                LastObjectGenerationError = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                ReportError(string.IsNullOrWhiteSpace(result.ErrorMessage)
                     ? $"SD slot {slot} failed without an error message."
-                    : result.ErrorMessage;
+                    : result.ErrorMessage);
             }
 
-            Debug.Log(
-                $"[AIPipelineBridge] SD slot {slot} result Success={result.Success}, " +
-                $"Files={result.OutputFiles?.Count ?? 0}, Error={result.ErrorMessage}");
+            Debug.Log(BuildSdSlotDiagnosticsLog(slot, result));
 
             Texture2D finalTexture = null;
             if (result.Success && result.OutputFiles?.Count > 0)
@@ -567,21 +896,157 @@ namespace DoodleDiplomacy.AI
                     $"path={result.OutputFiles[0]}, err={loadError}");
                 if (!loaded)
                 {
-                    LastObjectGenerationError = string.IsNullOrWhiteSpace(loadError)
+                    ReportError(string.IsNullOrWhiteSpace(loadError)
                         ? $"Generated slot {slot} output could not be loaded."
-                        : loadError;
+                        : loadError);
                 }
             }
             else if (result.Success)
             {
-                LastObjectGenerationError = $"Generated slot {slot} returned no image files.";
+                ReportError($"Generated slot {slot} returned no image files.");
             }
 
-            ReplaceSlotProgressTexture(slot, null);
+            if (showOnMonitor)
+            {
+                ReplaceSlotProgressTexture(slot, null);
+            }
             onResult?.Invoke(finalTexture);
-            UpdateMonitorProgress(
-                slot == LeftObjectSlot ? finalTexture : stableLeftProvider?.Invoke(),
-                slot == RightObjectSlot ? finalTexture : stableRightProvider?.Invoke());
+            if (showOnMonitor)
+            {
+                UpdateMonitorProgress(
+                    slot == LeftObjectSlot ? finalTexture : stableLeftProvider?.Invoke(),
+                    slot == RightObjectSlot ? finalTexture : stableRightProvider?.Invoke());
+            }
+        }
+
+        private string BuildSdSlotDiagnosticsLog(int slot, StableDiffusionCppGenerationResult result)
+        {
+            if (result == null)
+            {
+                return $"[AIPipelineBridge] SD slot {slot} diagnostics unavailable: null result.";
+            }
+
+            string backend = InferSdBackend(result.CommandLine, result.StdOut, result.StdErr);
+            string commandLine = TrimForLog(result.CommandLine, 900);
+            string stdOutTail = BuildLogTail(result.StdOut, maxLines: 8, maxChars: 800);
+            string stdErrTail = BuildLogTail(result.StdErr, maxLines: 8, maxChars: 800);
+
+            var sb = new StringBuilder(1400);
+            sb.Append($"[AIPipelineBridge] SD slot {slot} diagnostics: ")
+              .Append($"backend={backend}, success={result.Success}, cancelled={result.Cancelled}, timedOut={result.TimedOut}, ")
+              .Append($"exitCode={result.ExitCode}, elapsed={result.Elapsed.TotalSeconds:0.00}s, ")
+              .Append($"files={result.OutputFiles?.Count ?? 0}, outputDir={result.OutputDirectory}, ")
+              .Append($"gpuTelemetry={result.GpuTelemetryAvailable}, peakVramMiB={result.PeakGpuMemoryMiB}, ")
+              .Append($"peakGpuUtil={result.PeakGpuUtilizationPercent}, samples={result.GpuTelemetrySamples}");
+
+            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+            {
+                sb.Append($", error={result.ErrorMessage}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(commandLine))
+            {
+                sb.Append("\n  command: ").Append(commandLine);
+            }
+
+            if (!string.IsNullOrWhiteSpace(stdOutTail))
+            {
+                sb.Append("\n  stdout(tail):\n").Append(stdOutTail);
+            }
+
+            if (!string.IsNullOrWhiteSpace(stdErrTail))
+            {
+                sb.Append("\n  stderr(tail):\n").Append(stdErrTail);
+            }
+
+            return sb.ToString();
+        }
+
+        private static string InferSdBackend(string commandLine, string stdOut, string stdErr)
+        {
+            if (!string.IsNullOrWhiteSpace(commandLine))
+            {
+                if (commandLine.IndexOf("[bundled-sd-server]", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    commandLine.IndexOf("sd-server.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return "sd-server";
+                }
+
+                if (commandLine.IndexOf("sd-cli.exe", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return "sd-cli";
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(stdOut) &&
+                stdOut.IndexOf("[NativeWorker]", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "native-worker";
+            }
+
+            if (!string.IsNullOrWhiteSpace(stdErr) &&
+                stdErr.IndexOf("[NativeWorker]", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "native-worker";
+            }
+
+            return "unknown";
+        }
+
+        private static string BuildLogTail(string raw, int maxLines, int maxChars)
+        {
+            if (string.IsNullOrWhiteSpace(raw) || maxLines <= 0 || maxChars <= 0)
+            {
+                return string.Empty;
+            }
+
+            string normalized = raw.Replace("\r\n", "\n").Replace('\r', '\n');
+            string[] lines = normalized.Split('\n');
+            int start = Mathf.Max(0, lines.Length - maxLines);
+            var sb = new StringBuilder(Mathf.Min(maxChars, 1024));
+
+            for (int i = start; i < lines.Length; i++)
+            {
+                string line = lines[i]?.TrimEnd();
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                if (sb.Length > 0)
+                {
+                    sb.Append('\n');
+                }
+
+                if (sb.Length + line.Length > maxChars)
+                {
+                    int remain = Mathf.Max(0, maxChars - sb.Length);
+                    if (remain > 0)
+                    {
+                        sb.Append(line.Substring(0, remain));
+                    }
+                    break;
+                }
+
+                sb.Append(line);
+            }
+
+            return sb.ToString();
+        }
+
+        private static string TrimForLog(string value, int maxChars)
+        {
+            if (string.IsNullOrWhiteSpace(value) || maxChars <= 0)
+            {
+                return string.Empty;
+            }
+
+            if (value.Length <= maxChars)
+            {
+                return value;
+            }
+
+            return value.Substring(0, maxChars) + "...(truncated)";
         }
 
         private async Task<StableDiffusionCppGenerationResult> GenerateSingleObjectAsync(
@@ -618,6 +1083,222 @@ namespace DoodleDiplomacy.AI
             }
 
             return await StableDiffusionCppRuntime.GenerateTxt2ImgAsync(sdSettings, request, cancellationToken);
+        }
+
+        private IEnumerator PrefetchNextRoundRoutine(
+            CancellationTokenSource prefetchCts,
+            CancellationToken token)
+        {
+            Debug.Log("[AIPipelineBridge] Starting next-round prefetch.");
+            try
+            {
+                RoundKeywordSelectionData selection = null;
+                yield return ResolveRoundKeywordSelectionRoutine(result => selection = result);
+                if (token.IsCancellationRequested)
+                {
+                    yield break;
+                }
+
+                if (selection == null || !selection.IsValid)
+                {
+                    SetPrefetchedRoundFailed("Next-round prefetch failed during keyword selection.");
+                    yield break;
+                }
+
+                _prefetchedRound.keywordA = selection.labelA;
+                _prefetchedRound.keywordB = selection.labelB;
+                _prefetchedRound.objectPromptA = selection.objectPromptA;
+                _prefetchedRound.objectPromptB = selection.objectPromptB;
+                _prefetchedRound.adopted = false;
+                _prefetchedRound.error = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(selection.warning))
+                {
+                    Debug.LogWarning($"[AIPipelineBridge] Prefetch keyword selection fallback: {selection.warning}");
+                }
+
+                Texture2D texA = null;
+                Texture2D texB = null;
+                string prefetchError = string.Empty;
+
+                yield return GenerateObjectIntoSlotRoutine(
+                    LeftObjectSlot,
+                    selection.objectPromptA,
+                    () => null,
+                    () => null,
+                    prefetchCts,
+                    token,
+                    result => texA = result,
+                    showOnMonitor: false,
+                    updateLastObjectGenerationError: false,
+                    onError: error =>
+                    {
+                        if (string.IsNullOrWhiteSpace(prefetchError))
+                        {
+                            prefetchError = error;
+                        }
+                    });
+
+                if (token.IsCancellationRequested)
+                {
+                    DestroyTexture(texA);
+                    yield break;
+                }
+
+                if (texA == null)
+                {
+                    DestroyTexture(texA);
+                    SetPrefetchedRoundFailed(
+                        string.IsNullOrWhiteSpace(prefetchError)
+                            ? "Next-round prefetch failed while generating object A."
+                            : prefetchError);
+                    yield break;
+                }
+
+                yield return GenerateObjectIntoSlotRoutine(
+                    RightObjectSlot,
+                    selection.objectPromptB,
+                    () => null,
+                    () => null,
+                    prefetchCts,
+                    token,
+                    result => texB = result,
+                    showOnMonitor: false,
+                    updateLastObjectGenerationError: false,
+                    onError: error =>
+                    {
+                        if (string.IsNullOrWhiteSpace(prefetchError))
+                        {
+                            prefetchError = error;
+                        }
+                    });
+
+                if (token.IsCancellationRequested)
+                {
+                    DestroyTexture(texA);
+                    DestroyTexture(texB);
+                    yield break;
+                }
+
+                if (texB == null)
+                {
+                    DestroyTexture(texA);
+                    DestroyTexture(texB);
+                    SetPrefetchedRoundFailed(
+                        string.IsNullOrWhiteSpace(prefetchError)
+                            ? "Next-round prefetch failed while generating object B."
+                            : prefetchError);
+                    yield break;
+                }
+
+                DestroyTexture(_prefetchedRound.objectTextureA);
+                DestroyTexture(_prefetchedRound.objectTextureB);
+                _prefetchedRound.objectTextureA = texA;
+                _prefetchedRound.objectTextureB = texB;
+                _prefetchedRound.state = PrefetchedRoundState.Ready;
+                _prefetchedRound.error = string.Empty;
+                _prefetchedRound.adopted = false;
+
+                Debug.Log(
+                    $"[AIPipelineBridge] Next-round prefetch ready: label=({_prefetchedRound.keywordA}, {_prefetchedRound.keywordB})");
+            }
+            finally
+            {
+                _prefetchCoroutine = null;
+                if (ReferenceEquals(_prefetchCts, prefetchCts))
+                {
+                    _prefetchCts?.Dispose();
+                    _prefetchCts = null;
+                }
+            }
+        }
+
+        private bool TryConsumePrefetchedRoundTexturesForCurrentRound(out Texture2D texA, out Texture2D texB)
+        {
+            texA = null;
+            texB = null;
+
+            if (_prefetchedRound.state != PrefetchedRoundState.Ready || !_prefetchedRound.adopted)
+            {
+                return false;
+            }
+
+            bool matchesCurrentRound =
+                string.Equals(_prefetchedRound.objectPromptA, GetCurrentObjectPromptA(), StringComparison.Ordinal) &&
+                string.Equals(_prefetchedRound.objectPromptB, GetCurrentObjectPromptB(), StringComparison.Ordinal);
+            if (!matchesCurrentRound)
+            {
+                Debug.LogWarning("[AIPipelineBridge] Prefetched round prompts no longer match current round. Discarding cache.");
+                ClearPrefetchedRoundData(destroyTextures: true);
+                return false;
+            }
+
+            texA = _prefetchedRound.objectTextureA;
+            texB = _prefetchedRound.objectTextureB;
+            _prefetchedRound.objectTextureA = null;
+            _prefetchedRound.objectTextureB = null;
+
+            if (texA == null || texB == null)
+            {
+                DestroyTexture(texA);
+                DestroyTexture(texB);
+                ClearPrefetchedRoundData(destroyTextures: true);
+                return false;
+            }
+
+            ClearPrefetchedRoundData(destroyTextures: false);
+            return true;
+        }
+
+        private void SetPrefetchedRoundFailed(string error)
+        {
+            _prefetchedRound.state = PrefetchedRoundState.Failed;
+            _prefetchedRound.error = error ?? "Unknown prefetch error.";
+            _prefetchedRound.adopted = false;
+            Debug.LogWarning($"[AIPipelineBridge] {_prefetchedRound.error}");
+        }
+
+        private void CancelPrefetchGeneration(string reason)
+        {
+            bool wasRunning = _prefetchedRound.state == PrefetchedRoundState.Running;
+            if (_prefetchCoroutine != null)
+            {
+                StopCoroutine(_prefetchCoroutine);
+                _prefetchCoroutine = null;
+            }
+
+            _prefetchCts?.Cancel();
+            _prefetchCts?.Dispose();
+            _prefetchCts = null;
+
+            if (wasRunning)
+            {
+                StableDiffusionCppRuntime.CancelActiveGeneration();
+            }
+
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                Debug.Log($"[AIPipelineBridge] {reason}");
+            }
+        }
+
+        private void ClearPrefetchedRoundData(bool destroyTextures)
+        {
+            if (destroyTextures)
+            {
+                DestroyTexture(_prefetchedRound.objectTextureA);
+                DestroyTexture(_prefetchedRound.objectTextureB);
+            }
+
+            _prefetchedRound.objectTextureA = null;
+            _prefetchedRound.objectTextureB = null;
+            _prefetchedRound.keywordA = string.Empty;
+            _prefetchedRound.keywordB = string.Empty;
+            _prefetchedRound.objectPromptA = string.Empty;
+            _prefetchedRound.objectPromptB = string.Empty;
+            _prefetchedRound.error = string.Empty;
+            _prefetchedRound.adopted = false;
+            _prefetchedRound.state = PrefetchedRoundState.Idle;
         }
 
         private string BuildAlienPersonalityPromptContext()
@@ -790,8 +1471,10 @@ namespace DoodleDiplomacy.AI
 
         private string BuildTargetObjectsSummary()
         {
-            string left = SimplifyTargetObjectPrompt(GetCurrentObjectPromptA());
-            string right = SimplifyTargetObjectPrompt(GetCurrentObjectPromptB());
+            // Use the simple noun labels (_currentRoundKeywordA/B) for LLM context,
+            // not the full SD prompt string.
+            string left = _currentRoundKeywordA;
+            string right = _currentRoundKeywordB;
 
             if (string.IsNullOrWhiteSpace(left) && string.IsNullOrWhiteSpace(right))
             {
@@ -1583,6 +2266,59 @@ namespace DoodleDiplomacy.AI
             }
         }
 
+        private void SetLlmPreparationAvailability(
+            LlmPreparationAvailabilityState nextState,
+            string error,
+            string logMessage)
+        {
+            _llmPreparationAvailability = nextState;
+            LastLlmPreparationError = error ?? string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(logMessage))
+            {
+                Debug.Log($"[AIPipelineBridge] {logMessage}");
+            }
+        }
+
+        private RuntimeLlamaSharpService ResolveRuntimeLlmService()
+        {
+            if (GamePipelineRunner.Instance != null)
+            {
+                return GamePipelineRunner.Instance.RuntimeService;
+            }
+
+            return FindFirstObjectByType<RuntimeLlamaSharpService>();
+        }
+
+        private void UpdateLlmPreparationAvailabilityFromService(RuntimeLlamaSharpService runtimeService)
+        {
+            if (runtimeService == null)
+            {
+                SetLlmPreparationAvailability(
+                    LlmPreparationAvailabilityState.Failed,
+                    "RuntimeLlamaSharpService is missing.",
+                    "LLM preload failed because RuntimeLlamaSharpService is missing.");
+                return;
+            }
+
+            if (runtimeService.IsModelReady)
+            {
+                SetLlmPreparationAvailability(LlmPreparationAvailabilityState.Ready, string.Empty, string.Empty);
+                return;
+            }
+
+            if (runtimeService.IsPreloadInProgress || !runtimeService.IsPreloadComplete)
+            {
+                SetLlmPreparationAvailability(LlmPreparationAvailabilityState.Preparing, string.Empty, string.Empty);
+                return;
+            }
+
+            SetLlmPreparationAvailability(
+                LlmPreparationAvailabilityState.Failed,
+                "LLM preload completed without a ready model.",
+                "LLM preload completed without a ready model.");
+        }
+
         private IEnumerator PrepareRoundKeywordsRoutine()
         {
             bool oldRoundStartReady = IsRoundStartReady;
@@ -1592,16 +2328,59 @@ namespace DoodleDiplomacy.AI
             _currentObjectPromptB = string.Empty;
             SetRoundKeywordSelectionInProgress(true, notifyListeners: true, previousRoundStartReady: oldRoundStartReady);
 
-            // Curated pool takes priority over LLM pipeline
-            if (wordPairPool != null && wordPairPool.TryGetRandomPair(out string poolWordA, out string poolWordB))
+            RoundKeywordSelectionData selection = null;
+            yield return ResolveRoundKeywordSelectionRoutine(result => selection = result);
+
+            if (selection == null || !selection.IsValid)
             {
-                ApplySelectedRoundKeywords(poolWordA, poolWordB);
+                ApplyFallbackRoundKeywords("Round keyword selection failed. Using fallback prompts.");
+                yield break;
+            }
+
+            _currentRoundKeywordA = selection.labelA;
+            _currentRoundKeywordB = selection.labelB;
+            _currentObjectPromptA = selection.objectPromptA;
+            _currentObjectPromptB = selection.objectPromptB;
+
+            if (!string.IsNullOrWhiteSpace(selection.warning))
+            {
+                Debug.LogWarning($"[AIPipelineBridge] {selection.warning}");
+            }
+
+            Debug.Log(
+                $"[AIPipelineBridge] Round keywords selected: label=({_currentRoundKeywordA}, {_currentRoundKeywordB}) " +
+                $"sd=({selection.keywordA}, {selection.keywordB})");
+            SetRoundKeywordSelectionInProgress(false, notifyListeners: true, previousRoundStartReady: oldRoundStartReady);
+        }
+
+        private IEnumerator ResolveRoundKeywordSelectionRoutine(Action<RoundKeywordSelectionData> onComplete)
+        {
+            var selection = new RoundKeywordSelectionData();
+
+            // Curated pool takes priority over LLM pipeline.
+            if (wordPairPool != null &&
+                wordPairPool.TryGetRandomPair(out string poolWordA, out string poolWordB, out string poolLabelA, out string poolLabelB))
+            {
+                selection.keywordA = poolWordA?.Trim() ?? string.Empty;
+                selection.keywordB = poolWordB?.Trim() ?? string.Empty;
+                selection.labelA = string.IsNullOrWhiteSpace(poolLabelA) ? selection.keywordA : poolLabelA.Trim();
+                selection.labelB = string.IsNullOrWhiteSpace(poolLabelB) ? selection.keywordB : poolLabelB.Trim();
+                selection.objectPromptA = BuildObjectPromptFromKeyword(selection.keywordA, objectPromptA);
+                selection.objectPromptB = BuildObjectPromptFromKeyword(selection.keywordB, objectPromptB);
+                onComplete?.Invoke(selection);
                 yield break;
             }
 
             if (wordsSelectionPipeline == null || GamePipelineRunner.Instance == null)
             {
-                ApplyFallbackRoundKeywords("Round keyword selection pipeline is not assigned. Using fallback prompts.");
+                selection.warning = "Round keyword selection pipeline is not assigned. Using fallback prompts.";
+                selection.keywordA = SimplifyTargetObjectPrompt(objectPromptA);
+                selection.keywordB = SimplifyTargetObjectPrompt(objectPromptB);
+                selection.labelA = selection.keywordA;
+                selection.labelB = selection.keywordB;
+                selection.objectPromptA = objectPromptA;
+                selection.objectPromptB = objectPromptB;
+                onComplete?.Invoke(selection);
                 yield break;
             }
 
@@ -1612,11 +2391,13 @@ namespace DoodleDiplomacy.AI
             {
                 wordsState.SetString(alienPersonalityKey, BuildAlienPersonalityPromptContext());
             }
+
             GamePipelineRunner.Instance.RunPipeline(wordsSelectionPipeline, wordsState, result =>
             {
                 finalState = result;
                 done = true;
             });
+
             yield return new WaitUntil(() => done);
 
             string error = string.Empty;
@@ -1642,23 +2423,24 @@ namespace DoodleDiplomacy.AI
             }
             else
             {
-                ApplySelectedRoundKeywords(keywordA, keywordB);
+                selection.keywordA = keywordA.Trim();
+                selection.keywordB = keywordB.Trim();
+                selection.labelA = selection.keywordA;
+                selection.labelB = selection.keywordB;
+                selection.objectPromptA = BuildObjectPromptFromKeyword(selection.keywordA, objectPromptA);
+                selection.objectPromptB = BuildObjectPromptFromKeyword(selection.keywordB, objectPromptB);
+                onComplete?.Invoke(selection);
                 yield break;
             }
 
-            ApplyFallbackRoundKeywords(error);
-        }
-
-        private void ApplySelectedRoundKeywords(string keywordA, string keywordB)
-        {
-            bool oldRoundStartReady = IsRoundStartReady;
-            _currentRoundKeywordA = keywordA?.Trim() ?? string.Empty;
-            _currentRoundKeywordB = keywordB?.Trim() ?? string.Empty;
-            _currentObjectPromptA = BuildObjectPromptFromKeyword(_currentRoundKeywordA, objectPromptA);
-            _currentObjectPromptB = BuildObjectPromptFromKeyword(_currentRoundKeywordB, objectPromptB);
-
-            Debug.Log($"[AIPipelineBridge] Round keywords selected: {_currentRoundKeywordA}, {_currentRoundKeywordB}");
-            SetRoundKeywordSelectionInProgress(false, notifyListeners: true, previousRoundStartReady: oldRoundStartReady);
+            selection.warning = error;
+            selection.keywordA = SimplifyTargetObjectPrompt(objectPromptA);
+            selection.keywordB = SimplifyTargetObjectPrompt(objectPromptB);
+            selection.labelA = selection.keywordA;
+            selection.labelB = selection.keywordB;
+            selection.objectPromptA = objectPromptA;
+            selection.objectPromptB = objectPromptB;
+            onComplete?.Invoke(selection);
         }
 
         private void ApplyFallbackRoundKeywords(string reason)

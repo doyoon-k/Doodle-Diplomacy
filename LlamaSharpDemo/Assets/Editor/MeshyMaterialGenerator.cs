@@ -1,156 +1,396 @@
-using UnityEngine;
 using UnityEditor;
-using System.IO;
+using UnityEngine;
 using System.Collections.Generic;
+using System.IO;
 
 public class MeshyMaterialGenerator : Editor
 {
-    // Creates a right-click menu option in the Project view under "Assets/Meshy AI"
-    [MenuItem("Assets/Meshy AI/Generate Material(s) Here", false, 20)]
+    private const string LogPrefix = "[Tripo/Meshy Material Generator]";
+
+    private static readonly string[] BaseSuffixes =
+    {
+        "_texture",
+        "_basecolor",
+        "_base_color",
+        "_base"
+    };
+
+    private static readonly string[] MetallicSuffixes =
+    {
+        "_metallic",
+        "_metalic",
+        "_metalness"
+    };
+
+    private static readonly string[] NormalSuffixes =
+    {
+        "_normal",
+        "_normalgl",
+        "_normal_gl"
+    };
+
+    private static readonly string[] RoughnessSuffixes =
+    {
+        "_roughness",
+        "_rough"
+    };
+
+    private sealed class TextureSet
+    {
+        public string RootName;
+        public string BasePath;
+        public string MetallicPath;
+        public string NormalPath;
+        public string RoughnessPath;
+    }
+
+    [MenuItem("Assets/Tripo AI/Generate Material(s) Here", false, 20)]
+    [MenuItem("Assets/Meshy AI/Generate Material(s) Here", false, 21)]
     public static void GenerateMaterialsFromSelection()
     {
         Object[] selectedObjects = Selection.GetFiltered(typeof(Object), SelectionMode.Assets);
         if (selectedObjects == null || selectedObjects.Length == 0)
         {
-            Debug.LogWarning("[Meshy Material Generator] Please select a folder containing the textures, or the textures themselves.");
+            Debug.LogWarning($"{LogPrefix} Please select a folder containing textures, or select texture assets directly.");
             return;
         }
 
         HashSet<string> processedFolders = new HashSet<string>();
 
-        foreach (Object obj in selectedObjects)
+        foreach (Object selectedObject in selectedObjects)
         {
-            string path = AssetDatabase.GetAssetPath(obj);
-            string absolutePath = Path.Combine(Directory.GetCurrentDirectory(), path);
-
-            // Determine if the selected object is a folder or a file
+            string path = AssetDatabase.GetAssetPath(selectedObject);
+            string absolutePath = AssetPathToAbsolute(path);
             string directory = Directory.Exists(absolutePath) ? path : Path.GetDirectoryName(path);
-            
-            // Reformat path to use Unity's forward slashes
-            directory = directory.Replace("\\", "/");
 
+            if (string.IsNullOrEmpty(directory))
+            {
+                continue;
+            }
+
+            directory = directory.Replace("\\", "/");
             if (processedFolders.Add(directory))
             {
                 ProcessFolder(directory);
             }
         }
-        
-        Debug.Log("[Meshy Material Generator] Finished generating materials!");
+
+        AssetDatabase.SaveAssets();
+        Debug.Log($"{LogPrefix} Finished generating materials.");
     }
 
     private static void ProcessFolder(string folderPath)
     {
-        List<string> baseTexturePaths = new List<string>();
-
-        // Get all files in the directory
-        string absoluteFolderPath = Path.Combine(Directory.GetCurrentDirectory(), folderPath);
-        if (!Directory.Exists(absoluteFolderPath)) return;
-
-        string[] allFiles = Directory.GetFiles(absoluteFolderPath, "*.*");
-        foreach (string file in allFiles)
+        string absoluteFolderPath = AssetPathToAbsolute(folderPath);
+        if (!Directory.Exists(absoluteFolderPath))
         {
-            if (file.EndsWith(".meta")) continue; // Skip meta files
-
-            string fileName = Path.GetFileNameWithoutExtension(file);
-
-            // Identify the base texture (Meshy names the base color texture ending with "_texture")
-            if (fileName.EndsWith("_texture"))
-            {
-                // Convert back to relative Unity path
-                string relativePath = folderPath + "/" + Path.GetFileName(file);
-                baseTexturePaths.Add(relativePath);
-            }
-        }
-
-        if (baseTexturePaths.Count == 0)
-        {
-            Debug.LogWarning($"[Meshy Material Generator] No base textures (ending with '_texture') found in {folderPath}");
             return;
         }
 
-        // Process each identified base texture to generate a unique material
-        foreach (string basePath in baseTexturePaths)
-        {
-            CreateMaterialForBase(folderPath, basePath);
-        }
-    }
+        string[] allFiles = Directory.GetFiles(absoluteFolderPath, "*.*");
+        Dictionary<string, TextureSet> textureSets = new Dictionary<string, TextureSet>();
 
-    private static void CreateMaterialForBase(string folderPath, string basePath)
-    {
-        string extension = Path.GetExtension(basePath);
-        string baseName = Path.GetFileNameWithoutExtension(basePath);
-        
-        // Construct expected paths for the other maps
-        string metallicPath = folderPath + "/" + baseName + "_metallic" + extension;
-        string normalPath = folderPath + "/" + baseName + "_normal" + extension;
-        
-        // Define Material Name
-        string matNamePart = baseName;
-        if (matNamePart.EndsWith("_texture"))
+        foreach (string file in allFiles)
         {
-            matNamePart = matNamePart.Substring(0, matNamePart.Length - "_texture".Length); // Remove "_texture" suffix
-        }
-        string matPath = folderPath + "/M_" + matNamePart + ".mat";
-
-        // Load Textures
-        Texture2D baseTex = AssetDatabase.LoadAssetAtPath<Texture2D>(basePath);
-        Texture2D metallicTex = AssetDatabase.LoadAssetAtPath<Texture2D>(metallicPath);
-        Texture2D normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>(normalPath);
-
-        // Auto-fix normal map import settings
-        if (normalTex != null)
-        {
-            TextureImporter normalImporter = AssetImporter.GetAtPath(normalPath) as TextureImporter;
-            if (normalImporter != null && normalImporter.textureType != TextureImporterType.NormalMap)
+            if (file.EndsWith(".meta"))
             {
-                normalImporter.textureType = TextureImporterType.NormalMap;
-                normalImporter.SaveAndReimport();
+                continue;
+            }
+
+            string fileName = Path.GetFileNameWithoutExtension(file);
+            string fileNameLower = fileName.ToLowerInvariant();
+            string extension = Path.GetExtension(file);
+
+            if (!IsSupportedTextureExtension(extension))
+            {
+                continue;
+            }
+
+            string rootName;
+            string relativeAssetPath = folderPath + "/" + Path.GetFileName(file);
+
+            if (TryExtractRootName(fileName, fileNameLower, BaseSuffixes, out rootName))
+            {
+                GetOrCreateSet(textureSets, rootName).BasePath = relativeAssetPath;
+                continue;
+            }
+
+            if (TryExtractRootName(fileName, fileNameLower, MetallicSuffixes, out rootName))
+            {
+                GetOrCreateSet(textureSets, rootName).MetallicPath = relativeAssetPath;
+                continue;
+            }
+
+            if (TryExtractRootName(fileName, fileNameLower, NormalSuffixes, out rootName))
+            {
+                GetOrCreateSet(textureSets, rootName).NormalPath = relativeAssetPath;
+                continue;
+            }
+
+            if (TryExtractRootName(fileName, fileNameLower, RoughnessSuffixes, out rootName))
+            {
+                GetOrCreateSet(textureSets, rootName).RoughnessPath = relativeAssetPath;
             }
         }
 
-        // Check if material already exists, otherwise create
-        Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-        bool isNew = false;
-        
-        if (mat == null)
+        int createdCount = 0;
+        foreach (TextureSet textureSet in textureSets.Values)
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
-            
-            mat = new Material(shader);
-            isNew = true;
+            if (string.IsNullOrEmpty(textureSet.BasePath))
+            {
+                continue;
+            }
+
+            CreateMaterialForSet(folderPath, textureSet);
+            createdCount++;
         }
 
-        // Assign textures
-        if (mat.shader.name.Contains("Universal Render Pipeline"))
+        if (createdCount == 0)
         {
-            if (baseTex != null) mat.SetTexture("_BaseMap", baseTex);
-            if (metallicTex != null) mat.SetTexture("_MetallicGlossMap", metallicTex);
-            if (normalTex != null) mat.SetTexture("_BumpMap", normalTex);
+            Debug.LogWarning($"{LogPrefix} No base texture set found in {folderPath}. Supported base suffixes: {string.Join(", ", BaseSuffixes)}");
         }
-        else
+    }
+
+    private static TextureSet GetOrCreateSet(Dictionary<string, TextureSet> sets, string rootName)
+    {
+        string key = rootName.ToLowerInvariant();
+
+        TextureSet textureSet;
+        if (!sets.TryGetValue(key, out textureSet))
         {
-            if (baseTex != null) mat.SetTexture("_MainTex", baseTex);
-            if (metallicTex != null) mat.SetTexture("_MetallicGlossMap", metallicTex);
-            if (normalTex != null) mat.SetTexture("_BumpMap", normalTex);
+            textureSet = new TextureSet { RootName = rootName };
+            sets.Add(key, textureSet);
         }
 
-        // Save
+        return textureSet;
+    }
+
+    private static bool TryExtractRootName(string originalName, string lowerName, string[] suffixes, out string rootName)
+    {
+        foreach (string suffix in suffixes)
+        {
+            if (!lowerName.EndsWith(suffix))
+            {
+                continue;
+            }
+
+            rootName = originalName.Substring(0, originalName.Length - suffix.Length);
+            rootName = rootName.TrimEnd('_', '-', ' ');
+            if (string.IsNullOrEmpty(rootName))
+            {
+                rootName = "Generated";
+            }
+
+            return true;
+        }
+
+        rootName = null;
+        return false;
+    }
+
+    private static bool IsSupportedTextureExtension(string extension)
+    {
+        string ext = extension.ToLowerInvariant();
+        return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".tif" || ext == ".tiff" || ext == ".bmp";
+    }
+
+    private static void CreateMaterialForSet(string folderPath, TextureSet textureSet)
+    {
+        string materialPath = folderPath + "/M_" + textureSet.RootName + ".mat";
+
+        Texture2D baseTexture = LoadTexture(textureSet.BasePath, TextureKind.BaseColor);
+        Texture2D metallicTexture = LoadTexture(textureSet.MetallicPath, TextureKind.Metallic);
+        Texture2D normalTexture = LoadTexture(textureSet.NormalPath, TextureKind.Normal);
+        Texture2D roughnessTexture = LoadTexture(textureSet.RoughnessPath, TextureKind.Roughness);
+
+        Texture2D metallicSmoothnessTexture = null;
+        if (metallicTexture != null && roughnessTexture != null)
+        {
+            string packedPath = folderPath + "/" + textureSet.RootName + "_metallicSmoothness.png";
+            metallicSmoothnessTexture = CreateMetallicSmoothnessTexture(packedPath, metallicTexture, roughnessTexture);
+        }
+        else if (metallicTexture != null)
+        {
+            metallicSmoothnessTexture = metallicTexture;
+        }
+
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+        bool isNew = material == null;
+
         if (isNew)
         {
-            AssetDatabase.CreateAsset(mat, matPath);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            material = new Material(shader);
+            AssetDatabase.CreateAsset(material, materialPath);
         }
-        else
+
+        if (baseTexture != null)
         {
-            EditorUtility.SetDirty(mat);
+            if (material.HasProperty("_BaseMap"))
+            {
+                material.SetTexture("_BaseMap", baseTexture);
+            }
+
+            if (material.HasProperty("_MainTex"))
+            {
+                material.SetTexture("_MainTex", baseTexture);
+            }
         }
 
-        AssetDatabase.SaveAssets();
+        if (metallicSmoothnessTexture != null && material.HasProperty("_MetallicGlossMap"))
+        {
+            material.SetTexture("_MetallicGlossMap", metallicSmoothnessTexture);
+            material.EnableKeyword("_METALLICSPECGLOSSMAP");
 
-        Debug.Log($"[Meshy Material Generator] Created Material: {matPath}", mat);
-        
-        // Highlight the newly created material
-        Selection.activeObject = mat;
-        EditorGUIUtility.PingObject(mat);
+            if (material.HasProperty("_Metallic"))
+            {
+                material.SetFloat("_Metallic", 1f);
+            }
+
+            if (material.HasProperty("_SmoothnessTextureChannel"))
+            {
+                material.SetFloat("_SmoothnessTextureChannel", 0f);
+            }
+        }
+
+        if (normalTexture != null && material.HasProperty("_BumpMap"))
+        {
+            material.SetTexture("_BumpMap", normalTexture);
+            material.EnableKeyword("_NORMALMAP");
+        }
+
+        if (material.HasProperty("_Smoothness") && roughnessTexture != null)
+        {
+            material.SetFloat("_Smoothness", 1f);
+        }
+
+        EditorUtility.SetDirty(material);
+
+        if (string.IsNullOrEmpty(textureSet.MetallicPath) || string.IsNullOrEmpty(textureSet.RoughnessPath))
+        {
+            Debug.LogWarning($"{LogPrefix} {textureSet.RootName}: Metallic/Roughness pair was incomplete. Smoothness packing skipped.");
+        }
+
+        Debug.Log($"{LogPrefix} Created/Updated material: {materialPath}", material);
+        Selection.activeObject = material;
+        EditorGUIUtility.PingObject(material);
+    }
+
+    private enum TextureKind
+    {
+        BaseColor,
+        Metallic,
+        Normal,
+        Roughness
+    }
+
+    private static Texture2D LoadTexture(string path, TextureKind kind)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return null;
+        }
+
+        ConfigureImporter(path, kind);
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
+    private static void ConfigureImporter(string path, TextureKind kind)
+    {
+        TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null)
+        {
+            return;
+        }
+
+        bool changed = false;
+
+        TextureImporterType targetType = kind == TextureKind.Normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+        if (importer.textureType != targetType)
+        {
+            importer.textureType = targetType;
+            changed = true;
+        }
+
+        bool shouldUseSrgb = kind == TextureKind.BaseColor;
+        if (importer.sRGBTexture != shouldUseSrgb)
+        {
+            importer.sRGBTexture = shouldUseSrgb;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            importer.SaveAndReimport();
+        }
+    }
+
+    private static Texture2D CreateMetallicSmoothnessTexture(string targetAssetPath, Texture2D metallicTexture, Texture2D roughnessTexture)
+    {
+        int width = Mathf.Max(1, Mathf.Max(metallicTexture.width, roughnessTexture.width));
+        int height = Mathf.Max(1, Mathf.Max(metallicTexture.height, roughnessTexture.height));
+
+        Texture2D metallicReadable = CreateReadableLinearCopy(metallicTexture, width, height);
+        Texture2D roughnessReadable = CreateReadableLinearCopy(roughnessTexture, width, height);
+        Texture2D packedTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+
+        Color[] colors = new Color[width * height];
+        for (int y = 0; y < height; y++)
+        {
+            float v = (y + 0.5f) / height;
+            for (int x = 0; x < width; x++)
+            {
+                float u = (x + 0.5f) / width;
+                Color metallic = metallicReadable.GetPixelBilinear(u, v);
+                Color roughness = roughnessReadable.GetPixelBilinear(u, v);
+
+                float smoothness = Mathf.Clamp01(1f - roughness.r);
+                colors[(y * width) + x] = new Color(metallic.r, metallic.g, metallic.b, smoothness);
+            }
+        }
+
+        packedTexture.SetPixels(colors);
+        packedTexture.Apply(false, false);
+
+        byte[] pngBytes = packedTexture.EncodeToPNG();
+        string absolutePath = AssetPathToAbsolute(targetAssetPath);
+        File.WriteAllBytes(absolutePath, pngBytes);
+
+        AssetDatabase.ImportAsset(targetAssetPath, ImportAssetOptions.ForceUpdate);
+        ConfigureImporter(targetAssetPath, TextureKind.Metallic);
+
+        Object.DestroyImmediate(metallicReadable);
+        Object.DestroyImmediate(roughnessReadable);
+        Object.DestroyImmediate(packedTexture);
+
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(targetAssetPath);
+    }
+
+    private static Texture2D CreateReadableLinearCopy(Texture2D source, int width, int height)
+    {
+        RenderTexture renderTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+        Graphics.Blit(source, renderTexture);
+
+        RenderTexture previous = RenderTexture.active;
+        RenderTexture.active = renderTexture;
+
+        Texture2D readableTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true);
+        readableTexture.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+        readableTexture.Apply(false, false);
+
+        RenderTexture.active = previous;
+        RenderTexture.ReleaseTemporary(renderTexture);
+        return readableTexture;
+    }
+
+    private static string AssetPathToAbsolute(string assetPath)
+    {
+        string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+        return Path.GetFullPath(Path.Combine(projectRoot, assetPath));
     }
 }

@@ -26,6 +26,7 @@ public class DrawingBoardController : MonoBehaviour
 {
     private const HideFlags RuntimeHideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
     private const HideFlags RuntimeHierarchyHideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+    private const int MinBrushPreviewCircleSegments = 24;
 
     private sealed class StrokeHistoryCapture
     {
@@ -62,40 +63,38 @@ public class DrawingBoardController : MonoBehaviour
     [Header("Preview")]
     [SerializeField] private bool showBrushPreview = true;
     [SerializeField] private float previewSurfaceOffset = 0.01f;
-    [SerializeField] private float previewLineWidth = 0.01f;
     [SerializeField] private int previewSegments = 48;
     [SerializeField] private Color previewBrushColor = new(0f, 0f, 0f, 0.9f);
     [SerializeField] private Color previewEraserColor = new(0.15f, 0.55f, 1f, 0.95f);
 
-    [Header("Sketch Guide")]
-    [SerializeField] private Color sketchGuideStrokeColor = new(0f, 0f, 0f, 1f);
-    [SerializeField] private Color sketchGuideOverlayColor = new(0.05f, 0.8f, 1f, 0.85f);
-    [SerializeField] private int sketchGuideRegionPadding = 24;
-    [SerializeField] private bool applyFullSketchResult = true;
-    [SerializeField] private int sketchResultApplyRowsPerFrame = 32;
-
     [Header("History")]
     [SerializeField] private int maxHistoryEntries = 24;
-
-    [Header("Sticker Layers")]
-    [SerializeField] private bool enableStickerLayers = true;
-    [SerializeField] private float stickerSurfaceOffset = 0.02f;
-    [SerializeField] private float stickerDepthStep = 0.0025f;
-    [SerializeField] private float minStickerScale = 0.08f;
-    [SerializeField] private float maxStickerScale = 12f;
-    [SerializeField] private float stickerScaleStep = 0.08f;
-    [SerializeField] private float stickerRotationStep = 8f;
-    [SerializeField] private float stickerOpacityStep = 0.05f;
-    [SerializeField] private Color selectedStickerOutlineColor = new(0.15f, 0.90f, 1f, 0.95f);
+    // Sketch-guide and sticker-layer inspector parameters were removed.
+    private readonly Color sketchGuideStrokeColor = new(0f, 0f, 0f, 1f);
+    private readonly Color sketchGuideOverlayColor = new(0.05f, 0.8f, 1f, 0.85f);
+    private const int sketchGuideRegionPadding = 24;
+    private const bool applyFullSketchResult = true;
+    private const int sketchResultApplyRowsPerFrame = 32;
+    private bool enableStickerLayers;
+    private const float stickerSurfaceOffset = 0.02f;
+    private const float stickerDepthStep = 0.0025f;
+    private const float minStickerScale = 0.08f;
+    private const float maxStickerScale = 12f;
+    private const float stickerScaleStep = 0.08f;
+    private const float stickerRotationStep = 8f;
+    private const float stickerOpacityStep = 0.05f;
+    private readonly Color selectedStickerOutlineColor = new(0.15f, 0.90f, 1f, 0.95f);
 
     private DrawingCanvas _canvas;
-    private DrawingCanvas _guideCanvas;
     private DrawingCanvas _displayCanvas;
     private DrawingCanvas _exportCanvas;
     private DrawingHistory _history;
     private Material _runtimeMaterial;
     private LineRenderer _brushPreviewRenderer;
     private Material _brushPreviewMaterial;
+    private MeshRenderer _brushPreviewFillRenderer;
+    private Material _brushPreviewFillMaterial;
+    private Mesh _brushPreviewFillMesh;
     private Material _originalSharedMaterial;
     private bool _isDrawing;
     private bool _useEraser;
@@ -125,14 +124,14 @@ public class DrawingBoardController : MonoBehaviour
     public event Action<bool, float, string> StickerSelectionChanged;
 
     public Texture2D CanvasTexture => _canvas?.Texture;
-    public Texture2D GuideTexture => _guideCanvas?.Texture;
+    public Texture2D GuideTexture => null;
     public Texture2D DisplayTexture => _displayCanvas?.Texture;
     public Material RuntimeBoardMaterial => _runtimeMaterial;
     public bool HasCanvasMarks => _canvas != null && _canvas.TryGetNonBackgroundBounds(out _);
     public int BrushRadius => brushRadius;
     public bool IsEraserEnabled => _useEraser;
     public bool IsFillToolEnabled => _useFillTool;
-    public bool IsSketchGuideEnabled => _useSketchGuide;
+    public bool IsSketchGuideEnabled => false;
     public bool IsInteractionLocked => _isInteractionLocked;
     public Color BrushColor => brushColor;
     public Color BackgroundColor => backgroundColor;
@@ -140,12 +139,12 @@ public class DrawingBoardController : MonoBehaviour
     public bool CanUndo => _history != null && _history.CanUndo;
     public bool CanRedo => _history != null && _history.CanRedo;
     public int SketchGuideRegionPadding => Mathf.Max(0, sketchGuideRegionPadding);
-    public bool HasSketchGuide => _guideCanvas != null && _guideCanvas.TryGetNonBackgroundBounds(out _);
-    public bool HasSelectedSticker => _selectedSticker != null;
-    public float SelectedStickerOpacity => _selectedSticker != null ? _selectedSticker.Opacity : 1f;
-    public string SelectedStickerLabel => _selectedSticker != null ? _selectedSticker.LayerName : string.Empty;
-    public bool IsStickerMaskEraseEnabled => _useStickerMaskErase;
-    public int StickerCount => _stickerLayers.Count;
+    public bool HasSketchGuide => false;
+    public bool HasSelectedSticker => false;
+    public float SelectedStickerOpacity => 1f;
+    public string SelectedStickerLabel => string.Empty;
+    public bool IsStickerMaskEraseEnabled => false;
+    public int StickerCount => 0;
 
     private void Awake()
     {
@@ -165,7 +164,7 @@ public class DrawingBoardController : MonoBehaviour
     private void Update()
     {
         EnsureRuntimeReady();
-        if (_canvas == null || _guideCanvas == null || _displayCanvas == null ||
+        if (_canvas == null || _displayCanvas == null ||
             drawingSurfaceCollider == null || drawingCamera == null)
         {
             return;
@@ -174,10 +173,7 @@ public class DrawingBoardController : MonoBehaviour
         if (!IsDrawingPhaseActive())
         {
             _isDrawing = false;
-            if (_brushPreviewRenderer != null)
-            {
-                _brushPreviewRenderer.enabled = false;
-            }
+            HideBrushPreview();
 
             return;
         }
@@ -209,25 +205,7 @@ public class DrawingBoardController : MonoBehaviour
     [ContextMenu("Clear Sketch Guide")]
     public void ClearSketchGuide()
     {
-        if (_guideCanvas == null || _displayCanvas == null)
-        {
-            return;
-        }
-
-        _isDrawing = false;
-        if (_useSketchGuide)
-        {
-            FinalizeStrokeHistory();
-        }
-
-        if (!_guideCanvas.TryGetNonBackgroundBounds(out RectInt dirtyRegion))
-        {
-            NotifySketchGuideStateChanged();
-            return;
-        }
-
-        _guideCanvas.Clear();
-        RefreshDisplayRegion(dirtyRegion);
+        _useSketchGuide = false;
         NotifySketchGuideStateChanged();
     }
 
@@ -237,59 +215,9 @@ public class DrawingBoardController : MonoBehaviour
         string stickerLabel,
         out string error)
     {
-        error = null;
-
-        if (!enableStickerLayers)
-        {
-            error = "Sticker layers are disabled on this drawing board.";
-            return false;
-        }
-
-        if (_canvas == null || _displayCanvas == null)
-        {
-            error = "Drawing canvases are not initialized.";
-            return false;
-        }
-
-        if (stickerTexture == null)
-        {
-            error = "Sticker texture is null.";
-            return false;
-        }
-
-        if (!TryResolveStickerPlacement(
-                stickerTexture,
-                placementRegion,
-                out Vector3 centerLocal,
-                out Vector3 sizeLocal,
-                out error))
-        {
-            return false;
-        }
-
-        EnsureStickerRoot();
-
-        var stickerObject = new GameObject($"StickerLayer_{_stickerLayers.Count + 1:00}");
-        stickerObject.hideFlags = RuntimeHideFlags;
-        stickerObject.transform.SetParent(_stickerRoot, false);
-        stickerObject.transform.localPosition = new Vector3(
-            centerLocal.x,
-            stickerSurfaceOffset + (_stickerLayers.Count * stickerDepthStep),
-            centerLocal.z);
-        stickerObject.transform.localRotation = Quaternion.identity;
-        stickerObject.transform.localScale = sizeLocal;
-
-        DrawingStickerLayer stickerLayer = stickerObject.AddComponent<DrawingStickerLayer>();
-        stickerLayer.Initialize(
-            stickerTexture,
-            placementRegion,
-            stickerLabel,
-            _stickerLayers.Count + 1,
-            selectedStickerOutlineColor);
-        _stickerLayers.Add(stickerLayer);
-        SelectSticker(stickerLayer);
-        ClearSketchGuide();
-        return true;
+        error = "Sticker layers were removed from DrawingBoardController.";
+        NotifyStickerSelectionChanged();
+        return false;
     }
 
     public bool TryApplyStickerFromTexture(
@@ -298,96 +226,25 @@ public class DrawingBoardController : MonoBehaviour
         string stickerLabel,
         out string error)
     {
-        if (_selectedSticker == null)
-        {
-            return TryCreateStickerFromTexture(
-                stickerTexture,
-                placementRegion,
-                stickerLabel,
-                out error);
-        }
-
-        error = null;
-        if (!TryResolveStickerPlacement(
-                stickerTexture,
-                placementRegion,
-                out _,
-                out Vector3 sizeLocal,
-                out error))
-        {
-            return false;
-        }
-
-        Vector3 currentPosition = _selectedSticker.transform.localPosition;
-        Vector3 currentScale = _selectedSticker.transform.localScale;
-        _selectedSticker.ReplaceStickerTexture(stickerTexture, placementRegion, stickerLabel);
-        _selectedSticker.transform.localPosition = currentPosition;
-        _selectedSticker.transform.localScale = new Vector3(
-            Mathf.Sign(Mathf.Approximately(currentScale.x, 0f) ? 1f : currentScale.x) * sizeLocal.x,
-            currentScale.y,
-            Mathf.Sign(Mathf.Approximately(currentScale.z, 0f) ? 1f : currentScale.z) * sizeLocal.z);
-        ClampStickerInsideBoard(_selectedSticker);
-        SelectSticker(_selectedSticker);
-        ClearSketchGuide();
-        return true;
+        error = "Sticker layers were removed from DrawingBoardController.";
+        NotifyStickerSelectionChanged();
+        return false;
     }
 
     public bool DeleteSelectedSticker()
     {
-        if (_selectedSticker == null)
-        {
-            return false;
-        }
-
-        DrawingStickerLayer stickerToRemove = _selectedSticker;
-        SelectSticker(null);
-        _isDraggingSticker = false;
-
-        int index = _stickerLayers.IndexOf(stickerToRemove);
-        if (index >= 0)
-        {
-            _stickerLayers.RemoveAt(index);
-        }
-
-        if (stickerToRemove != null)
-        {
-            if (Application.isPlaying)
-            {
-                Destroy(stickerToRemove.gameObject);
-            }
-            else
-            {
-                DestroyImmediate(stickerToRemove.gameObject);
-            }
-        }
-
-        NormalizeStickerLayerDepths();
-        return true;
+        NotifyStickerSelectionChanged();
+        return false;
     }
 
     public bool ConfirmSelectedStickerPlacement()
     {
-        if (_selectedSticker == null)
-        {
-            NotifyStickerSelectionChanged();
-            return false;
-        }
-
-        SelectSticker(null);
-        _isDraggingSticker = false;
-        _isErasingStickerMask = false;
-        return true;
+        NotifyStickerSelectionChanged();
+        return false;
     }
 
     public void SetSelectedStickerOpacity(float opacity)
     {
-        if (_selectedSticker == null)
-        {
-            NotifyStickerSelectionChanged();
-            return;
-        }
-
-        _selectedSticker.SetOpacity(opacity);
         NotifyStickerSelectionChanged();
     }
 
@@ -407,14 +264,6 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         Color32[] compositePixels = _canvas.CopyPixels();
-        if (enableStickerLayers && _stickerLayers.Count > 0)
-        {
-            Bounds boardMeshBounds = GetBoardMeshBounds();
-            for (int i = 0; i < _stickerLayers.Count; i++)
-            {
-                BlendStickerIntoPixels(_stickerLayers[i], compositePixels, boardMeshBounds);
-            }
-        }
 
         _exportCanvas.ApplyRegion(
             new RectInt(0, 0, _canvas.Width, _canvas.Height),
@@ -425,8 +274,6 @@ public class DrawingBoardController : MonoBehaviour
     public void SetBrushColor(Color color)
     {
         FinalizeStrokeHistory();
-        SelectSticker(null);
-        _isDraggingSticker = false;
         brushColor = color;
         _useEraser = false;
         _useSketchGuide = false;
@@ -440,23 +287,10 @@ public class DrawingBoardController : MonoBehaviour
         _isDrawing = false;
         _isDraggingSticker = false;
         _isErasingStickerMask = false;
-
-        DrawingToolMode resolvedMode = mode;
-        if (resolvedMode == DrawingToolMode.StickerMaskErase &&
-            (!enableStickerLayers || _selectedSticker == null))
-        {
-            resolvedMode = DrawingToolMode.Brush;
-        }
-
-        if (resolvedMode != DrawingToolMode.StickerMaskErase)
-        {
-            SelectSticker(null);
-        }
-
-        _useEraser = resolvedMode == DrawingToolMode.Eraser;
-        _useFillTool = resolvedMode == DrawingToolMode.Fill;
-        _useSketchGuide = resolvedMode == DrawingToolMode.SketchGuide;
-        _useStickerMaskErase = resolvedMode == DrawingToolMode.StickerMaskErase;
+        _useEraser = mode == DrawingToolMode.Eraser;
+        _useFillTool = mode == DrawingToolMode.Fill;
+        _useSketchGuide = false;
+        _useStickerMaskErase = false;
 
         NotifySketchGuideStateChanged();
         NotifyStickerSelectionChanged();
@@ -496,47 +330,25 @@ public class DrawingBoardController : MonoBehaviour
 
     public void SetSketchGuideEnabled(bool enabled)
     {
-        SetToolMode(enabled ? DrawingToolMode.SketchGuide : DrawingToolMode.Brush);
+        SetToolMode(DrawingToolMode.Brush);
     }
 
     public void ToggleSketchGuide()
     {
-        SetSketchGuideEnabled(!_useSketchGuide);
+        SetSketchGuideEnabled(false);
     }
 
     public void SetStickerMaskEraseEnabled(bool enabled)
     {
-        if (!enableStickerLayers || _selectedSticker == null)
-        {
-            enabled = false;
-        }
-
-        if (_useStickerMaskErase == enabled)
-        {
-            NotifyStickerSelectionChanged();
-            return;
-        }
-
-        FinalizeStrokeHistory();
-        _useStickerMaskErase = enabled;
-        _isDrawing = false;
+        _useStickerMaskErase = false;
         _isDraggingSticker = false;
         _isErasingStickerMask = false;
-
-        if (_useStickerMaskErase)
-        {
-            _useEraser = false;
-            _useFillTool = false;
-            _useSketchGuide = false;
-            NotifySketchGuideStateChanged();
-        }
-
         NotifyStickerSelectionChanged();
     }
 
     public void ToggleStickerMaskErase()
     {
-        SetStickerMaskEraseEnabled(!_useStickerMaskErase);
+        SetStickerMaskEraseEnabled(false);
     }
 
     public void SetInteractionLocked(bool locked)
@@ -553,25 +365,12 @@ public class DrawingBoardController : MonoBehaviour
             _isDraggingSticker = false;
             _isErasingStickerMask = false;
             FinalizeStrokeHistory();
-            if (_brushPreviewRenderer != null)
-            {
-                _brushPreviewRenderer.enabled = false;
-            }
+            HideBrushPreview();
         }
     }
 
     public DrawingToolMode GetCurrentToolMode()
     {
-        if (_useStickerMaskErase)
-        {
-            return DrawingToolMode.StickerMaskErase;
-        }
-
-        if (_useSketchGuide)
-        {
-            return DrawingToolMode.SketchGuide;
-        }
-
         if (_useFillTool)
         {
             return DrawingToolMode.Fill;
@@ -582,13 +381,8 @@ public class DrawingBoardController : MonoBehaviour
 
     public bool TryGetSketchGuideBounds(out RectInt guideRegion)
     {
-        if (_guideCanvas == null)
-        {
-            guideRegion = default;
-            return false;
-        }
-
-        return _guideCanvas.TryGetNonBackgroundBounds(out guideRegion);
+        guideRegion = default;
+        return false;
     }
 
     public bool TryBuildSketchGuideControlTexture(
@@ -598,46 +392,8 @@ public class DrawingBoardController : MonoBehaviour
     {
         controlTexture = null;
         guideRegion = default;
-        error = null;
-
-        if (_guideCanvas == null)
-        {
-            error = "Sketch guide canvas is not initialized.";
-            return false;
-        }
-
-        if (!_guideCanvas.TryGetNonBackgroundBounds(out guideRegion))
-        {
-            error = "Draw sketch guide strokes first.";
-            return false;
-        }
-
-        Color32[] guidePixels = _guideCanvas.CopyPixels();
-        Color32[] controlPixels = new Color32[guidePixels.Length];
-        Color32 white = Color.white;
-        Color32 black = Color.black;
-        int width = _guideCanvas.Width;
-        int height = _guideCanvas.Height;
-        for (int y = 0; y < height; y++)
-        {
-            int rowStart = y * width;
-            for (int x = 0; x < width; x++)
-            {
-                int pixelIndex = rowStart + x;
-                controlPixels[pixelIndex] = guidePixels[pixelIndex].a > 0 ? black : white;
-            }
-        }
-
-        controlTexture = new Texture2D(_guideCanvas.Width, _guideCanvas.Height, TextureFormat.RGBA32, false)
-        {
-            name = $"{name}_SketchGuideControlTexture",
-            filterMode = filterMode,
-            wrapMode = TextureWrapMode.Clamp,
-            hideFlags = RuntimeHideFlags
-        };
-        controlTexture.SetPixels32(controlPixels);
-        controlTexture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
-        return true;
+        error = "Sketch guide logic was removed from DrawingBoardController.";
+        return false;
     }
 
     public bool TryApplySketchGuideResult(
@@ -648,95 +404,8 @@ public class DrawingBoardController : MonoBehaviour
         out string error)
     {
         appliedRegion = default;
-        error = null;
-
-        if (_canvas == null || _guideCanvas == null || _displayCanvas == null)
-        {
-            error = "Drawing canvases are not initialized.";
-            return false;
-        }
-
-        if (generatedTexture == null)
-        {
-            error = "Generated texture is null.";
-            return false;
-        }
-
-        if (guideRegion.width <= 0 || guideRegion.height <= 0)
-        {
-            if (!_guideCanvas.TryGetNonBackgroundBounds(out guideRegion))
-            {
-                error = "Sketch guide bounds are empty.";
-                return false;
-            }
-        }
-
-        appliedRegion = applyFullSketchResult
-            ? new RectInt(0, 0, _canvas.Width, _canvas.Height)
-            : ExpandRegion(guideRegion, Mathf.Max(0, regionPadding), _canvas.Width, _canvas.Height);
-        if (appliedRegion.width <= 0 || appliedRegion.height <= 0)
-        {
-            error = "Resolved sketch guide region is empty.";
-            return false;
-        }
-
-        Texture2D sampledTexture = generatedTexture;
-        Texture2D resizedTexture = null;
-        if (generatedTexture.width != _canvas.Width || generatedTexture.height != _canvas.Height)
-        {
-            if (!StableDiffusionCppImageIO.TryResizeTexture(
-                    generatedTexture,
-                    _canvas.Width,
-                    _canvas.Height,
-                    out resizedTexture,
-                    out error))
-            {
-                return false;
-            }
-
-            sampledTexture = resizedTexture;
-        }
-
-        try
-        {
-            Color32[] beforePixels = _canvas.CopyRegion(appliedRegion);
-            Color32[] generatedPixels = CopyTextureRegionPixels(
-                sampledTexture.GetPixels32(),
-                sampledTexture.width,
-                appliedRegion);
-
-            if (generatedPixels == null || generatedPixels.Length != appliedRegion.width * appliedRegion.height)
-            {
-                error = "Failed to read generated sketch guide pixels.";
-                return false;
-            }
-
-            _canvas.ApplyRegion(appliedRegion, generatedPixels);
-            RecordHistory(appliedRegion, beforePixels, generatedPixels);
-            _guideCanvas.Clear();
-            RefreshDisplayRegion(appliedRegion);
-            NotifySketchGuideStateChanged();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            error = $"Failed to apply sketch guide result: {ex.Message}";
-            return false;
-        }
-        finally
-        {
-            if (resizedTexture != null)
-            {
-                if (Application.isPlaying)
-                {
-                    Destroy(resizedTexture);
-                }
-                else
-                {
-                    DestroyImmediate(resizedTexture);
-                }
-            }
-        }
+        error = "Sketch guide logic was removed from DrawingBoardController.";
+        return false;
     }
 
     public IEnumerator ApplySketchGuideResultCoroutine(
@@ -746,120 +415,8 @@ public class DrawingBoardController : MonoBehaviour
         CancellationToken cancellationToken,
         Action<bool, RectInt, string> onComplete)
     {
-        RectInt appliedRegion = default;
-        string error = null;
-
-        if (_canvas == null || _guideCanvas == null || _displayCanvas == null)
-        {
-            onComplete?.Invoke(false, appliedRegion, "Drawing canvases are not initialized.");
-            yield break;
-        }
-
-        if (generatedTexture == null)
-        {
-            onComplete?.Invoke(false, appliedRegion, "Generated texture is null.");
-            yield break;
-        }
-
-        if (guideRegion.width <= 0 || guideRegion.height <= 0)
-        {
-            if (!_guideCanvas.TryGetNonBackgroundBounds(out guideRegion))
-            {
-                onComplete?.Invoke(false, appliedRegion, "Sketch guide bounds are empty.");
-                yield break;
-            }
-        }
-
-        appliedRegion = applyFullSketchResult
-            ? new RectInt(0, 0, _canvas.Width, _canvas.Height)
-            : ExpandRegion(guideRegion, Mathf.Max(0, regionPadding), _canvas.Width, _canvas.Height);
-        if (appliedRegion.width <= 0 || appliedRegion.height <= 0)
-        {
-            onComplete?.Invoke(false, appliedRegion, "Resolved sketch guide region is empty.");
-            yield break;
-        }
-
-        Texture2D sampledTexture = generatedTexture;
-        Texture2D resizedTexture = null;
-        if (generatedTexture.width != _canvas.Width || generatedTexture.height != _canvas.Height)
-        {
-            if (!StableDiffusionCppImageIO.TryResizeTexture(
-                    generatedTexture,
-                    _canvas.Width,
-                    _canvas.Height,
-                    out resizedTexture,
-                    out error))
-            {
-                onComplete?.Invoke(false, appliedRegion, error);
-                yield break;
-            }
-
-            sampledTexture = resizedTexture;
-        }
-
-        Color32[] beforePixels = _canvas.CopyRegion(appliedRegion);
-        Color32[] sourcePixels = sampledTexture.GetPixels32();
-        Color32[] afterPixels = new Color32[appliedRegion.width * appliedRegion.height];
-        int rowsPerFrame = Mathf.Clamp(sketchResultApplyRowsPerFrame, 1, appliedRegion.height);
-
-        try
-        {
-            for (int localY = 0; localY < appliedRegion.height; localY += rowsPerFrame)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    onComplete?.Invoke(false, appliedRegion, "Sketch guide generation cancelled.");
-                    yield break;
-                }
-
-                int chunkHeight = Mathf.Min(rowsPerFrame, appliedRegion.height - localY);
-                var chunkRegion = new RectInt(
-                    appliedRegion.x,
-                    appliedRegion.y + localY,
-                    appliedRegion.width,
-                    chunkHeight);
-                Color32[] chunkPixels = CopyTextureRegionPixels(
-                    sourcePixels,
-                    sampledTexture.width,
-                    chunkRegion);
-
-                if (chunkPixels == null || chunkPixels.Length != chunkRegion.width * chunkRegion.height)
-                {
-                    onComplete?.Invoke(false, appliedRegion, "Failed to read generated sketch guide pixels.");
-                    yield break;
-                }
-
-                _canvas.ApplyRegion(chunkRegion, chunkPixels);
-                RefreshDisplayRegion(chunkRegion);
-                Array.Copy(
-                    chunkPixels,
-                    0,
-                    afterPixels,
-                    localY * appliedRegion.width,
-                    chunkPixels.Length);
-                yield return null;
-            }
-
-            RecordHistory(appliedRegion, beforePixels, afterPixels);
-            _guideCanvas.Clear();
-            RefreshDisplayRegion(appliedRegion);
-            NotifySketchGuideStateChanged();
-            onComplete?.Invoke(true, appliedRegion, null);
-        }
-        finally
-        {
-            if (resizedTexture != null)
-            {
-                if (Application.isPlaying)
-                {
-                    Destroy(resizedTexture);
-                }
-                else
-                {
-                    DestroyImmediate(resizedTexture);
-                }
-            }
-        }
+        onComplete?.Invoke(false, default, "Sketch guide logic was removed from DrawingBoardController.");
+        yield break;
     }
 
     public bool Undo()
@@ -913,7 +470,6 @@ public class DrawingBoardController : MonoBehaviour
 
         bool isRuntimeReady =
             _canvas != null &&
-            _guideCanvas != null &&
             _displayCanvas != null &&
             boardRenderer != null &&
             drawingSurfaceCollider != null;
@@ -928,11 +484,8 @@ public class DrawingBoardController : MonoBehaviour
     private void OnDestroy()
     {
         ResetStrokeHistory();
-        ClearAllStickerLayers();
         _canvas?.Dispose();
         _canvas = null;
-        _guideCanvas?.Dispose();
-        _guideCanvas = null;
         _displayCanvas?.Dispose();
         _displayCanvas = null;
         _exportCanvas?.Dispose();
@@ -969,16 +522,13 @@ public class DrawingBoardController : MonoBehaviour
         SetOriginalMaterialSource(sourceMaterial);
         ReleaseRuntimeMaterial();
         _canvas?.Dispose();
-        _guideCanvas?.Dispose();
         _displayCanvas?.Dispose();
         _exportCanvas?.Dispose();
         GetResolvedCanvasDimensions(out int resolvedWidth, out int resolvedHeight);
         _canvas = new DrawingCanvas(resolvedWidth, resolvedHeight, backgroundColor, filterMode);
-        _guideCanvas = new DrawingCanvas(resolvedWidth, resolvedHeight, Color.clear, filterMode);
         _displayCanvas = new DrawingCanvas(resolvedWidth, resolvedHeight, backgroundColor, filterMode);
         _exportCanvas = new DrawingCanvas(resolvedWidth, resolvedHeight, backgroundColor, filterMode);
         _history = new DrawingHistory(maxHistoryEntries);
-        EnsureStickerRoot();
         ResetStrokeHistory();
         RefreshDisplayFullCanvas();
 
@@ -999,8 +549,6 @@ public class DrawingBoardController : MonoBehaviour
         {
             UpdateBrushPreview(pointerOverUi: true);
             _isDrawing = false;
-            _isDraggingSticker = false;
-            _isErasingStickerMask = false;
             FinalizeStrokeHistory();
             return;
         }
@@ -1010,15 +558,8 @@ public class DrawingBoardController : MonoBehaviour
         bool pointerUp = GetPointerUpThisFrame();
         bool pointerOverUi = blockPointerWhenOverUi && IsPointerOverUi();
 
-        bool hideBrushPreview = pointerOverUi || _isDraggingSticker || (_selectedSticker != null && !_useStickerMaskErase);
-        UpdateBrushPreview(hideBrushPreview);
+        UpdateBrushPreview(pointerOverUi);
         HandleHistoryShortcuts();
-        HandleStickerKeyboardShortcuts(pointerOverUi);
-
-        if (TryHandleStickerPointerInput(pointerDown, pointerHeld, pointerUp, pointerOverUi))
-        {
-            return;
-        }
 
         if (pointerOverUi)
         {
@@ -1027,14 +568,6 @@ public class DrawingBoardController : MonoBehaviour
 
         if (!pointerOverUi && pointerDown && TryGetPointerPixel(out Vector2Int startPixel))
         {
-            if (_useSketchGuide)
-            {
-                _isDrawing = true;
-                _lastPixel = startPixel;
-                PaintSketchGuideLine(startPixel, startPixel);
-                return;
-            }
-
             if (_useFillTool)
             {
                 ApplyFill(startPixel);
@@ -1056,13 +589,6 @@ public class DrawingBoardController : MonoBehaviour
         {
             if (currentPixel != _lastPixel)
             {
-                if (_useSketchGuide)
-                {
-                    PaintSketchGuideLine(_lastPixel, currentPixel);
-                    _lastPixel = currentPixel;
-                    return;
-                }
-
                 CaptureStrokeSegmentBeforeChange(_lastPixel, currentPixel);
                 if (_canvas.DrawLine(_lastPixel, currentPixel, GetActiveDrawColor(), brushRadius, out RectInt dirtyRegion))
                 {
@@ -1082,27 +608,12 @@ public class DrawingBoardController : MonoBehaviour
 
     private Color GetActiveDrawColor()
     {
-        if (_useSketchGuide)
-        {
-            return sketchGuideOverlayColor;
-        }
-
         return _useEraser ? backgroundColor : brushColor;
     }
 
     private Color GetPreviewColor()
     {
-        if (_useSketchGuide)
-        {
-            return sketchGuideOverlayColor;
-        }
-
-        if (_useStickerMaskErase)
-        {
-            return previewEraserColor;
-        }
-
-        return _useEraser ? previewEraserColor : previewBrushColor;
+        return brushColor;
     }
 
     private static bool IsPointerOverUi()
@@ -1169,7 +680,13 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        Ray ray = drawingCamera.ScreenPointToRay(pointerScreenPosition);
+        Camera activeCamera = drawingCamera != null ? drawingCamera : Camera.main;
+        if (activeCamera == null)
+        {
+            return false;
+        }
+
+        Ray ray = activeCamera.ScreenPointToRay(pointerScreenPosition);
         if (!drawingSurfaceCollider.Raycast(ray, out hit, 1000f))
         {
             return false;
@@ -1321,6 +838,30 @@ public class DrawingBoardController : MonoBehaviour
             default:
                 return value.z;
         }
+    }
+
+    private static Vector3 GetAxisDirection(Transform targetTransform, int axis)
+    {
+        if (targetTransform == null)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 axisVector;
+        switch (axis)
+        {
+            case 0:
+                axisVector = new Vector3(1f, 0f, 0f);
+                break;
+            case 1:
+                axisVector = new Vector3(0f, 1f, 0f);
+                break;
+            default:
+                axisVector = new Vector3(0f, 0f, 1f);
+                break;
+        }
+
+        return targetTransform.TransformVector(axisVector).normalized;
     }
 
     private bool IsCanvasUvInPaintArea(Vector2 canvasUv)
@@ -1591,15 +1132,12 @@ public class DrawingBoardController : MonoBehaviour
 
     private void NotifySketchGuideStateChanged()
     {
-        SketchGuideStateChanged?.Invoke(_useSketchGuide, HasSketchGuide);
+        SketchGuideStateChanged?.Invoke(false, false);
     }
 
     private void NotifyStickerSelectionChanged()
     {
-        StickerSelectionChanged?.Invoke(
-            _selectedSticker != null,
-            _selectedSticker != null ? _selectedSticker.Opacity : 1f,
-            _selectedSticker != null ? _selectedSticker.LayerName : string.Empty);
+        StickerSelectionChanged?.Invoke(false, 1f, string.Empty);
     }
 
     private void EnsureStickerRoot()
@@ -1819,7 +1357,13 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        Ray ray = drawingCamera.ScreenPointToRay(pointerScreenPosition);
+        Camera activeCamera = drawingCamera != null ? drawingCamera : Camera.main;
+        if (activeCamera == null)
+        {
+            return false;
+        }
+
+        Ray ray = activeCamera.ScreenPointToRay(pointerScreenPosition);
         if (!_selectedSticker.TryRaycast(ray, 1000f, out RaycastHit stickerHit))
         {
             return false;
@@ -1880,7 +1424,13 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        Ray ray = drawingCamera.ScreenPointToRay(pointerScreenPosition);
+        Camera activeCamera = drawingCamera != null ? drawingCamera : Camera.main;
+        if (activeCamera == null)
+        {
+            return false;
+        }
+
+        Ray ray = activeCamera.ScreenPointToRay(pointerScreenPosition);
         for (int i = _stickerLayers.Count - 1; i >= 0; i--)
         {
             DrawingStickerLayer candidate = _stickerLayers[i];
@@ -2002,16 +1552,7 @@ public class DrawingBoardController : MonoBehaviour
 
     private void PaintSketchGuideLine(Vector2Int from, Vector2Int to)
     {
-        if (_guideCanvas == null || _displayCanvas == null)
-        {
-            return;
-        }
-
-        if (_guideCanvas.DrawLine(from, to, sketchGuideStrokeColor, brushRadius, out RectInt dirtyRegion))
-        {
-            RefreshDisplayRegion(dirtyRegion);
-            NotifySketchGuideStateChanged();
-        }
+        // Sketch guide drawing was removed.
     }
 
     private void RefreshDisplayFullCanvas()
@@ -2070,23 +1611,6 @@ public class DrawingBoardController : MonoBehaviour
             }
         }
 
-        if (_guideCanvas != null)
-        {
-            Color32[] guidePixels = _guideCanvas.CopyRegion(region);
-            int pixelCount = Mathf.Min(compositePixels.Length, guidePixels.Length);
-            Color guideColor = sketchGuideOverlayColor;
-            for (int i = 0; i < pixelCount; i++)
-            {
-                float alpha = guidePixels[i].a / 255f;
-                if (alpha <= 0f)
-                {
-                    continue;
-                }
-
-                compositePixels[i] = Color32.Lerp(compositePixels[i], guideColor, alpha * guideColor.a);
-            }
-        }
-
         _displayCanvas.ApplyRegion(region, compositePixels);
     }
 
@@ -2097,46 +1621,122 @@ public class DrawingBoardController : MonoBehaviour
             return;
         }
 
-        Shader shader = Shader.Find("Sprites/Default");
-        if (shader == null)
+        Shader previewShader = Shader.Find("Hidden/Internal-Colored");
+        if (previewShader == null)
         {
-            shader = Shader.Find("Universal Render Pipeline/Unlit");
+            previewShader = Shader.Find("Sprites/Default");
         }
 
-        _brushPreviewMaterial = shader != null ? new Material(shader) : null;
+        if (previewShader == null)
+        {
+            previewShader = Shader.Find("Universal Render Pipeline/Unlit");
+        }
+
+        _brushPreviewMaterial = previewShader != null ? new Material(previewShader) : null;
         if (_brushPreviewMaterial != null)
         {
             _brushPreviewMaterial.name = $"{name}_BrushPreviewMaterial";
             _brushPreviewMaterial.hideFlags = RuntimeHideFlags;
-            if (_brushPreviewMaterial.HasProperty("_BaseColor"))
-            {
-                _brushPreviewMaterial.SetColor("_BaseColor", GetPreviewColor());
-            }
+            ApplyPreviewMaterialRenderSettings(_brushPreviewMaterial);
+            UpdatePreviewMaterialColor(_brushPreviewMaterial, Color.black);
+        }
 
-            if (_brushPreviewMaterial.HasProperty("_Color"))
-            {
-                _brushPreviewMaterial.SetColor("_Color", GetPreviewColor());
-            }
+        _brushPreviewFillMaterial = previewShader != null ? new Material(previewShader) : null;
+        if (_brushPreviewFillMaterial != null)
+        {
+            _brushPreviewFillMaterial.name = $"{name}_BrushPreviewFillMaterial";
+            _brushPreviewFillMaterial.hideFlags = RuntimeHideFlags;
+            ApplyPreviewMaterialRenderSettings(_brushPreviewFillMaterial);
+            UpdatePreviewMaterialColor(_brushPreviewFillMaterial, brushColor);
         }
 
         var previewObject = new GameObject("BrushPreview");
         previewObject.hideFlags = RuntimeHierarchyHideFlags;
         previewObject.transform.SetParent(transform, false);
+        previewObject.layer = ResolveBrushPreviewLayer();
         _brushPreviewRenderer = previewObject.AddComponent<LineRenderer>();
         _brushPreviewRenderer.hideFlags = RuntimeHideFlags;
         _brushPreviewRenderer.loop = true;
         _brushPreviewRenderer.useWorldSpace = true;
-        _brushPreviewRenderer.positionCount = Mathf.Max(16, previewSegments);
-        _brushPreviewRenderer.widthMultiplier = previewLineWidth;
+        _brushPreviewRenderer.positionCount = Mathf.Max(MinBrushPreviewCircleSegments, previewSegments);
+        _brushPreviewRenderer.widthMultiplier = 0.01f;
         _brushPreviewRenderer.textureMode = LineTextureMode.Stretch;
         _brushPreviewRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         _brushPreviewRenderer.receiveShadows = false;
         _brushPreviewRenderer.alignment = LineAlignment.View;
+        _brushPreviewRenderer.allowOcclusionWhenDynamic = false;
+        _brushPreviewRenderer.sortingOrder = short.MaxValue;
         _brushPreviewRenderer.enabled = false;
 
         if (_brushPreviewMaterial != null)
         {
             _brushPreviewRenderer.sharedMaterial = _brushPreviewMaterial;
+        }
+
+        var fillObject = new GameObject("BrushPreviewFill");
+        fillObject.hideFlags = RuntimeHierarchyHideFlags;
+        fillObject.transform.SetParent(previewObject.transform, false);
+        fillObject.layer = previewObject.layer;
+        MeshFilter fillMeshFilter = fillObject.AddComponent<MeshFilter>();
+        _brushPreviewFillRenderer = fillObject.AddComponent<MeshRenderer>();
+        _brushPreviewFillRenderer.hideFlags = RuntimeHideFlags;
+        _brushPreviewFillRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        _brushPreviewFillRenderer.receiveShadows = false;
+        _brushPreviewFillRenderer.allowOcclusionWhenDynamic = false;
+        _brushPreviewFillRenderer.sortingOrder = short.MaxValue;
+        _brushPreviewFillRenderer.enabled = false;
+
+        if (_brushPreviewFillMaterial != null)
+        {
+            _brushPreviewFillRenderer.sharedMaterial = _brushPreviewFillMaterial;
+        }
+
+        _brushPreviewFillMesh = BuildUnitDiscMesh(Mathf.Max(MinBrushPreviewCircleSegments, previewSegments));
+        _brushPreviewFillMesh.name = $"{name}_BrushPreviewFillMesh";
+        _brushPreviewFillMesh.hideFlags = RuntimeHideFlags;
+        fillMeshFilter.sharedMesh = _brushPreviewFillMesh;
+
+        SyncBrushPreviewRendererSettings();
+        HideBrushPreview();
+    }
+
+    private int ResolveBrushPreviewLayer()
+    {
+        if (boardRenderer != null)
+        {
+            return boardRenderer.gameObject.layer;
+        }
+
+        return gameObject.layer;
+    }
+
+    private void SyncBrushPreviewRendererSettings()
+    {
+        int targetLayer = ResolveBrushPreviewLayer();
+        if (_brushPreviewRenderer != null && _brushPreviewRenderer.gameObject.layer != targetLayer)
+        {
+            _brushPreviewRenderer.gameObject.layer = targetLayer;
+        }
+
+        if (_brushPreviewFillRenderer != null && _brushPreviewFillRenderer.gameObject.layer != targetLayer)
+        {
+            _brushPreviewFillRenderer.gameObject.layer = targetLayer;
+        }
+
+        if (boardRenderer != null && _brushPreviewRenderer != null)
+        {
+            _brushPreviewRenderer.sortingLayerID = boardRenderer.sortingLayerID;
+            _brushPreviewRenderer.sortingOrder = Mathf.Max(
+                _brushPreviewRenderer.sortingOrder,
+                boardRenderer.sortingOrder + 1000);
+        }
+
+        if (boardRenderer != null && _brushPreviewFillRenderer != null)
+        {
+            _brushPreviewFillRenderer.sortingLayerID = boardRenderer.sortingLayerID;
+            _brushPreviewFillRenderer.sortingOrder = Mathf.Max(
+                _brushPreviewFillRenderer.sortingOrder,
+                boardRenderer.sortingOrder + 1000);
         }
     }
 
@@ -2144,18 +1744,19 @@ public class DrawingBoardController : MonoBehaviour
     {
         if (!showBrushPreview || _brushPreviewRenderer == null)
         {
+            HideBrushPreview();
             return;
         }
 
         if (_useFillTool || pointerOverUi || _isInteractionLocked || !TryGetPointerHit(out RaycastHit hit))
         {
-            _brushPreviewRenderer.enabled = false;
+            HideBrushPreview();
             return;
         }
 
         if (!TryGetSurfaceUvFromHit(hit, out Vector2 previewSurfaceUv))
         {
-            _brushPreviewRenderer.enabled = false;
+            HideBrushPreview();
             return;
         }
 
@@ -2163,11 +1764,10 @@ public class DrawingBoardController : MonoBehaviour
 
         if (!IsCanvasUvInPaintArea(previewCanvasUv))
         {
-            _brushPreviewRenderer.enabled = false;
+            HideBrushPreview();
             return;
         }
 
-        float radius = GetPreviewWorldRadius(hit);
         Vector3 normal = hit.normal.normalized;
         Vector3 tangent = Vector3.Cross(normal, Vector3.up);
         if (tangent.sqrMagnitude < 0.0001f)
@@ -2177,46 +1777,287 @@ public class DrawingBoardController : MonoBehaviour
 
         tangent.Normalize();
         Vector3 bitangent = Vector3.Cross(normal, tangent).normalized;
-        Vector3 center = hit.point + (normal * previewSurfaceOffset);
+        Vector3 previewAxisU;
+        Vector3 previewAxisV;
+        float previewRadiusU;
+        float previewRadiusV;
+        if (!TryGetPreviewWorldRadiiAndAxes(
+                hit,
+                normal,
+                out previewAxisU,
+                out previewAxisV,
+                out previewRadiusU,
+                out previewRadiusV))
+        {
+            float fallbackRadius = GetPreviewWorldRadius(hit);
+            previewAxisU = tangent;
+            previewAxisV = bitangent;
+            previewRadiusU = fallbackRadius;
+            previewRadiusV = fallbackRadius;
+        }
 
-        int segmentCount = _brushPreviewRenderer.positionCount;
+        Camera activeCamera = drawingCamera != null ? drawingCamera : Camera.main;
+        if (activeCamera != null)
+        {
+            Vector3 cameraToHit = (hit.point - activeCamera.transform.position).normalized;
+            // Keep preview offset on the camera-facing side of the surface.
+            if (Vector3.Dot(normal, cameraToHit) > 0f)
+            {
+                normal = -normal;
+            }
+        }
+
+        float outlineWidth = GetPreviewOutlineWorldWidth(previewRadiusU, previewRadiusV);
+        float resolvedSurfaceOffset = Mathf.Max(previewSurfaceOffset, (outlineWidth * 0.5f) + 0.001f);
+        Vector3 center = hit.point + (normal * resolvedSurfaceOffset);
+        int segmentCount = Mathf.Max(MinBrushPreviewCircleSegments, previewSegments);
+        if (_brushPreviewRenderer.positionCount != segmentCount)
+        {
+            _brushPreviewRenderer.positionCount = segmentCount;
+        }
+
         float step = Mathf.PI * 2f / segmentCount;
         for (int i = 0; i < segmentCount; i++)
         {
             float angle = i * step;
-            Vector3 offset = (tangent * Mathf.Cos(angle) + bitangent * Mathf.Sin(angle)) * radius;
+            Vector3 offset =
+                (previewAxisU * Mathf.Cos(angle) * previewRadiusU) +
+                (previewAxisV * Mathf.Sin(angle) * previewRadiusV);
             _brushPreviewRenderer.SetPosition(i, center + offset);
         }
 
-        _brushPreviewRenderer.widthMultiplier = previewLineWidth;
-        _brushPreviewRenderer.startColor = GetPreviewColor();
-        _brushPreviewRenderer.endColor = GetPreviewColor();
-        _brushPreviewRenderer.enabled = true;
-
-        if (_brushPreviewMaterial != null)
+        if (_useEraser)
         {
-            if (_brushPreviewMaterial.HasProperty("_BaseColor"))
+            _brushPreviewRenderer.widthMultiplier = outlineWidth;
+            _brushPreviewRenderer.startColor = Color.black;
+            _brushPreviewRenderer.endColor = Color.black;
+            _brushPreviewRenderer.enabled = true;
+
+            if (_brushPreviewFillRenderer != null)
             {
-                _brushPreviewMaterial.SetColor("_BaseColor", GetPreviewColor());
+                _brushPreviewFillRenderer.enabled = false;
             }
 
-            if (_brushPreviewMaterial.HasProperty("_Color"))
-            {
-                _brushPreviewMaterial.SetColor("_Color", GetPreviewColor());
-            }
+            UpdatePreviewMaterialColor(_brushPreviewMaterial, Color.black);
+            return;
         }
+
+        _brushPreviewRenderer.enabled = false;
+        if (_brushPreviewFillRenderer != null)
+        {
+            Transform fillTransform = _brushPreviewFillRenderer.transform;
+            fillTransform.position = center;
+            fillTransform.rotation = Quaternion.LookRotation(normal, previewAxisV);
+            fillTransform.localScale = new Vector3(previewRadiusU, previewRadiusV, 1f);
+            _brushPreviewFillRenderer.enabled = true;
+        }
+
+        UpdatePreviewMaterialColor(_brushPreviewFillMaterial, brushColor);
+    }
+
+    private void HideBrushPreview()
+    {
+        if (_brushPreviewRenderer != null)
+        {
+            _brushPreviewRenderer.enabled = false;
+        }
+
+        if (_brushPreviewFillRenderer != null)
+        {
+            _brushPreviewFillRenderer.enabled = false;
+        }
+    }
+
+    private static void UpdatePreviewMaterialColor(Material material, Color color)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        if (material.HasProperty("_BaseColor"))
+        {
+            material.SetColor("_BaseColor", color);
+        }
+
+        if (material.HasProperty("_Color"))
+        {
+            material.SetColor("_Color", color);
+        }
+    }
+
+    private static void ApplyPreviewMaterialRenderSettings(Material material)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        // Render preview as transparent overlay and bypass depth occlusion.
+        if (material.HasProperty("_SrcBlend"))
+        {
+            material.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+        }
+
+        if (material.HasProperty("_DstBlend"))
+        {
+            material.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+        }
+
+        if (material.HasProperty("_Cull"))
+        {
+            material.SetInt("_Cull", (int)CullMode.Off);
+        }
+
+        if (material.HasProperty("_ZTest"))
+        {
+            material.SetInt("_ZTest", (int)CompareFunction.Always);
+        }
+
+        if (material.HasProperty("_ZWrite"))
+        {
+            material.SetInt("_ZWrite", 0);
+        }
+
+        material.renderQueue = (int)RenderQueue.Overlay + 100;
+    }
+
+    private static Mesh BuildUnitDiscMesh(int requestedSegmentCount)
+    {
+        int segmentCount = Mathf.Max(MinBrushPreviewCircleSegments, requestedSegmentCount);
+        var mesh = new Mesh();
+        var vertices = new Vector3[segmentCount + 1];
+        var triangles = new int[segmentCount * 3];
+        var uv = new Vector2[vertices.Length];
+
+        vertices[0] = Vector3.zero;
+        uv[0] = new Vector2(0.5f, 0.5f);
+
+        for (int i = 0; i < segmentCount; i++)
+        {
+            float angle = (i / (float)segmentCount) * Mathf.PI * 2f;
+            float x = Mathf.Cos(angle);
+            float y = Mathf.Sin(angle);
+            int vertexIndex = i + 1;
+            vertices[vertexIndex] = new Vector3(x, y, 0f);
+            uv[vertexIndex] = new Vector2((x + 1f) * 0.5f, (y + 1f) * 0.5f);
+
+            int triangleIndex = i * 3;
+            triangles[triangleIndex] = 0;
+            triangles[triangleIndex + 1] = vertexIndex;
+            triangles[triangleIndex + 2] = (i == segmentCount - 1) ? 1 : vertexIndex + 1;
+        }
+
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.uv = uv;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    private bool TryGetPreviewWorldRadiiAndAxes(
+        RaycastHit hit,
+        Vector3 surfaceNormal,
+        out Vector3 axisU,
+        out Vector3 axisV,
+        out float radiusU,
+        out float radiusV)
+    {
+        axisU = Vector3.zero;
+        axisV = Vector3.zero;
+        radiusU = 0f;
+        radiusV = 0f;
+
+        if (_canvas == null || brushRadius <= 0)
+        {
+            return false;
+        }
+
+        BoxCollider boxCollider = hit.collider as BoxCollider ?? drawingSurfaceCollider as BoxCollider;
+        if (boxCollider == null)
+        {
+            return false;
+        }
+
+        Vector3 axisWorldSizes = GetBoxAxisWorldSizes(boxCollider);
+        if (!TryResolveBoxPaintAxes(boxCollider, axisWorldSizes, out int uAxis, out int vAxis))
+        {
+            return false;
+        }
+
+        float worldUSize = Mathf.Abs(GetAxis(axisWorldSizes, uAxis));
+        float worldVSize = Mathf.Abs(GetAxis(axisWorldSizes, vAxis));
+        if (worldUSize <= 0.0001f || worldVSize <= 0.0001f)
+        {
+            return false;
+        }
+
+        float scaleX = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
+        radiusU = brushRadius * (worldUSize / (_canvas.Width * scaleX));
+        radiusV = brushRadius * (worldVSize / (_canvas.Height * scaleY));
+        radiusU = Mathf.Max(0.0005f, radiusU);
+        radiusV = Mathf.Max(0.0005f, radiusV);
+
+        // UV mapping in TryGetSurfaceUvFromBoxColliderHit flips both axes (u = 1-u, v = 1-v).
+        axisU = -GetAxisDirection(boxCollider.transform, uAxis);
+        axisV = -GetAxisDirection(boxCollider.transform, vAxis);
+
+        axisU = Vector3.ProjectOnPlane(axisU, surfaceNormal);
+        axisV = Vector3.ProjectOnPlane(axisV, surfaceNormal);
+        if (axisU.sqrMagnitude <= 0.0001f || axisV.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        axisU.Normalize();
+        axisV = Vector3.ProjectOnPlane(axisV, axisU);
+        if (axisV.sqrMagnitude <= 0.0001f)
+        {
+            axisV = Vector3.Cross(surfaceNormal, axisU);
+        }
+
+        if (axisV.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        axisV.Normalize();
+        if (Vector3.Dot(Vector3.Cross(axisU, axisV), surfaceNormal) < 0f)
+        {
+            axisV = -axisV;
+        }
+
+        return true;
     }
 
     private float GetPreviewWorldRadius(RaycastHit hit)
     {
-        Bounds bounds = drawingSurfaceCollider.bounds;
-        float xRadius = (brushRadius / (float)_canvas.Width) * bounds.size.x;
-        float yRadius = (brushRadius / (float)_canvas.Height) * bounds.size.y;
-        float zRadius = (brushRadius / (float)_canvas.Height) * bounds.size.z;
+        if (_canvas == null || drawingSurfaceCollider == null)
+        {
+            return 0.01f;
+        }
 
-        float secondaryRadius = zRadius > 0.0001f ? zRadius : yRadius;
-        float averageRadius = (xRadius + secondaryRadius) * 0.5f;
-        return Mathf.Max(0.01f, averageRadius);
+        float scaleX = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
+        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
+        if (drawingSurfaceCollider is BoxCollider boxCollider &&
+            TryGetBoxColliderWorldSurfaceSize(boxCollider, out float worldWidth, out float worldHeight))
+        {
+            float radiusU = brushRadius * (worldWidth / (_canvas.Width * scaleX));
+            float radiusV = brushRadius * (worldHeight / (_canvas.Height * scaleY));
+            return Mathf.Max(0.001f, (radiusU + radiusV) * 0.5f);
+        }
+
+        Bounds bounds = drawingSurfaceCollider.bounds;
+        float dominantExtent = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+        float dominantPixels = Mathf.Max(_canvas.Width, _canvas.Height);
+        return Mathf.Max(0.001f, brushRadius * (dominantExtent / Mathf.Max(1f, dominantPixels)));
+    }
+
+    private static float GetPreviewOutlineWorldWidth(float radiusU, float radiusV)
+    {
+        return Mathf.Max(Mathf.Min(radiusU, radiusV) * 0.15f, 0.0015f);
     }
 
     private void CleanupBrushPreview()
@@ -2234,6 +2075,7 @@ public class DrawingBoardController : MonoBehaviour
 
             _brushPreviewRenderer = null;
         }
+        _brushPreviewFillRenderer = null;
 
         if (_brushPreviewMaterial != null)
         {
@@ -2247,6 +2089,34 @@ public class DrawingBoardController : MonoBehaviour
             }
 
             _brushPreviewMaterial = null;
+        }
+
+        if (_brushPreviewFillMaterial != null)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(_brushPreviewFillMaterial);
+            }
+            else
+            {
+                DestroyImmediate(_brushPreviewFillMaterial);
+            }
+
+            _brushPreviewFillMaterial = null;
+        }
+
+        if (_brushPreviewFillMesh != null)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(_brushPreviewFillMesh);
+            }
+            else
+            {
+                DestroyImmediate(_brushPreviewFillMesh);
+            }
+
+            _brushPreviewFillMesh = null;
         }
     }
 
@@ -2469,7 +2339,7 @@ public class DrawingBoardController : MonoBehaviour
     {
         ResolveRuntimeReferences();
 
-        if ((_canvas == null || _guideCanvas == null || _displayCanvas == null) &&
+        if ((_canvas == null || _displayCanvas == null) &&
             boardRenderer != null &&
             drawingSurfaceCollider != null)
         {
@@ -2482,6 +2352,8 @@ public class DrawingBoardController : MonoBehaviour
         {
             InitializeBrushPreview();
         }
+
+        SyncBrushPreviewRendererSettings();
     }
 
     private void EnsureBoardMaterialBinding()
@@ -2928,26 +2800,16 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        if (Screen.width <= 0 || Screen.height <= 0)
-        {
-            return false;
-        }
-
-        if (screenPosition.x < 0f || screenPosition.x > Screen.width ||
-            screenPosition.y < 0f || screenPosition.y > Screen.height)
-        {
-            return false;
-        }
-
         Camera activeCamera = drawingCamera != null ? drawingCamera : Camera.main;
-        if (activeCamera == null)
+        Rect pixelRect = activeCamera != null && activeCamera.pixelRect.width > 0f && activeCamera.pixelRect.height > 0f
+            ? activeCamera.pixelRect
+            : new Rect(0f, 0f, Mathf.Max(1f, Screen.width), Mathf.Max(1f, Screen.height));
+
+        if (pixelRect.width <= 0f || pixelRect.height <= 0f)
         {
             return false;
         }
 
-        Rect pixelRect = activeCamera.pixelRect.width > 0f && activeCamera.pixelRect.height > 0f
-            ? activeCamera.pixelRect
-            : new Rect(0f, 0f, Screen.width, Screen.height);
         return screenPosition.x >= pixelRect.xMin &&
                screenPosition.x <= pixelRect.xMax &&
                screenPosition.y >= pixelRect.yMin &&

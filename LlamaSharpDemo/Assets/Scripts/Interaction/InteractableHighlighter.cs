@@ -66,6 +66,7 @@ namespace DoodleDiplomacy.Interaction
             var interactable = GetComponent<InteractableObject>();
             interactable.OnHoverEntered.AddListener(ShowHighlight);
             interactable.OnHoverExited.AddListener(HideHighlight);
+            interactable.OnInteracted.AddListener(HideHighlight);
         }
 
         private void OnEnable()
@@ -87,6 +88,7 @@ namespace DoodleDiplomacy.Interaction
             {
                 interactable.OnHoverEntered.RemoveListener(ShowHighlight);
                 interactable.OnHoverExited.RemoveListener(HideHighlight);
+                interactable.OnInteracted.RemoveListener(HideHighlight);
             }
         }
 

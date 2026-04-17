@@ -240,19 +240,14 @@ namespace DoodleDiplomacy.Interaction
                 return false;
             }
 
-            if (Screen.width <= 0 || Screen.height <= 0)
-            {
-                return false;
-            }
-
-            if (screenPos.x < 0f || screenPos.x > Screen.width || screenPos.y < 0f || screenPos.y > Screen.height)
-            {
-                return false;
-            }
-
             Rect pixelRect = _mainCamera != null && _mainCamera.pixelRect.width > 0f && _mainCamera.pixelRect.height > 0f
                 ? _mainCamera.pixelRect
-                : new Rect(0f, 0f, Screen.width, Screen.height);
+                : new Rect(0f, 0f, Mathf.Max(1f, Screen.width), Mathf.Max(1f, Screen.height));
+            if (pixelRect.width <= 0f || pixelRect.height <= 0f)
+            {
+                return false;
+            }
+
             return screenPos.x >= pixelRect.xMin &&
                    screenPos.x <= pixelRect.xMax &&
                    screenPos.y >= pixelRect.yMin &&

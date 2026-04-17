@@ -431,13 +431,8 @@ namespace DoodleDiplomacy.Camera
                 return false;
             }
 
-            if (Screen.width <= 0 || Screen.height <= 0)
-            {
-                return false;
-            }
-
-            if (screenPosition.x < 0f || screenPosition.x > Screen.width ||
-                screenPosition.y < 0f || screenPosition.y > Screen.height)
+            Rect screenRect = new(0f, 0f, Mathf.Max(1f, Screen.width), Mathf.Max(1f, Screen.height));
+            if (screenRect.width <= 0f || screenRect.height <= 0f)
             {
                 return false;
             }

@@ -20,6 +20,91 @@ public class ShaderGlassRendererFeature : ScriptableRendererFeature
         public bool flipVertical = false;
         public bool clearBlackBars = false;
         public bool matchShaderGlassGamma = true;
+
+        [Header("Single Camera Tablet Re-Render")]
+        public bool renderExcludedLayersAfterPostProcess = true;
+        public LayerMask excludedLayerMask = 1 << 8;
+        public RenderPassEvent excludedLayerRenderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+    }
+
+    class ExcludedLayerAfterPostProcessPass : ScriptableRenderPass
+    {
+        static readonly ShaderTagId[] ShaderTagIds =
+        {
+            new ShaderTagId("UniversalForward"),
+            new ShaderTagId("UniversalForwardOnly"),
+            new ShaderTagId("SRPDefaultUnlit"),
+            new ShaderTagId("LightweightForward")
+        };
+
+        readonly ProfilingSampler m_ProfilingSampler = new ProfilingSampler("RenderExcludedLayersAfterPostProcess");
+        LayerMask m_LayerMask;
+        RTHandle m_CameraColor;
+        RTHandle m_CameraDepth;
+
+        public void Setup(LayerMask layerMask)
+        {
+            m_LayerMask = layerMask;
+            m_CameraColor = null;
+            m_CameraDepth = null;
+        }
+
+        [Obsolete("Compatibility Mode API (RenderGraph disabled).", false)]
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+#pragma warning disable CS0618
+            m_CameraColor = renderingData.cameraData.renderer.cameraColorTargetHandle;
+            m_CameraDepth = renderingData.cameraData.renderer.cameraDepthTargetHandle;
+#pragma warning restore CS0618
+        }
+
+        [Obsolete("Compatibility Mode API (RenderGraph disabled).", false)]
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        {
+            if (m_LayerMask.value == 0 || m_CameraColor == null || m_CameraDepth == null)
+                return;
+
+            var camera = renderingData.cameraData.camera;
+            if (camera == null)
+                return;
+
+            if (!camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters))
+                return;
+
+            cullingParameters.cullingMask = (uint)m_LayerMask.value;
+            CullingResults cullingResults = context.Cull(ref cullingParameters);
+
+            CommandBuffer cmd = CommandBufferPool.Get("RenderExcludedLayersAfterPostProcess");
+            using (new ProfilingScope(cmd, m_ProfilingSampler))
+            {
+                CoreUtils.SetRenderTarget(cmd, m_CameraColor, m_CameraDepth);
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+
+                DrawingSettings opaqueDrawing = CreateDrawingSettings(
+                    ShaderTagIds[0],
+                    ref renderingData,
+                    renderingData.cameraData.defaultOpaqueSortFlags);
+                for (int i = 1; i < ShaderTagIds.Length; i++)
+                    opaqueDrawing.SetShaderPassName(i, ShaderTagIds[i]);
+
+                var opaqueFilter = new FilteringSettings(RenderQueueRange.opaque, m_LayerMask);
+                context.DrawRenderers(cullingResults, ref opaqueDrawing, ref opaqueFilter);
+
+                DrawingSettings transparentDrawing = CreateDrawingSettings(
+                    ShaderTagIds[0],
+                    ref renderingData,
+                    SortingCriteria.CommonTransparent);
+                for (int i = 1; i < ShaderTagIds.Length; i++)
+                    transparentDrawing.SetShaderPassName(i, ShaderTagIds[i]);
+
+                var transparentFilter = new FilteringSettings(RenderQueueRange.transparent, m_LayerMask);
+                context.DrawRenderers(cullingResults, ref transparentDrawing, ref transparentFilter);
+            }
+
+            context.ExecuteCommandBuffer(cmd);
+            CommandBufferPool.Release(cmd);
+        }
     }
 
     class ShaderGlassRenderPass : ScriptableRenderPass
@@ -753,10 +838,12 @@ public class ShaderGlassRendererFeature : ScriptableRendererFeature
     }
 
     public Settings settings = new Settings();
+    ExcludedLayerAfterPostProcessPass m_ExcludedLayerPass;
     ShaderGlassRenderPass m_Pass;
 
     public override void Create()
     {
+        m_ExcludedLayerPass = new ExcludedLayerAfterPostProcessPass();
         m_Pass = new ShaderGlassRenderPass(settings);
         m_Pass.renderPassEvent = settings.renderPassEvent;
     }
@@ -766,11 +853,24 @@ public class ShaderGlassRendererFeature : ScriptableRendererFeature
         var cameraType = renderingData.cameraData.cameraType;
         if (cameraType == CameraType.Preview || cameraType == CameraType.Reflection)
             return;
-        
+
+        if (renderingData.cameraData.renderType == CameraRenderType.Overlay)
+            return;
+
         // Skip off-screen capture cameras (for monitor/terminal RenderTexture pipelines).
         var camera = renderingData.cameraData.camera;
         if (camera != null && camera.targetTexture != null)
             return;
+
+        if (m_ExcludedLayerPass != null &&
+            settings != null &&
+            settings.renderExcludedLayersAfterPostProcess &&
+            settings.excludedLayerMask.value != 0)
+        {
+            m_ExcludedLayerPass.renderPassEvent = settings.excludedLayerRenderPassEvent;
+            m_ExcludedLayerPass.Setup(settings.excludedLayerMask);
+            renderer.EnqueuePass(m_ExcludedLayerPass);
+        }
 
         if (settings == null || settings.preset == null || settings.preset.passes.Count == 0)
             return;

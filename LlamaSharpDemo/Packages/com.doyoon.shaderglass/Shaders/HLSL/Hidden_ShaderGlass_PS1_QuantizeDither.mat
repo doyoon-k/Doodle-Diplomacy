@@ -30,14 +30,14 @@ Material:
     m_Ints: []
     m_Floats:
     - Brightness: 0.026
-    - ChromaShift: 1.109
+    - ChromaShift: 1.197
     - ColorSteps: 17.8
-    - Contrast: 0.96
+    - Contrast: 1.001
     - DitherStrength: 1.174
     - FrameCount: 0
-    - JitterStrength: 0.324
-    - NoiseStrength: 0.0688
-    - Saturation: 0.9
+    - JitterStrength: 1.426
+    - NoiseStrength: 0.0278
+    - Saturation: 1.65
     - ScanlineStrength: 0.125
     - TimestampDay: 9
     - TimestampEnable: 1
@@ -48,7 +48,7 @@ Material:
     - TimestampOpacity: 0.477
     - TimestampPosX: 0.754
     - TimestampPosY: 0.06
-    - TimestampScale: 2.7
+    - TimestampScale: 2.75
     - TimestampSecond: 45
     - TimestampYear: 86
     m_Colors:

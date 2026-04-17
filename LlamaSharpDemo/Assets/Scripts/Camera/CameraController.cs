@@ -10,7 +10,7 @@ using UnityEngine.InputSystem;
 
 namespace DoodleDiplomacy.Camera
 {
-    public enum CameraMode { Default, FreeLook, TabletView, TerminalZoom, AlienReaction }
+    public enum CameraMode { Default, FreeLook, TabletView, TerminalZoom, AlienReaction, SharedMonitorZoom }
 
     [Serializable]
     public class CameraPreset
@@ -63,6 +63,7 @@ namespace DoodleDiplomacy.Camera
         [SerializeField] private CameraPreset tabletViewPreset = new() { fieldOfView = 45f };
         [SerializeField] private CameraPreset terminalZoomPreset = new() { fieldOfView = 35f };
         [SerializeField] private CameraPreset alienReactionPreset = new() { fieldOfView = 42f };
+        [SerializeField] private CameraPreset sharedMonitorZoomPreset = new() { fieldOfView = 38f };
 
         [Header("Transition")]
         [SerializeField] private float transitionDuration = 0.5f;
@@ -199,6 +200,11 @@ namespace DoodleDiplomacy.Camera
             _isCustomViewActive = true;
             ResetHoverFocusState();
             _transitionRoutine = StartCoroutine(TransitionRoutine(position, rotation, fieldOfView));
+        }
+
+        public bool HasValidPreset(CameraMode mode)
+        {
+            return TryResolvePresetPose(mode, out _, out _, out _);
         }
 
         private IEnumerator TransitionRoutine(Vector3 targetPosition, Quaternion targetRotation, float targetFieldOfView)
@@ -376,13 +382,36 @@ namespace DoodleDiplomacy.Camera
             CameraMode.TabletView => tabletViewPreset,
             CameraMode.TerminalZoom => terminalZoomPreset,
             CameraMode.AlienReaction => alienReactionPreset,
+            CameraMode.SharedMonitorZoom => sharedMonitorZoomPreset,
             _ => defaultPreset
         };
 
-        private static bool TryGetPointerNormalizedPosition(out Vector2 normalizedPosition)
+        private bool TryGetPointerNormalizedPosition(out Vector2 normalizedPosition)
         {
-            Vector2 screenPosition;
+            if (!TryGetPointerScreenPosition(out Vector2 screenPosition))
+            {
+                normalizedPosition = default;
+                return false;
+            }
 
+            Rect pixelRect = targetCamera != null && targetCamera.pixelRect.width > 0f && targetCamera.pixelRect.height > 0f
+                ? targetCamera.pixelRect
+                : new Rect(0f, 0f, Screen.width, Screen.height);
+            if (screenPosition.x < pixelRect.xMin || screenPosition.x > pixelRect.xMax ||
+                screenPosition.y < pixelRect.yMin || screenPosition.y > pixelRect.yMax)
+            {
+                normalizedPosition = default;
+                return false;
+            }
+
+            normalizedPosition = new Vector2(
+                Mathf.InverseLerp(pixelRect.xMin, pixelRect.xMax, screenPosition.x),
+                Mathf.InverseLerp(pixelRect.yMin, pixelRect.yMax, screenPosition.y));
+            return true;
+        }
+
+        private static bool TryGetPointerScreenPosition(out Vector2 screenPosition)
+        {
 #if ENABLE_INPUT_SYSTEM
             if (Mouse.current != null)
             {
@@ -390,22 +419,29 @@ namespace DoodleDiplomacy.Camera
             }
             else
             {
-                normalizedPosition = default;
+                screenPosition = default;
                 return false;
             }
 #else
             screenPosition = Input.mousePosition;
 #endif
 
-            if (Screen.width <= 0 || Screen.height <= 0)
+            if (float.IsNaN(screenPosition.x) || float.IsNaN(screenPosition.y))
             {
-                normalizedPosition = default;
                 return false;
             }
 
-            normalizedPosition = new Vector2(
-                Mathf.Clamp01(screenPosition.x / Screen.width),
-                Mathf.Clamp01(screenPosition.y / Screen.height));
+            if (Screen.width <= 0 || Screen.height <= 0)
+            {
+                return false;
+            }
+
+            if (screenPosition.x < 0f || screenPosition.x > Screen.width ||
+                screenPosition.y < 0f || screenPosition.y > Screen.height)
+            {
+                return false;
+            }
+
             return true;
         }
     }

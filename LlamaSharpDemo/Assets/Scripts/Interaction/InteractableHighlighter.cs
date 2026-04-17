@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DoodleDiplomacy.Core;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -129,7 +130,7 @@ namespace DoodleDiplomacy.Interaction
 
         private void ShowHighlight()
         {
-            if (_drawingBoard != null && _drawingBoard.enabled)
+            if (ShouldSuppressTabletHighlight())
             {
                 return;
             }
@@ -188,6 +189,22 @@ namespace DoodleDiplomacy.Interaction
             {
                 Cursor.SetCursor(hoverCursor, cursorHotspot, CursorMode.Auto);
             }
+        }
+
+        private bool ShouldSuppressTabletHighlight()
+        {
+            if (_drawingBoard == null)
+            {
+                return false;
+            }
+
+            RoundManager manager = RoundManager.Instance;
+            if (manager != null)
+            {
+                return manager.CurrentState == GameState.Drawing;
+            }
+
+            return _drawingBoard.enabled && !_drawingBoard.IsInteractionLocked;
         }
 
         private void HideHighlight()

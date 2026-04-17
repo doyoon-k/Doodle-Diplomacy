@@ -63,15 +63,6 @@ namespace DoodleDiplomacy.Core
         [Tooltip("Input used to leave the monitor zoom view after inspecting generated objects.")]
         [SerializeField] private KeyCode exitMonitorZoomKey = KeyCode.Escape;
 
-        [Header("Monitor Zoom")]
-        [Range(20f, 70f)]
-        [SerializeField] private float monitorZoomFieldOfView = 38f;
-        [Range(1f, 1.5f)]
-        [SerializeField] private float monitorZoomFramingPadding = 1.08f;
-        [SerializeField] private float monitorZoomVerticalOffset = 0.05f;
-        [SerializeField] private float monitorZoomMinDistance = 0.8f;
-        [SerializeField] private float monitorZoomMaxDistance = 6f;
-
         [Header("Startup")]
         [Min(0f)]
         [SerializeField] private float firstRoundPrefetchTimeoutSeconds = DefaultFirstRoundPrefetchTimeoutSeconds;
@@ -87,6 +78,7 @@ namespace DoodleDiplomacy.Core
         private float _interpreterOpenedAt;
         private bool _isSharedMonitorZoomActive;
         private bool _hasOpenedInterpreterThisRound;
+        private bool _monitorClickConsumedUntilRelease;
         private Coroutine _startGameRoutine;
 
         public GameState CurrentState => _currentState;
@@ -107,6 +99,7 @@ namespace DoodleDiplomacy.Core
         private void Start()
         {
             drawingBoard ??= FindFirstObjectByType<DrawingBoardController>();
+            UpdateDrawingBoardInteractionForState(_currentState);
             BindInspectorInteractions();
             SubscribeToBridgeEvents();
             interactionManager?.SetInteractablesForState(_currentState);
@@ -127,6 +120,8 @@ namespace DoodleDiplomacy.Core
 
         private void Update()
         {
+            RefreshMonitorClickLatch();
+
             if (_isSharedMonitorZoomActive && WasKeyPressed(exitMonitorZoomKey))
             {
                 ExitSharedMonitorZoom();
@@ -268,6 +263,13 @@ namespace DoodleDiplomacy.Core
                 return;
             }
 
+            if (_currentState == GameState.ObjectPresented)
+            {
+                ShowHint("System", "Regenerating the object references with the same prompts...");
+                ChangeState(GameState.Presenting);
+                return;
+            }
+
             if (_currentState == GameState.InterpreterReady)
             {
                 if (!_hasOpenedInterpreterThisRound)
@@ -316,6 +318,13 @@ namespace DoodleDiplomacy.Core
 
         public void OnSharedMonitorClicked()
         {
+            if (_monitorClickConsumedUntilRelease)
+            {
+                return;
+            }
+
+            _monitorClickConsumedUntilRelease = true;
+
             if (!(_currentState == GameState.ObjectPresented || _currentState == GameState.PreviewReady))
             {
                 return;
@@ -334,6 +343,36 @@ namespace DoodleDiplomacy.Core
             {
                 EnterSharedMonitorZoom();
             }
+        }
+
+        private void RefreshMonitorClickLatch()
+        {
+            if (!_monitorClickConsumedUntilRelease)
+            {
+                return;
+            }
+
+            if (!IsPrimaryPointerHeld())
+            {
+                _monitorClickConsumedUntilRelease = false;
+            }
+        }
+
+        private static bool IsPrimaryPointerHeld()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            if (mouse != null)
+            {
+                return mouse.leftButton.isPressed;
+            }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetMouseButton(0);
+#else
+            return false;
+#endif
         }
 
         public void OnIntroComplete() => TryTransition(GameState.Intro, GameState.WaitingForRound);
@@ -356,9 +395,12 @@ namespace DoodleDiplomacy.Core
 
         private void BindInspectorInteractions()
         {
+            BindTabletInteractions();
+
             if (sharedMonitorInteractable != null)
             {
                 sharedMonitorInteractable.interactionType = InteractionType.Monitor;
+                sharedMonitorInteractable.OnInteracted.RemoveListener(OnTabletClicked);
                 sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
                 sharedMonitorInteractable.OnInteracted.AddListener(OnSharedMonitorClicked);
             }
@@ -382,6 +424,7 @@ namespace DoodleDiplomacy.Core
                 }
 
                 terminalInteractable.interactionType = InteractionType.Terminal;
+                terminalInteractable.OnInteracted.RemoveListener(OnTabletClicked);
                 terminalInteractable.OnInteracted.RemoveListener(OnTerminalClicked);
                 terminalInteractable.OnInteracted.AddListener(OnTerminalClicked);
             }
@@ -389,6 +432,8 @@ namespace DoodleDiplomacy.Core
 
         private void UnbindInspectorInteractions()
         {
+            UnbindTabletInteractions();
+
             if (sharedMonitorInteractable != null)
             {
                 sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
@@ -410,6 +455,41 @@ namespace DoodleDiplomacy.Core
             }
         }
 
+        private void BindTabletInteractions()
+        {
+            InteractableObject[] interactables = FindObjectsByType<InteractableObject>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            for (int i = 0; i < interactables.Length; i++)
+            {
+                InteractableObject interactable = interactables[i];
+                if (interactable == null || interactable.interactionType != InteractionType.Tablet)
+                {
+                    continue;
+                }
+
+                interactable.OnInteracted.RemoveListener(OnTabletClicked);
+                interactable.OnInteracted.AddListener(OnTabletClicked);
+            }
+        }
+
+        private void UnbindTabletInteractions()
+        {
+            InteractableObject[] interactables = FindObjectsByType<InteractableObject>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            for (int i = 0; i < interactables.Length; i++)
+            {
+                InteractableObject interactable = interactables[i];
+                if (interactable == null || interactable.interactionType != InteractionType.Tablet)
+                {
+                    continue;
+                }
+
+                interactable.OnInteracted.RemoveListener(OnTabletClicked);
+            }
+        }
+
         private bool CanUseSharedMonitorZoom()
         {
             return sharedMonitorDisplay != null && sharedMonitorDisplay.HasInspectableImage;
@@ -422,13 +502,14 @@ namespace DoodleDiplomacy.Core
                 return;
             }
 
-            if (!TryGetSharedMonitorZoomPose(out Vector3 zoomPosition, out Quaternion zoomRotation))
+            if (!cameraController.HasValidPreset(CameraMode.SharedMonitorZoom))
             {
+                Debug.LogWarning("[RoundManager] Shared monitor zoom preset is not configured on CameraController.");
                 return;
             }
 
             _isSharedMonitorZoomActive = true;
-            cameraController.SetCustomView(zoomPosition, zoomRotation, monitorZoomFieldOfView);
+            cameraController.SetMode(CameraMode.SharedMonitorZoom);
         }
 
         private void ExitSharedMonitorZoom()
@@ -443,71 +524,6 @@ namespace DoodleDiplomacy.Core
             {
                 ApplyCameraMode(_currentState);
             }
-        }
-
-        private bool TryGetSharedMonitorZoomPose(out Vector3 position, out Quaternion rotation)
-        {
-            position = Vector3.zero;
-            rotation = Quaternion.identity;
-
-            if (sharedMonitorDisplay == null)
-            {
-                return false;
-            }
-
-            Transform monitorTransform = sharedMonitorDisplay.transform;
-            Bounds monitorBounds = new Bounds(monitorTransform.position, Vector3.one);
-            bool hasBounds = false;
-
-            if (sharedMonitorDisplay.TryGetComponent(out Renderer renderer))
-            {
-                monitorBounds = renderer.bounds;
-                hasBounds = true;
-            }
-            else if (sharedMonitorDisplay.TryGetComponent(out Collider collider))
-            {
-                monitorBounds = collider.bounds;
-                hasBounds = true;
-            }
-
-            Vector3 focusPoint = hasBounds ? monitorBounds.center : monitorTransform.position;
-            focusPoint += monitorTransform.up * monitorZoomVerticalOffset;
-
-            float distance = 2.2f;
-            if (hasBounds)
-            {
-                float cameraAspect = cameraController != null && cameraController.TargetCamera != null
-                    ? Mathf.Max(0.1f, cameraController.TargetCamera.aspect)
-                    : 16f / 9f;
-                float halfHeight = Mathf.Max(0.12f, monitorBounds.extents.y);
-                float halfWidthAsHeight = Mathf.Max(0.12f, monitorBounds.extents.x / cameraAspect);
-                float halfFrame = Mathf.Max(halfHeight, halfWidthAsHeight);
-                float halfFovRad = Mathf.Deg2Rad * Mathf.Clamp(monitorZoomFieldOfView, 10f, 120f) * 0.5f;
-                float tanHalfFov = Mathf.Max(0.01f, Mathf.Tan(halfFovRad));
-                distance = halfFrame / tanHalfFov * Mathf.Max(1f, monitorZoomFramingPadding);
-            }
-
-            distance = Mathf.Clamp(distance, monitorZoomMinDistance, monitorZoomMaxDistance);
-
-            Vector3 normal = monitorTransform.forward.normalized;
-            Vector3 candidateA = focusPoint + normal * distance;
-            Vector3 candidateB = focusPoint - normal * distance;
-
-            Vector3 currentCameraPosition = cameraController != null && cameraController.TargetCamera != null
-                ? cameraController.TargetCamera.transform.position
-                : candidateB;
-            position = (currentCameraPosition - candidateA).sqrMagnitude <= (currentCameraPosition - candidateB).sqrMagnitude
-                ? candidateA
-                : candidateB;
-
-            Vector3 lookDirection = focusPoint - position;
-            if (lookDirection.sqrMagnitude < 0.0001f)
-            {
-                return false;
-            }
-
-            rotation = Quaternion.LookRotation(lookDirection.normalized, Vector3.up);
-            return true;
         }
 
         [ContextMenu("Debug: Advance State")]
@@ -654,6 +670,7 @@ namespace DoodleDiplomacy.Core
             Debug.Log($"[RoundManager] State: {oldState} -> {newState}");
             _currentState = newState;
             _stateVersion = newStateVersion;
+            UpdateDrawingBoardInteractionForState(newState);
 
             EnterState(newState, newStateVersion);
             if (!IsStateCurrent(newState, newStateVersion))
@@ -751,7 +768,7 @@ namespace DoodleDiplomacy.Core
                     break;
 
                 case GameState.ObjectPresented:
-                    ShowHint("System", "Click the tablet to start drawing.");
+                    ShowHint("System", "Click the tablet to start drawing, or click the alien to regenerate the references.");
                     Debug.Log("[RoundManager] Objects are ready. Waiting for tablet interaction.");
                     aipipelineBridge?.StartNextRoundPrefetch();
                     break;
@@ -974,6 +991,18 @@ namespace DoodleDiplomacy.Core
 
             drawingBoard.enabled = true;
             drawingBoard.SetInteractionLocked(false);
+        }
+
+        private void UpdateDrawingBoardInteractionForState(GameState state)
+        {
+            drawingBoard ??= FindFirstObjectByType<DrawingBoardController>();
+            if (drawingBoard == null)
+            {
+                return;
+            }
+
+            drawingBoard.enabled = true;
+            drawingBoard.SetInteractionLocked(state != GameState.Drawing);
         }
 
         private void ApplyCameraMode(GameState state)

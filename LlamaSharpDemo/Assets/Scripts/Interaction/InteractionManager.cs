@@ -14,9 +14,10 @@ namespace DoodleDiplomacy.Interaction
         public static InteractionManager Instance { get; private set; }
 
         [SerializeField] private float raycastDistance = 100f;
-        [SerializeField] private LayerMask interactableLayer = ~0;
+        [SerializeField] private LayerMask interactableLayer = Physics.DefaultRaycastLayers;
 
         private readonly HashSet<InteractableObject> _registered = new();
+        private readonly RaycastHit[] _raycastHits = new RaycastHit[32];
         private UnityEngine.Camera _mainCamera;
         private InteractableObject _hoveredObject;
         private InteractableObject _lastInteractedObject;
@@ -28,6 +29,7 @@ namespace DoodleDiplomacy.Interaction
         private static readonly HashSet<InteractionType> s_WaitingAllowed = new() { InteractionType.Alien };
         private static readonly HashSet<InteractionType> s_ObjectPresentedAllowed = new()
         {
+            InteractionType.Alien,
             InteractionType.Tablet,
             InteractionType.Monitor
         };
@@ -92,6 +94,17 @@ namespace DoodleDiplomacy.Interaction
                 return;
             }
 
+            if (_mainCamera == null)
+            {
+                _mainCamera = UnityEngine.Camera.main ?? FindFirstObjectByType<UnityEngine.Camera>();
+            }
+
+            if (!IsPointerWithinCameraBounds(mousePos))
+            {
+                ClearHover();
+                return;
+            }
+
             UpdateHover(mousePos);
             if (clicked)
             {
@@ -143,16 +156,9 @@ namespace DoodleDiplomacy.Interaction
                 return;
             }
 
-            InteractableObject newHover = null;
-            Ray ray = _mainCamera.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance, interactableLayer))
-            {
-                InteractableObject obj = hit.collider.GetComponentInParent<InteractableObject>();
-                if (obj != null && obj.isActive)
-                {
-                    newHover = obj;
-                }
-            }
+            InteractableObject newHover = TryGetInteractableFromScreenPosition(screenPos, out InteractableObject hitInteractable)
+                ? hitInteractable
+                : null;
 
             if (newHover == _hoveredObject)
             {
@@ -171,17 +177,86 @@ namespace DoodleDiplomacy.Interaction
                 return;
             }
 
-            Ray ray = _mainCamera.ScreenPointToRay(screenPos);
-            if (Physics.Raycast(ray, out RaycastHit hit, raycastDistance, interactableLayer))
+            if (TryGetInteractableFromScreenPosition(screenPos, out InteractableObject interactable))
             {
-                InteractableObject interactable = hit.collider.GetComponentInParent<InteractableObject>();
-                if (interactable != null)
-                {
-                    Debug.Log($"[InteractionManager] Click: {interactable.name} ({interactable.interactionType})");
-                    _lastInteractedObject = interactable;
-                    interactable.Interact();
-                }
+                Debug.Log($"[InteractionManager] Click: {interactable.name} ({interactable.interactionType})");
+                _lastInteractedObject = interactable;
+                interactable.Interact();
             }
+        }
+
+        private bool TryGetInteractableFromScreenPosition(Vector2 screenPos, out InteractableObject interactable)
+        {
+            interactable = null;
+            if (_mainCamera == null)
+            {
+                return false;
+            }
+
+            Ray ray = _mainCamera.ScreenPointToRay(screenPos);
+            int hitCount = Physics.RaycastNonAlloc(
+                ray,
+                _raycastHits,
+                raycastDistance,
+                interactableLayer,
+                QueryTriggerInteraction.Ignore);
+            if (hitCount <= 0)
+            {
+                return false;
+            }
+
+            float closestDistance = float.PositiveInfinity;
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider hitCollider = _raycastHits[i].collider;
+                if (hitCollider == null)
+                {
+                    continue;
+                }
+
+                InteractableObject candidate = hitCollider.GetComponentInParent<InteractableObject>();
+                if (candidate == null || !candidate.isActive)
+                {
+                    continue;
+                }
+
+                float distance = _raycastHits[i].distance;
+                if (distance >= closestDistance)
+                {
+                    continue;
+                }
+
+                closestDistance = distance;
+                interactable = candidate;
+            }
+
+            return interactable != null;
+        }
+
+        private bool IsPointerWithinCameraBounds(Vector2 screenPos)
+        {
+            if (float.IsNaN(screenPos.x) || float.IsNaN(screenPos.y))
+            {
+                return false;
+            }
+
+            if (Screen.width <= 0 || Screen.height <= 0)
+            {
+                return false;
+            }
+
+            if (screenPos.x < 0f || screenPos.x > Screen.width || screenPos.y < 0f || screenPos.y > Screen.height)
+            {
+                return false;
+            }
+
+            Rect pixelRect = _mainCamera != null && _mainCamera.pixelRect.width > 0f && _mainCamera.pixelRect.height > 0f
+                ? _mainCamera.pixelRect
+                : new Rect(0f, 0f, Screen.width, Screen.height);
+            return screenPos.x >= pixelRect.xMin &&
+                   screenPos.x <= pixelRect.xMax &&
+                   screenPos.y >= pixelRect.yMin &&
+                   screenPos.y <= pixelRect.yMax;
         }
 
         private static HashSet<InteractionType> GetAllowedTypes(GameState state) => state switch

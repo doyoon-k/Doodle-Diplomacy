@@ -1,9 +1,11 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using DoodleDiplomacy.Core;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -41,6 +43,7 @@ public class DrawingBoardController : MonoBehaviour
     [SerializeField] private bool autoMatchCanvasResolutionToBoardAspect = true;
     [SerializeField] private FilterMode filterMode = FilterMode.Bilinear;
     [SerializeField] private string texturePropertyName = "_BaseMap";
+    [SerializeField] private Material boardMaterialTemplate;
     [SerializeField] private Vector2 boardTextureScale = new(-1f, -1f);
     [SerializeField] private Vector2 boardTextureOffset = new(1f, 1f);
 
@@ -91,7 +94,6 @@ public class DrawingBoardController : MonoBehaviour
     private DrawingCanvas _exportCanvas;
     private DrawingHistory _history;
     private Material _runtimeMaterial;
-    private MeshCollider _runtimeDrawingSurfaceCollider;
     private LineRenderer _brushPreviewRenderer;
     private Material _brushPreviewMaterial;
     private Material _originalSharedMaterial;
@@ -99,7 +101,6 @@ public class DrawingBoardController : MonoBehaviour
     private bool _useEraser;
     private bool _useFillTool;
     private bool _useSketchGuide;
-    private bool _hasCapturedOriginalMaterial;
     private bool _isInteractionLocked;
     private Vector2Int _lastPixel;
     private readonly StrokeHistoryCapture _strokeHistory = new();
@@ -110,6 +111,13 @@ public class DrawingBoardController : MonoBehaviour
     private bool _useStickerMaskErase;
     private bool _isErasingStickerMask;
     private Vector3 _stickerDragOffsetBoardLocal;
+    private Color32[] _originalSurfacePixels;
+    private int _originalSurfaceWidth;
+    private int _originalSurfaceHeight;
+    private Vector2 _originalSurfaceTextureScale = Vector2.one;
+    private Vector2 _originalSurfaceTextureOffset = Vector2.zero;
+    private TextureWrapMode _originalSurfaceWrapMode = TextureWrapMode.Clamp;
+    private bool _hasOriginalSurfaceTextureData;
 
     public event Action<int> BrushRadiusChanged;
     public event Action<bool, bool> HistoryStateChanged;
@@ -119,6 +127,7 @@ public class DrawingBoardController : MonoBehaviour
     public Texture2D CanvasTexture => _canvas?.Texture;
     public Texture2D GuideTexture => _guideCanvas?.Texture;
     public Texture2D DisplayTexture => _displayCanvas?.Texture;
+    public Material RuntimeBoardMaterial => _runtimeMaterial;
     public bool HasCanvasMarks => _canvas != null && _canvas.TryGetNonBackgroundBounds(out _);
     public int BrushRadius => brushRadius;
     public bool IsEraserEnabled => _useEraser;
@@ -159,6 +168,17 @@ public class DrawingBoardController : MonoBehaviour
         if (_canvas == null || _guideCanvas == null || _displayCanvas == null ||
             drawingSurfaceCollider == null || drawingCamera == null)
         {
+            return;
+        }
+
+        if (!IsDrawingPhaseActive())
+        {
+            _isDrawing = false;
+            if (_brushPreviewRenderer != null)
+            {
+                _brushPreviewRenderer.enabled = false;
+            }
+
             return;
         }
 
@@ -378,11 +398,6 @@ public class DrawingBoardController : MonoBehaviour
             return null;
         }
 
-        if (!enableStickerLayers || _stickerLayers.Count == 0)
-        {
-            return _canvas.Texture;
-        }
-
         if (_exportCanvas == null ||
             _exportCanvas.Width != _canvas.Width ||
             _exportCanvas.Height != _canvas.Height)
@@ -392,10 +407,13 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         Color32[] compositePixels = _canvas.CopyPixels();
-        Bounds boardMeshBounds = GetBoardMeshBounds();
-        for (int i = 0; i < _stickerLayers.Count; i++)
+        if (enableStickerLayers && _stickerLayers.Count > 0)
         {
-            BlendStickerIntoPixels(_stickerLayers[i], compositePixels, boardMeshBounds);
+            Bounds boardMeshBounds = GetBoardMeshBounds();
+            for (int i = 0; i < _stickerLayers.Count; i++)
+            {
+                BlendStickerIntoPixels(_stickerLayers[i], compositePixels, boardMeshBounds);
+            }
         }
 
         _exportCanvas.ApplyRegion(
@@ -416,6 +434,34 @@ public class DrawingBoardController : MonoBehaviour
         NotifySketchGuideStateChanged();
     }
 
+    public void SetToolMode(DrawingToolMode mode)
+    {
+        FinalizeStrokeHistory();
+        _isDrawing = false;
+        _isDraggingSticker = false;
+        _isErasingStickerMask = false;
+
+        DrawingToolMode resolvedMode = mode;
+        if (resolvedMode == DrawingToolMode.StickerMaskErase &&
+            (!enableStickerLayers || _selectedSticker == null))
+        {
+            resolvedMode = DrawingToolMode.Brush;
+        }
+
+        if (resolvedMode != DrawingToolMode.StickerMaskErase)
+        {
+            SelectSticker(null);
+        }
+
+        _useEraser = resolvedMode == DrawingToolMode.Eraser;
+        _useFillTool = resolvedMode == DrawingToolMode.Fill;
+        _useSketchGuide = resolvedMode == DrawingToolMode.SketchGuide;
+        _useStickerMaskErase = resolvedMode == DrawingToolMode.StickerMaskErase;
+
+        NotifySketchGuideStateChanged();
+        NotifyStickerSelectionChanged();
+    }
+
     public void SetBrushRadius(float radius)
     {
         int newRadius = Mathf.Clamp(Mathf.RoundToInt(radius), minBrushRadius, maxBrushRadius);
@@ -430,18 +476,7 @@ public class DrawingBoardController : MonoBehaviour
 
     public void SetEraserEnabled(bool enabled)
     {
-        FinalizeStrokeHistory();
-        SelectSticker(null);
-        _isDraggingSticker = false;
-        _useEraser = enabled;
-        if (enabled)
-        {
-            _useFillTool = false;
-            _useSketchGuide = false;
-        }
-
-        _isDrawing = false;
-        NotifySketchGuideStateChanged();
+        SetToolMode(enabled ? DrawingToolMode.Eraser : DrawingToolMode.Brush);
     }
 
     public void ToggleEraser()
@@ -451,18 +486,7 @@ public class DrawingBoardController : MonoBehaviour
 
     public void SetFillToolEnabled(bool enabled)
     {
-        FinalizeStrokeHistory();
-        SelectSticker(null);
-        _isDraggingSticker = false;
-        _useFillTool = enabled;
-        if (enabled)
-        {
-            _useEraser = false;
-            _useSketchGuide = false;
-        }
-
-        _isDrawing = false;
-        NotifySketchGuideStateChanged();
+        SetToolMode(enabled ? DrawingToolMode.Fill : DrawingToolMode.Brush);
     }
 
     public void ToggleFillTool()
@@ -472,18 +496,7 @@ public class DrawingBoardController : MonoBehaviour
 
     public void SetSketchGuideEnabled(bool enabled)
     {
-        FinalizeStrokeHistory();
-        SelectSticker(null);
-        _isDraggingSticker = false;
-        _useSketchGuide = enabled;
-        if (enabled)
-        {
-            _useFillTool = false;
-            _useEraser = false;
-        }
-
-        _isDrawing = false;
-        NotifySketchGuideStateChanged();
+        SetToolMode(enabled ? DrawingToolMode.SketchGuide : DrawingToolMode.Brush);
     }
 
     public void ToggleSketchGuide()
@@ -885,6 +898,33 @@ public class DrawingBoardController : MonoBehaviour
         return true;
     }
 
+    public void SetBoardMaterialTemplate(Material template, bool reinitializeIfReady = true)
+    {
+        if (template == null)
+        {
+            return;
+        }
+
+        boardMaterialTemplate = template;
+        if (!reinitializeIfReady)
+        {
+            return;
+        }
+
+        bool isRuntimeReady =
+            _canvas != null &&
+            _guideCanvas != null &&
+            _displayCanvas != null &&
+            boardRenderer != null &&
+            drawingSurfaceCollider != null;
+        if (!isRuntimeReady)
+        {
+            return;
+        }
+
+        InitializeCanvas();
+    }
+
     private void OnDestroy()
     {
         ResetStrokeHistory();
@@ -900,7 +940,6 @@ public class DrawingBoardController : MonoBehaviour
         _history?.Clear();
         ReleaseRuntimeMaterial();
         CleanupBrushPreview();
-        CleanupRuntimeDrawingSurfaceCollider();
     }
 
     private void InitializeCanvas()
@@ -918,7 +957,16 @@ public class DrawingBoardController : MonoBehaviour
             return;
         }
 
-        CaptureOriginalMaterial();
+        Material sourceMaterial = boardMaterialTemplate != null
+            ? boardMaterialTemplate
+            : boardRenderer.sharedMaterial;
+        if (sourceMaterial == null)
+        {
+            Debug.LogError("[DrawingBoardController] Board material template is missing.");
+            return;
+        }
+
+        SetOriginalMaterialSource(sourceMaterial);
         ReleaseRuntimeMaterial();
         _canvas?.Dispose();
         _guideCanvas?.Dispose();
@@ -934,23 +982,13 @@ public class DrawingBoardController : MonoBehaviour
         ResetStrokeHistory();
         RefreshDisplayFullCanvas();
 
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null)
-        {
-            shader = Shader.Find("Unlit/Texture");
-        }
-
-        if (shader == null && boardRenderer.sharedMaterial != null)
-        {
-            shader = boardRenderer.sharedMaterial.shader;
-        }
-
-        _runtimeMaterial = new Material(shader);
+        _runtimeMaterial = new Material(_originalSharedMaterial);
         _runtimeMaterial.name = $"{name}_DrawingBoardMaterial";
         _runtimeMaterial.hideFlags = RuntimeHideFlags;
-        ConfigureRuntimeMaterial(_runtimeMaterial);
         AssignTexture(_runtimeMaterial, _displayCanvas.Texture, texturePropertyName);
+        ConfigureDisplayMaterial(_runtimeMaterial, _displayCanvas.Texture, texturePropertyName);
         boardRenderer.sharedMaterial = _runtimeMaterial;
+        ConfigureBoardRendererForDisplay();
         NotifyHistoryStateChanged();
         NotifySketchGuideStateChanged();
     }
@@ -1108,12 +1146,7 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        Vector2 surfaceUv;
-        if (hit.collider is MeshCollider)
-        {
-            surfaceUv = hit.textureCoord;
-        }
-        else if (!TryGetSurfaceUvFromBoardLocalHit(hit.point, out surfaceUv))
+        if (!TryGetSurfaceUvFromHit(hit, out Vector2 surfaceUv))
         {
             return false;
         }
@@ -1145,21 +1178,149 @@ public class DrawingBoardController : MonoBehaviour
         return true;
     }
 
-    private bool TryGetSurfaceUvFromBoardLocalHit(Vector3 worldPoint, out Vector2 surfaceUv)
+    private bool TryGetSurfaceUvFromHit(RaycastHit hit, out Vector2 surfaceUv)
     {
         surfaceUv = default;
 
-        Bounds bounds = GetBoardMeshBounds();
-        if (bounds.size.x <= 0.0001f || bounds.size.z <= 0.0001f)
+        if (hit.collider is MeshCollider)
+        {
+            surfaceUv = hit.textureCoord;
+            return true;
+        }
+
+        if (hit.collider is BoxCollider hitBoxCollider &&
+            TryGetSurfaceUvFromBoxColliderHit(
+                hit.point,
+                hitBoxCollider,
+                out surfaceUv))
+        {
+            return true;
+        }
+
+        if (drawingSurfaceCollider is BoxCollider configuredBoxCollider &&
+            TryGetSurfaceUvFromBoxColliderHit(
+                hit.point,
+                configuredBoxCollider,
+                out surfaceUv))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryGetSurfaceUvFromBoxColliderHit(
+        Vector3 worldPoint,
+        BoxCollider boxCollider,
+        out Vector2 surfaceUv)
+    {
+        surfaceUv = default;
+        if (boxCollider == null)
         {
             return false;
         }
 
-        Vector3 localPoint = transform.InverseTransformPoint(worldPoint);
-        surfaceUv = new Vector2(
-            1f - Mathf.InverseLerp(bounds.min.x, bounds.max.x, localPoint.x),
-            1f - Mathf.InverseLerp(bounds.min.z, bounds.max.z, localPoint.z));
+        Vector3 size = boxCollider.size;
+        Vector3 axisWorldSizes = GetBoxAxisWorldSizes(boxCollider);
+        if (!TryResolveBoxPaintAxes(boxCollider, axisWorldSizes, out int uAxis, out int vAxis))
+        {
+            return false;
+        }
+
+        Vector3 localPoint = boxCollider.transform.InverseTransformPoint(worldPoint) - boxCollider.center;
+        float halfU = Mathf.Abs(GetAxis(size, uAxis)) * 0.5f;
+        float halfV = Mathf.Abs(GetAxis(size, vAxis)) * 0.5f;
+        if (halfU <= 0.0001f || halfV <= 0.0001f)
+        {
+            return false;
+        }
+
+        float u = Mathf.InverseLerp(-halfU, halfU, GetAxis(localPoint, uAxis));
+        float v = Mathf.InverseLerp(-halfV, halfV, GetAxis(localPoint, vAxis));
+        u = 1f - u;
+        v = 1f - v;
+
+        surfaceUv = new Vector2(Mathf.Clamp01(u), Mathf.Clamp01(v));
         return true;
+    }
+
+    private static bool TryResolveBoxPaintAxes(
+        BoxCollider boxCollider,
+        Vector3 axisWorldSizes,
+        out int uAxis,
+        out int vAxis)
+    {
+        uAxis = 0;
+        vAxis = 2;
+        if (boxCollider == null)
+        {
+            return false;
+        }
+
+        float x = Mathf.Abs(GetAxis(axisWorldSizes, 0));
+        float y = Mathf.Abs(GetAxis(axisWorldSizes, 1));
+        float z = Mathf.Abs(GetAxis(axisWorldSizes, 2));
+        int normalAxis;
+
+        if (x <= y && x <= z)
+        {
+            normalAxis = 0;
+        }
+        else if (y <= x && y <= z)
+        {
+            normalAxis = 1;
+        }
+        else
+        {
+            normalAxis = 2;
+        }
+
+        // Keep UV orientation deterministic based on collider's thinnest axis.
+        switch (normalAxis)
+        {
+            case 0:
+                uAxis = 2;
+                vAxis = 1;
+                break;
+            case 1:
+                uAxis = 0;
+                vAxis = 2;
+                break;
+            default:
+                uAxis = 0;
+                vAxis = 1;
+                break;
+        }
+
+        return Mathf.Abs(GetAxis(axisWorldSizes, uAxis)) > 0.0001f &&
+               Mathf.Abs(GetAxis(axisWorldSizes, vAxis)) > 0.0001f;
+    }
+
+    private static Vector3 GetBoxAxisWorldSizes(BoxCollider boxCollider)
+    {
+        if (boxCollider == null)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 size = boxCollider.size;
+        return new Vector3(
+            boxCollider.transform.TransformVector(new Vector3(size.x, 0f, 0f)).magnitude,
+            boxCollider.transform.TransformVector(new Vector3(0f, size.y, 0f)).magnitude,
+            boxCollider.transform.TransformVector(new Vector3(0f, 0f, size.z)).magnitude);
+    }
+
+    private static float GetAxis(Vector3 value, int axis)
+    {
+        switch (axis)
+        {
+            case 0:
+                return value.x;
+            case 1:
+                return value.y;
+            default:
+                return value.z;
+        }
     }
 
     private bool IsCanvasUvInPaintArea(Vector2 canvasUv)
@@ -1199,12 +1360,14 @@ public class DrawingBoardController : MonoBehaviour
 
         if (!autoMatchCanvasResolutionToBoardAspect)
         {
+            ClampCanvasResolutionToHardwareLimit(ref resolvedWidth, ref resolvedHeight);
             return;
         }
 
         float boardAspect = ResolveCanvasWorldAspect();
         if (boardAspect <= 0.0001f)
         {
+            ClampCanvasResolutionToHardwareLimit(ref resolvedWidth, ref resolvedHeight);
             return;
         }
 
@@ -1219,6 +1382,23 @@ public class DrawingBoardController : MonoBehaviour
             resolvedWidth = referenceResolution;
             resolvedHeight = Mathf.Max(1, Mathf.RoundToInt(referenceResolution / boardAspect));
         }
+
+        ClampCanvasResolutionToHardwareLimit(ref resolvedWidth, ref resolvedHeight);
+    }
+
+    private static void ClampCanvasResolutionToHardwareLimit(ref int width, ref int height)
+    {
+        int maxTextureSize = Mathf.Max(1, SystemInfo.maxTextureSize);
+        if (width <= maxTextureSize && height <= maxTextureSize)
+        {
+            return;
+        }
+
+        float scale = Mathf.Min(
+            maxTextureSize / Mathf.Max(1f, width),
+            maxTextureSize / Mathf.Max(1f, height));
+        width = Mathf.Max(1, Mathf.FloorToInt(width * scale));
+        height = Mathf.Max(1, Mathf.FloorToInt(height * scale));
     }
 
     private float ResolveCanvasWorldAspect()
@@ -1245,6 +1425,12 @@ public class DrawingBoardController : MonoBehaviour
         worldWidth = 1f;
         worldHeight = 1f;
 
+        if (drawingSurfaceCollider is BoxCollider boxCollider &&
+            TryGetBoxColliderWorldSurfaceSize(boxCollider, out worldWidth, out worldHeight))
+        {
+            return true;
+        }
+
         Bounds localBounds = GetBoardMeshBounds();
         if (localBounds.size.x <= 0.0001f || localBounds.size.z <= 0.0001f)
         {
@@ -1254,6 +1440,26 @@ public class DrawingBoardController : MonoBehaviour
         Transform referenceTransform = boardRenderer != null ? boardRenderer.transform : transform;
         worldWidth = referenceTransform.TransformVector(new Vector3(localBounds.size.x, 0f, 0f)).magnitude;
         worldHeight = referenceTransform.TransformVector(new Vector3(0f, 0f, localBounds.size.z)).magnitude;
+        return worldWidth > 0.0001f && worldHeight > 0.0001f;
+    }
+
+    private static bool TryGetBoxColliderWorldSurfaceSize(BoxCollider boxCollider, out float worldWidth, out float worldHeight)
+    {
+        worldWidth = 1f;
+        worldHeight = 1f;
+        if (boxCollider == null)
+        {
+            return false;
+        }
+
+        Vector3 axisWorldSizes = GetBoxAxisWorldSizes(boxCollider);
+        if (!TryResolveBoxPaintAxes(boxCollider, axisWorldSizes, out int uAxis, out int vAxis))
+        {
+            return false;
+        }
+
+        worldWidth = GetAxis(axisWorldSizes, uAxis);
+        worldHeight = GetAxis(axisWorldSizes, vAxis);
         return worldWidth > 0.0001f && worldHeight > 0.0001f;
     }
 
@@ -1845,7 +2051,15 @@ public class DrawingBoardController : MonoBehaviour
 
                 if (!paintArea.Contains(new Vector2(canvasU, canvasV)))
                 {
-                    compositePixels[pixelIndex] = nonPaintColor32;
+                    if (TrySampleOriginalSurfaceColor(canvasU, canvasV, out Color32 originalColor))
+                    {
+                        compositePixels[pixelIndex] = originalColor;
+                    }
+                    else
+                    {
+                        compositePixels[pixelIndex] = nonPaintColor32;
+                    }
+
                     continue;
                 }
 
@@ -1939,21 +2153,13 @@ public class DrawingBoardController : MonoBehaviour
             return;
         }
 
-        Vector2 previewCanvasUv;
-        if (hit.collider is MeshCollider)
+        if (!TryGetSurfaceUvFromHit(hit, out Vector2 previewSurfaceUv))
         {
-            previewCanvasUv = SurfaceUvToCanvasUv(hit.textureCoord);
+            _brushPreviewRenderer.enabled = false;
+            return;
         }
-        else
-        {
-            if (!TryGetSurfaceUvFromBoardLocalHit(hit.point, out Vector2 previewSurfaceUv))
-            {
-                _brushPreviewRenderer.enabled = false;
-                return;
-            }
 
-            previewCanvasUv = SurfaceUvToCanvasUv(previewSurfaceUv);
-        }
+        Vector2 previewCanvasUv = SurfaceUvToCanvasUv(previewSurfaceUv);
 
         if (!IsCanvasUvInPaintArea(previewCanvasUv))
         {
@@ -2044,40 +2250,22 @@ public class DrawingBoardController : MonoBehaviour
         }
     }
 
-    private void CleanupRuntimeDrawingSurfaceCollider()
+    private void SetOriginalMaterialSource(Material sourceMaterial)
     {
-        if (_runtimeDrawingSurfaceCollider == null)
+        if (sourceMaterial == null)
         {
             return;
         }
 
-        if (Application.isPlaying)
-        {
-            Destroy(_runtimeDrawingSurfaceCollider);
-        }
-        else
-        {
-            DestroyImmediate(_runtimeDrawingSurfaceCollider);
-        }
-
-        _runtimeDrawingSurfaceCollider = null;
-    }
-
-    private void CaptureOriginalMaterial()
-    {
-        if (_hasCapturedOriginalMaterial || boardRenderer == null)
-        {
-            return;
-        }
-
-        _originalSharedMaterial = boardRenderer.sharedMaterial;
-        _hasCapturedOriginalMaterial = true;
+        _originalSharedMaterial = sourceMaterial;
+        CacheOriginalSurfaceTextureData(_originalSharedMaterial);
     }
 
     private void ReleaseRuntimeMaterial()
     {
         if (_runtimeMaterial == null)
         {
+            RestoreOriginalMaterial();
             return;
         }
 
@@ -2097,15 +2285,12 @@ public class DrawingBoardController : MonoBehaviour
 
     private void RestoreOriginalMaterial()
     {
-        if (!_hasCapturedOriginalMaterial || boardRenderer == null)
+        if (_originalSharedMaterial == null || boardRenderer == null)
         {
             return;
         }
 
-        if (boardRenderer.sharedMaterial == _runtimeMaterial)
-        {
-            boardRenderer.sharedMaterial = _originalSharedMaterial;
-        }
+        boardRenderer.sharedMaterial = _originalSharedMaterial;
     }
 
     private bool TryResolveStickerPlacement(
@@ -2274,17 +2459,10 @@ public class DrawingBoardController : MonoBehaviour
 
     private void ResolveRuntimeReferences()
     {
-        if (boardRenderer == null)
-        {
-            boardRenderer = GetComponent<Renderer>();
-        }
-
         if (drawingCamera == null)
         {
-            drawingCamera = Camera.main;
+            drawingCamera = Camera.main ?? FindFirstObjectByType<Camera>();
         }
-
-        drawingSurfaceCollider = ResolveDrawingSurfaceCollider();
     }
 
     private void EnsureRuntimeReady()
@@ -2321,47 +2499,184 @@ public class DrawingBoardController : MonoBehaviour
         if (_runtimeMaterial.mainTexture != _displayCanvas.Texture)
         {
             AssignTexture(_runtimeMaterial, _displayCanvas.Texture, texturePropertyName);
+            ConfigureDisplayMaterial(_runtimeMaterial, _displayCanvas.Texture, texturePropertyName);
+        }
+
+        ConfigureBoardRendererForDisplay();
+    }
+
+    private void CacheOriginalSurfaceTextureData(Material sourceMaterial)
+    {
+        _hasOriginalSurfaceTextureData = false;
+        _originalSurfacePixels = null;
+        _originalSurfaceWidth = 0;
+        _originalSurfaceHeight = 0;
+        _originalSurfaceTextureScale = Vector2.one;
+        _originalSurfaceTextureOffset = Vector2.zero;
+        _originalSurfaceWrapMode = TextureWrapMode.Clamp;
+
+        if (sourceMaterial == null)
+        {
+            return;
+        }
+
+        string targetTextureProperty = !string.IsNullOrWhiteSpace(texturePropertyName) &&
+                                       sourceMaterial.HasProperty(texturePropertyName)
+            ? texturePropertyName
+            : null;
+
+        Texture sourceTexture;
+        if (!string.IsNullOrWhiteSpace(targetTextureProperty))
+        {
+            sourceTexture = sourceMaterial.GetTexture(targetTextureProperty);
+            _originalSurfaceTextureScale = sourceMaterial.GetTextureScale(targetTextureProperty);
+            _originalSurfaceTextureOffset = sourceMaterial.GetTextureOffset(targetTextureProperty);
+        }
+        else
+        {
+            sourceTexture = sourceMaterial.mainTexture;
+            _originalSurfaceTextureScale = sourceMaterial.mainTextureScale;
+            _originalSurfaceTextureOffset = sourceMaterial.mainTextureOffset;
+        }
+
+        if (Mathf.Abs(_originalSurfaceTextureScale.x) <= 0.0001f)
+        {
+            _originalSurfaceTextureScale.x = 1f;
+        }
+
+        if (Mathf.Abs(_originalSurfaceTextureScale.y) <= 0.0001f)
+        {
+            _originalSurfaceTextureScale.y = 1f;
+        }
+
+        Texture2D sourceTexture2D = sourceTexture as Texture2D;
+        if (sourceTexture2D == null)
+        {
+            return;
+        }
+
+        _originalSurfaceWrapMode = sourceTexture2D.wrapMode;
+        if (!TryExtractTexturePixels(
+                sourceTexture2D,
+                out _originalSurfacePixels,
+                out _originalSurfaceWidth,
+                out _originalSurfaceHeight))
+        {
+            return;
+        }
+
+        _hasOriginalSurfaceTextureData = _originalSurfacePixels != null &&
+                                         _originalSurfacePixels.Length > 0 &&
+                                         _originalSurfaceWidth > 0 &&
+                                         _originalSurfaceHeight > 0;
+    }
+
+    private bool TrySampleOriginalSurfaceColor(float canvasU, float canvasV, out Color32 color)
+    {
+        color = default;
+        if (!_hasOriginalSurfaceTextureData ||
+            _originalSurfacePixels == null ||
+            _originalSurfaceWidth <= 0 ||
+            _originalSurfaceHeight <= 0)
+        {
+            return false;
+        }
+
+        Vector2 surfaceUv = CanvasUvToSurfaceUv(new Vector2(canvasU, canvasV));
+        float sourceU = (surfaceUv.x * _originalSurfaceTextureScale.x) + _originalSurfaceTextureOffset.x;
+        float sourceV = (surfaceUv.y * _originalSurfaceTextureScale.y) + _originalSurfaceTextureOffset.y;
+        sourceU = WrapSampleUv(sourceU, _originalSurfaceWrapMode);
+        sourceV = WrapSampleUv(sourceV, _originalSurfaceWrapMode);
+
+        color = SampleTextureBilinear(
+            _originalSurfacePixels,
+            _originalSurfaceWidth,
+            _originalSurfaceHeight,
+            sourceU,
+            sourceV);
+        return true;
+    }
+
+    private static float WrapSampleUv(float value, TextureWrapMode wrapMode)
+    {
+        switch (wrapMode)
+        {
+            case TextureWrapMode.Repeat:
+                return Mathf.Repeat(value, 1f);
+            case TextureWrapMode.Mirror:
+                return Mathf.PingPong(value, 1f);
+            case TextureWrapMode.MirrorOnce:
+                return Mathf.Clamp01(Mathf.PingPong(value, 2f));
+            case TextureWrapMode.Clamp:
+            default:
+                return Mathf.Clamp01(value);
         }
     }
 
-    private Collider ResolveDrawingSurfaceCollider()
+    private static bool TryExtractTexturePixels(
+        Texture2D texture,
+        out Color32[] pixels,
+        out int width,
+        out int height)
     {
-        if (drawingSurfaceCollider is MeshCollider meshCollider && meshCollider.sharedMesh != null)
+        pixels = null;
+        width = 0;
+        height = 0;
+        if (texture == null)
         {
-            return meshCollider;
+            return false;
         }
 
-        if (TryGetComponent(out MeshCollider existingMeshCollider) && existingMeshCollider.sharedMesh != null)
+        width = texture.width;
+        height = texture.height;
+        if (width <= 0 || height <= 0)
         {
-            return existingMeshCollider;
+            return false;
         }
 
-        MeshFilter meshFilter = null;
-        if (boardRenderer != null)
+        try
         {
-            meshFilter = boardRenderer.GetComponent<MeshFilter>();
+            pixels = texture.GetPixels32();
+            return pixels != null && pixels.Length > 0;
         }
-
-        if (meshFilter == null)
+        catch
         {
-            meshFilter = GetComponent<MeshFilter>();
-        }
+            RenderTexture temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+            RenderTexture previous = RenderTexture.active;
+            Texture2D readable = null;
 
-        // Drawing needs mesh UVs; a runtime MeshCollider preserves the actual board mapping.
-        if (meshFilter != null && meshFilter.sharedMesh != null)
-        {
-            if (_runtimeDrawingSurfaceCollider == null)
+            try
             {
-                _runtimeDrawingSurfaceCollider = gameObject.AddComponent<MeshCollider>();
-                _runtimeDrawingSurfaceCollider.hideFlags = RuntimeHideFlags;
+                Graphics.Blit(texture, temporary);
+                RenderTexture.active = temporary;
+                readable = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                readable.ReadPixels(new Rect(0f, 0f, width, height), 0, 0, false);
+                readable.Apply(false, false);
+                pixels = readable.GetPixels32();
+                return pixels != null && pixels.Length > 0;
             }
-
-            _runtimeDrawingSurfaceCollider.sharedMesh = meshFilter.sharedMesh;
-            _runtimeDrawingSurfaceCollider.convex = false;
-            return _runtimeDrawingSurfaceCollider;
+            catch
+            {
+                pixels = null;
+                return false;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(temporary);
+                if (readable != null)
+                {
+                    if (Application.isPlaying)
+                    {
+                        Destroy(readable);
+                    }
+                    else
+                    {
+                        DestroyImmediate(readable);
+                    }
+                }
+            }
         }
-
-        return drawingSurfaceCollider != null ? drawingSurfaceCollider : GetComponent<Collider>();
     }
 
     private static RectInt UnionRegions(RectInt left, RectInt right)
@@ -2436,6 +2751,67 @@ public class DrawingBoardController : MonoBehaviour
         }
     }
 
+    private void ConfigureDisplayMaterial(Material material, Texture2D texture, string texturePropertyName)
+    {
+        if (material == null || texture == null)
+        {
+            return;
+        }
+
+        if (material.HasProperty("_BaseColor"))
+        {
+            material.SetColor("_BaseColor", Color.white);
+        }
+
+        if (material.HasProperty("_Color"))
+        {
+            material.SetColor("_Color", Color.white);
+        }
+
+        if (material.HasProperty("_Metallic"))
+        {
+            material.SetFloat("_Metallic", 0f);
+        }
+
+        if (material.HasProperty("_Smoothness"))
+        {
+            material.SetFloat("_Smoothness", 0f);
+        }
+
+        if (material.HasProperty("_EmissionMap"))
+        {
+            material.SetTexture("_EmissionMap", texture);
+            material.SetTextureScale("_EmissionMap", boardTextureScale);
+            material.SetTextureOffset("_EmissionMap", boardTextureOffset);
+            material.EnableKeyword("_EMISSION");
+        }
+
+        if (material.HasProperty("_EmissionColor"))
+        {
+            material.SetColor("_EmissionColor", Color.white * 2.2f);
+        }
+
+        if (!string.IsNullOrWhiteSpace(texturePropertyName) && material.HasProperty(texturePropertyName))
+        {
+            material.SetTexture(texturePropertyName, texture);
+            material.SetTextureScale(texturePropertyName, boardTextureScale);
+            material.SetTextureOffset(texturePropertyName, boardTextureOffset);
+        }
+    }
+
+    private void ConfigureBoardRendererForDisplay()
+    {
+        if (boardRenderer == null)
+        {
+            return;
+        }
+
+        boardRenderer.shadowCastingMode = ShadowCastingMode.Off;
+        boardRenderer.receiveShadows = false;
+        boardRenderer.lightProbeUsage = LightProbeUsage.Off;
+        boardRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+    }
+
     private Vector2 SurfaceUvToCanvasUv(Vector2 surfaceUv)
     {
         return new Vector2(
@@ -2504,43 +2880,78 @@ public class DrawingBoardController : MonoBehaviour
         return (Color32)new Color(outR, outG, outB, outA);
     }
 
-    private static void ConfigureRuntimeMaterial(Material material)
+    private static bool IsDrawingPhaseActive()
     {
-        if (material == null)
-        {
-            return;
-        }
-
-        material.color = Color.white;
-
-        if (material.HasProperty("_BaseColor"))
-        {
-            material.SetColor("_BaseColor", Color.white);
-        }
-
-        if (material.HasProperty("_Color"))
-        {
-            material.SetColor("_Color", Color.white);
-        }
+        RoundManager manager = RoundManager.Instance;
+        return manager == null || manager.CurrentState == GameState.Drawing;
     }
 
-    private static bool TryGetPointerScreenPosition(out Vector2 screenPosition)
+    private bool TryGetPointerScreenPosition(out Vector2 screenPosition)
     {
 #if ENABLE_INPUT_SYSTEM
         if (Mouse.current != null)
         {
             screenPosition = Mouse.current.position.ReadValue();
-            return true;
+        }
+        else
+        {
+            screenPosition = default;
+            return false;
         }
 #endif
 
 #if ENABLE_LEGACY_INPUT_MANAGER
-        screenPosition = Input.mousePosition;
-        return true;
-#else
-        screenPosition = default;
-        return false;
+        if (
+#if ENABLE_INPUT_SYSTEM
+            Mouse.current == null &&
 #endif
+            true)
+        {
+            screenPosition = Input.mousePosition;
+        }
+#else
+        if (
+#if ENABLE_INPUT_SYSTEM
+            Mouse.current == null
+#else
+            true
+#endif
+            )
+        {
+            screenPosition = default;
+            return false;
+        }
+#endif
+
+        if (float.IsNaN(screenPosition.x) || float.IsNaN(screenPosition.y))
+        {
+            return false;
+        }
+
+        if (Screen.width <= 0 || Screen.height <= 0)
+        {
+            return false;
+        }
+
+        if (screenPosition.x < 0f || screenPosition.x > Screen.width ||
+            screenPosition.y < 0f || screenPosition.y > Screen.height)
+        {
+            return false;
+        }
+
+        Camera activeCamera = drawingCamera != null ? drawingCamera : Camera.main;
+        if (activeCamera == null)
+        {
+            return false;
+        }
+
+        Rect pixelRect = activeCamera.pixelRect.width > 0f && activeCamera.pixelRect.height > 0f
+            ? activeCamera.pixelRect
+            : new Rect(0f, 0f, Screen.width, Screen.height);
+        return screenPosition.x >= pixelRect.xMin &&
+               screenPosition.x <= pixelRect.xMax &&
+               screenPosition.y >= pixelRect.yMin &&
+               screenPosition.y <= pixelRect.yMax;
     }
 
     private static bool GetPointerDownThisFrame()

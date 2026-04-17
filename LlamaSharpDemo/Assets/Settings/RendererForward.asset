@@ -70,7 +70,7 @@ MonoBehaviour:
   m_Active: 1
   settings:
     preset: {fileID: 11400000, guid: 998929f8e8194797998cedc0698b9f2e, type: 2}
-    renderPassEvent: 550
+    renderPassEvent: 1000
     targetInputResolution: {x: 640, y: 480}
     outputScale: 1
     freeScale: 0
@@ -78,3 +78,8 @@ MonoBehaviour:
     flipVertical: 0
     clearBlackBars: 0
     matchShaderGlassGamma: 1
+    renderExcludedLayersAfterPostProcess: 1
+    excludedLayerMask:
+      serializedVersion: 2
+      m_Bits: 256
+    excludedLayerRenderPassEvent: 600

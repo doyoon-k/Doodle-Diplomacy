@@ -29,5 +29,5 @@ MonoBehaviour:
   textures: []
   floatOverrides: []
   vectorOverrides: []
-  enableFeedback: 0
-  historyCount: 0
+  enableFeedback: 1
+  historyCount: 3

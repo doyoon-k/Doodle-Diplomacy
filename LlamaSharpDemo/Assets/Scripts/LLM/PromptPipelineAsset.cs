@@ -121,7 +121,9 @@ public class PromptPipelineAsset : ScriptableObject
                     step.useVision,
                     step.imageStateKey,
                     step.requireImage,
-                    step.resizeLongestSide
+                    step.resizeLongestSide,
+                    null,
+                    step.stepName
                 );
             case PromptPipelineStepKind.CompletionLlm:
                 EnsureSettings(step);
@@ -132,7 +134,9 @@ public class PromptPipelineAsset : ScriptableObject
                     step.useVision,
                     step.imageStateKey,
                     step.requireImage,
-                    step.resizeLongestSide
+                    step.resizeLongestSide,
+                    null,
+                    step.stepName
                 );
             case PromptPipelineStepKind.CustomLink:
                 return InstantiateCustomLink(step);

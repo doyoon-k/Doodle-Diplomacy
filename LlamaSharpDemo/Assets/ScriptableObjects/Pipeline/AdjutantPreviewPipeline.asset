@@ -30,8 +30,9 @@ MonoBehaviour:
       present, what each thing seems to be doing, how the main elements relate, and
       the overall mood.
 
-      Also report whether Object A and Object B are visible, unclear, or missing.
-      Only mark visible when the drawing itself provides clear evidence.'
+      Also report whether Object A and Object B are visible,
+      unclear, or missing. Only mark visible when the drawing itself provides clear
+      evidence.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1
@@ -56,8 +57,8 @@ MonoBehaviour:
     outputNodePosition: {x: 625, y: -37}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 599, y: 157, z: 0}
-    viewScale: {x: 0.65751624, y: 0.65751624, z: 1}
+    viewPosition: {x: 633, y: 149, z: 0}
+    viewScale: {x: 0.7561437, y: 0.7561437, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 404, y: -37}

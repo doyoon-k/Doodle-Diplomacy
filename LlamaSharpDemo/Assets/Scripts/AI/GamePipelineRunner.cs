@@ -167,7 +167,8 @@ public class GamePipelineRunner : MonoBehaviour
                     step.imageStateKey,
                     step.requireImage,
                     step.resizeLongestSide,
-                    null // Log callback is null to avoid double logging (internal Debug.Log is sufficient)
+                    null, // Log callback is null to avoid double logging (internal Debug.Log is sufficient)
+                    step.stepName
                 );
             case PromptPipelineStepKind.CompletionLlm:
                 return new CompletionChainLink(
@@ -178,7 +179,8 @@ public class GamePipelineRunner : MonoBehaviour
                     step.imageStateKey,
                     step.requireImage,
                     step.resizeLongestSide,
-                    null // Log callback is null to avoid double logging
+                    null, // Log callback is null to avoid double logging
+                    step.stepName
                 );
             case PromptPipelineStepKind.CustomLink:
                 return InstantiateCustomLink(step);

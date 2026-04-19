@@ -25,6 +25,7 @@ public class LlmGenerationProfileEditor : Editor
     private SerializedProperty _visionProjectorModelProp;
     private SerializedProperty _visionProjectorRelativeProp;
     private SerializedProperty _jsonSchemaDeliveryModeProp;
+    private SerializedProperty _thinkingModeProp;
     private SerializedProperty _modelParamsProp;
     private SerializedProperty _runtimeParamsProp;
     private SerializedProperty _jsonFieldsProp;
@@ -38,6 +39,7 @@ public class LlmGenerationProfileEditor : Editor
         _visionProjectorModelProp = serializedObject.FindProperty("visionProjectorModel");
         _visionProjectorRelativeProp = serializedObject.FindProperty("visionProjectorRelativeToStreamingAssets");
         _jsonSchemaDeliveryModeProp = serializedObject.FindProperty("jsonSchemaDeliveryMode");
+        _thinkingModeProp = serializedObject.FindProperty("thinkingMode");
         _modelParamsProp = serializedObject.FindProperty("modelParams");
         _runtimeParamsProp = serializedObject.FindProperty("runtimeParams");
         _jsonFieldsProp = serializedObject.FindProperty("jsonFields");
@@ -55,6 +57,7 @@ public class LlmGenerationProfileEditor : Editor
         EditorGUILayout.PropertyField(_keepAliveProp);
         EditorGUILayout.PropertyField(_systemPromptProp);
         EditorGUILayout.PropertyField(_jsonSchemaDeliveryModeProp);
+        EditorGUILayout.PropertyField(_thinkingModeProp);
         EditorGUILayout.PropertyField(_modelParamsProp, true);
         EditorGUILayout.PropertyField(_runtimeParamsProp, true);
         bool basicSettingsChanged = EditorGUI.EndChangeCheck();

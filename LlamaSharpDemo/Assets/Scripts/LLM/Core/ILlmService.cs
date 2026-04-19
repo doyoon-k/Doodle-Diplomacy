@@ -178,8 +178,9 @@ public static class LlamaSharpInterop
     {
         var source = settings?.modelParams ?? new LlmGenerationProfile.ModelParams();
         Grammar grammar = null;
+        JsonSchemaDeliveryMode schemaMode = settings?.EffectiveJsonSchemaDeliveryMode ?? JsonSchemaDeliveryMode.Auto;
         bool shouldAttachGrammar = RequiresJsonSchema(settings) &&
-                                   ShouldUseGrammar(settings.jsonSchemaDeliveryMode);
+                                   ShouldUseGrammar(schemaMode);
         if (shouldAttachGrammar)
         {
             TryGetJsonGrammar(settings, out grammar);
@@ -188,7 +189,7 @@ public static class LlamaSharpInterop
         if (shouldAttachGrammar && grammar == null)
         {
             Debug.LogWarning(
-                $"[LlamaSharpInterop] JSON schema mode is '{settings?.jsonSchemaDeliveryMode}', but grammar could not be built. Output will not be strictly constrained.");
+                $"[LlamaSharpInterop] JSON schema mode configured='{settings?.jsonSchemaDeliveryMode}', effective='{schemaMode}', but grammar could not be built. Output will not be strictly constrained.");
         }
 
         var sampling = new DefaultSamplingPipeline
@@ -335,8 +336,9 @@ public static class LlamaSharpInterop
 
         if (requiresJson && settings != null)
         {
-            bool shouldAppendSchema = ShouldAppendSchemaToPrompt(settings.jsonSchemaDeliveryMode);
-            if (settings.jsonSchemaDeliveryMode == JsonSchemaDeliveryMode.Auto)
+            JsonSchemaDeliveryMode schemaMode = settings.EffectiveJsonSchemaDeliveryMode;
+            bool shouldAppendSchema = ShouldAppendSchemaToPrompt(schemaMode);
+            if (schemaMode == JsonSchemaDeliveryMode.Auto)
             {
                 shouldAppendSchema = !TryGetJsonGrammar(settings, out _);
             }
@@ -490,10 +492,13 @@ public static class LlamaSharpInterop
             return false;
         }
 
+        bool includeThink = settings?.IsThinkingEnabled ?? false;
+        string cacheKey = includeThink ? schema + "\0think" : schema;
+
         GrammarCacheEntry cached;
         lock (GrammarCacheLock)
         {
-            if (GrammarCache.TryGetValue(schema, out cached))
+            if (GrammarCache.TryGetValue(cacheKey, out cached))
             {
                 grammar = cached.Grammar;
                 return grammar != null;
@@ -502,7 +507,7 @@ public static class LlamaSharpInterop
 
         Grammar created = null;
         string error = null;
-        if (JsonSchemaGrammarBuilder.TryBuild(schema, out string gbnf, out string root, out string buildError))
+        if (JsonSchemaGrammarBuilder.TryBuild(schema, out string gbnf, out string root, out string buildError, includeThink))
         {
             created = new Grammar(gbnf, root);
         }
@@ -513,7 +518,7 @@ public static class LlamaSharpInterop
 
         lock (GrammarCacheLock)
         {
-            GrammarCache[schema] = new GrammarCacheEntry(created, error);
+            GrammarCache[cacheKey] = new GrammarCacheEntry(created, error);
         }
 
         if (created == null && !string.IsNullOrWhiteSpace(error))
@@ -561,7 +566,12 @@ public static class LlamaSharpInterop
             public string ValueRule;
         }
 
-        public static bool TryBuild(string schema, out string gbnf, out string rootRule, out string error)
+        public static bool TryBuild(
+            string schema,
+            out string gbnf,
+            out string rootRule,
+            out string error,
+            bool includeThinkPrefix = false)
         {
             gbnf = null;
             rootRule = RootRuleName;
@@ -578,7 +588,18 @@ public static class LlamaSharpInterop
                 using var document = JsonDocument.Parse(schema);
                 var builder = new JsonSchemaGrammarBuilder();
                 string valueRule = builder.BuildRuleForSchema(document.RootElement, "root_value");
-                builder.AppendRule(RootRuleName, valueRule);
+                if (includeThinkPrefix)
+                {
+                    builder.AppendRule("think-block", "\"<think>\" think-content \"</think>\" ws");
+                    builder.AppendRule("think-content", "think-char*");
+                    builder.AppendThinkCharRule();
+                    builder.AppendRule(RootRuleName, "think-block? " + valueRule);
+                }
+                else
+                {
+                    builder.AppendRule(RootRuleName, valueRule);
+                }
+
                 builder.AppendDeferredRules();
                 builder.AppendPrimitiveRules();
                 gbnf = builder._builder.ToString();
@@ -1049,6 +1070,18 @@ public static class LlamaSharpInterop
         private void AppendRule(string name, string expression)
         {
             _deferredRules.Add($"{name} ::= {expression}");
+        }
+
+        private void AppendThinkCharRule()
+        {
+            AppendRule("think-char", "[^<] | \"<\" tchar-after-lt");
+            AppendRule("tchar-after-lt", "[^/] | \"/\" tchar-after-sl");
+            AppendRule("tchar-after-sl", "[^tT] | [tT] tchar-after-t");
+            AppendRule("tchar-after-t", "[^hH] | [hH] tchar-after-h");
+            AppendRule("tchar-after-h", "[^iI] | [iI] tchar-after-i");
+            AppendRule("tchar-after-i", "[^nN] | [nN] tchar-after-n");
+            AppendRule("tchar-after-n", "[^kK] | [kK] tchar-after-k");
+            AppendRule("tchar-after-k", "[^>]");
         }
 
         private void AppendDeferredRules()

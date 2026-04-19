@@ -27,6 +27,9 @@ public class LlmGenerationProfile : ScriptableObject
     [Tooltip("How JSON schema constraints are delivered to the model: strict grammar decoding, prompt append fallback, or automatic mode.")]
     public JsonSchemaDeliveryMode jsonSchemaDeliveryMode = JsonSchemaDeliveryMode.Auto;
 
+    [Tooltip("Thinking mode control for Qwen3-series models.")]
+    public ThinkingMode thinkingMode = ThinkingMode.Disabled;
+
     [SerializeField]
     [Tooltip("Structured definition that drives the JSON format enforced at runtime.")]
     private List<JsonFieldDefinition> jsonFields = new();
@@ -67,6 +70,8 @@ public class LlmGenerationProfile : ScriptableObject
     private string _lastRenderedPrompt;
 
     public IReadOnlyList<JsonFieldDefinition> JsonFields => jsonFields;
+    public bool IsThinkingEnabled => thinkingMode != ThinkingMode.Disabled;
+    public JsonSchemaDeliveryMode EffectiveJsonSchemaDeliveryMode => jsonSchemaDeliveryMode;
 
     private void OnValidate()
     {
@@ -128,6 +133,13 @@ public enum JsonSchemaDeliveryMode
     Auto = 0,
     GrammarOnly = 1,
     PromptAppendOnly = 2
+}
+
+public enum ThinkingMode
+{
+    Disabled = 0,
+    StripThink = 1,
+    PreserveThink = 2
 }
 
 [Serializable]

@@ -123,7 +123,8 @@ public static class PromptPipelineSimulator
                     step.imageStateKey,
                     step.requireImage,
                     step.resizeLongestSide,
-                    onLog
+                    onLog,
+                    step.stepName
                 );
             case PromptPipelineStepKind.CompletionLlm:
                 EnsureSettings(step);
@@ -135,7 +136,8 @@ public static class PromptPipelineSimulator
                     step.imageStateKey,
                     step.requireImage,
                     step.resizeLongestSide,
-                    onLog
+                    onLog,
+                    step.stepName
                 );
             case PromptPipelineStepKind.CustomLink:
                 return InstantiateCustomLink(step);

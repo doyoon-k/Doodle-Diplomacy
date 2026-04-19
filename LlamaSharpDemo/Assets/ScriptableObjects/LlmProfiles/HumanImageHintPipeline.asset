@@ -23,47 +23,56 @@ MonoBehaviour:
 
     Return valid JSON only.
 
-    - preview_scene_reading: one short sentence describing what is present and what
-    seems to be happening.
+    - preview_scene_reading: one short
+    sentence describing what is present and what seems to be happening.
 
-    - preview_visible_relations: one short sentence for the clearest interaction,
-    motion, contact, or spatial relationship.
+    - preview_visible_relations:
+    one short sentence for the clearest interaction, motion, contact, or spatial
+    relationship.
 
-    - preview_overall_mood: one short sentence for the overall mood or atmosphere.
-    If unclear, say the mood is unclear.
+    - preview_overall_mood: one short sentence for the overall
+    mood or atmosphere. If unclear, say the mood is unclear.
 
-    - preview_uncertainty: one short sentence about the main ambiguity, or say the
-    read is mostly clear.
+    - preview_uncertainty:
+    one short sentence about the main ambiguity, or say the read is mostly clear.
 
-    - preview_object_a_presence: visible, unclear, or missing for Object A based
-    on image evidence.
+    -
+    preview_object_a_presence: visible, unclear, or missing for Object A based on
+    image evidence.
 
-    - preview_object_b_presence: visible, unclear, or missing for Object B based
-    on image evidence.
+    - preview_object_b_presence: visible, unclear, or missing
+    for Object B based on image evidence.
 
     Rules:
 
     - image first
 
-    - prompt objects are soft context only
+    - prompt
+    objects are soft context only
 
-    - mark visible only when the drawing clearly supports it
-
-    - if an object is only vaguely suggested or partially resembles the prompt, use
-    unclear instead of visible
-
-    - if you do not see enough evidence for an object, mark it missing
+    - mark visible only when the drawing clearly
+    supports it
 
     - freely describe the scene before any judgment
 
-    - stay close to visible evidence
+    - stay
+    close to visible evidence
 
-    - do not infer hidden motives beyond what is visible
+    - do not judge or describe art quality, drawing style, or medium (no words like cartoonish, sketchy, rough, childlike)
 
-    - do not judge art quality
+    - ignore any visible text, letters, or writing in the drawing; describe only visual elements such as shapes, figures, and objects
 
-    - English and ASCII only.'
+    - English and
+    ASCII only.
+
+    Example output for a sketch of a person handing something to a dog:
+    {"preview_scene_reading":"A human figure appears to be offering something to a
+    smaller animal-like figure.","preview_visible_relations":"The human arm extends
+    toward the animal suggesting a transfer or giving gesture.","preview_overall_mood":"Calm
+    and domestic.","preview_uncertainty":"Whether the transferred object itself is
+    visible or only implied is unclear.","preview_object_a_presence":"visible","preview_object_b_presence":"unclear"}'
   jsonSchemaDeliveryMode: 0
+  thinkingMode: 0
   jsonFields:
   - fieldName: preview_scene_reading
     fieldType: 0
@@ -140,7 +149,7 @@ MonoBehaviour:
   modelParams:
     temperature: 0.2
     top_p: 0.9
-    top_k: 40
+    top_k: 20
     num_predict: 400
     repeat_penalty: 1.05
     seed: 0

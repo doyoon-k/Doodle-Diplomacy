@@ -15,6 +15,7 @@ public class CompletionChainLink : IStateChainLink
     private readonly string _imageStateKey;
     private readonly bool _requireImage;
     private readonly int _resizeLongestSide;
+    private readonly string _thinkingStateKey;
 
     public CompletionChainLink(
         LlmGenerationProfile settings,
@@ -23,7 +24,8 @@ public class CompletionChainLink : IStateChainLink
         string imageStateKey = null,
         bool requireImage = false,
         int resizeLongestSide = 1024,
-        Action<string> log = null)
+        Action<string> log = null,
+        string stepName = null)
         : this(
             LlmServiceLocator.Require(),
             settings,
@@ -32,7 +34,8 @@ public class CompletionChainLink : IStateChainLink
             imageStateKey,
             requireImage,
             resizeLongestSide,
-            log)
+            log,
+            stepName)
     {
     }
 
@@ -44,7 +47,8 @@ public class CompletionChainLink : IStateChainLink
         string imageStateKey = null,
         bool requireImage = false,
         int resizeLongestSide = 1024,
-        Action<string> log = null)
+        Action<string> log = null,
+        string stepName = null)
     {
         _llmService = service;
         _log = log;
@@ -54,6 +58,7 @@ public class CompletionChainLink : IStateChainLink
         _imageStateKey = imageStateKey;
         _requireImage = requireImage;
         _resizeLongestSide = Mathf.Max(64, resizeLongestSide);
+        _thinkingStateKey = BuildThinkingStateKey(stepName);
     }
 
     public IEnumerator Execute(
@@ -74,7 +79,7 @@ public class CompletionChainLink : IStateChainLink
             yield break;
         }
 
-        string userPrompt = _userPromptTemplate.Render(state);
+        string userPrompt = RenderUserPrompt(state);
         string response = null;
 
         Log($"[CompletionChainLink] User Prompt:\n{userPrompt}");
@@ -112,8 +117,41 @@ public class CompletionChainLink : IStateChainLink
             yield break;
         }
 
+        if (_settings.IsThinkingEnabled)
+        {
+            ExtractThinkBlock(response, out string thinkContent, out string remainder);
+            if (_settings.thinkingMode == ThinkingMode.PreserveThink && thinkContent != null)
+            {
+                state.SetString(_thinkingStateKey, thinkContent);
+            }
+
+            response = remainder;
+        }
+
+        if (string.IsNullOrWhiteSpace(response))
+        {
+            yield return Fail(state, onDone, "[CompletionChainLink] Model returned an empty response after think-block extraction.");
+            yield break;
+        }
+
         state.SetString(PromptPipelineConstants.AnswerKey, response);
         onDone?.Invoke(state);
+    }
+
+    private string RenderUserPrompt(PipelineState state)
+    {
+        if (_userPromptTemplate == null)
+        {
+            return string.Empty;
+        }
+
+        string prompt = _userPromptTemplate.Render(state);
+        if (_settings != null && _settings.IsThinkingEnabled)
+        {
+            return $"/think\n{prompt}";
+        }
+
+        return prompt;
     }
 
     private PipelineImageUtility.ImageNormalizationResult ResolveImage(PipelineState state, out string error)
@@ -152,6 +190,45 @@ public class CompletionChainLink : IStateChainLink
         }
 
         return result;
+    }
+
+    private static void ExtractThinkBlock(string response, out string thinkContent, out string remainder)
+    {
+        thinkContent = null;
+        remainder = response;
+
+        if (string.IsNullOrEmpty(response))
+        {
+            return;
+        }
+
+        const string startTag = "<think>";
+        const string endTag = "</think>";
+
+        int startIndex = response.IndexOf(startTag, StringComparison.OrdinalIgnoreCase);
+        if (startIndex < 0)
+        {
+            return;
+        }
+
+        int endTagIndex = response.LastIndexOf(endTag, StringComparison.OrdinalIgnoreCase);
+        if (endTagIndex < 0 || endTagIndex < startIndex)
+        {
+            return;
+        }
+
+        int endIndexExclusive = endTagIndex + endTag.Length;
+        thinkContent = response.Substring(startIndex, endIndexExclusive - startIndex);
+        remainder = endIndexExclusive < response.Length
+            ? response.Substring(endIndexExclusive).Trim()
+            : string.Empty;
+    }
+
+    private static string BuildThinkingStateKey(string stepName)
+    {
+        return string.IsNullOrWhiteSpace(stepName)
+            ? "thinking"
+            : $"{stepName.Trim()}_thinking";
     }
 
     private IEnumerator Fail(PipelineState state, Action<PipelineState> onDone, string error)

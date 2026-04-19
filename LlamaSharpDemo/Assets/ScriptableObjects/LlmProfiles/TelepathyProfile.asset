@@ -28,6 +28,10 @@ MonoBehaviour:
     Reconstruct what these aliens would say to each other based on the judgment
     summary below.
 
+    The aliens did not commission this drawing. They are observers watching humans
+    draw freely. They do not know what the humans were trying to draw. They simply
+    see a scene and react to it through their own cultural lens.
+
     Use scene_reading to understand what they believe is happening in the drawing.
 
     Use judgment_reason to understand why they approved or disapproved.
@@ -37,7 +41,7 @@ MonoBehaviour:
 
     Let the speakers sound like they genuinely like, dislike, resent, admire, or
     feel put off by what they think the drawing shows. They should not sound like
-    they are simply checking whether criteria were met.
+    they are evaluating a submission or checking whether something was requested.
 
     Write 4 to 6 short spoken lines from 2 or 3 aliens.
     Start each line with ''Alien1:'', ''Alien2:'', or ''Alien3:''.
@@ -49,18 +53,29 @@ MonoBehaviour:
     Do not directly use personality labels such as Conqueror, Guardian, Collaborator,
     Engineer, Trickster, or Caretaker.
 
-    English only. ASCII only. Spoken lines only.'
+    English only. ASCII only. Spoken lines only.
+
+    BAD example (restates the judgment, sounds like a report):
+    Alien1: The satisfaction level is dissatisfied.
+    Alien2: The judgment reason is that the objects were missing.
+    Alien3: The scene reading says there was one figure alone.
+
+    GOOD example (reacts to the judgment, sounds like a meeting):
+    Alien1: One creature, nothing else. Just sitting there.
+    Alien2: The emptiness around it tells me more than the creature does.
+    Alien1: That kind of stillness is an answer. A bad one.'
   jsonSchemaDeliveryMode: 0
+  thinkingMode: 1
   jsonFields: []
   modelParams:
     temperature: 0.7
     top_p: 0.9
-    top_k: 40
+    top_k: 20
     num_predict: 400
     repeat_penalty: 1.1
     seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 1024
+    contextSize: 2048
     gpuLayerCount: 999
     threads: 4

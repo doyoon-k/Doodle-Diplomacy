@@ -20,6 +20,7 @@ public class JSONLLMStateChainLink : IStateChainLink
     private readonly string _imageStateKey;
     private readonly bool _requireImage;
     private readonly int _resizeLongestSide;
+    private readonly string _thinkingStateKey;
 
     public JSONLLMStateChainLink(
         LlmGenerationProfile settings,
@@ -30,7 +31,8 @@ public class JSONLLMStateChainLink : IStateChainLink
         string imageStateKey = null,
         bool requireImage = false,
         int resizeLongestSide = 1024,
-        Action<string> log = null
+        Action<string> log = null,
+        string stepName = null
     )
         : this(
             LlmServiceLocator.Require(),
@@ -42,7 +44,8 @@ public class JSONLLMStateChainLink : IStateChainLink
             imageStateKey,
             requireImage,
             resizeLongestSide,
-            log)
+            log,
+            stepName)
     {
     }
 
@@ -56,7 +59,8 @@ public class JSONLLMStateChainLink : IStateChainLink
         string imageStateKey = null,
         bool requireImage = false,
         int resizeLongestSide = 1024,
-        Action<string> log = null
+        Action<string> log = null,
+        string stepName = null
     )
     {
         _llmService = service;
@@ -69,6 +73,7 @@ public class JSONLLMStateChainLink : IStateChainLink
         _imageStateKey = imageStateKey;
         _requireImage = requireImage;
         _resizeLongestSide = Mathf.Max(64, resizeLongestSide);
+        _thinkingStateKey = BuildThinkingStateKey(stepName);
     }
 
     public IEnumerator Execute(
@@ -144,7 +149,19 @@ public class JSONLLMStateChainLink : IStateChainLink
 
             try
             {
-                parsedJson = ExtractJsonObject(jsonResponse);
+                string responseForParsing = jsonResponse;
+                if (_settings.IsThinkingEnabled)
+                {
+                    ExtractThinkBlock(jsonResponse, out string thinkContent, out string remainder);
+                    if (_settings.thinkingMode == ThinkingMode.PreserveThink && thinkContent != null)
+                    {
+                        state.SetString(_thinkingStateKey, thinkContent);
+                    }
+
+                    responseForParsing = remainder;
+                }
+
+                parsedJson = ExtractJsonObject(responseForParsing);
                 using var document = JsonDocument.Parse(parsedJson);
                 parsedSuccessfully = document.RootElement.ValueKind == JsonValueKind.Object;
                 if (!parsedSuccessfully)
@@ -158,7 +175,13 @@ public class JSONLLMStateChainLink : IStateChainLink
                 Log($"[JSONLLMStateChainLink] JSON parse failed: {e.Message}");
                 parsedJson = null;
 
-                if (TryRecoverSingleStringFieldJson(jsonResponse, out string recoveredJson, out string recoveryMessage))
+                string responseForRecovery = jsonResponse;
+                if (_settings.IsThinkingEnabled)
+                {
+                    ExtractThinkBlock(jsonResponse, out _, out responseForRecovery);
+                }
+
+                if (TryRecoverSingleStringFieldJson(responseForRecovery, out string recoveredJson, out string recoveryMessage))
                 {
                     parsedJson = recoveredJson;
                     parsedSuccessfully = true;
@@ -200,7 +223,13 @@ public class JSONLLMStateChainLink : IStateChainLink
             return string.Empty;
         }
 
-        return _userPromptTemplate.Render(state);
+        string prompt = _userPromptTemplate.Render(state);
+        if (_settings != null && _settings.IsThinkingEnabled)
+        {
+            return $"/think\n{prompt}";
+        }
+
+        return prompt;
     }
 
     private PipelineImageUtility.ImageNormalizationResult ResolveImage(PipelineState state, out string error)
@@ -256,6 +285,38 @@ public class JSONLLMStateChainLink : IStateChainLink
         }
 
         return text;
+    }
+
+    private static void ExtractThinkBlock(string response, out string thinkContent, out string remainder)
+    {
+        thinkContent = null;
+        remainder = response;
+
+        if (string.IsNullOrEmpty(response))
+        {
+            return;
+        }
+
+        const string startTag = "<think>";
+        const string endTag = "</think>";
+
+        int startIndex = response.IndexOf(startTag, StringComparison.OrdinalIgnoreCase);
+        if (startIndex < 0)
+        {
+            return;
+        }
+
+        int endTagIndex = response.LastIndexOf(endTag, StringComparison.OrdinalIgnoreCase);
+        if (endTagIndex < 0 || endTagIndex < startIndex)
+        {
+            return;
+        }
+
+        int endIndexExclusive = endTagIndex + endTag.Length;
+        thinkContent = response.Substring(startIndex, endIndexExclusive - startIndex);
+        remainder = endIndexExclusive < response.Length
+            ? response.Substring(endIndexExclusive).Trim()
+            : string.Empty;
     }
 
     private static string JsonElementToStateString(JsonElement element)
@@ -437,6 +498,13 @@ public class JSONLLMStateChainLink : IStateChainLink
         }
 
         return builder.ToString().Trim();
+    }
+
+    private static string BuildThinkingStateKey(string stepName)
+    {
+        return string.IsNullOrWhiteSpace(stepName)
+            ? "thinking"
+            : $"{stepName.Trim()}_thinking";
     }
 
     private IEnumerator Fail(PipelineState state, Action<PipelineState> onDone, string error)

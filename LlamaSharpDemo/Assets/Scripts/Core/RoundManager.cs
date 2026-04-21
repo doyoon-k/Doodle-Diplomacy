@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using DoodleDiplomacy.AI;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Character;
@@ -20,8 +21,22 @@ namespace DoodleDiplomacy.Core
     public class RoundManager : MonoBehaviour
     {
         private const string PreviewFallbackText = "(analysis unavailable)";
-        private const string TerminalSignalReadyMessage = "A signal has reached the terminal. Click the terminal to inspect it.";
-        private const string NoSignalMessage = "No readable signal was recovered. Open the terminal to continue.";
+        private const string PreviewTerminalHeader = "[ALIEN FIRST PASS]";
+        private const string DefaultPreviewAnalyzingMessage = "The alien is trying to understand your drawing...";
+        private const string DefaultPreviewReadyToInspectMessage = "First-pass analysis is complete. Click the terminal to inspect the result.";
+        private const string DefaultTerminalSignalReadyMessage = "A signal has reached the terminal. Click the terminal to inspect it.";
+        private const string DefaultNoSignalMessage = "No readable signal was recovered. Open the terminal to continue.";
+        private const string DefaultRegeneratingReferencesMessage = "Regenerating the object references with the same prompts...";
+        private const string DefaultOpenTerminalFirstMessage = "Open the terminal first.";
+        private const string DefaultAdjutantDisabledMessage = "The adjutant can no longer review drawings. Click the alien for first-pass review.";
+        private const string DefaultGeneratingAlienObjectsMessage = "Generating the alien objects...";
+        private const string DefaultObjectGeneratorMissingMessage = "Object generator is missing. Assign AIPipelineBridge before starting the round.";
+        private const string DefaultObjectGenerationFailedRetryMessage = "Object generation failed. Click the alien to retry.";
+        private const string DefaultObjectGenerationFailedPrefix = "Object generation failed: ";
+        private const string DefaultObjectPresentedHintMessage = "Click the tablet to start drawing, or click the alien to regenerate the references.";
+        private const string DefaultDrawingReadyHintTemplate = "Press {0} when the drawing is ready to submit.";
+        private const string DefaultPreviewReadyHintMessage = "Click the alien to get a first-pass read, or click the tablet to keep drawing.";
+        private const string DefaultSubmittingHintMessage = "Submitting the drawing to the alien delegation...";
         private const float TerminalCloseGuardSeconds = 0.15f;
         private const float DefaultFirstRoundPrefetchTimeoutSeconds = 180f;
 
@@ -52,11 +67,14 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private EndingController endingController;
         [SerializeField] private TitleScreenController titleScreenController;
 
+        [Header("Text")]
+        [SerializeField] private IngameTextTable ingameTextTable;
+
         [Header("Sequences")]
         [SerializeField] private DialogueSequence introSequence;
 
         [Header("Input")]
-        [Tooltip("Input used to mark the drawing as complete and unlock the adjutant preview.")]
+        [Tooltip("Input used to mark the drawing as complete and return to submit/modify decisions.")]
         [SerializeField] private KeyCode exitDrawingKey = KeyCode.Escape;
         [Tooltip("Input used to leave the terminal view after reading the translation.")]
         [SerializeField] private KeyCode exitInterpreterKey = KeyCode.Escape;
@@ -79,7 +97,11 @@ namespace DoodleDiplomacy.Core
         private bool _isSharedMonitorZoomActive;
         private bool _hasOpenedInterpreterThisRound;
         private bool _monitorClickConsumedUntilRelease;
+        private bool _isPreviewTerminalOpen;
+        private bool _hasShownPreviewTerminalOnce;
+        private string _cachedPreviewTerminalOutput = string.Empty;
         private Coroutine _startGameRoutine;
+        private DialogueSequence _runtimeIntroSequence;
 
         public GameState CurrentState => _currentState;
         public int CurrentRound => _currentRound;
@@ -111,6 +133,7 @@ namespace DoodleDiplomacy.Core
             StopStartGameRoutine();
             UnbindInspectorInteractions();
             UnsubscribeFromBridgeEvents();
+            ReleaseRuntimeIntroSequence();
 
             if (Instance == this)
             {
@@ -148,6 +171,7 @@ namespace DoodleDiplomacy.Core
             _lastSatisfaction = SatisfactionLevel.Neutral;
             _preserveRoundIndexOnNextWaitingState = false;
             _hasOpenedInterpreterThisRound = false;
+            ResetPreviewInspectionState();
 
             scoreManager?.Reset();
             aipipelineBridge?.ResetRound();
@@ -167,6 +191,7 @@ namespace DoodleDiplomacy.Core
             StopStartGameRoutine();
             CancelActiveAiOperations();
             ResetTelepathyState();
+            ResetPreviewInspectionState();
             _hasOpenedInterpreterThisRound = false;
             ChangeState(GameState.Title);
         }
@@ -265,8 +290,18 @@ namespace DoodleDiplomacy.Core
 
             if (_currentState == GameState.ObjectPresented)
             {
-                ShowHint("System", "Regenerating the object references with the same prompts...");
+                ShowHint(
+                    "System",
+                    GetConfiguredText(
+                        table => table.regeneratingReferencesMessage,
+                        DefaultRegeneratingReferencesMessage));
                 ChangeState(GameState.Presenting);
+                return;
+            }
+
+            if (_currentState == GameState.PreviewReady)
+            {
+                ChangeState(GameState.PreviewAnalyzing);
                 return;
             }
 
@@ -274,7 +309,11 @@ namespace DoodleDiplomacy.Core
             {
                 if (!_hasOpenedInterpreterThisRound)
                 {
-                    ShowHint("System", "Open the terminal first.");
+                    ShowHint(
+                        "System",
+                        GetConfiguredText(
+                            table => table.openTerminalFirstMessage,
+                            DefaultOpenTerminalFirstMessage));
                     return;
                 }
 
@@ -297,9 +336,47 @@ namespace DoodleDiplomacy.Core
             }
         }
 
-        public void OnAdjutantClicked() => TryTransition(GameState.PreviewReady, GameState.PreviewAnalyzing);
+        public void OnAdjutantClicked()
+        {
+            if (_currentState == GameState.PreviewReady)
+            {
+                ShowHint(
+                    "System",
+                    GetConfiguredText(
+                        table => table.adjutantDisabledMessage,
+                        DefaultAdjutantDisabledMessage));
+            }
+        }
         public void OnTerminalClicked()
         {
+            if (_currentState == GameState.Preview)
+            {
+                if (_isPreviewTerminalOpen)
+                {
+                    if (Time.unscaledTime - _interpreterOpenedAt < TerminalCloseGuardSeconds)
+                    {
+                        return;
+                    }
+
+                    _isPreviewTerminalOpen = false;
+                    ApplyCameraMode(_currentState);
+                    return;
+                }
+
+                _interpreterOpenedAt = Time.unscaledTime;
+                _isPreviewTerminalOpen = true;
+                cameraController?.SetMode(CameraMode.TerminalZoom);
+
+                string previewOutput = string.IsNullOrWhiteSpace(_cachedPreviewTerminalOutput)
+                    ? BuildPreviewTerminalOutput(PreviewFallbackText)
+                    : _cachedPreviewTerminalOutput;
+                bool instant = _hasShownPreviewTerminalOnce;
+                terminalDisplay?.ShowText(previewOutput, instant);
+                _hasShownPreviewTerminalOnce = true;
+                subtitleDisplay?.Hide();
+                return;
+            }
+
             if (_currentState == GameState.InterpreterReady)
             {
                 _interpreterOpenedAt = Time.unscaledTime;
@@ -541,7 +618,7 @@ namespace DoodleDiplomacy.Core
                     OnDrawingComplete();
                     break;
                 case GameState.PreviewReady:
-                    OnAdjutantClicked();
+                    ChangeState(GameState.PreviewAnalyzing);
                     break;
                 case GameState.PreviewAnalyzing:
                     ChangeState(GameState.Preview);
@@ -700,13 +777,15 @@ namespace DoodleDiplomacy.Core
                     subtitleDisplay?.Hide();
                     if (introSequence != null)
                     {
-                        dialogueSystem?.PlaySequence(introSequence);
+                        RebuildRuntimeIntroSequence();
+                        dialogueSystem?.PlaySequence(_runtimeIntroSequence != null ? _runtimeIntroSequence : introSequence);
                     }
                     break;
 
                 case GameState.WaitingForRound:
                     subtitleDisplay?.Hide();
                     _hasOpenedInterpreterThisRound = false;
+                    ResetPreviewInspectionState();
                     if (_preserveRoundIndexOnNextWaitingState)
                     {
                         _preserveRoundIndexOnNextWaitingState = false;
@@ -729,11 +808,17 @@ namespace DoodleDiplomacy.Core
                         "System",
                         aipipelineBridge != null
                             ? aipipelineBridge.GetRoundStartAvailabilityMessage()
-                            : "Object generator is missing. Assign AIPipelineBridge before starting the round.");
+                            : GetConfiguredText(
+                                table => table.objectGeneratorMissingMessage,
+                                DefaultObjectGeneratorMissingMessage));
                     break;
 
                 case GameState.Presenting:
-                    ShowHint("System", "Generating the alien objects...");
+                    ShowHint(
+                        "System",
+                        GetConfiguredText(
+                            table => table.generatingAlienObjectsMessage,
+                            DefaultGeneratingAlienObjectsMessage));
                     if (aipipelineBridge != null)
                     {
                         aipipelineBridge.GenerateObjects(success =>
@@ -749,9 +834,7 @@ namespace DoodleDiplomacy.Core
                                     $"[RoundManager] Object generation failed: {aipipelineBridge.LastObjectGenerationError}");
                                 ShowHint(
                                     "System",
-                                    string.IsNullOrWhiteSpace(aipipelineBridge.LastObjectGenerationError)
-                                        ? "Object generation failed. Click the alien to retry."
-                                        : $"Object generation failed: {aipipelineBridge.LastObjectGenerationError}");
+                                    BuildObjectGenerationFailureHint(aipipelineBridge.LastObjectGenerationError));
                                 ReturnToWaitingForRoundAfterPresentingFailure();
                                 return;
                             }
@@ -762,29 +845,49 @@ namespace DoodleDiplomacy.Core
                     else
                     {
                         Debug.LogWarning("[RoundManager] AIPipelineBridge is missing. Cannot generate alien objects.");
-                        ShowHint("System", "Object generator is missing. Assign AIPipelineBridge before starting the round.");
+                        ShowHint(
+                            "System",
+                            GetConfiguredText(
+                                table => table.objectGeneratorMissingMessage,
+                                DefaultObjectGeneratorMissingMessage));
                         ReturnToWaitingForRoundAfterPresentingFailure();
                     }
                     break;
 
                 case GameState.ObjectPresented:
-                    ShowHint("System", "Click the tablet to start drawing, or click the alien to regenerate the references.");
+                    ShowHint(
+                        "System",
+                        GetConfiguredText(
+                            table => table.objectPresentedHintMessage,
+                            DefaultObjectPresentedHintMessage));
                     Debug.Log("[RoundManager] Objects are ready. Waiting for tablet interaction.");
                     aipipelineBridge?.StartNextRoundPrefetch();
                     break;
 
                 case GameState.Drawing:
                     EnsureDrawingBoardReadyForEditing();
-                    ShowHint("System", $"Press {exitDrawingKey} when the drawing is ready.");
+                    ShowHint("System", GetDrawingReadyHintMessage());
                     break;
 
                 case GameState.PreviewReady:
-                    ShowHint("System", "Click the adjutant for a preview, or click the tablet to keep drawing.");
-                    Debug.Log("[RoundManager] Drawing marked complete. Waiting for adjutant preview.");
+                    ShowHint(
+                        "System",
+                        GetConfiguredText(
+                            table => table.previewReadyHintMessage,
+                            DefaultPreviewReadyHintMessage));
+                    Debug.Log("[RoundManager] Drawing marked complete. Waiting for alien first-pass review.");
                     break;
 
                 case GameState.PreviewAnalyzing:
-                    subtitleDisplay?.Show("Adjutant", "Let me review the drawing.");
+                    _isPreviewTerminalOpen = false;
+                    _hasShownPreviewTerminalOnce = false;
+                    _cachedPreviewTerminalOutput = string.Empty;
+                    terminalDisplay?.Clear();
+                    ShowHint(
+                        "System",
+                        GetConfiguredText(
+                            table => table.previewAnalyzingMessage,
+                            DefaultPreviewAnalyzingMessage));
                     if (aipipelineBridge != null)
                     {
                         aipipelineBridge.GetPreview(analysis =>
@@ -794,24 +897,33 @@ namespace DoodleDiplomacy.Core
                                 return;
                             }
 
-                            ShowPreviewResult(analysis);
+                            CachePreviewResult(analysis);
                             ChangeState(GameState.Preview);
                         });
                     }
                     else
                     {
-                        ShowPreviewResult("(AI analysis unavailable)");
+                        CachePreviewResult("(AI analysis unavailable)");
                         ChangeState(GameState.Preview);
                     }
                     break;
 
                 case GameState.Preview:
-                    ShowPreviewResult(aipipelineBridge != null ? aipipelineBridge.LastPreviewDialogue : PreviewFallbackText);
+                    _isPreviewTerminalOpen = false;
+                    ShowHint(
+                        "System",
+                        GetConfiguredText(
+                            table => table.previewReadyToInspectMessage,
+                            DefaultPreviewReadyToInspectMessage));
                     Debug.Log("[RoundManager] Preview analysis complete. Waiting for submit or modify.");
                     break;
 
                 case GameState.Submitting:
-                    ShowHint("System", "Submitting the drawing for judgment...");
+                    ShowHint(
+                        "System",
+                        GetConfiguredText(
+                            table => table.submittingHintMessage,
+                            DefaultSubmittingHintMessage));
                     if (aipipelineBridge != null)
                     {
                         aipipelineBridge.GetJudgment(satisfaction =>
@@ -853,11 +965,19 @@ namespace DoodleDiplomacy.Core
                 case GameState.InterpreterReady:
                     if (aipipelineBridge != null && aipipelineBridge.HasTelepathyResult)
                     {
-                        ShowHint("System", TerminalSignalReadyMessage);
+                        ShowHint(
+                            "System",
+                            GetConfiguredText(
+                                table => table.terminalSignalReadyMessage,
+                                DefaultTerminalSignalReadyMessage));
                     }
                     else
                     {
-                        ShowHint("System", NoSignalMessage);
+                        ShowHint(
+                            "System",
+                            GetConfiguredText(
+                                table => table.noSignalMessage,
+                                DefaultNoSignalMessage));
                     }
 
                     Debug.Log("[RoundManager] Interpreter is ready.");
@@ -959,16 +1079,31 @@ namespace DoodleDiplomacy.Core
         private void ResetCachedInterpretationForRedraw()
         {
             ResetTelepathyState();
+            ResetPreviewInspectionState();
             terminalDisplay?.Clear();
         }
 
-        private void ShowPreviewResult(string analysis)
+        private void CachePreviewResult(string analysis)
         {
             string resolvedAnalysis = string.IsNullOrWhiteSpace(analysis)
                 ? PreviewFallbackText
                 : analysis.Trim();
+            _cachedPreviewTerminalOutput = BuildPreviewTerminalOutput(resolvedAnalysis);
+        }
 
-            subtitleDisplay?.Show("Adjutant", resolvedAnalysis);
+        private static string BuildPreviewTerminalOutput(string previewLine)
+        {
+            string line = string.IsNullOrWhiteSpace(previewLine)
+                ? PreviewFallbackText
+                : previewLine.Trim();
+            return $"{PreviewTerminalHeader}\n> {line}\n> _";
+        }
+
+        private void ResetPreviewInspectionState()
+        {
+            _isPreviewTerminalOpen = false;
+            _hasShownPreviewTerminalOnce = false;
+            _cachedPreviewTerminalOutput = string.Empty;
         }
 
         private void ShowHint(string speaker, string text)
@@ -979,6 +1114,144 @@ namespace DoodleDiplomacy.Core
             }
 
             subtitleDisplay.Show(speaker, text);
+        }
+
+        private string GetDrawingReadyHintMessage()
+        {
+            string template = GetConfiguredText(
+                table => table.drawingReadyHintTemplate,
+                DefaultDrawingReadyHintTemplate);
+            if (string.IsNullOrWhiteSpace(template))
+            {
+                template = DefaultDrawingReadyHintTemplate;
+            }
+
+            try
+            {
+                return string.Format(template, exitDrawingKey);
+            }
+            catch (FormatException)
+            {
+                Debug.LogWarning(
+                    $"[RoundManager] drawingReadyHintTemplate is invalid ('{template}'). Falling back to default template.");
+                return string.Format(DefaultDrawingReadyHintTemplate, exitDrawingKey);
+            }
+        }
+
+        private string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback)
+        {
+            IngameTextTable table = ResolveIngameTextTable();
+            if (table == null)
+            {
+                return fallback;
+            }
+
+            string configured = selector(table);
+            return string.IsNullOrWhiteSpace(configured) ? fallback : configured;
+        }
+
+        private string BuildObjectGenerationFailureHint(string objectGenerationError)
+        {
+            if (string.IsNullOrWhiteSpace(objectGenerationError))
+            {
+                return GetConfiguredText(
+                    table => table.objectGenerationFailedRetryMessage,
+                    DefaultObjectGenerationFailedRetryMessage);
+            }
+
+            string prefix = GetConfiguredText(
+                table => table.objectGenerationFailedPrefix,
+                DefaultObjectGenerationFailedPrefix);
+            return $"{prefix}{objectGenerationError}";
+        }
+
+        private IngameTextTable ResolveIngameTextTable()
+        {
+            return ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
+        }
+
+        private void RebuildRuntimeIntroSequence()
+        {
+            ReleaseRuntimeIntroSequence();
+
+            if (introSequence == null)
+            {
+                return;
+            }
+
+            IngameTextTable table = ResolveIngameTextTable();
+            if (table == null)
+            {
+                return;
+            }
+
+            _runtimeIntroSequence = Instantiate(introSequence);
+            _runtimeIntroSequence.name = $"{introSequence.name} (Runtime)";
+
+            ApplyIntroSpeakerOverride(_runtimeIntroSequence, table.introAdjutantSpeaker);
+            ApplyIntroLineOverride(_runtimeIntroSequence, 0, table.introAdjutantLine1);
+            ApplyIntroLineOverride(_runtimeIntroSequence, 1, table.introAdjutantLine2);
+            ApplyIntroLineOverride(_runtimeIntroSequence, 2, table.introAdjutantLine3);
+        }
+
+        private void ReleaseRuntimeIntroSequence()
+        {
+            if (_runtimeIntroSequence == null)
+            {
+                return;
+            }
+
+            Destroy(_runtimeIntroSequence);
+            _runtimeIntroSequence = null;
+        }
+
+        private static void ApplyIntroSpeakerOverride(DialogueSequence sequence, string speaker)
+        {
+            if (string.IsNullOrWhiteSpace(speaker))
+            {
+                return;
+            }
+
+            ApplyIntroSpeakerOverride(sequence, 0, speaker);
+            ApplyIntroSpeakerOverride(sequence, 1, speaker);
+            ApplyIntroSpeakerOverride(sequence, 2, speaker);
+        }
+
+        private static void ApplyIntroSpeakerOverride(DialogueSequence sequence, int index, string speaker)
+        {
+            if (!TryGetDialogueLine(sequence, index, out DialogueLineData line))
+            {
+                return;
+            }
+
+            line.characterID = speaker;
+        }
+
+        private static void ApplyIntroLineOverride(DialogueSequence sequence, int index, string overrideText)
+        {
+            if (string.IsNullOrWhiteSpace(overrideText))
+            {
+                return;
+            }
+
+            if (!TryGetDialogueLine(sequence, index, out DialogueLineData line))
+            {
+                return;
+            }
+
+            line.text = overrideText;
+        }
+
+        private static bool TryGetDialogueLine(DialogueSequence sequence, int index, out DialogueLineData line)
+        {
+            line = null;
+            if (sequence == null || sequence.lines == null || index < 0 || index >= sequence.lines.Count)
+            {
+                return false;
+            }
+
+            line = sequence.lines[index];
+            return line != null;
         }
 
         private void EnsureDrawingBoardReadyForEditing()
@@ -1017,7 +1290,7 @@ namespace DoodleDiplomacy.Core
                 GameState.ObjectPresented => CameraMode.Default,
                 GameState.Drawing => CameraMode.TabletView,
                 GameState.PreviewReady => CameraMode.FreeLook,
-                GameState.PreviewAnalyzing => CameraMode.FreeLook,
+                GameState.PreviewAnalyzing => CameraMode.AlienReaction,
                 GameState.Preview => CameraMode.FreeLook,
                 GameState.AlienReaction => CameraMode.AlienReaction,
                 GameState.InterpreterReady => CameraMode.FreeLook,

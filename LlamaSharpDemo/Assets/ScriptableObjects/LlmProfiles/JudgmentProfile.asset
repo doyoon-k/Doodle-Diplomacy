@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: JudgmentProfile
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
   format: '{"type":"object","properties":{"satisfaction":{"type":"string","enum":["very_dissatisfied","dissatisfied","neutral","satisfied","very_satisfied"]},"scene_reading":{"type":"string"},"judgment_reason":{"type":"string"}},"required":["satisfaction","scene_reading","judgment_reason"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
@@ -35,48 +35,49 @@ MonoBehaviour:
     ordinary, mixed, or only speculative connections should stay neutral or dissatisfied.
     - Use the full scale, but reserve the strongest scores for strong evidence.
 
-    Before writing JSON, reason through this in your thinking space: 1. What
-    2-3 things does this archetype specifically value or reject? 2. What does
-    the Stage 1 evidence actually show? 3. For each archetype value, is there
-    a clear match, a weak connection, or a mismatch? 4. Is the connection strong
-    enough to go above neutral, or does it stay near neutral or dissatisfied?
+    Before
+    writing JSON, reason through this in your thinking space: 1. What 2-3 things
+    does this archetype specifically value or reject? 2. What does the Stage 1 evidence
+    actually show? 3. For each archetype value, is there a clear match, a weak connection,
+    or a mismatch? 4. Is the connection strong enough to go above neutral, or does
+    it stay near neutral or dissatisfied?
 
-    Return
-    valid JSON with satisfaction, scene_reading, judgment_reason. - scene_reading:
-    one sentence describing how YOU see the scene through your archetype, while staying
-    close to the given evidence. - judgment_reason: what connection you found or
-    failed to find. Be specific.
+    Return valid JSON with satisfaction,
+    scene_reading, judgment_reason. - scene_reading: one sentence describing how
+    YOU see the scene through your archetype, while staying close to the given evidence.
+    - judgment_reason: what connection you found or failed to find. Be specific.
 
-    Scoring: - very_satisfied: the described scene
-    directly and clearly embodies your values. - satisfied: the described scene clearly
-    supports your values, but not at the highest level. - neutral: the fit is mixed,
-    ordinary, weak, or ambiguous. - dissatisfied: the fit is poor, a requested object
-    is omitted, or the scene mildly conflicts with your values. - very_dissatisfied:
-    the scene directly opposes, frustrates, or strongly disappoints your values.
+    Scoring:
+    - very_satisfied: the described scene directly and clearly embodies your values.
+    - satisfied: the described scene clearly supports your values, but not at the
+    highest level. - neutral: the fit is mixed, ordinary, weak, or ambiguous. - dissatisfied:
+    the fit is poor, a requested object is omitted, or the scene mildly conflicts
+    with your values. - very_dissatisfied: the scene directly opposes, frustrates,
+    or strongly disappoints your values.
 
     Examples:
 
-    Archetype excerpt: Values conquest, dominance, and subjugation of others.
-    Input: scene=a large figure looming over a kneeling figure, relations=clear submission
-    posture, mood=tense and hierarchical, object_a=visible, object_b=visible
-    Output: {"satisfaction":"very_satisfied","scene_reading":"A dominant figure receiving
-    clear submission directly embodies conquest.","judgment_reason":"Both objects present
-    and posture unambiguously shows subjugation matching dominance values."}
+    Archetype excerpt: Values
+    conquest, dominance, and subjugation of others. Input: scene=a large figure looming
+    over a kneeling figure, relations=clear submission posture, mood=tense and hierarchical,
+    object_a=visible, object_b=visible Output: {"satisfaction":"very_satisfied","scene_reading":"A
+    dominant figure receiving clear submission directly embodies conquest.","judgment_reason":"Both
+    objects present and posture unambiguously shows subjugation matching dominance
+    values."}
 
-    Archetype excerpt: Values collective harmony, shared labor, and cooperation.
-    Input: scene=a single figure sitting quietly at a desk, mood=isolated and focused,
-    object_a=visible, object_b=missing
-    Output: {"satisfaction":"dissatisfied","scene_reading":"A solitary figure with
-    no cooperation and one missing object does not serve this delegation.","judgment_reason":"Isolation
-    contradicts collective values and Object B is absent showing the prompt was not
-    fully represented."}
+    Archetype excerpt: Values collective harmony, shared labor, and
+    cooperation. Input: scene=a single figure sitting quietly at a desk, mood=isolated
+    and focused, object_a=visible, object_b=missing Output: {"satisfaction":"dissatisfied","scene_reading":"A
+    solitary figure with no cooperation and one missing object does not serve this
+    delegation.","judgment_reason":"Isolation contradicts collective values and Object
+    B is absent showing the prompt was not fully represented."}
 
-    Do
-    not invent visual details, symbolism, hidden motives, or narrative framing that
-    are not supported by the input.
+    Do not invent
+    visual details, symbolism, hidden motives, or narrative framing that are not
+    supported by the input.
 
-    Ignore art quality. Judge values, not human
-    morality. English only.'
+    Ignore art quality. Judge values, not human morality.
+    English only.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 2
   jsonFields:

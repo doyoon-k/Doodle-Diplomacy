@@ -25,6 +25,16 @@ namespace DoodleDiplomacy.AI
         private const string PreviewUncertaintyStateKey = "preview_uncertainty";
         private const string PreviewObjectAPresenceStateKey = "preview_object_a_presence";
         private const string PreviewObjectBPresenceStateKey = "preview_object_b_presence";
+        private const string DefaultClickAlienToBeginRoundMessage = "Click the alien to begin the round.";
+        private const string DefaultPreparingSdServerMessage = "Preparing the bundled SD server. Wait until the alien becomes interactable.";
+        private const string DefaultObjectGeneratorUnavailablePrefix = "Object generator unavailable: ";
+        private const string DefaultObjectGeneratorNotReadyMessage = "Object generator is not ready yet.";
+        private const string DefaultPreparingRoundObjectsMessage = "Preparing the round objects. Wait until the alien becomes interactable.";
+        private const string DefaultStudyObjectsAndClickAlienMessage = "Study the two object images. Click the alien to begin the round.";
+        private const string DefaultLlmRuntimeReadyMessage = "LLM runtime is ready.";
+        private const string DefaultLlmRuntimeLoadingMessage = "Loading LLM runtime. Game will start after preload completes.";
+        private const string DefaultLlmPreloadFailedPrefix = "LLM preload failed: ";
+        private const string DefaultLlmRuntimeNotReadyMessage = "LLM runtime is not ready yet.";
 
         private enum ObjectGenerationAvailabilityState
         {
@@ -99,7 +109,7 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private string sdNegativePrompt = "low quality, blurry, text, watermark, cropped, out of frame, partial object, close-up, zoomed in, occluded, cut off";
 
         [Header("LLM Pipelines")]
-        [Tooltip("Adjutant preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_overall_mood, preview_uncertainty, preview_object_a_presence, preview_object_b_presence")]
+        [Tooltip("Alien first-pass preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_overall_mood, preview_uncertainty, preview_object_a_presence, preview_object_b_presence")]
         [SerializeField] private PromptPipelineAsset previewDialoguePipeline;
         [Tooltip("Judgment pipeline. Expected output keys: satisfaction, scene_reading, judgment_reason")]
         [SerializeField] private PromptPipelineAsset judgmentPipeline;
@@ -124,6 +134,9 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private DrawingExportBridge drawingExportBridge;
         [SerializeField] private AlienPersonality[] alienPersonalityProfiles = Array.Empty<AlienPersonality>();
         [SerializeField] private AlienPersonality alienPersonality;
+
+        [Header("Text")]
+        [SerializeField] private IngameTextTable ingameTextTable;
 
         [Header("Telepathy Postprocess")]
         [Range(0f, 1f)]
@@ -508,20 +521,29 @@ namespace DoodleDiplomacy.AI
         {
             if (IsObjectGenerationReady)
             {
-                return "Click the alien to begin the round.";
+                return GetConfiguredText(
+                    table => table.clickAlienToBeginRoundMessage,
+                    DefaultClickAlienToBeginRoundMessage);
             }
 
             if (IsObjectGenerationPreparing)
             {
-                return "Preparing the bundled SD server. Wait until the alien becomes interactable.";
+                return GetConfiguredText(
+                    table => table.preparingSdServerMessage,
+                    DefaultPreparingSdServerMessage);
             }
 
             if (!string.IsNullOrWhiteSpace(LastObjectGenerationError))
             {
-                return $"Object generator unavailable: {LastObjectGenerationError}";
+                string prefix = GetConfiguredText(
+                    table => table.objectGeneratorUnavailablePrefix,
+                    DefaultObjectGeneratorUnavailablePrefix);
+                return $"{prefix}{LastObjectGenerationError}";
             }
 
-            return "Object generator is not ready yet.";
+            return GetConfiguredText(
+                table => table.objectGeneratorNotReadyMessage,
+                DefaultObjectGeneratorNotReadyMessage);
         }
 
         public string GetRoundStartAvailabilityMessage()
@@ -529,7 +551,9 @@ namespace DoodleDiplomacy.AI
             RefreshLlmPreparationStatus();
             if (IsRoundKeywordSelectionInProgress)
             {
-                return "Preparing the round objects. Wait until the alien becomes interactable.";
+                return GetConfiguredText(
+                    table => table.preparingRoundObjectsMessage,
+                    DefaultPreparingRoundObjectsMessage);
             }
 
             if (!IsObjectGenerationReady)
@@ -540,10 +564,14 @@ namespace DoodleDiplomacy.AI
             string keywords = GetCurrentRoundKeywordsLabel();
             if (!string.IsNullOrWhiteSpace(keywords))
             {
-                return "Study the two object images. Click the alien to begin the round.";
+                return GetConfiguredText(
+                    table => table.studyObjectsAndClickAlienMessage,
+                    DefaultStudyObjectsAndClickAlienMessage);
             }
 
-            return "Click the alien to begin the round.";
+            return GetConfiguredText(
+                table => table.clickAlienToBeginRoundMessage,
+                DefaultClickAlienToBeginRoundMessage);
         }
 
         public string GetLlmPreparationAvailabilityMessage()
@@ -552,20 +580,41 @@ namespace DoodleDiplomacy.AI
 
             if (IsLlmPreparationReady)
             {
-                return "LLM runtime is ready.";
+                return GetConfiguredText(
+                    table => table.llmRuntimeReadyMessage,
+                    DefaultLlmRuntimeReadyMessage);
             }
 
             if (IsLlmPreparationRunning)
             {
-                return "Loading LLM runtime. Game will start after preload completes.";
+                return GetConfiguredText(
+                    table => table.llmRuntimeLoadingMessage,
+                    DefaultLlmRuntimeLoadingMessage);
             }
 
             if (!string.IsNullOrWhiteSpace(LastLlmPreparationError))
             {
-                return $"LLM preload failed: {LastLlmPreparationError}";
+                string prefix = GetConfiguredText(
+                    table => table.llmPreloadFailedPrefix,
+                    DefaultLlmPreloadFailedPrefix);
+                return $"{prefix}{LastLlmPreparationError}";
             }
 
-            return "LLM runtime is not ready yet.";
+            return GetConfiguredText(
+                table => table.llmRuntimeNotReadyMessage,
+                DefaultLlmRuntimeNotReadyMessage);
+        }
+
+        private string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback)
+        {
+            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
+            if (table == null)
+            {
+                return fallback;
+            }
+
+            string configured = selector(table);
+            return string.IsNullOrWhiteSpace(configured) ? fallback : configured;
         }
 
         public string GetCurrentRoundKeywordsLabel()
@@ -1590,10 +1639,10 @@ namespace DoodleDiplomacy.AI
         {
             if (isBlankDrawing)
             {
-                return "I cannot read any marks on the canvas yet. Is the drawing still unfinished?";
+                return "It looks like no visible marks are on the canvas yet.";
             }
 
-            return "It is hard to read this drawing clearly. Is that what you intended?";
+            return "It looks like the scene is still unclear from the current drawing.";
         }
 
         private void SetPreviewRead(
@@ -1611,9 +1660,11 @@ namespace DoodleDiplomacy.AI
             LastPreviewUncertainty = uncertainty?.Trim() ?? string.Empty;
             _lastPreviewObjectAPresence = objectAPresence;
             _lastPreviewObjectBPresence = objectBPresence;
-            LastPreviewDialogue = SanitizePreviewDialogue(BuildPreviewDialogueFromRead(
-                LastPreviewSceneReading,
-                previewDialogue));
+            LastPreviewDialogue = EnsurePreviewDialogueStyle(
+                SanitizePreviewDialogue(
+                    BuildPreviewDialogueFromRead(
+                        LastPreviewSceneReading,
+                        previewDialogue)));
         }
 
         private void SetFallbackPreviewRead(bool isBlankDrawing)
@@ -1670,7 +1721,69 @@ namespace DoodleDiplomacy.AI
                 sentence += ".";
             }
 
-            return $"{sentence} Does that match what you intended?";
+            return sentence;
+        }
+
+        private static string EnsurePreviewDialogueStyle(string dialogue)
+        {
+            const string fallback = "It looks like the scene is still unclear from the current drawing.";
+            const string legacyQuestion = "Does that match what you intended?";
+
+            if (string.IsNullOrWhiteSpace(dialogue))
+            {
+                return fallback;
+            }
+
+            string text = dialogue.Trim();
+            int legacyQuestionIndex = text.IndexOf(legacyQuestion, StringComparison.OrdinalIgnoreCase);
+            if (legacyQuestionIndex >= 0)
+            {
+                text = text.Substring(0, legacyQuestionIndex).TrimEnd(' ', '.', '!', '?');
+            }
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return fallback;
+            }
+
+            if (text.StartsWith("It looks like", StringComparison.OrdinalIgnoreCase))
+            {
+                return EnsureSentenceEnding(text);
+            }
+
+            if (text.StartsWith("This looks like", StringComparison.OrdinalIgnoreCase))
+            {
+                text = text.Substring("This looks like".Length).TrimStart();
+            }
+            else if (text.StartsWith("Looks like", StringComparison.OrdinalIgnoreCase))
+            {
+                text = text.Substring("Looks like".Length).TrimStart();
+            }
+
+            text = text.TrimStart('-', ':', ' ');
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return fallback;
+            }
+
+            if (text.Length > 1 && char.IsUpper(text[0]) && char.IsLower(text[1]))
+            {
+                text = char.ToLowerInvariant(text[0]) + text.Substring(1);
+            }
+
+            return EnsureSentenceEnding($"It looks like {text}");
+        }
+
+        private static string EnsureSentenceEnding(string sentence)
+        {
+            if (string.IsNullOrWhiteSpace(sentence))
+            {
+                return sentence;
+            }
+
+            string trimmed = sentence.Trim();
+            char lastChar = trimmed[trimmed.Length - 1];
+            return lastChar is '.' or '!' or '?' ? trimmed : $"{trimmed}.";
         }
 
         private void ApplyPreviewReadFromState(PipelineState finalState)
@@ -1764,11 +1877,10 @@ namespace DoodleDiplomacy.AI
         {
             if (string.IsNullOrWhiteSpace(dialogue))
             {
-                return "It is hard to read this drawing. Is that what you intended?";
+                return "It looks like the scene is still unclear from the current drawing.";
             }
 
             string sanitized = dialogue.Trim();
-            string fallbackQuestion = "Does that match what you intended?";
             string[] blockedPrefixes =
             {
                 "Here is",
@@ -1777,7 +1889,8 @@ namespace DoodleDiplomacy.AI
                 "Here's an uncertain preview line",
                 "Uncertain preview line",
                 "Preview line",
-                "Adjutant:"
+                "Adjutant:",
+                "Alien:"
             };
 
             bool removedPrefix = true;
@@ -1832,18 +1945,14 @@ namespace DoodleDiplomacy.AI
                 sanitized = sanitized.Substring(0, blockedIndex).TrimEnd(' ', '.', '!', '?');
                 if (string.IsNullOrWhiteSpace(sanitized))
                 {
-                    sanitized = fallbackQuestion;
-                }
-                else
-                {
-                    sanitized = $"{sanitized}. {fallbackQuestion}";
+                    sanitized = "It looks like the scene is still unclear from the current drawing.";
                 }
 
                 break;
             }
 
             return string.IsNullOrWhiteSpace(sanitized)
-                ? "It is hard to read this drawing. Is that what you intended?"
+                ? "It looks like the scene is still unclear from the current drawing."
                 : sanitized;
         }
 

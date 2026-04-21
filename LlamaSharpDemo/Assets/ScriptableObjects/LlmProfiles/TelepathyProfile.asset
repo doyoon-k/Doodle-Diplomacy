@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: TelepathyProfile
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
   format: 
   stream: 0
   keepAlive: 

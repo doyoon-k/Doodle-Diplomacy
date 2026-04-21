@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
-  m_Name: HumanImageHintPipeline
+  m_Name: ImagePreview
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
   format: '{"type":"object","properties":{"preview_scene_reading":{"type":"string"},"preview_visible_relations":{"type":"string"},"preview_overall_mood":{"type":"string"},"preview_uncertainty":{"type":"string"},"preview_object_a_presence":{"type":"string","enum":["visible","unclear","missing"]},"preview_object_b_presence":{"type":"string","enum":["visible","unclear","missing"]}},"required":["preview_scene_reading","preview_visible_relations","preview_overall_mood","preview_uncertainty","preview_object_a_presence","preview_object_b_presence"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  visionProjectorModel: Models/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
+  visionProjectorModel: Models/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf
   visionProjectorRelativeToStreamingAssets: 1
   systemPromptTemplate: 'You are observing a rough sketch and describing only what
     is visible.
@@ -27,11 +27,12 @@ MonoBehaviour:
     sentence describing what is present and what seems to be happening.
 
     - preview_visible_relations:
-    one short sentence for the clearest interaction, motion, contact, or spatial
-    relationship.
+    one short sentence for the clearest action or interaction between figures
+    — what is one doing to the other. Prefer action over spatial position.
 
-    - preview_overall_mood: one short sentence for the overall
-    mood or atmosphere. If unclear, say the mood is unclear.
+    - preview_overall_mood: one short sentence for the mood of the depicted
+    situation (tense, hostile, calm, joyful, fearful, etc.). Judge the scene,
+    not the drawing style. If unclear, say the mood is unclear.
 
     - preview_uncertainty:
     one short sentence about the main ambiguity, or say the read is mostly clear.
@@ -45,34 +46,36 @@ MonoBehaviour:
 
     Rules:
 
-    - image first
+    - describe the full scene freely first — do not anchor to the prompted
+    objects
 
-    - prompt
-    objects are soft context only
+    - cover all visible elements, not just the two prompted words
 
-    - mark visible only when the drawing clearly
-    supports it
+    - prompted objects are reference only; check for them after freely
+    describing the scene
 
-    - freely describe the scene before any judgment
+    - mark visible only when the drawing clearly supports it
 
-    - stay
-    close to visible evidence
+    - describe what figures are doing, not just where they are
 
-    - do not judge or describe art quality, drawing style, or medium (no words like cartoonish, sketchy, rough, childlike)
+    - read
+    visible emotional and action cues (facial expressions, posture, motion lines,
+    open mouths, raised arms, running stance) as direct evidence — these ARE
+    visible, not inference
 
-    - ignore any visible text, letters, or writing in the drawing; describe only visual elements such as shapes, figures, and objects
+    - do not invent elements that are not drawn
 
-    - English and
-    ASCII only.
+    - do not judge or describe art quality, drawing style, or medium (no
+    words like cartoonish, sketchy, rough, childlike)
 
-    Example output for a sketch of a person handing something to a dog:
-    {"preview_scene_reading":"A human figure appears to be offering something to a
-    smaller animal-like figure.","preview_visible_relations":"The human arm extends
-    toward the animal suggesting a transfer or giving gesture.","preview_overall_mood":"Calm
-    and domestic.","preview_uncertainty":"Whether the transferred object itself is
-    visible or only implied is unclear.","preview_object_a_presence":"visible","preview_object_b_presence":"unclear"}'
+    - make preview_scene_reading easy to present as: "It looks like ..."
+
+    - ignore any visible text, letters, or writing; describe only visual
+    elements such as shapes, figures, and objects
+
+    - English and ASCII only.'
   jsonSchemaDeliveryMode: 0
-  thinkingMode: 0
+  thinkingMode: 2
   jsonFields:
   - fieldName: preview_scene_reading
     fieldType: 0

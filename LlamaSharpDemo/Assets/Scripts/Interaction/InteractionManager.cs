@@ -37,9 +37,10 @@ namespace DoodleDiplomacy.Interaction
         private static readonly HashSet<InteractionType> s_PreviewReadyAllowed = new()
         {
             InteractionType.Tablet,
-            InteractionType.Adjutant,
+            InteractionType.Alien,
             InteractionType.Monitor
         };
+        private static readonly HashSet<InteractionType> s_PreviewAllowed = new() { InteractionType.Terminal };
         private static readonly HashSet<InteractionType> s_InterpReadyAllowed = new() { InteractionType.Alien, InteractionType.Terminal };
         private static readonly HashSet<InteractionType> s_InterpreterAllowed = new() { InteractionType.Terminal };
         private static readonly HashSet<InteractionType> s_NoneAllowed = new();
@@ -137,6 +138,12 @@ namespace DoodleDiplomacy.Interaction
             bool interpreterInspectionCompleted = RoundManager.Instance != null && RoundManager.Instance.HasOpenedInterpreterThisRound;
             foreach (var obj in _registered)
             {
+                if (obj.interactionType == InteractionType.Adjutant)
+                {
+                    obj.SetInteractable(false);
+                    continue;
+                }
+
                 bool isAllowedByState = allowed.Contains(obj.interactionType);
                 bool passesRuntimeGuard = state != GameState.WaitingForRound ||
                                           obj.interactionType != InteractionType.Alien ||
@@ -260,6 +267,7 @@ namespace DoodleDiplomacy.Interaction
             GameState.ObjectPresented => s_ObjectPresentedAllowed,
             GameState.Drawing => s_DrawingAllowed,
             GameState.PreviewReady => s_PreviewReadyAllowed,
+            GameState.Preview => s_PreviewAllowed,
             GameState.InterpreterReady => s_InterpReadyAllowed,
             GameState.Interpreter => s_InterpreterAllowed,
             _ => s_NoneAllowed,

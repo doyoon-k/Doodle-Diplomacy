@@ -1612,9 +1612,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 312257440}
-  - component: {fileID: 312257438}
-  - component: {fileID: 312257436}
-  - component: {fileID: 312257442}
   m_Layer: 0
   m_Name: Adjutant
   m_TagString: Untagged
@@ -1622,63 +1619,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &312257436
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312257435}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
-  interactionType: 2
-  cameraFocusPoint: {fileID: 0}
-  isActive: 1
-  OnInteracted:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1778344080}
-        m_TargetAssemblyTypeName: DoodleDiplomacy.Core.RoundManager, Assembly-CSharp
-        m_MethodName: OnAdjutantClicked
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  OnHoverEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  OnHoverExited:
-    m_PersistentCalls:
-      m_Calls: []
---- !u!65 &312257438
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312257435}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.62518036, y: 3.080143, z: 1.2409961}
-  m_Center: {x: -0.022185326, y: 1.5400712, z: 0.020772725}
 --- !u!4 &312257440
 Transform:
   m_ObjectHideFlags: 0
@@ -1695,25 +1635,6 @@ Transform:
   - {fileID: 1443272575}
   m_Father: {fileID: 307829290}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &312257442
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312257435}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61d8491e9c1b24646b016f783c485710, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableHighlighter
-  outlineMaterial: {fileID: 2100000, guid: 123d8bada796318428dbe8c970e807b2, type: 2}
-  hoverEmissionColor: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 1}
-  hoverEmissionIntensity: 0.03
-  includeChildRenderers: 1
-  additionalRendererRoots: []
-  hoverCursor: {fileID: 0}
-  cursorHotspot: {x: 0, y: 0}
 --- !u!1001 &316277754
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12853,8 +12774,6 @@ MonoBehaviour:
   monitorDisplay: {fileID: 1651293743}
   drawingExportBridge: {fileID: 1603467076}
   alienPersonalityProfiles:
-  - {fileID: 11400000, guid: 2047f81de674b2e4f8a1f67dab998a8f, type: 2}
-  - {fileID: 11400000, guid: 1e3d5c7b9a0f4e6d8c2b1a3f5d7c9e0a, type: 2}
   - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
   alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
   telepathyCorruptedLineRatio: 0

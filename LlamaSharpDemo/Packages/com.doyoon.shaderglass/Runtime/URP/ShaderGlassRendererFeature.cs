@@ -147,6 +147,7 @@ public class ShaderGlassRendererFeature : ScriptableRendererFeature
         bool m_ApplyGammaConversion;
         bool m_RenderGraphWarned;
         bool m_InvalidPresetWarned;
+        bool m_MissingBlitShaderWarned;
 
         public ShaderGlassRenderPass(Settings settings)
         {
@@ -293,9 +294,17 @@ public class ShaderGlassRendererFeature : ScriptableRendererFeature
 
             Shader shader = Shader.Find("Hidden/ShaderGlass/Preprocess");
             if (shader == null)
+            {
+                if (!m_MissingBlitShaderWarned)
+                {
+                    Debug.LogWarning("ShaderGlassRendererFeature: missing shader 'Hidden/ShaderGlass/Preprocess'. Add it to Always Included Shaders for player builds.");
+                    m_MissingBlitShaderWarned = true;
+                }
                 return;
+            }
 
             m_BlitMaterial = CoreUtils.CreateEngineMaterial(shader);
+            m_MissingBlitShaderWarned = false;
         }
 
         void EnsurePassLists()

@@ -10,29 +10,32 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
-  m_Name: AdjutantPreviewPipeline
+  m_Name: AlienPreviewPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
-  displayName: AdjutantPreviewPipeline
+  displayName: AlienPreviewPipeline
   description: Generate a Stage 1 structured scene description directly from the
     drawing.
   steps:
-  - stepName: AdjutantPreview
+  - stepName: AlienPreview
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: f40e4c6dcfeff664bb7f044018b3e88f, type: 2}
-    userPromptTemplate: 'Objects (soft context):
+    userPromptTemplate: 'Describe everything visible in this drawing.
 
-      {{target_objects}}
+      Cover all figures, objects, actions, and spatial relationships. Include
+      any notable elements beyond the main subjects — describe the full scene
+      freely without anchoring to any particular element.
 
-      Describe
-      the visible drawing scene freely before any judgment.
+      Write preview_scene_reading so it can be presented as: "It looks like <scene>."
 
-      Cover what is
-      present, what each thing seems to be doing, how the main elements relate, and
-      the overall mood.
+      ---
 
-      Also report whether Object A and Object B are visible,
-      unclear, or missing. Only mark visible when the drawing itself provides clear
-      evidence.'
+      For reference only — do not let this shape your description above.
+
+      The player was asked to draw: {{target_objects}}
+
+      After describing the scene, check whether Object A and Object B from
+      that prompt are visible, unclear, or missing. Only mark visible when
+      the drawing itself clearly supports it.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1

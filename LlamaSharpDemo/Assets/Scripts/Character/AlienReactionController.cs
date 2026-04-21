@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Dialogue;
 
 namespace DoodleDiplomacy.Character
@@ -26,6 +27,7 @@ namespace DoodleDiplomacy.Character
 
         [Header("Dialogue")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
+        [SerializeField] private IngameTextTable ingameTextTable;
 
         [Header("Timing")]
         [SerializeField] private float lookAtMonitorDuration = 1f;
@@ -36,6 +38,7 @@ namespace DoodleDiplomacy.Character
         public UnityEvent OnReactionComplete = new();
 
         private Coroutine _reactionRoutine;
+        private const string DefaultReactionSpeaker = "Alien";
 
         private static readonly Dictionary<SatisfactionLevel, string> MutterMap = new()
         {
@@ -123,7 +126,7 @@ namespace DoodleDiplomacy.Character
                 elapsed += lookWait;
             }
 
-            subtitleDisplay?.Show("Adjutant", GetMappedText(MutterMap, satisfaction));
+            subtitleDisplay?.Show(GetReactionSpeaker(), GetMutterText(satisfaction));
             float mutterWait = GetStageDuration(mutterDuration, clipDuration, elapsed);
             if (mutterWait > 0f)
             {
@@ -131,7 +134,7 @@ namespace DoodleDiplomacy.Character
                 elapsed += mutterWait;
             }
 
-            subtitleDisplay?.Show("Adjutant", GetMappedText(NarrationMap, satisfaction));
+            subtitleDisplay?.Show(GetReactionSpeaker(), GetNarrationText(satisfaction));
             float narrationWait = GetStageDuration(narratorLingerDuration, clipDuration, elapsed);
             if (narrationWait > 0f)
             {
@@ -281,6 +284,51 @@ namespace DoodleDiplomacy.Character
             }
 
             return string.Empty;
+        }
+
+        private string GetReactionSpeaker()
+        {
+            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
+            if (table == null || string.IsNullOrWhiteSpace(table.alienReactionSpeaker))
+            {
+                return DefaultReactionSpeaker;
+            }
+
+            return table.alienReactionSpeaker;
+        }
+
+        private string GetMutterText(SatisfactionLevel level)
+        {
+            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
+            if (table == null)
+            {
+                return GetMappedText(MutterMap, level);
+            }
+
+            string text = table.GetMutterText(level);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return GetMappedText(MutterMap, level);
+            }
+
+            return text;
+        }
+
+        private string GetNarrationText(SatisfactionLevel level)
+        {
+            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
+            if (table == null)
+            {
+                return GetMappedText(NarrationMap, level);
+            }
+
+            string text = table.GetNarrationText(level);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return GetMappedText(NarrationMap, level);
+            }
+
+            return text;
         }
 
         [ContextMenu("Test: VeryDissatisfied")]

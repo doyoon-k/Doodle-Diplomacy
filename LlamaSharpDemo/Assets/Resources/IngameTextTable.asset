@@ -59,8 +59,8 @@ MonoBehaviour:
   narrationNeutral: Not much of a reaction.
   narrationSatisfied: A positive response.
   narrationVerySatisfied: They seem quite impressed!
-  introAdjutantSpeaker: Adjutant
+  introAdjutantSpeaker: Agent
   introAdjutantLine1: Ambassador, the alien delegation has arrived.
-  introAdjutantLine2: "They cannot understand our language.\n\nWe must communicate through\
-    \ drawings."
-  introAdjutantLine3: Press the button in front of the alien to begin negotiations.
+  introAdjutantLine2: We need to satisfy them by drawing picture using two different
+    objects presented by them.
+  introAdjutantLine3: Click aliens when you are ready.

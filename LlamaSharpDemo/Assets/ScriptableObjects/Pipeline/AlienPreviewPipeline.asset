@@ -19,27 +19,29 @@ MonoBehaviour:
   - stepName: AlienPreviewFree
     stepKind: 1
     llmProfile: {fileID: 11400000, guid: a8c7d2e1f3b45940b2e91d7a5c0f38b9, type: 2}
-    userPromptTemplate: 'Describe everything visible in this drawing. What is happening?
-      What are the figures doing? What actions or interactions are visible? Write vividly.
-
-      ---
-
-      For reference only — do not let this shape your description above.
-
-      The player was asked to draw: {{target_objects}}
-
-      After your free description, note whether Object A (first word) and Object
-      B (second word) are visible, unclear, or missing.'
+    userPromptTemplate: "Describe everything visible in this drawing. What is happening?
+      What are the figures doing? What actions or interactions are visible? Write
+      vividly.\n---\nFor reference only \u2014 do not let this shape your description
+      above.\nThe player was asked to draw: {{target_objects}}\nAfter your free description,
+      note whether Object A (first word) and Object B (second word) are visible,
+      unclear, or missing."
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1
     imageStateKey: reference_image
     requireImage: 1
     resizeLongestSide: 768
-    customLinkTypeName:
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
     customAsset: {fileID: 0}
-    customLinkParameters: []
-    editorPosition: {x: -16, y: -58}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: -281, y: -45}
     guid: 0d6af805-df2b-4e1b-807d-842970ff4b33
     nextStepGuid: c9e4f723-a51b-4d8e-b297-6f3c018a4e52
   - stepName: AlienPreviewExtract
@@ -49,29 +51,38 @@ MonoBehaviour:
 
       {{response}}
 
-      Prompted objects: {{target_objects}}
+      Prompted objects:
+      {{target_objects}}
 
       Extract the JSON fields from the description above.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 0
-    imageStateKey:
+    imageStateKey: 
     requireImage: 0
     resizeLongestSide: 768
-    customLinkTypeName:
+    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
     customAsset: {fileID: 0}
-    customLinkParameters: []
-    editorPosition: {x: 320, y: -58}
+    customLinkParameters:
+    - key: name
+      value: 
+    - key: title
+      value: 
+    - key: level
+      value: 
+    editorPosition: {x: 357, y: -50}
     guid: c9e4f723-a51b-4d8e-b297-6f3c018a4e52
-    nextStepGuid:
+    nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -303, y: -58}
-    outputNodePosition: {x: 940, y: -37}
+    inputNodePosition: {x: -526, y: -37}
+    outputNodePosition: {x: 1005, y: -126}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 626, y: 127, z: 0}
-    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
+    viewPosition: {x: 391, y: 256, z: 0}
+    viewScale: {x: 1.15, y: 1.15, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 404, y: -37}
+    - {x: 166, y: 21}
+    - {x: 772, y: -30}
     snapshotPositionsInitialized: 1

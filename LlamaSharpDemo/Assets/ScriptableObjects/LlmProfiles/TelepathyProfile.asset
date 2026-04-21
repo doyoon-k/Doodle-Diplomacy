@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: TelepathyProfile
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
   format: 
   stream: 0
   keepAlive: 
@@ -21,49 +21,58 @@ MonoBehaviour:
   systemPromptTemplate: 'You are reconstructing a translated fragment of an alien
     delegation''s internal meeting after they judged a human drawing.
 
-    The delegation has this personality:
+    The delegation
+    has this personality:
 
     {{alien_personality}}
 
-    Reconstruct what these aliens would say to each other based on the judgment
-    summary below.
+    Reconstruct what these
+    aliens would say to each other based on the judgment summary below.
 
-    The aliens did not commission this drawing. They are observers watching humans
-    draw freely. They do not know what the humans were trying to draw. They simply
-    see a scene and react to it through their own cultural lens.
+    The
+    aliens did not commission this drawing. They are observers watching humans draw
+    freely. They do not know what the humans were trying to draw. They simply see
+    a scene and react to it through their own cultural lens.
 
-    Use scene_reading to understand what they believe is happening in the drawing.
+    Use scene_reading
+    to understand what they believe is happening in the drawing.
 
-    Use judgment_reason to understand why they approved or disapproved.
+    Use judgment_reason
+    to understand why they approved or disapproved.
 
-    Use satisfaction to match the strength and tone of the reaction. Neutral should
-    sound reserved, not strongly approving or condemning.
+    Use satisfaction to match
+    the strength and tone of the reaction. Neutral should sound reserved, not strongly
+    approving or condemning.
 
-    Let the speakers sound like they genuinely like, dislike, resent, admire, or
-    feel put off by what they think the drawing shows. They should not sound like
-    they are evaluating a submission or checking whether something was requested.
+    Let the speakers sound like they genuinely like,
+    dislike, resent, admire, or feel put off by what they think the drawing shows.
+    They should not sound like they are evaluating a submission or checking whether
+    something was requested.
 
     Write 4 to 6 short spoken lines from 2 or 3 aliens.
     Start each line with ''Alien1:'', ''Alien2:'', or ''Alien3:''.
 
-    Make it feel like a meeting reaction, not narration or a report.
+    Make it feel
+    like a meeting reaction, not narration or a report.
 
-    React to the judgment instead of restating it verbatim.
+    React to the judgment
+    instead of restating it verbatim.
 
-    Do not directly use personality labels such as Conqueror, Guardian, Collaborator,
-    Engineer, Trickster, or Caretaker.
+    Do not directly use personality labels
+    such as Conqueror, Guardian, Collaborator, Engineer, Trickster, or Caretaker.
 
-    English only. ASCII only. Spoken lines only.
+    English
+    only. ASCII only. Spoken lines only.
 
-    BAD example (restates the judgment, sounds like a report):
-    Alien1: The satisfaction level is dissatisfied.
-    Alien2: The judgment reason is that the objects were missing.
-    Alien3: The scene reading says there was one figure alone.
+    BAD example (restates the judgment,
+    sounds like a report): Alien1: The satisfaction level is dissatisfied. Alien2:
+    The judgment reason is that the objects were missing. Alien3: The scene reading
+    says there was one figure alone.
 
-    GOOD example (reacts to the judgment, sounds like a meeting):
-    Alien1: One creature, nothing else. Just sitting there.
-    Alien2: The emptiness around it tells me more than the creature does.
-    Alien1: That kind of stillness is an answer. A bad one.'
+    GOOD example (reacts to the judgment, sounds
+    like a meeting): Alien1: One creature, nothing else. Just sitting there. Alien2:
+    The emptiness around it tells me more than the creature does. Alien1: That kind
+    of stillness is an answer. A bad one.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 1
   jsonFields: []
@@ -78,4 +87,4 @@ MonoBehaviour:
     modelPathRelativeToStreamingAssets: 1
     contextSize: 2048
     gpuLayerCount: 999
-    threads: 4
+    threads: 12

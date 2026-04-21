@@ -13,19 +13,14 @@ MonoBehaviour:
   m_Name: AlienPreviewPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: AlienPreviewPipeline
-  description: Generate a Stage 1 structured scene description directly from the
-    drawing.
+  description: 'Stage 1: VLM free prose description. Stage 2: extract structured
+    JSON fields from the prose.'
   steps:
-  - stepName: AlienPreview
-    stepKind: 0
-    llmProfile: {fileID: 11400000, guid: f40e4c6dcfeff664bb7f044018b3e88f, type: 2}
-    userPromptTemplate: 'Describe everything visible in this drawing.
-
-      Cover all figures, objects, actions, and spatial relationships. Include
-      any notable elements beyond the main subjects — describe the full scene
-      freely without anchoring to any particular element.
-
-      Write preview_scene_reading so it can be presented as: "It looks like <scene>."
+  - stepName: AlienPreviewFree
+    stepKind: 1
+    llmProfile: {fileID: 11400000, guid: a8c7d2e1f3b45940b2e91d7a5c0f38b9, type: 2}
+    userPromptTemplate: 'Describe everything visible in this drawing. What is happening?
+      What are the figures doing? What emotions or actions are visible? Write vividly.
 
       ---
 
@@ -33,31 +28,45 @@ MonoBehaviour:
 
       The player was asked to draw: {{target_objects}}
 
-      After describing the scene, check whether Object A and Object B from
-      that prompt are visible, unclear, or missing. Only mark visible when
-      the drawing itself clearly supports it.'
+      After your free description, note whether Object A (first word) and Object
+      B (second word) are visible, unclear, or missing.'
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1
     imageStateKey: reference_image
     requireImage: 1
     resizeLongestSide: 768
-    customLinkTypeName: SampleCustomLink, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
-      PublicKeyToken=null
+    customLinkTypeName:
     customAsset: {fileID: 0}
-    customLinkParameters:
-    - key: name
-      value: 
-    - key: title
-      value: 
-    - key: level
-      value: 
+    customLinkParameters: []
     editorPosition: {x: -16, y: -58}
     guid: 0d6af805-df2b-4e1b-807d-842970ff4b33
-    nextStepGuid: 
+    nextStepGuid: c9e4f723-a51b-4d8e-b297-6f3c018a4e52
+  - stepName: AlienPreviewExtract
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: c3b5e7a914f2684d81e3c097b46fa201, type: 2}
+    userPromptTemplate: 'Scene description:
+
+      {{response}}
+
+      Prompted objects: {{target_objects}}
+
+      Extract the JSON fields from the description above.'
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey:
+    requireImage: 0
+    resizeLongestSide: 768
+    customLinkTypeName:
+    customAsset: {fileID: 0}
+    customLinkParameters: []
+    editorPosition: {x: 320, y: -58}
+    guid: c9e4f723-a51b-4d8e-b297-6f3c018a4e52
+    nextStepGuid:
   layoutSettings:
     inputNodePosition: {x: -303, y: -58}
-    outputNodePosition: {x: 625, y: -37}
+    outputNodePosition: {x: 940, y: -37}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
     viewPosition: {x: 633, y: 149, z: 0}

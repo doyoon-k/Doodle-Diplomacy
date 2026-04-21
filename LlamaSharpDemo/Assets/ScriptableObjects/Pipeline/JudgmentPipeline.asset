@@ -25,7 +25,7 @@ MonoBehaviour:
 
       Stage
       1 scene description: - scene: {{preview_scene_reading}} - visible relations:
-      {{preview_visible_relations}} - overall mood: {{preview_overall_mood}} - uncertainty:
+      {{preview_visible_relations}} - uncertainty:
       {{preview_uncertainty}} - object A presence: {{preview_object_a_presence}}
       - object B presence: {{preview_object_b_presence}}
 

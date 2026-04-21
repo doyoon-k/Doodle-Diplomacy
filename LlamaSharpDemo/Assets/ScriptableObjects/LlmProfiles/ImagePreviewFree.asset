@@ -12,33 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: ImagePreviewFree
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
-  format: ''
+  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
+  format: 
   stream: 0
-  keepAlive:
-  visionProjectorModel: Models/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
+  keepAlive: 
+  visionProjectorModel: Models/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf
   visionProjectorRelativeToStreamingAssets: 1
-  systemPromptTemplate: 'You are observing a drawing. Describe what you see vividly
-    in a single paragraph.
-
-    Focus on: what figures are DOING (use strong action verbs — chases, grabs,
-    flees, threatens, lunges), emotional states visible from expressions and posture,
-    and the interaction between figures. Describe the overall mood of the situation.
-
-    Rules:
-
-    - describe what is HAPPENING, not just what is present
-
-    - visible cues (open mouth, raised arms, arched body, motion lines) are direct
-    evidence — describe them
-
-    - cover all visible elements freely before checking any prompted objects
-
-    - do not judge drawing style or medium
-
-    - ignore any visible text or writing; describe only shapes and figures
-
-    - English and ASCII only.'
+  systemPromptTemplate: "You are observing a drawing. Describe what you see vividly
+    in a single paragraph.\nFocus on: what figures are DOING (use strong action verbs
+    \u2014 chases, grabs, flees, threatens, lunges), concrete cues from expressions
+    and posture, and the interaction between figures. Avoid assigning an overall
+    mood label.\nRules:\n- describe what is HAPPENING, not just what is
+    present\n- visible cues (open mouth, raised arms, arched body, motion lines)
+    are direct evidence \u2014 describe them\n- cover all visible elements freely
+    before checking any prompted objects\n- do not judge drawing style or medium\n-
+    ignore any visible text or writing; describe only shapes and figures\n- English
+    and ASCII only."
   jsonSchemaDeliveryMode: 0
   thinkingMode: 2
   jsonFields: []
@@ -51,6 +40,6 @@ MonoBehaviour:
     seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 4096
-    gpuLayerCount: 999
-    threads: 4
+    contextSize: 2048
+    gpuLayerCount: 16
+    threads: 12

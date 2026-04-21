@@ -21,7 +21,6 @@ namespace DoodleDiplomacy.AI
         private const string DefaultSatisfactionStateKey = "satisfaction";
         private const string PreviewSceneReadingStateKey = "preview_scene_reading";
         private const string PreviewVisibleRelationsStateKey = "preview_visible_relations";
-        private const string PreviewOverallMoodStateKey = "preview_overall_mood";
         private const string PreviewUncertaintyStateKey = "preview_uncertainty";
         private const string PreviewObjectAPresenceStateKey = "preview_object_a_presence";
         private const string PreviewObjectBPresenceStateKey = "preview_object_b_presence";
@@ -107,9 +106,12 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private string objectPromptB = "an alien crystal sphere, dark background, dramatic lighting, product photo";
         [TextArea(1, 2)]
         [SerializeField] private string sdNegativePrompt = "low quality, blurry, text, watermark, cropped, out of frame, partial object, close-up, zoomed in, occluded, cut off";
+        [Header("Pre-generated Object Images")]
+        [SerializeField] private bool usePreGeneratedCatalog;
+        [SerializeField] private PreGeneratedObjectImageCatalog preGeneratedCatalog;
 
         [Header("LLM Pipelines")]
-        [Tooltip("Alien first-pass preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_overall_mood, preview_uncertainty, preview_object_a_presence, preview_object_b_presence")]
+        [Tooltip("Alien first-pass preview pipeline. Expected output keys: preview_scene_reading, preview_visible_relations, preview_uncertainty, preview_object_a_presence, preview_object_b_presence")]
         [SerializeField] private PromptPipelineAsset previewDialoguePipeline;
         [Tooltip("Judgment pipeline. Expected output keys: satisfaction, scene_reading, judgment_reason")]
         [SerializeField] private PromptPipelineAsset judgmentPipeline;
@@ -161,7 +163,6 @@ namespace DoodleDiplomacy.AI
         public string LastPreviewDialogue { get; private set; } = "";
         public string LastPreviewSceneReading { get; private set; } = "";
         public string LastPreviewVisibleRelations { get; private set; } = "";
-        public string LastPreviewOverallMood { get; private set; } = "";
         public string LastPreviewUncertainty { get; private set; } = "";
         public string LastPreviewObjectAPresence => FormatPreviewObjectPresence(_lastPreviewObjectAPresence);
         public string LastPreviewObjectBPresence => FormatPreviewObjectPresence(_lastPreviewObjectBPresence);
@@ -325,7 +326,6 @@ namespace DoodleDiplomacy.AI
             LastPreviewDialogue = "";
             LastPreviewSceneReading = "";
             LastPreviewVisibleRelations = "";
-            LastPreviewOverallMood = "";
             LastPreviewUncertainty = "";
             _lastPreviewObjectAPresence = PreviewObjectPresence.Unknown;
             _lastPreviewObjectBPresence = PreviewObjectPresence.Unknown;
@@ -344,7 +344,7 @@ namespace DoodleDiplomacy.AI
                 return;
             }
 
-            if (sdSettings == null)
+            if (!usePreGeneratedCatalog && sdSettings == null)
             {
                 Debug.LogWarning("[AIPipelineBridge] Cannot prefetch next round objects because SD settings are missing.");
                 return;
@@ -432,6 +432,24 @@ namespace DoodleDiplomacy.AI
 
         public void EnsureObjectGenerationPreparation(bool forceRetry = false)
         {
+            if (usePreGeneratedCatalog)
+            {
+                string catalogError = ValidatePreGeneratedCatalogConfiguration();
+                if (string.IsNullOrWhiteSpace(catalogError))
+                {
+                    SetObjectGenerationAvailability(ObjectGenerationAvailabilityState.Ready, string.Empty, string.Empty);
+                }
+                else
+                {
+                    SetObjectGenerationAvailability(
+                        ObjectGenerationAvailabilityState.Failed,
+                        catalogError,
+                        catalogError);
+                }
+
+                return;
+            }
+
             if (_objectGenerationAvailability == ObjectGenerationAvailabilityState.Preparing && !forceRetry)
             {
                 return;
@@ -737,6 +755,39 @@ namespace DoodleDiplomacy.AI
             {
                 CancelPrefetchGeneration("Prefetch not ready at presenting. Falling back to regular generation.");
                 ClearPrefetchedRoundData(destroyTextures: true);
+            }
+
+            if (usePreGeneratedCatalog)
+            {
+                if (!TryCreatePreGeneratedRoundTextures(
+                        GetCurrentObjectPromptA(),
+                        GetCurrentObjectPromptB(),
+                        out Texture2D preGeneratedA,
+                        out Texture2D preGeneratedB,
+                        out string preGeneratedError))
+                {
+                    LastObjectGenerationError = preGeneratedError;
+                    Debug.LogWarning($"[AIPipelineBridge] {LastObjectGenerationError}");
+                    monitorDisplay?.SetIdle();
+                    onComplete?.Invoke(false);
+                    yield break;
+                }
+
+                DestroyTexture(_lastObjTexA);
+                DestroyTexture(_lastObjTexB);
+                _lastObjTexA = preGeneratedA;
+                _lastObjTexB = preGeneratedB;
+
+                DestroyTexture(_progressObjTexA);
+                DestroyTexture(_progressObjTexB);
+                _progressObjTexA = null;
+                _progressObjTexB = null;
+
+                ClearActiveGenerationSlot();
+                monitorDisplay?.ShowObjects(preGeneratedA, preGeneratedB);
+                Debug.Log("[AIPipelineBridge] Presented pre-generated object textures.");
+                onComplete?.Invoke(true);
+                yield break;
             }
 
             monitorDisplay?.ShowGenerating(null, null);
@@ -1166,6 +1217,45 @@ namespace DoodleDiplomacy.AI
                     Debug.LogWarning($"[AIPipelineBridge] Prefetch keyword selection fallback: {selection.warning}");
                 }
 
+                if (usePreGeneratedCatalog)
+                {
+                    if (!TryCreatePreGeneratedRoundTextures(
+                            selection.objectPromptA,
+                            selection.objectPromptB,
+                            out Texture2D cachedA,
+                            out Texture2D cachedB,
+                            out string preGeneratedError))
+                    {
+                        DestroyTexture(cachedA);
+                        DestroyTexture(cachedB);
+                        SetPrefetchedRoundFailed(
+                            string.IsNullOrWhiteSpace(preGeneratedError)
+                                ? "Next-round prefetch failed while loading pre-generated object images."
+                                : preGeneratedError);
+                        yield break;
+                    }
+
+                    if (token.IsCancellationRequested)
+                    {
+                        DestroyTexture(cachedA);
+                        DestroyTexture(cachedB);
+                        yield break;
+                    }
+
+                    DestroyTexture(_prefetchedRound.objectTextureA);
+                    DestroyTexture(_prefetchedRound.objectTextureB);
+                    _prefetchedRound.objectTextureA = cachedA;
+                    _prefetchedRound.objectTextureB = cachedB;
+                    _prefetchedRound.state = PrefetchedRoundState.Ready;
+                    _prefetchedRound.error = string.Empty;
+                    _prefetchedRound.adopted = false;
+
+                    Debug.Log(
+                        $"[AIPipelineBridge] Next-round prefetch ready from pre-generated catalog: " +
+                        $"label=({_prefetchedRound.keywordA}, {_prefetchedRound.keywordB})");
+                    yield break;
+                }
+
                 Texture2D texA = null;
                 Texture2D texB = null;
                 string prefetchError = string.Empty;
@@ -1348,6 +1438,139 @@ namespace DoodleDiplomacy.AI
             _prefetchedRound.error = string.Empty;
             _prefetchedRound.adopted = false;
             _prefetchedRound.state = PrefetchedRoundState.Idle;
+        }
+
+        private string ValidatePreGeneratedCatalogConfiguration()
+        {
+            if (!usePreGeneratedCatalog)
+            {
+                return string.Empty;
+            }
+
+            if (preGeneratedCatalog == null)
+            {
+                return "Pre-generated object image catalog is not assigned.";
+            }
+
+            return string.Empty;
+        }
+
+        private bool TryCreatePreGeneratedRoundTextures(
+            string promptA,
+            string promptB,
+            out Texture2D textureA,
+            out Texture2D textureB,
+            out string error)
+        {
+            textureA = null;
+            textureB = null;
+            error = ValidatePreGeneratedCatalogConfiguration();
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                return false;
+            }
+
+            if (!TryCreatePreGeneratedTextureFromPrompt(promptA, out textureA, out string objectAError))
+            {
+                error = $"Object A: {objectAError}";
+                return false;
+            }
+
+            if (!TryCreatePreGeneratedTextureFromPrompt(promptB, out textureB, out string objectBError))
+            {
+                DestroyTexture(textureA);
+                textureA = null;
+                error = $"Object B: {objectBError}";
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryCreatePreGeneratedTextureFromPrompt(
+            string prompt,
+            out Texture2D runtimeTexture,
+            out string error)
+        {
+            runtimeTexture = null;
+            error = ValidatePreGeneratedCatalogConfiguration();
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                return false;
+            }
+
+            string promptKey = PreGeneratedObjectImageKeyUtility.ComputePromptKey(prompt);
+            if (string.IsNullOrWhiteSpace(promptKey))
+            {
+                error = "Prompt is empty, so no pre-generated key could be resolved.";
+                return false;
+            }
+
+            if (!preGeneratedCatalog.TryGetTextureByKey(promptKey, out Texture2D sourceTexture) || sourceTexture == null)
+            {
+                string promptText = prompt?.Trim() ?? string.Empty;
+                error = $"Missing pre-generated image for prompt '{promptText}' (key='{promptKey}').";
+                return false;
+            }
+
+            if (!TryCloneTextureForRuntime(sourceTexture, out runtimeTexture, out string cloneError))
+            {
+                error = $"Failed to clone pre-generated image for key '{promptKey}': {cloneError}";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryCloneTextureForRuntime(Texture2D source, out Texture2D clone, out string error)
+        {
+            clone = null;
+            error = string.Empty;
+            if (source == null)
+            {
+                error = "Source texture is null.";
+                return false;
+            }
+
+            RenderTexture temp = null;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                int width = Mathf.Max(1, source.width);
+                int height = Mathf.Max(1, source.height);
+                temp = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+                Graphics.Blit(source, temp);
+                RenderTexture.active = temp;
+
+                clone = new Texture2D(width, height, TextureFormat.RGBA32, false)
+                {
+                    name = source.name + "_RuntimeCopy",
+                    filterMode = source.filterMode,
+                    wrapMode = source.wrapMode
+                };
+                clone.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                clone.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (clone != null)
+                {
+                    UnityEngine.Object.Destroy(clone);
+                    clone = null;
+                }
+
+                error = ex.Message;
+                return false;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                if (temp != null)
+                {
+                    RenderTexture.ReleaseTemporary(temp);
+                }
+            }
         }
 
         private string BuildAlienPersonalityPromptContext()
@@ -1648,7 +1871,6 @@ namespace DoodleDiplomacy.AI
         private void SetPreviewRead(
             string sceneReading,
             string visibleRelations,
-            string overallMood = null,
             string uncertainty = null,
             string previewDialogue = null,
             PreviewObjectPresence objectAPresence = PreviewObjectPresence.Unknown,
@@ -1656,7 +1878,6 @@ namespace DoodleDiplomacy.AI
         {
             LastPreviewSceneReading = sceneReading?.Trim() ?? string.Empty;
             LastPreviewVisibleRelations = visibleRelations?.Trim() ?? string.Empty;
-            LastPreviewOverallMood = overallMood?.Trim() ?? string.Empty;
             LastPreviewUncertainty = uncertainty?.Trim() ?? string.Empty;
             _lastPreviewObjectAPresence = objectAPresence;
             _lastPreviewObjectBPresence = objectBPresence;
@@ -1676,7 +1897,6 @@ namespace DoodleDiplomacy.AI
                 SetPreviewRead(
                     "The submitted drawing is blank.",
                     "No visible action, interaction, or connection is shown.",
-                    "The scene feels empty and unfinished.",
                     "There is not enough visible information to interpret the scene.",
                     BuildFallbackPreviewDialogue(true),
                     PreviewObjectPresence.Missing,
@@ -1687,7 +1907,6 @@ namespace DoodleDiplomacy.AI
             SetPreviewRead(
                 "The drawing is hard to read.",
                 "No clear interaction or cause-and-effect is visible.",
-                "The overall mood is unclear.",
                 "The main action and intent are ambiguous.",
                 BuildFallbackPreviewDialogue(false),
                 PreviewObjectPresence.Unclear,
@@ -1798,11 +2017,6 @@ namespace DoodleDiplomacy.AI
                 ? relationValue
                 : string.Empty;
 
-            string overallMood = finalState != null &&
-                                 finalState.TryGetString(PreviewOverallMoodStateKey, out string moodValue)
-                ? moodValue
-                : string.Empty;
-
             string uncertainty = finalState != null &&
                                  finalState.TryGetString(PreviewUncertaintyStateKey, out string uncertaintyValue)
                 ? uncertaintyValue
@@ -1819,7 +2033,6 @@ namespace DoodleDiplomacy.AI
             HasPreviewStructuredRead =
                 !string.IsNullOrWhiteSpace(sceneReading) ||
                 !string.IsNullOrWhiteSpace(visibleRelations) ||
-                !string.IsNullOrWhiteSpace(overallMood) ||
                 !string.IsNullOrWhiteSpace(uncertainty) ||
                 objectAPresence != PreviewObjectPresence.Unknown ||
                 objectBPresence != PreviewObjectPresence.Unknown;
@@ -1834,11 +2047,6 @@ namespace DoodleDiplomacy.AI
                 visibleRelations = "No clear interaction or cause-and-effect is visible.";
             }
 
-            if (string.IsNullOrWhiteSpace(overallMood))
-            {
-                overallMood = "The overall mood is unclear.";
-            }
-
             if (string.IsNullOrWhiteSpace(uncertainty))
             {
                 uncertainty = "The main action and intent are ambiguous.";
@@ -1847,7 +2055,6 @@ namespace DoodleDiplomacy.AI
             SetPreviewRead(
                 sceneReading,
                 visibleRelations,
-                overallMood,
                 uncertainty,
                 objectAPresence: objectAPresence,
                 objectBPresence: objectBPresence);
@@ -1857,7 +2064,6 @@ namespace DoodleDiplomacy.AI
         {
             return !string.IsNullOrWhiteSpace(LastPreviewSceneReading) ||
                    !string.IsNullOrWhiteSpace(LastPreviewVisibleRelations) ||
-                   !string.IsNullOrWhiteSpace(LastPreviewOverallMood) ||
                    !string.IsNullOrWhiteSpace(LastPreviewUncertainty);
         }
 
@@ -2780,11 +2986,6 @@ namespace DoodleDiplomacy.AI
             if (!string.IsNullOrWhiteSpace(LastPreviewVisibleRelations))
             {
                 state.SetString(PreviewVisibleRelationsStateKey, LastPreviewVisibleRelations);
-            }
-
-            if (!string.IsNullOrWhiteSpace(LastPreviewOverallMood))
-            {
-                state.SetString(PreviewOverallMoodStateKey, LastPreviewOverallMood);
             }
 
             if (!string.IsNullOrWhiteSpace(LastPreviewUncertainty))

@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: TelepathyProfile
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
   format: 
   stream: 0
-  keepAlive: 
+  keepAlive: 0
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1
   systemPromptTemplate: 'You are reconstructing a translated fragment of an alien
@@ -86,5 +86,5 @@ MonoBehaviour:
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
     contextSize: 2048
-    gpuLayerCount: 999
+    gpuLayerCount: 16
     threads: 12

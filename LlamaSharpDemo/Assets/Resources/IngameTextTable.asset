@@ -60,7 +60,7 @@ MonoBehaviour:
   narrationSatisfied: A positive response.
   narrationVerySatisfied: They seem quite impressed!
   introAdjutantSpeaker: Agent
-  introAdjutantLine1: Ambassador, the alien delegation has arrived.
+  introAdjutantLine1: Sir, the alien delegation has arrived.
   introAdjutantLine2: We need to satisfy them by drawing picture using two different
     objects presented by them.
   introAdjutantLine3: Click aliens when you are ready.

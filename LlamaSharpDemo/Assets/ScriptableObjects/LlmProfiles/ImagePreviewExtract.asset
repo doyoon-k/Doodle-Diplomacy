@@ -12,42 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: ImagePreviewExtract
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
-  format: '{"type":"object","properties":{"preview_scene_reading":{"type":"string"},"preview_visible_relations":{"type":"string"},"preview_overall_mood":{"type":"string"},"preview_uncertainty":{"type":"string"},"preview_object_a_presence":{"type":"string","enum":["visible","unclear","missing"]},"preview_object_b_presence":{"type":"string","enum":["visible","unclear","missing"]}},"required":["preview_scene_reading","preview_visible_relations","preview_overall_mood","preview_uncertainty","preview_object_a_presence","preview_object_b_presence"],"additionalProperties":false}'
+  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
+  format: '{"type":"object","properties":{"preview_scene_reading":{"type":"string"},"preview_visible_relations":{"type":"string"},"preview_uncertainty":{"type":"string"},"preview_object_a_presence":{"type":"string","enum":["visible","unclear","missing"]},"preview_object_b_presence":{"type":"string","enum":["visible","unclear","missing"]}},"required":["preview_scene_reading","preview_visible_relations","preview_uncertainty","preview_object_a_presence","preview_object_b_presence"],"additionalProperties":false}'
   stream: 0
-  keepAlive:
-  visionProjectorModel:
+  keepAlive: 
+  visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 0
-  systemPromptTemplate: 'You receive a free-text description of a drawing. Extract
-    structured fields from it. Return valid JSON only.
-
-    - preview_scene_reading: one short sentence for what is happening, written so
-    it can be presented as "It looks like ..."
-
-    - preview_visible_relations: one short sentence for the clearest action between
-    figures — use action verbs (chases, threatens, flees, grabs, looms over).
-    Prefer action over spatial position.
-
-    - preview_overall_mood: one short sentence for the mood of the depicted situation
-    (tense, hostile, fearful, calm, joyful, playful, etc.). Judge the scene, not
-    the drawing style.
-
-    - preview_uncertainty: one short sentence about the main ambiguity, or say the
-    read is mostly clear.
-
-    - preview_object_a_presence: visible, unclear, or missing for Object A (first
-    prompted word).
-
-    - preview_object_b_presence: visible, unclear, or missing for Object B (second
-    prompted word).
-
-    Rules:
-
-    - extract from the provided description, do not add new information
-
-    - make preview_scene_reading work as "It looks like ..."
-
-    - English and ASCII only.'
+  systemPromptTemplate: "You receive a free-text description of a drawing. Extract
+    structured fields from it. Return valid JSON only.\n- preview_scene_reading:
+    one short sentence for what is happening, written so it can be presented as \"It
+    looks like ...\"\n- preview_visible_relations: one short sentence for the clearest
+    action between figures \u2014 use action verbs (chases, threatens, flees, grabs,
+    looms over). Prefer action over spatial position.\n- preview_uncertainty:
+    one short sentence about the main ambiguity, or say the read is mostly clear.\n-
+    preview_object_a_presence: visible, unclear, or missing for Object A (first prompted
+    word).\n- preview_object_b_presence: visible, unclear, or missing for Object
+    B (second prompted word).\nRules:\n- extract from the provided description, do
+    not add new information\n- make preview_scene_reading work as \"It looks like
+    ...\"\n- English and ASCII only."
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:
@@ -56,45 +38,34 @@ MonoBehaviour:
     arrayElementType: 0
     children: []
     enumOptions: []
-    minValue:
-    maxValue:
-    minLength:
-    maxLength:
-    minItems:
-    maxItems:
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
   - fieldName: preview_visible_relations
     fieldType: 0
     arrayElementType: 0
     children: []
     enumOptions: []
-    minValue:
-    maxValue:
-    minLength:
-    maxLength:
-    minItems:
-    maxItems:
-  - fieldName: preview_overall_mood
-    fieldType: 0
-    arrayElementType: 0
-    children: []
-    enumOptions: []
-    minValue:
-    maxValue:
-    minLength:
-    maxLength:
-    minItems:
-    maxItems:
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
   - fieldName: preview_uncertainty
     fieldType: 0
     arrayElementType: 0
     children: []
     enumOptions: []
-    minValue:
-    maxValue:
-    minLength:
-    maxLength:
-    minItems:
-    maxItems:
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
   - fieldName: preview_object_a_presence
     fieldType: 0
     arrayElementType: 0
@@ -103,12 +74,12 @@ MonoBehaviour:
     - visible
     - unclear
     - missing
-    minValue:
-    maxValue:
-    minLength:
-    maxLength:
-    minItems:
-    maxItems:
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
   - fieldName: preview_object_b_presence
     fieldType: 0
     arrayElementType: 0
@@ -117,12 +88,12 @@ MonoBehaviour:
     - visible
     - unclear
     - missing
-    minValue:
-    maxValue:
-    minLength:
-    maxLength:
-    minItems:
-    maxItems:
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
   modelParams:
     temperature: 0.1
     top_p: 0.9
@@ -132,6 +103,6 @@ MonoBehaviour:
     seed: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
-    contextSize: 4096
-    gpuLayerCount: 999
-    threads: 4
+    contextSize: 2048
+    gpuLayerCount: 16
+    threads: 12

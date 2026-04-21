@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2122fa9088fa4c96b77c6f7f17b70aa4, type: 3}
+  m_Name: PreGeneratedObjectImageCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.AI.PreGeneratedObjectImageCatalog
+  entries:
+  - prompt: delicate monarch butterfly with orange and black patterned wings, flying
+    promptKey: 05ac0edfd0c99c968d7818689856dc67b0f7a1dd8f76823df5b31a44e1be0d83
+    texture: {fileID: 2800000, guid: f082a2307310c1a469a6f2ea99f6b9e5, type: 3}
+  - prompt: heavy steel claw hammer with smooth wooden handle, side view
+    promptKey: 11b540ec945d5fb6c459db1518de313c7a54c53ced0e68dc95be31f068889d12
+    texture: {fileID: 2800000, guid: 0af231f5c5917b2478e628a00e3642f7, type: 3}
+  - prompt: powerful brown bald eagle with white head and spread feathered wings,
+      soaring
+    promptKey: 1201b7d13f7be864a556f8ecbf284f6bba96c1b8cc0980f7f9a0a6aff5695f19
+    texture: {fileID: 2800000, guid: 8b649961afa36a64e9c00b8141b8e775, type: 3}
+  - prompt: massive gray elephant with large floppy ears and long curved trunk, side
+      view
+    promptKey: 19b55d116c64115e70c3741f2d7e9c957089bb875c1a091158c01c12ac6aca69
+    texture: {fileID: 2800000, guid: 126aa14085df29a4bb259281bc770f22, type: 3}
+  - prompt: tiny brown field mouse with round ears and long thin tail, sitting
+    promptKey: 1ab9d240495fbbdf2c9816c56b478e333039e32fd87b480f69021d13e8ebe462
+    texture: {fileID: 2800000, guid: 2d010d47ff1c61b42a2e548ba6794441, type: 3}
+  - prompt: single white chicken egg with smooth matte shell
+    promptKey: 26409b76f1d9b189eb1853f8f4dfd745100a1e70edeaae77661a360c3143eb62
+    texture: {fileID: 2800000, guid: 6937d95a5a9aa074a9b4af65f75a3545, type: 3}
+  - prompt: vibrant red rose flower with green thorny stem and lush petals
+    promptKey: 40abf7669a9f216ea21f2d98def3fac05b35c09101ca7064741380555d6168b1
+    texture: {fileID: 2800000, guid: 5e67256c209b09c45ae2287aae54fd5b, type: 3}
+  - prompt: transparent green glass bottle with cork stopper
+    promptKey: 672cfe3360dcff8e030c1ca02c8f6d52069dd5f701f15db7824accc6948238f2
+    texture: {fileID: 2800000, guid: e9257a0881c8878439ba4fa93e3c8e1a, type: 3}
+  - prompt: heavy rusted iron ship anchor with thick chain attached
+    promptKey: 761872d511b8f967d250b1db0961b550b12f6d96bc5adcf8fd4b8f4eb2d928c5
+    texture: {fileID: 2800000, guid: 617427a95ce138641be7e26bfaf34ef2, type: 3}
+  - prompt: sleek orange fox with pointed ears and white chest fur, standing alert
+    promptKey: 7bb36d12691e9c2b42f3e939d52c696748f1f417806fe01545c085b7803b66f8
+    texture: {fileID: 2800000, guid: 2c2ea7af7fb616b4d99aaed7ea552ff1, type: 3}
+  - prompt: plump white chicken with bright red comb and yellow beak, standing
+    promptKey: 7c4fcb7c18e35001907b6ea37710a1dd54976a6cfbc63b4567fed4828aaa1066
+    texture: {fileID: 2800000, guid: 81fac5853145d6f4095b466395ad52c5, type: 3}
+  - prompt: majestic green dragon with large spread leather wings and long tail
+    promptKey: 7d2ca7c3fa9c82aaecf250e61e30804d53b2e399222fb69126873eb91d5cb2a1
+    texture: {fileID: 2800000, guid: 03568eec4585b5248b6b5766ad6494f8, type: 3}
+  - prompt: fierce gray shark with sharp teeth and dorsal fin, swimming, side view
+    promptKey: 855eb3a3450a5db1b1cbb339ae0ffaf15e64d540704e16b95a71e3d2e92d2b0e
+    texture: {fileID: 2800000, guid: 9a7dd6936d79d7949bfdf90889136505, type: 3}
+  - prompt: small wooden rowboat with oars floating on water, side view
+    promptKey: 88c83f74b39c4ca43110f461c9987d1a877bde0bacacf43fa05fcc308dd70dd1
+    texture: {fileID: 2800000, guid: cf636da80a391e34280b8edc7c5ee6b2, type: 3}
+  - prompt: shiny chrome humanoid robot with glowing blue eyes, standing upright,
+      front view
+    promptKey: aa59855e11167ff9f5858fc84b6dedb00ed065b57cdbc63794569747791f9090
+    texture: {fileID: 2800000, guid: dd756c8cede275d42945ee11a9f6ba38, type: 3}
+  - prompt: ornate metal bird cage with thin vertical bars and domed top
+    promptKey: aefc88026584b767179d6bbfc8e7aac7a3bd6eb40497667c9db4eefa2b86ece9
+    texture: {fileID: 2800000, guid: f911c88a5d7743e45b69386ca34b34e5, type: 3}
+  - prompt: rustic wooden arch bridge with rope railings over water
+    promptKey: b1b5fb1efa0177f03f741909411fc8655b331b9954ae76a90a2967d7d8b976b5
+    texture: {fileID: 2800000, guid: caf6826271741de4cbe527b74dd3a83c, type: 3}
+  - prompt: vivid red octopus with eight curling suction-cup tentacles, front view
+    promptKey: b207ccff12f4a445ff6f8a5dd945eefe9c33cabd7c69546708bcfc7fa382b97b
+    texture: {fileID: 2800000, guid: 80c8f10df1a0d5b419f75ccfec08b973, type: 3}
+  - prompt: large brown grizzly bear with thick fur, standing on hind legs, front
+      view
+    promptKey: ba629fd1d87ef31654774f640cff62640828aed1ab1af4bbaac0840841bee6eb
+    texture: {fileID: 2800000, guid: 79c9d03729afa6b4eae76b8bcffb9311, type: 3}
+  - prompt: large green crocodile with rough scaly skin and open toothy jaws, side
+      view
+    promptKey: c31212a74657931ae001b163349fdba257619ef867e40a3c24832bb97fc221e7
+    texture: {fileID: 2800000, guid: f530acc5500b1f448a748a6e037e80f6, type: 3}
+  - prompt: small bright yellow canary bird with orange beak, perched, side view
+    promptKey: c8b2d1aeaa14f65215be97550222dcf30ca3e4f26bd84e1af85f63cc138fccda
+    texture: {fileID: 2800000, guid: be646e819ccfced479b7c4b96b5e2325, type: 3}
+  - prompt: tall gray stone medieval castle with multiple towers and battlements
+    promptKey: eb8435c526ffb81adc70e8dc394d3f2bc364fdec7a37fa5f4a7c243eb67b6012
+    texture: {fileID: 2800000, guid: 07d570afa2bb2814e881dd075b639234, type: 3}
+  - prompt: small yellow and black striped bumble bee with translucent wings, flying
+    promptKey: f3e2006f40644b7bb5c22148143366fb91fedd9161b5e60585a7f81b48e39aab
+    texture: {fileID: 2800000, guid: 489fc62036b6eee45813d425a210fe23, type: 3}
+  - prompt: warm glowing candle with bright orange flame on a brass holder
+    promptKey: ff6aa6f00189443637c7de067d9ea563d326c9694abbbe08951e1ca8cafdf6a4
+    texture: {fileID: 2800000, guid: 6b1a10bb2d299904f8631f42d87cbf23, type: 3}

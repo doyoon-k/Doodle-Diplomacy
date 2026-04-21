@@ -12619,6 +12619,7 @@ MonoBehaviour:
   subtitleDisplay: {fileID: 1859998227}
   endingController: {fileID: 1478619580}
   titleScreenController: {fileID: 475623041}
+  ingameTextTable: {fileID: 0}
   introSequence: {fileID: 11400000, guid: ae633883f5568ff4abfae424c9d503a3, type: 2}
   exitDrawingKey: 27
   exitInterpreterKey: 27
@@ -12752,12 +12753,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.AI.AIPipelineBridge
   sdSettings: {fileID: 11400000, guid: f4f329f6c6584f6fb4d74f3cfa77b1e2, type: 2}
-  sdModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
+  sdModelProfile: {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
   objectPromptA: studio photo of a single dog, centered, isolated, plain background,
     simple lighting
   objectPromptB: studio photo of a single lantern, centered, isolated, plain background,
     simple lighting
   sdNegativePrompt: 
+  usePreGeneratedCatalog: 1
+  preGeneratedCatalog: {fileID: 11400000, guid: 2e48d65f49517b542a06834084186a28, type: 2}
   previewDialoguePipeline: {fileID: 11400000, guid: 1b6f09a5c4e54ee4a8574fc5d1a8331d, type: 2}
   judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
   telepathyPipeline: {fileID: 11400000, guid: d6a1fbcfc287e004c8d88d504212d82e, type: 2}
@@ -12776,6 +12779,7 @@ MonoBehaviour:
   alienPersonalityProfiles:
   - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
   alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
+  ingameTextTable: {fileID: 0}
   telepathyCorruptedLineRatio: 0
   telepathyCorruptionStrength: 0
   telepathyMinCorruptedLines: 0

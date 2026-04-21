@@ -20,7 +20,7 @@ MonoBehaviour:
     stepKind: 1
     llmProfile: {fileID: 11400000, guid: a8c7d2e1f3b45940b2e91d7a5c0f38b9, type: 2}
     userPromptTemplate: 'Describe everything visible in this drawing. What is happening?
-      What are the figures doing? What emotions or actions are visible? Write vividly.
+      What are the figures doing? What actions or interactions are visible? Write vividly.
 
       ---
 
@@ -69,8 +69,8 @@ MonoBehaviour:
     outputNodePosition: {x: 940, y: -37}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 633, y: 149, z: 0}
-    viewScale: {x: 0.7561437, y: 0.7561437, z: 1}
+    viewPosition: {x: 626, y: 127, z: 0}
+    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 404, y: -37}

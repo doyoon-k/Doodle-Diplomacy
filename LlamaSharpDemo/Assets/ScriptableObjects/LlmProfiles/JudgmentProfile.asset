@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: JudgmentProfile
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
   format: '{"type":"object","properties":{"satisfaction":{"type":"string","enum":["very_dissatisfied","dissatisfied","neutral","satisfied","very_satisfied"]},"scene_reading":{"type":"string"},"judgment_reason":{"type":"string"}},"required":["satisfaction","scene_reading","judgment_reason"],"additionalProperties":false}'
   stream: 0
-  keepAlive: 
+  keepAlive: 0
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1
   systemPromptTemplate: 'You are an alien defined by this archetype:
@@ -59,15 +59,15 @@ MonoBehaviour:
 
     Archetype excerpt: Values
     conquest, dominance, and subjugation of others. Input: scene=a large figure looming
-    over a kneeling figure, relations=clear submission posture, mood=tense and hierarchical,
-    object_a=visible, object_b=visible Output: {"satisfaction":"very_satisfied","scene_reading":"A
+    over a kneeling figure, relations=clear submission posture, object_a=visible,
+    object_b=visible Output: {"satisfaction":"very_satisfied","scene_reading":"A
     dominant figure receiving clear submission directly embodies conquest.","judgment_reason":"Both
     objects present and posture unambiguously shows subjugation matching dominance
     values."}
 
     Archetype excerpt: Values collective harmony, shared labor, and
-    cooperation. Input: scene=a single figure sitting quietly at a desk, mood=isolated
-    and focused, object_a=visible, object_b=missing Output: {"satisfaction":"dissatisfied","scene_reading":"A
+    cooperation. Input: scene=a single figure sitting quietly at a desk, object_a=visible,
+    object_b=missing Output: {"satisfaction":"dissatisfied","scene_reading":"A
     solitary figure with no cooperation and one missing object does not serve this
     delegation.","judgment_reason":"Isolation contradicts collective values and Object
     B is absent showing the prompt was not fully represented."}
@@ -129,5 +129,5 @@ MonoBehaviour:
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
     contextSize: 2048
-    gpuLayerCount: 999
+    gpuLayerCount: 16
     threads: 12

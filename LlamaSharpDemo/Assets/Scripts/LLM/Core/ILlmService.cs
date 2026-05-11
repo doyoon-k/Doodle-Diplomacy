@@ -23,33 +23,33 @@ public interface ILlmService
     /// Returns a LLamaSharp executor for the given profile.
     /// Implementations may cache and reuse executors.
     /// </summary>
-    ILLamaExecutor GetExecutor(LlmGenerationProfile settings);
+    ILLamaExecutor GetExecutor(BaseLlmGenerationProfile settings);
 
     IEnumerator GenerateCompletion(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         Action<string> onResponse);
 
     IEnumerator GenerateCompletionWithState(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         PipelineState state,
         Action<string> onResponse);
 
     IEnumerator GenerateCompletionWithImage(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         PipelineState state,
         Texture2D image,
         Action<string> onResponse);
 
     IEnumerator ChatCompletion(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         ChatMessage[] messages,
         Action<string> onResponse);
 
     IEnumerator Embed(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string[] inputs,
         Action<float[][]> onEmbeddings);
 }
@@ -74,20 +74,22 @@ public static class LlamaSharpInterop
         "<|im_start|>system"
     };
 
-    public static string ResolveModelPath(LlmGenerationProfile settings)
+    public static string ResolveModelPath(BaseLlmGenerationProfile settings)
     {
-        if (settings == null || string.IsNullOrWhiteSpace(settings.model))
+        if (settings is not LlmGenerationProfile localSettings ||
+            string.IsNullOrWhiteSpace(localSettings.model))
         {
             return null;
         }
 
-        string candidate = settings.model.Trim();
+        string candidate = localSettings.model.Trim();
         if (Path.IsPathRooted(candidate))
         {
             return candidate;
         }
 
-        if (settings.runtimeParams != null && settings.runtimeParams.modelPathRelativeToStreamingAssets)
+        if (localSettings.runtimeParams != null &&
+            localSettings.runtimeParams.modelPathRelativeToStreamingAssets)
         {
             return Path.Combine(Application.streamingAssetsPath, candidate);
         }
@@ -95,11 +97,11 @@ public static class LlamaSharpInterop
         return Path.GetFullPath(candidate);
     }
 
-    public static ModelParams CreateModelParams(LlmGenerationProfile settings, string resolvedModelPath)
+    public static ModelParams CreateModelParams(BaseLlmGenerationProfile settings, string resolvedModelPath)
     {
-        if (settings == null)
+        if (settings is not LlmGenerationProfile localSettings)
         {
-            throw new ArgumentNullException(nameof(settings));
+            throw new InvalidOperationException("LLamaSharp interop requires a local LlmGenerationProfile.");
         }
 
         if (string.IsNullOrWhiteSpace(resolvedModelPath))
@@ -107,7 +109,7 @@ public static class LlamaSharpInterop
             throw new ArgumentException("Resolved model path is required.", nameof(resolvedModelPath));
         }
 
-        var runtime = settings.runtimeParams ?? new LlmGenerationProfile.RuntimeParams();
+        var runtime = localSettings.runtimeParams ?? new LlmGenerationProfile.RuntimeParams();
         var modelParams = new ModelParams(resolvedModelPath)
         {
             ContextSize = (uint)Mathf.Max(128, runtime.contextSize),
@@ -138,9 +140,11 @@ public static class LlamaSharpInterop
         return Math.Max(1, Math.Min(AutoBatchThreadCap, threadCount));
     }
 
-    public static MtmdContextParams CreateMtmdContextParams(LlmGenerationProfile settings)
+    public static MtmdContextParams CreateMtmdContextParams(BaseLlmGenerationProfile settings)
     {
-        var runtime = settings?.runtimeParams ?? new LlmGenerationProfile.RuntimeParams();
+        LlmGenerationProfile.RuntimeParams runtime = settings is LlmGenerationProfile localSettings
+            ? localSettings.runtimeParams ?? new LlmGenerationProfile.RuntimeParams()
+            : new LlmGenerationProfile.RuntimeParams();
         return new MtmdContextParams
         {
             NThreads = ResolveThreadCount(runtime.threads),
@@ -151,7 +155,7 @@ public static class LlamaSharpInterop
         };
     }
 
-    public static string ResolveVisionMarker(LlmGenerationProfile settings = null)
+    public static string ResolveVisionMarker(BaseLlmGenerationProfile settings = null)
     {
         if (UsesQwenChatTemplate(settings))
         {
@@ -174,7 +178,7 @@ public static class LlamaSharpInterop
         return FallbackVisionMarker;
     }
 
-    public static InferenceParams CreateInferenceParams(LlmGenerationProfile settings)
+    public static InferenceParams CreateInferenceParams(BaseLlmGenerationProfile settings)
     {
         var source = settings?.modelParams ?? new LlmGenerationProfile.ModelParams();
         Grammar grammar = null;
@@ -219,7 +223,7 @@ public static class LlamaSharpInterop
         };
     }
 
-    public static string RenderSystemPrompt(LlmGenerationProfile settings, PipelineState state)
+    public static string RenderSystemPrompt(BaseLlmGenerationProfile settings, PipelineState state)
     {
         if (settings == null)
         {
@@ -231,7 +235,7 @@ public static class LlamaSharpInterop
     }
 
     public static string BuildUserPrompt(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         bool requiresJson,
         string systemPrompt = null,
@@ -266,7 +270,15 @@ public static class LlamaSharpInterop
         return builder.ToString();
     }
 
-    public static string SanitizeCompletion(string completion, LlmGenerationProfile settings)
+    public static string BuildUserPromptContent(
+        BaseLlmGenerationProfile settings,
+        string userPrompt,
+        bool requiresJson)
+    {
+        return BuildUserContent(settings, userPrompt, requiresJson);
+    }
+
+    public static string SanitizeCompletion(string completion, BaseLlmGenerationProfile settings)
     {
         if (string.IsNullOrWhiteSpace(completion))
         {
@@ -300,18 +312,28 @@ public static class LlamaSharpInterop
         return sanitized.Trim();
     }
 
-    public static bool UsesQwenChatTemplate(LlmGenerationProfile settings)
+    public static bool UsesQwenChatTemplate(BaseLlmGenerationProfile settings)
     {
         if (settings == null)
         {
             return false;
         }
 
-        return ContainsIgnoreCase(settings.model, "qwen") ||
-               ContainsIgnoreCase(settings.visionProjectorModel, "qwen");
+        if (settings is LlmGenerationProfile localSettings)
+        {
+            return ContainsIgnoreCase(localSettings.model, "qwen") ||
+                   ContainsIgnoreCase(localSettings.visionProjectorModel, "qwen");
+        }
+
+        if (settings is CloudGenerationProfile cloudSettings)
+        {
+            return ContainsIgnoreCase(cloudSettings.modelId, "qwen");
+        }
+
+        return false;
     }
 
-    private static bool RequiresJsonSchema(LlmGenerationProfile settings)
+    private static bool RequiresJsonSchema(BaseLlmGenerationProfile settings)
     {
         return settings != null && !string.IsNullOrWhiteSpace(settings.format);
     }
@@ -327,7 +349,7 @@ public static class LlamaSharpInterop
     }
 
     private static string BuildUserContent(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         bool requiresJson)
     {
@@ -360,7 +382,7 @@ public static class LlamaSharpInterop
     }
 
     private static string BuildQwenPrompt(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userContent,
         string systemPrompt,
         bool includeVisionMarker)
@@ -483,7 +505,7 @@ public static class LlamaSharpInterop
         onResponse?.Invoke(inferenceTask.Result);
     }
 
-    private static bool TryGetJsonGrammar(LlmGenerationProfile settings, out Grammar grammar)
+    private static bool TryGetJsonGrammar(BaseLlmGenerationProfile settings, out Grammar grammar)
     {
         grammar = null;
         string schema = settings?.format;
@@ -1105,3 +1127,4 @@ public static class LlamaSharpInterop
         }
     }
 }
+

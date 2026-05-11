@@ -1,61 +1,70 @@
 # LLM Pipeline QuickStart
 
-This guide gets the package running in a fresh Unity project quickly.
+This guide gets the package running quickly with either local GGUF, cloud APIs, or a mixed pipeline.
 
-For package intent, feature map, and demo explanation, read `PackageOverview.md` first.
-For graph authoring workflow, read `PipelineEditorGuide.md`.
-For full scene setup + LlmGenerationProfile details, read `Tutorial.html`.
-For a minimal multimodal example, see `VisionSampleGuide.md`.
+Read `PackageOverview.md` first for architecture and scope.
 
 ## 1) Import Package
 
-1. Import the provided `.unitypackage`.
-2. Wait for compilation to finish.
+1. Import the `.unitypackage`.
+2. Wait for script compilation.
 
-## 2) Open Setup Wizard
+## 2) Decide Your Inference Mode
+
+1. Local-only: all steps use `LlmGenerationProfile`
+2. Cloud-only: all steps use `CloudGenerationProfile`
+3. Mixed: some steps local, some cloud
+
+## 3) Local Setup (only if you use local steps)
 
 1. Open `Tools > LLM Pipeline > Setup Wizard`.
-2. Click `Use Recommended` to auto-pick based on current machine.
-3. You can also select backend manually:
-   - `CPU` for maximum compatibility
-   - `CUDA12` for NVIDIA GPU acceleration
-   - `Vulkan` for Vulkan-capable systems
-   - `Metal` for macOS (mapped to CPU backend package with Metal acceleration support)
-4. If `NuGet` menu is missing, click `Install NuGetForUnity` and wait for package import/compile.
-5. Click `Install/Update Dependencies`.
-6. Click `Apply Backend Configuration`.
+2. Click `Use Recommended`.
+3. Click `Install/Update Dependencies`.
+4. Click `Apply Backend Configuration`.
+5. Put `.gguf` model files under `Assets/StreamingAssets/Models/`.
+6. Click `Apply Model To All Local Profiles`.
+7. Click `Run Quick Validation`.
 
-## 3) Add Model (GGUF)
+## 4) Cloud Setup (only if you use cloud steps)
 
-Use one of these:
+1. Create `CloudGenerationProfile` assets from:
+   - `Create > LLM > Cloud Generation Profile`
+2. Choose `provider` and `modelId`.
+3. Set API key through environment variable (recommended):
+   - OpenAI: `OPENAI_API_KEY`
+   - Anthropic: `ANTHROPIC_API_KEY`
+   - Gemini: `GEMINI_API_KEY`
+   - DeepSeek: `DEEPSEEK_API_KEY`
+   - Kimi: `MOONSHOT_API_KEY`
+4. Optional editor-only override:
+   - Create `CloudCredentialOverridesAsset` under an `Editor` folder
+   - Keep it out of source control and out of builds
 
-1. Copy model manually to:
-   - `Assets/StreamingAssets/Models/<your-model>.gguf`
-2. Or use Wizard download section to fetch from Hugging Face directly.
-
-## 4) Apply Model to Profiles
-
-1. In Setup Wizard, choose a model from `StreamingAssets Model`.
-2. Click `Apply Model To All Profiles`.
-
-## 5) Validate
-
-1. Click `Validate Setup`.
-2. Ensure no duplicate native plugin errors are shown.
-
-## 6) Run Sample
-
-1. Open `Assets/Scenes/SampleScene.unity`.
-2. Press Play and execute your demo flow.
-
-## 7) Edit Pipeline (Optional)
+## 5) Assign Profiles Per Pipeline Step
 
 1. Open `Window > LLM > Prompt Pipeline Editor`.
-2. Select `Assets/ScriptableObjects/Pipeline/CharacterItemUsePipeline.asset`.
-3. Click `Run` to simulate with test state values.
-4. Save changes and test in Play mode.
+2. Select your `PromptPipelineAsset`.
+3. For each step, assign either:
+   - local `LlmGenerationProfile`, or
+   - cloud `CloudGenerationProfile`
 
-## First-Run Note
+No migration is required for existing local profile assets.
 
-The first request can be slower due to native/model warm-up.  
-`RuntimeLlamaSharpService` preloads on `Awake` to reduce this delay.
+## 6) Run
+
+1. Open your scene.
+2. Press Play.
+3. The runtime routes each step automatically:
+   - local profile -> local LLamaSharp service
+   - cloud profile -> cloud direct API service
+
+## 7) Security Notes
+
+1. Cloud v1 uses direct client API calls.
+2. Use personal keys only.
+3. Do not hardcode shared or production keys in project assets/scripts.
+
+## First-Run Notes
+
+1. Local first call can be slower due to model warm-up.
+2. If active pipelines are cloud-only, local preload is skipped.

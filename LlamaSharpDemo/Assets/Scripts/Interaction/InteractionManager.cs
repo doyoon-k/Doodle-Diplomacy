@@ -1,6 +1,7 @@
+using System;
 using System.Collections.Generic;
-using DoodleDiplomacy.AI;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Gameplay;
 using UnityEngine;
 
 #if ENABLE_INPUT_SYSTEM
@@ -15,35 +16,29 @@ namespace DoodleDiplomacy.Interaction
 
         [SerializeField] private float raycastDistance = 100f;
         [SerializeField] private LayerMask interactableLayer = Physics.DefaultRaycastLayers;
+        [SerializeField] private UnityEngine.Camera mainCamera;
+        [SerializeField] private GameplayModeHost gameplayModeHost;
 
         private readonly HashSet<InteractableObject> _registered = new();
         private readonly RaycastHit[] _raycastHits = new RaycastHit[32];
-        private UnityEngine.Camera _mainCamera;
         private InteractableObject _hoveredObject;
         private InteractableObject _lastInteractedObject;
         private bool _inputLocked;
+        private IInteractionPolicy _interactionPolicy = new LegacyRoundInteractionPolicy();
 
         public InteractableObject HoveredObject => _hoveredObject;
         public InteractableObject LastInteractedObject => _lastInteractedObject;
+        public GameplayModeHost GameplayModeHost => gameplayModeHost;
 
-        private static readonly HashSet<InteractionType> s_WaitingAllowed = new() { InteractionType.Alien };
-        private static readonly HashSet<InteractionType> s_ObjectPresentedAllowed = new()
+        public void ConfigureGameplayModeHost(GameplayModeHost host)
         {
-            InteractionType.Alien,
-            InteractionType.Tablet,
-            InteractionType.Monitor
-        };
-        private static readonly HashSet<InteractionType> s_DrawingAllowed = new() { InteractionType.Tablet };
-        private static readonly HashSet<InteractionType> s_PreviewReadyAllowed = new()
+            gameplayModeHost = host;
+        }
+
+        public void ConfigureInteractionPolicy(IInteractionPolicy interactionPolicy)
         {
-            InteractionType.Tablet,
-            InteractionType.Alien,
-            InteractionType.Monitor
-        };
-        private static readonly HashSet<InteractionType> s_PreviewAllowed = new() { InteractionType.Terminal };
-        private static readonly HashSet<InteractionType> s_InterpReadyAllowed = new() { InteractionType.Alien, InteractionType.Terminal };
-        private static readonly HashSet<InteractionType> s_InterpreterAllowed = new() { InteractionType.Terminal };
-        private static readonly HashSet<InteractionType> s_NoneAllowed = new();
+            _interactionPolicy = interactionPolicy ?? new LegacyRoundInteractionPolicy();
+        }
 
         private void Awake()
         {
@@ -54,7 +49,6 @@ namespace DoodleDiplomacy.Interaction
             }
 
             Instance = this;
-            _mainCamera = UnityEngine.Camera.main;
         }
 
         private void OnDestroy()
@@ -95,9 +89,11 @@ namespace DoodleDiplomacy.Interaction
                 return;
             }
 
-            if (_mainCamera == null)
+            if (mainCamera == null)
             {
-                _mainCamera = UnityEngine.Camera.main ?? FindFirstObjectByType<UnityEngine.Camera>();
+                Debug.LogError("[InteractionManager] Main camera reference is missing. Assign it in the inspector.", this);
+                ClearHover();
+                return;
             }
 
             if (!IsPointerWithinCameraBounds(mousePos))
@@ -130,12 +126,11 @@ namespace DoodleDiplomacy.Interaction
             }
         }
 
-        public void SetInteractablesForState(GameState state)
+        public void ApplyStatePolicy(InteractionStateContext context)
         {
-            HashSet<InteractionType> allowed = GetAllowedTypes(state);
-            SetInputLocked(allowed.Count == 0);
-            bool roundStartReady = AIPipelineBridge.Instance != null && AIPipelineBridge.Instance.IsRoundStartReady;
-            bool interpreterInspectionCompleted = RoundManager.Instance != null && RoundManager.Instance.HasOpenedInterpreterThisRound;
+            IInteractionPolicy policy = _interactionPolicy ?? new LegacyRoundInteractionPolicy();
+            SetInputLocked(!HasAnyAllowedInteraction(context, policy));
+
             foreach (var obj in _registered)
             {
                 if (obj.interactionType == InteractionType.Adjutant)
@@ -144,21 +139,24 @@ namespace DoodleDiplomacy.Interaction
                     continue;
                 }
 
-                bool isAllowedByState = allowed.Contains(obj.interactionType);
-                bool passesRuntimeGuard = state != GameState.WaitingForRound ||
-                                          obj.interactionType != InteractionType.Alien ||
-                                          roundStartReady;
-                passesRuntimeGuard = passesRuntimeGuard &&
-                                    (state != GameState.InterpreterReady ||
-                                     obj.interactionType != InteractionType.Alien ||
-                                     interpreterInspectionCompleted);
-                obj.SetInteractable(!_inputLocked && isAllowedByState && passesRuntimeGuard);
+                bool isAllowed = policy.IsAllowed(context, obj.interactionType);
+                obj.SetInteractable(!_inputLocked && isAllowed);
             }
+
+        }
+
+        // Backward-compatible entry point while callers migrate to the richer context API.
+        public void SetInteractablesForState(GameState state)
+        {
+            ApplyStatePolicy(new InteractionStateContext(
+                state,
+                roundStartReady: true,
+                interpreterInspectionCompleted: true));
         }
 
         private void UpdateHover(Vector2 screenPos)
         {
-            if (_mainCamera == null)
+            if (mainCamera == null)
             {
                 return;
             }
@@ -179,7 +177,7 @@ namespace DoodleDiplomacy.Interaction
 
         private void TryInteract(Vector2 screenPos)
         {
-            if (_mainCamera == null || _inputLocked)
+            if (mainCamera == null || _inputLocked)
             {
                 return;
             }
@@ -188,6 +186,12 @@ namespace DoodleDiplomacy.Interaction
             {
                 Debug.Log($"[InteractionManager] Click: {interactable.name} ({interactable.interactionType})");
                 _lastInteractedObject = interactable;
+                if (gameplayModeHost != null && gameplayModeHost.TryHandleInteraction(interactable.interactionType, interactable))
+                {
+                    return;
+                }
+
+                // Legacy fallback for scenes that have not been migrated to GameplayModeHost yet.
                 interactable.Interact();
             }
         }
@@ -195,12 +199,12 @@ namespace DoodleDiplomacy.Interaction
         private bool TryGetInteractableFromScreenPosition(Vector2 screenPos, out InteractableObject interactable)
         {
             interactable = null;
-            if (_mainCamera == null)
+            if (mainCamera == null)
             {
                 return false;
             }
 
-            Ray ray = _mainCamera.ScreenPointToRay(screenPos);
+            Ray ray = mainCamera.ScreenPointToRay(screenPos);
             int hitCount = Physics.RaycastNonAlloc(
                 ray,
                 _raycastHits,
@@ -247,8 +251,8 @@ namespace DoodleDiplomacy.Interaction
                 return false;
             }
 
-            Rect pixelRect = _mainCamera != null && _mainCamera.pixelRect.width > 0f && _mainCamera.pixelRect.height > 0f
-                ? _mainCamera.pixelRect
+            Rect pixelRect = mainCamera != null && mainCamera.pixelRect.width > 0f && mainCamera.pixelRect.height > 0f
+                ? mainCamera.pixelRect
                 : new Rect(0f, 0f, Mathf.Max(1f, Screen.width), Mathf.Max(1f, Screen.height));
             if (pixelRect.width <= 0f || pixelRect.height <= 0f)
             {
@@ -261,17 +265,28 @@ namespace DoodleDiplomacy.Interaction
                    screenPos.y <= pixelRect.yMax;
         }
 
-        private static HashSet<InteractionType> GetAllowedTypes(GameState state) => state switch
+        private static bool HasAnyAllowedInteraction(InteractionStateContext context, IInteractionPolicy policy)
         {
-            GameState.WaitingForRound => s_WaitingAllowed,
-            GameState.ObjectPresented => s_ObjectPresentedAllowed,
-            GameState.Drawing => s_DrawingAllowed,
-            GameState.PreviewReady => s_PreviewReadyAllowed,
-            GameState.Preview => s_PreviewAllowed,
-            GameState.InterpreterReady => s_InterpReadyAllowed,
-            GameState.Interpreter => s_InterpreterAllowed,
-            _ => s_NoneAllowed,
-        };
+            if (policy == null)
+            {
+                return false;
+            }
+
+            foreach (InteractionType interactionType in Enum.GetValues(typeof(InteractionType)))
+            {
+                if (interactionType == InteractionType.Adjutant)
+                {
+                    continue;
+                }
+
+                if (policy.IsAllowed(context, interactionType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         private void ClearHover()
         {

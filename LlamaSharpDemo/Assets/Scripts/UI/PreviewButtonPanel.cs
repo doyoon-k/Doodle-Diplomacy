@@ -1,14 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem.UI;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Gameplay;
 
 namespace DoodleDiplomacy.UI
 {
     /// <summary>
     /// Preview 상태에서만 표시되는 수정/제출 버튼 패널.
-    /// RoundManager.OnStateChanged에 연결해서 자동 표시/숨김.
+    /// GameplayModeHost 상태 변경을 구독해서 자동 표시/숨김.
     /// </summary>
     public class PreviewButtonPanel : MonoBehaviour
     {
@@ -16,7 +15,11 @@ namespace DoodleDiplomacy.UI
         [SerializeField] private GameObject panel;
         [SerializeField] private Button submitButton;
         [SerializeField] private Button modifyButton;
+        [SerializeField] private GameplayModeHost gameplayModeHost;
         [SerializeField] private RoundManager roundManager;
+
+        private bool _subscribedToHost;
+        private bool _subscribedToRoundManager;
 
         private void Awake()
         {
@@ -28,7 +31,6 @@ namespace DoodleDiplomacy.UI
                 panelImage.raycastTarget = false;
             }
 
-            EnsureEventSystem();
             submitButton?.onClick.AddListener(OnSubmit);
             modifyButton?.onClick.AddListener(OnModify);
 
@@ -37,11 +39,12 @@ namespace DoodleDiplomacy.UI
 
         private void OnEnable()
         {
-            EnsureEventSystem();
+            SubscribeStateSource();
         }
 
         private void OnDestroy()
         {
+            UnsubscribeStateSource();
             submitButton?.onClick.RemoveListener(OnSubmit);
             modifyButton?.onClick.RemoveListener(OnModify);
         }
@@ -51,38 +54,70 @@ namespace DoodleDiplomacy.UI
         public void OnGameStateChanged(GameState state)
         {
             if (state == GameState.Preview)
+            {
                 Show();
+            }
             else
+            {
                 Hide();
+            }
         }
 
         // ── 내부 ─────────────────────────────────────────────────────────────
 
-        private void Show() => panel?.SetActive(true);
-        private void Hide() => panel?.SetActive(false);
+        private void Show() => GameStateUiHelper.SetVisible(panel, true);
+        private void Hide() => GameStateUiHelper.SetVisible(panel, false);
 
-        private static void EnsureEventSystem()
+        private void SubscribeStateSource()
         {
-            EventSystem eventSystem = Object.FindFirstObjectByType<EventSystem>();
-            if (eventSystem == null)
+            if (_subscribedToHost || _subscribedToRoundManager)
             {
-                var eventSystemObject = new GameObject("EventSystem");
-                eventSystem = eventSystemObject.AddComponent<EventSystem>();
+                return;
             }
 
-            if (eventSystem.GetComponent<InputSystemUIInputModule>() == null)
-                eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+            gameplayModeHost = GameStateUiHelper.ResolveGameplayModeHost(gameplayModeHost);
+            if (gameplayModeHost != null)
+            {
+                gameplayModeHost.StateChanged += OnGameStateChanged;
+                _subscribedToHost = true;
+                OnGameStateChanged(gameplayModeHost.CurrentState);
+                return;
+            }
+
+            roundManager = GameStateUiHelper.ResolveRoundManager(roundManager);
+            if (roundManager != null)
+            {
+                roundManager.OnStateChanged.AddListener(OnGameStateChanged);
+                _subscribedToRoundManager = true;
+                OnGameStateChanged(roundManager.CurrentState);
+            }
+        }
+
+        private void UnsubscribeStateSource()
+        {
+            if (_subscribedToHost && gameplayModeHost != null)
+            {
+                gameplayModeHost.StateChanged -= OnGameStateChanged;
+            }
+
+            if (_subscribedToRoundManager && roundManager != null)
+            {
+                roundManager.OnStateChanged.RemoveListener(OnGameStateChanged);
+            }
+
+            _subscribedToHost = false;
+            _subscribedToRoundManager = false;
         }
 
         private void OnSubmit()
         {
-            if (roundManager == null) roundManager = RoundManager.Instance;
+            roundManager = GameStateUiHelper.ResolveRoundManager(roundManager);
             roundManager?.OnPreviewSubmit();
         }
 
         private void OnModify()
         {
-            if (roundManager == null) roundManager = RoundManager.Instance;
+            roundManager = GameStateUiHelper.ResolveRoundManager(roundManager);
             roundManager?.OnPreviewModify();
         }
     }

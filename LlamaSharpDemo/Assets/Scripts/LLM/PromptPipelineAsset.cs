@@ -149,7 +149,7 @@ public class PromptPipelineAsset : ScriptableObject
     {
         if (step.llmProfile == null)
         {
-            throw new InvalidOperationException($"Step '{step.stepName}' requires LlmGenerationProfile.");
+            throw new InvalidOperationException($"Step '{step.stepName}' requires an LLM profile.");
         }
     }
 
@@ -304,7 +304,7 @@ public class PromptPipelineStep
     public PromptPipelineStepKind stepKind = PromptPipelineStepKind.JsonLlm;
 
     [Header("Shared LLM Settings")]
-    public LlmGenerationProfile llmProfile;
+    public BaseLlmGenerationProfile llmProfile;
 
     [TextArea(4, 12)]
     public string userPromptTemplate;
@@ -380,3 +380,4 @@ public class CustomLinkParameter
     public string key;
     public string value;
 }
+

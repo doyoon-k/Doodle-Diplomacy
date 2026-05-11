@@ -58,16 +58,10 @@ namespace DoodleDiplomacy.Data
         [TextArea(2, 5)] public string introAdjutantLine2 = "They cannot understand our language.\n\nWe must communicate through drawings.";
         [TextArea(2, 5)] public string introAdjutantLine3 = "Press the button in front of the alien to begin negotiations.";
 
-        private static IngameTextTable s_cachedDefault;
-
         public static IngameTextTable LoadDefault()
         {
-            if (s_cachedDefault == null)
-            {
-                s_cachedDefault = Resources.Load<IngameTextTable>("IngameTextTable");
-            }
-
-            return s_cachedDefault;
+            // Runtime systems should receive this asset through inspector wiring.
+            return null;
         }
 
         public string GetMutterText(SatisfactionLevel level)

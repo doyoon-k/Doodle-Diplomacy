@@ -13,6 +13,9 @@ namespace DoodleDiplomacy.Devices
 
         [Header("Output")]
         [SerializeField] private Material crtMaterial;
+        [SerializeField] private UnityEngine.Camera captureCamera;
+        [SerializeField] private Canvas displayCanvas;
+        [SerializeField] private RawImage displayImage;
         [SerializeField] private Vector2Int outputResolution = new(1024, 512);
         [SerializeField] private bool overridePixelResolution = true;
         [SerializeField] private Vector2Int pixelResolution = new(320, 180);
@@ -27,20 +30,11 @@ namespace DoodleDiplomacy.Devices
         [SerializeField, Range(0, 31)] private int captureLayer = 30;
         [SerializeField] private bool updateCapturePoseEachFrame = true;
 
-        private const string TerminalCanvasPath = "TerminalCanvas";
-        private const string ScreenPanelPath = "TerminalCanvas/ScreenPanel";
-        private const string TerminalTextPath = "TerminalCanvas/TerminalText";
-        private const string DisplayCanvasName = "TerminalDisplayCanvas";
-        private const string CaptureCameraName = "TerminalCaptureCamera";
-        private const string DisplayObjectName = "CrtCompositeDisplay";
         private const string PixelResolutionPropertyName = "_PixelResolution";
         private const string PixelateStrengthPropertyName = "_PixelateStrength";
 
-        private RawImage _displayImage;
         private Canvas _sourceCanvas;
-        private Canvas _displayCanvas;
         private Material _displayMaterialInstance;
-        private UnityEngine.Camera _captureCamera;
         private RenderTexture _renderTexture;
         private int _originalMainMask;
         private int _originalCanvasLayer;
@@ -64,7 +58,7 @@ namespace DoodleDiplomacy.Devices
 
         private void LateUpdate()
         {
-            if (!_initialized || !updateCapturePoseEachFrame || _captureCamera == null || sourcePanel == null)
+            if (!_initialized || !updateCapturePoseEachFrame || captureCamera == null || sourcePanel == null)
                 return;
 
             AlignCaptureCameraToPanel();
@@ -81,8 +75,8 @@ namespace DoodleDiplomacy.Devices
 
             if (_renderTexture != null)
             {
-                if (_captureCamera != null && _captureCamera.targetTexture == _renderTexture)
-                    _captureCamera.targetTexture = null;
+                if (captureCamera != null && captureCamera.targetTexture == _renderTexture)
+                    captureCamera.targetTexture = null;
 
                 _renderTexture.Release();
                 Destroy(_renderTexture);
@@ -99,10 +93,8 @@ namespace DoodleDiplomacy.Devices
         [ContextMenu("Setup CRT Composite")]
         public void SetupComposite()
         {
-            AutoAssignReferences();
-            if (sourcePanel == null)
+            if (!ValidateInspectorReferences())
             {
-                Debug.LogWarning("[TerminalCrtCompositeDisplay] ScreenPanel was not found.", this);
                 return;
             }
 
@@ -118,26 +110,61 @@ namespace DoodleDiplomacy.Devices
             _initialized = true;
         }
 
-        private void AutoAssignReferences()
+        private bool ValidateInspectorReferences()
         {
+            bool valid = true;
             if (sourcePanel == null)
             {
-                Transform source = transform.Find(ScreenPanelPath);
-                sourcePanel = source as RectTransform;
+                Debug.LogError("[TerminalCrtCompositeDisplay] Source panel must be assigned in the Inspector.", this);
+                valid = false;
             }
 
             if (sourceText == null)
             {
-                Transform textTransform = transform.Find(TerminalTextPath);
-                if (textTransform != null)
-                    sourceText = textTransform.GetComponent<TMP_Text>();
+                Debug.LogError("[TerminalCrtCompositeDisplay] Source text must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (crtMaterial == null)
+            {
+                Debug.LogError("[TerminalCrtCompositeDisplay] CRT material must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (mainCamera == null)
+            {
+                Debug.LogError("[TerminalCrtCompositeDisplay] Main camera must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (captureCamera == null)
+            {
+                Debug.LogError("[TerminalCrtCompositeDisplay] Capture camera must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (displayCanvas == null)
+            {
+                Debug.LogError("[TerminalCrtCompositeDisplay] Display canvas must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (displayImage == null)
+            {
+                Debug.LogError("[TerminalCrtCompositeDisplay] Display image must be assigned in the Inspector.", this);
+                valid = false;
             }
 
             if (_sourceCanvas == null && sourcePanel != null)
                 _sourceCanvas = sourcePanel.GetComponentInParent<Canvas>();
 
-            if (mainCamera == null)
-                mainCamera = UnityEngine.Camera.main;
+            if (_sourceCanvas == null)
+            {
+                Debug.LogError("[TerminalCrtCompositeDisplay] Source canvas must exist above the source panel.", this);
+                valid = false;
+            }
+
+            return valid;
         }
 
         private void EnsureRenderTexture()
@@ -167,26 +194,14 @@ namespace DoodleDiplomacy.Devices
 
         private void EnsureCaptureCamera()
         {
-            Transform cameraTransform = transform.Find(CaptureCameraName);
-            if (cameraTransform == null)
-            {
-                GameObject cameraObject = new(CaptureCameraName);
-                cameraTransform = cameraObject.transform;
-                cameraTransform.SetParent(transform, false);
-            }
-
-            _captureCamera = cameraTransform.GetComponent<UnityEngine.Camera>();
-            if (_captureCamera == null)
-                _captureCamera = cameraTransform.gameObject.AddComponent<UnityEngine.Camera>();
-
-            _captureCamera.enabled = true;
-            _captureCamera.orthographic = true;
-            _captureCamera.clearFlags = CameraClearFlags.SolidColor;
-            _captureCamera.backgroundColor = Color.clear;
-            _captureCamera.allowHDR = false;
-            _captureCamera.allowMSAA = false;
-            _captureCamera.depth = -100f;
-            _captureCamera.targetTexture = _renderTexture;
+            captureCamera.enabled = true;
+            captureCamera.orthographic = true;
+            captureCamera.clearFlags = CameraClearFlags.SolidColor;
+            captureCamera.backgroundColor = Color.clear;
+            captureCamera.allowHDR = false;
+            captureCamera.allowMSAA = false;
+            captureCamera.depth = -100f;
+            captureCamera.targetTexture = _renderTexture;
         }
 
         private void EnsureDisplayImage()
@@ -200,26 +215,14 @@ namespace DoodleDiplomacy.Devices
                 return;
             }
 
-            Transform displayCanvasTransform = transform.Find(DisplayCanvasName);
-            if (displayCanvasTransform == null)
-            {
-                GameObject canvasObject = new(DisplayCanvasName, typeof(RectTransform), typeof(Canvas));
-                displayCanvasTransform = canvasObject.transform;
-                displayCanvasTransform.SetParent(transform, false);
-            }
-
-            _displayCanvas = displayCanvasTransform.GetComponent<Canvas>();
-            if (_displayCanvas == null)
-                _displayCanvas = displayCanvasTransform.gameObject.AddComponent<Canvas>();
-
-            _displayCanvas.renderMode = RenderMode.WorldSpace;
-            _displayCanvas.worldCamera = null;
-            _displayCanvas.pixelPerfect = false;
-            _displayCanvas.overrideSorting = false;
-            _displayCanvas.additionalShaderChannels = _sourceCanvas.additionalShaderChannels;
+            displayCanvas.renderMode = RenderMode.WorldSpace;
+            displayCanvas.worldCamera = null;
+            displayCanvas.pixelPerfect = false;
+            displayCanvas.overrideSorting = false;
+            displayCanvas.additionalShaderChannels = _sourceCanvas.additionalShaderChannels;
 
             RectTransform sourceCanvasRect = _sourceCanvas.transform as RectTransform;
-            RectTransform displayCanvasRect = (RectTransform)displayCanvasTransform;
+            RectTransform displayCanvasRect = displayCanvas.transform as RectTransform;
             if (sourceCanvasRect != null)
             {
                 displayCanvasRect.anchorMin = sourceCanvasRect.anchorMin;
@@ -232,19 +235,7 @@ namespace DoodleDiplomacy.Devices
                 displayCanvasRect.localScale = sourceCanvasRect.localScale;
             }
 
-            Transform displayTransform = displayCanvasTransform.Find(DisplayObjectName);
-            if (displayTransform == null)
-            {
-                GameObject displayObject = new(DisplayObjectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
-                displayTransform = displayObject.transform;
-                displayTransform.SetParent(displayCanvasTransform, false);
-            }
-
-            _displayImage = displayTransform.GetComponent<RawImage>();
-            if (_displayImage == null)
-                _displayImage = displayTransform.gameObject.AddComponent<RawImage>();
-
-            RectTransform displayRect = (RectTransform)displayTransform;
+            RectTransform displayRect = displayImage.rectTransform;
             displayRect.anchorMin = sourcePanel.anchorMin;
             displayRect.anchorMax = sourcePanel.anchorMax;
             displayRect.pivot = sourcePanel.pivot;
@@ -252,17 +243,17 @@ namespace DoodleDiplomacy.Devices
             displayRect.sizeDelta = sourcePanel.sizeDelta;
             displayRect.localScale = Vector3.one;
             displayRect.localRotation = Quaternion.identity;
-            displayTransform.SetAsLastSibling();
-            displayCanvasTransform.SetAsLastSibling();
+            displayImage.transform.SetAsLastSibling();
+            displayCanvas.transform.SetAsLastSibling();
 
-            _displayImage.texture = _renderTexture;
-            _displayImage.color = Color.white;
-            _displayImage.raycastTarget = false;
+            displayImage.texture = _renderTexture;
+            displayImage.color = Color.white;
+            displayImage.raycastTarget = false;
         }
 
         private void ApplyDisplayMaterial()
         {
-            if (_displayImage == null)
+            if (displayImage == null)
                 return;
 
             if (crtMaterial == null)
@@ -282,7 +273,7 @@ namespace DoodleDiplomacy.Devices
                 };
             }
 
-            _displayImage.material = _displayMaterialInstance;
+            displayImage.material = _displayMaterialInstance;
             ApplyPixelSettings();
         }
 
@@ -317,10 +308,10 @@ namespace DoodleDiplomacy.Devices
 
         private void AlignDisplayImageToPanel()
         {
-            if (_displayImage == null || sourcePanel == null)
+            if (displayImage == null || sourcePanel == null)
                 return;
 
-            RectTransform displayRect = _displayImage.rectTransform;
+            RectTransform displayRect = displayImage.rectTransform;
             displayRect.anchorMin = sourcePanel.anchorMin;
             displayRect.anchorMax = sourcePanel.anchorMax;
             displayRect.pivot = sourcePanel.pivot;
@@ -330,7 +321,7 @@ namespace DoodleDiplomacy.Devices
 
         private void AlignCaptureCameraToPanel()
         {
-            if (_captureCamera == null || sourcePanel == null)
+            if (captureCamera == null || sourcePanel == null)
                 return;
 
             sourcePanel.GetWorldCorners(_panelCorners);
@@ -340,8 +331,8 @@ namespace DoodleDiplomacy.Devices
             Vector3 up = sourcePanel.up.normalized;
             float distance = Mathf.Max(0.05f, captureDistance);
 
-            _captureCamera.transform.position = center - forward * distance;
-            _captureCamera.transform.rotation = Quaternion.LookRotation(forward, up);
+            captureCamera.transform.position = center - forward * distance;
+            captureCamera.transform.rotation = Quaternion.LookRotation(forward, up);
 
             float width = Vector3.Distance(_panelCorners[0], _panelCorners[3]);
             float height = Vector3.Distance(_panelCorners[0], _panelCorners[1]);
@@ -350,10 +341,10 @@ namespace DoodleDiplomacy.Devices
 
             float paddedHeight = height * Mathf.Max(1f, fitPadding);
             float paddedWidth = width * Mathf.Max(1f, fitPadding);
-            _captureCamera.orthographicSize = paddedHeight * 0.5f;
-            _captureCamera.aspect = paddedWidth / paddedHeight;
-            _captureCamera.nearClipPlane = 0.01f;
-            _captureCamera.farClipPlane = distance + 2f;
+            captureCamera.orthographicSize = paddedHeight * 0.5f;
+            captureCamera.aspect = paddedWidth / paddedHeight;
+            captureCamera.nearClipPlane = 0.01f;
+            captureCamera.farClipPlane = distance + 2f;
         }
 
         private void CacheOriginalLayers()
@@ -361,8 +352,8 @@ namespace DoodleDiplomacy.Devices
             if (_sourceCanvas != null)
                 _originalCanvasLayer = _sourceCanvas.gameObject.layer;
 
-            if (_displayCanvas != null)
-                _originalDisplayCanvasLayer = _displayCanvas.gameObject.layer;
+            if (displayCanvas != null)
+                _originalDisplayCanvasLayer = displayCanvas.gameObject.layer;
 
             if (sourcePanel != null)
                 _originalPanelLayer = sourcePanel.gameObject.layer;
@@ -381,17 +372,14 @@ namespace DoodleDiplomacy.Devices
             if (sourceText != null)
                 sourceText.gameObject.layer = captureLayer;
 
-            if (_displayCanvas != null)
-                _displayCanvas.gameObject.layer = gameObject.layer;
+            if (displayCanvas != null)
+                displayCanvas.gameObject.layer = gameObject.layer;
 
-            if (_displayImage != null)
-                _displayImage.gameObject.layer = gameObject.layer;
+            if (displayImage != null)
+                displayImage.gameObject.layer = gameObject.layer;
 
-            if (_captureCamera != null)
-                _captureCamera.cullingMask = 1 << captureLayer;
-
-            if (mainCamera == null)
-                mainCamera = UnityEngine.Camera.main;
+            if (captureCamera != null)
+                captureCamera.cullingMask = 1 << captureLayer;
 
             if (mainCamera != null)
             {
@@ -416,8 +404,8 @@ namespace DoodleDiplomacy.Devices
             if (sourceText != null)
                 sourceText.gameObject.layer = _originalTextLayer;
 
-            if (_displayCanvas != null)
-                _displayCanvas.gameObject.layer = _originalDisplayCanvasLayer;
+            if (displayCanvas != null)
+                displayCanvas.gameObject.layer = _originalDisplayCanvasLayer;
 
             if (_mainMaskOverridden && mainCamera != null)
             {

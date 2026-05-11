@@ -2,6 +2,7 @@ using DoodleDiplomacy.AI;
 using DoodleDiplomacy.Data;
 using UnityEngine;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -127,12 +128,6 @@ namespace DoodleDiplomacy.Core
 
         private void ResolveReferences()
         {
-            pipelineBridge ??= AIPipelineBridge.Instance;
-            if (pipelineBridge == null)
-            {
-                pipelineBridge = FindFirstObjectByType<AIPipelineBridge>();
-            }
-
             if (wordPairPool == null && pipelineBridge != null)
             {
                 wordPairPool = pipelineBridge.CurrentWordPairPool;
@@ -338,3 +333,4 @@ namespace DoodleDiplomacy.Core
 #endif
     }
 }
+#endif

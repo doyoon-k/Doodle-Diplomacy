@@ -2073,7 +2073,6 @@ GameObject:
   - component: {fileID: 979744349}
   - component: {fileID: 979744348}
   - component: {fileID: 979744353}
-  - component: {fileID: 979744354}
   m_Layer: 0
   m_Name: DrawingBoard
   m_TagString: Untagged
@@ -2107,19 +2106,12 @@ MonoBehaviour:
   brushRadius: 12
   minBrushRadius: 1
   maxBrushRadius: 24
-  scrollRadiusStep: 1
   blockPointerWhenOverUi: 1
   showBrushPreview: 1
   previewSurfaceOffset: 0.01
-  previewLineWidth: 0.01
   previewSegments: 48
   previewBrushColor: {r: 0, g: 0, b: 0, a: 0.9}
   previewEraserColor: {r: 0.15, g: 0.55, b: 1, a: 0.95}
-  sketchGuideStrokeColor: {r: 0, g: 0, b: 0, a: 1}
-  sketchGuideOverlayColor: {r: 0.05, g: 0.8, b: 1, a: 0.85}
-  sketchGuideRegionPadding: 24
-  applyFullSketchResult: 1
-  sketchResultApplyRowsPerFrame: 32
   maxHistoryEntries: 24
   enableStickerLayers: 1
   stickerSurfaceOffset: 0.02
@@ -2242,37 +2234,6 @@ MonoBehaviour:
   analysisGoal: Describe what you see from the image.
   logExports: 1
   logPipelineCompletion: 1
---- !u!114 &979744354
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 979744347}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7fa068955080ee4683b9415c3eff724, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DrawingSketchGuideGenerator
-  drawingBoard: {fileID: 979744348}
-  stableDiffusionSettings: {fileID: 11400000, guid: f4f329f6c6584f6fb4d74f3cfa77b1e2, type: 2}
-  selectedModelProfile: {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
-  prompt: a clean illustrated object
-  promptTemplate: Clean, Photo realistic
-  negativePrompt: 
-  controlStrength: 0.75
-  steps: 20
-  cfgScale: 7
-  seed: 42
-  randomizeSeed: 1
-  regionPadding: 24
-  logGenerationSummary: 1
-  selectedStylePresetIndex: 0
-  extractTransparentStickers: 1
-  backgroundRemovalTolerance: 0.18
-  stickerTrimPadding: 4
-  stickerFilterMode: 1
-  maxStoredStickerCandidates: 24
 --- !u!1 &989394716
 GameObject:
   m_ObjectHideFlags: 0
@@ -4271,7 +4232,6 @@ GameObject:
   - component: {fileID: 1746886262}
   - component: {fileID: 1746886265}
   - component: {fileID: 1746886264}
-  - component: {fileID: 1746886263}
   m_Layer: 0
   m_Name: AnalysisPanel
   m_TagString: Untagged
@@ -4302,27 +4262,6 @@ RectTransform:
   m_AnchoredPosition: {x: 20, y: -355}
   m_SizeDelta: {x: 430, y: 707.8328}
   m_Pivot: {x: 0, y: 1}
---- !u!114 &1746886263
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1746886261}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a987cd94596983a44b8de15685aff2fa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DrawingAnalysisPanelController
-  exportBridge: {fileID: 979744353}
-  analyzeButton: {fileID: 2139670815}
-  analyzeButtonText: {fileID: 1171569060}
-  analyzeButtonImage: {fileID: 2139670816}
-  analysisStatusText: {fileID: 2016593488}
-  analysisResultText: {fileID: 743626381}
-  buttonReadyColor: {r: 0.18, g: 0.46, b: 0.78, a: 1}
-  buttonBusyColor: {r: 0.72, g: 0.52, b: 0.16, a: 1}
-  buttonDisabledColor: {r: 0.18, g: 0.2, b: 0.24, a: 0.8}
 --- !u!114 &1746886264
 MonoBehaviour:
   m_ObjectHideFlags: 0

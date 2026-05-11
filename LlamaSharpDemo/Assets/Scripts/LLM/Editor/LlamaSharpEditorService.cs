@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -47,15 +47,14 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         _serviceLifetimeCts = new CancellationTokenSource();
     }
 
-    public ILLamaExecutor GetExecutor(LlmGenerationProfile settings)
+    public ILLamaExecutor GetExecutor(BaseLlmGenerationProfile settings)
     {
-        if (settings == null)
+        if (!TryGetLocalProfile(settings, out LlmGenerationProfile localSettings))
         {
-            Debug.LogError("[LlamaSharpEditorService] LlmGenerationProfile is missing.");
             return null;
         }
 
-        string resolvedModelPath = LlamaSharpInterop.ResolveModelPath(settings);
+        string resolvedModelPath = LlamaSharpInterop.ResolveModelPath(localSettings);
         if (string.IsNullOrWhiteSpace(resolvedModelPath))
         {
             Debug.LogError("[LlamaSharpEditorService] Model path is empty.");
@@ -68,14 +67,14 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
             return null;
         }
 
-        var runtime = settings.runtimeParams ?? new LlmGenerationProfile.RuntimeParams();
+        var runtime = localSettings.runtimeParams ?? new LlmGenerationProfile.RuntimeParams();
         bool mustReload = _executor == null ||
                           !string.Equals(_loadedModelPath, resolvedModelPath, StringComparison.OrdinalIgnoreCase) ||
                           _loadedContextSize != runtime.contextSize ||
                           _loadedGpuLayerCount != runtime.gpuLayerCount ||
                           _loadedThreads != runtime.threads;
 
-        if (mustReload && !TryLoadExecutor(settings, resolvedModelPath))
+        if (mustReload && !TryLoadExecutor(localSettings, resolvedModelPath))
         {
             return null;
         }
@@ -84,7 +83,7 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
     }
 
     public IEnumerator GenerateCompletion(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         Action<string> onResponse)
     {
@@ -92,7 +91,7 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
     }
 
     public IEnumerator GenerateCompletionWithState(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         PipelineState state,
         Action<string> onResponse)
@@ -143,7 +142,7 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
     }
 
     public IEnumerator GenerateCompletionWithImage(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPrompt,
         PipelineState state,
         Texture2D image,
@@ -168,7 +167,13 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
             yield break;
         }
 
-        if (!TryEnsureVisionWeightsLoaded(settings, out string visionError))
+        if (!TryGetLocalProfile(settings, out LlmGenerationProfile localSettings))
+        {
+            onResponse?.Invoke(string.Empty);
+            yield break;
+        }
+
+        if (!TryEnsureVisionWeightsLoaded(localSettings, out string visionError))
         {
             Debug.LogError($"[LlamaSharpEditorService] {visionError}");
             onResponse?.Invoke(string.Empty);
@@ -195,10 +200,10 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
             Debug.Log($"[LlamaSharpEditorService] System Prompt:\n{systemPrompt}\nUser Prompt:\n{prompt}\nImage: {image.name} ({image.width}x{image.height})");
         }
 
-        string resolvedModelPath = LlamaSharpInterop.ResolveModelPath(settings);
+        string resolvedModelPath = LlamaSharpInterop.ResolveModelPath(localSettings);
         CancellationTokenSource timeoutCts = CreateOperationCancellationSource(_inferenceTimeoutSeconds);
         Task<string> inferenceTask = Task.Run(
-            () => InferWithVision(settings, resolvedModelPath, prompt, pngBytes, timeoutCts.Token),
+            () => InferWithVision(localSettings, resolvedModelPath, prompt, pngBytes, timeoutCts.Token),
             timeoutCts.Token);
         RegisterActiveInference(inferenceTask, timeoutCts);
 
@@ -211,7 +216,7 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
     }
 
     public IEnumerator ChatCompletion(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         ChatMessage[] messages,
         Action<string> onResponse)
     {
@@ -220,7 +225,7 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
     }
 
     public IEnumerator Embed(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string[] inputs,
         Action<float[][]> onEmbeddings)
     {
@@ -287,14 +292,14 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         error = null;
         if (settings == null)
         {
-            error = "Vision inference requires an LlmGenerationProfile.";
+            error = "Vision inference requires a local LlmGenerationProfile.";
             return false;
         }
 
         string resolvedVisionPath = settings.ResolveVisionProjectorPath();
         if (string.IsNullOrWhiteSpace(resolvedVisionPath))
         {
-            error = "Vision inference requires 'visionProjectorModel' on the LlmGenerationProfile.";
+            error = "Vision inference requires 'visionProjectorModel' on LlmGenerationProfile.";
             return false;
         }
 
@@ -307,6 +312,14 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         if (_weights == null)
         {
             error = "Text model weights are not loaded.";
+            return false;
+        }
+
+        string resolvedModelPath = LlamaSharpInterop.ResolveModelPath(settings);
+        if (!string.IsNullOrWhiteSpace(resolvedModelPath) &&
+            string.Equals(Path.GetFullPath(resolvedModelPath), Path.GetFullPath(resolvedVisionPath), StringComparison.OrdinalIgnoreCase))
+        {
+            error = $"Vision projector must be a separate mmproj file, but it points to the text model path: {resolvedVisionPath}";
             return false;
         }
 
@@ -334,7 +347,7 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         }
         catch (Exception ex)
         {
-            error = $"Failed to load vision projector '{resolvedVisionPath}': {ex.Message}";
+            error = $"Failed to load vision projector '{resolvedVisionPath}' for model '{resolvedModelPath}': {ex.Message}";
             _mtmdWeights = null;
             _loadedVisionProjectorPath = null;
             return false;
@@ -560,6 +573,25 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
         }
     }
 
+    private bool TryGetLocalProfile(BaseLlmGenerationProfile profile, out LlmGenerationProfile localProfile)
+    {
+        if (profile is LlmGenerationProfile local)
+        {
+            localProfile = local;
+            return true;
+        }
+
+        localProfile = null;
+        if (profile == null)
+        {
+            Debug.LogError("[LlamaSharpEditorService] LlmGenerationProfile is missing.");
+            return false;
+        }
+
+        Debug.LogError($"[LlamaSharpEditorService] Unsupported profile type '{profile.GetType().Name}'. This service only handles local LlmGenerationProfile.");
+        return false;
+    }
+
     private void DisposeExecutor()
     {
         if (_executor is IDisposable disposableExecutor)
@@ -624,4 +656,5 @@ public sealed class LlamaSharpEditorService : ILlmService, IDisposable
     }
 }
 #endif
+
 

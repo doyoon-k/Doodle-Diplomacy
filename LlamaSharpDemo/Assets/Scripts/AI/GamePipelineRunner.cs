@@ -6,7 +6,7 @@ using UnityEngine;
 public class GamePipelineRunner : MonoBehaviour
 {
     public static GamePipelineRunner Instance;
-    public RuntimeLlamaSharpService RuntimeService
+    public RoutingLlmService RuntimeService
     {
         get
         {
@@ -16,7 +16,7 @@ public class GamePipelineRunner : MonoBehaviour
     }
 
     [Header("Dependencies")]
-    [SerializeField] private RuntimeLlamaSharpService _runtimeService;
+    [SerializeField] private RoutingLlmService _runtimeService;
 
     private Coroutine _currentRoutine;
 
@@ -53,16 +53,16 @@ public class GamePipelineRunner : MonoBehaviour
     private void EnsureRuntimeService()
     {
         if (_runtimeService == null)
-            _runtimeService = GetComponent<RuntimeLlamaSharpService>();
+            _runtimeService = GetComponent<RoutingLlmService>();
 
         if (_runtimeService == null)
-            _runtimeService = FindFirstObjectByType<RuntimeLlamaSharpService>();
+            _runtimeService = FindFirstObjectByType<RoutingLlmService>();
 
         if (_runtimeService == null)
         {
-            var serviceObject = new GameObject("RuntimeLlamaSharpService");
-            _runtimeService = serviceObject.AddComponent<RuntimeLlamaSharpService>();
-            Debug.LogWarning("[GamePipelineRunner] RuntimeLlamaSharpService was missing. Created a fallback runtime service.");
+            var serviceObject = new GameObject("RoutingLlmService");
+            _runtimeService = serviceObject.AddComponent<RoutingLlmService>();
+            Debug.LogWarning("[GamePipelineRunner] RoutingLlmService was missing. Created a fallback runtime service.");
         }
 
         if (_runtimeService != null && LlmServiceLocator.Current == null)

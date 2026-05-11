@@ -17,6 +17,7 @@ public static class LlmPackageExportTool
     private static readonly string[] CoreRoots =
     {
         "Assets/Scripts/LLM",
+        "Assets/Scripts/AI/RoutingLlmService.cs",
         "Assets/Scripts/AI/RuntimeLlamaSharpService.cs",
         "Assets/Scripts/AI/GamePipelineRunner.cs",
         "Assets/Scripts/AI/AIModels.cs",

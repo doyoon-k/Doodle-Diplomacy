@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using TMPro;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Data;
+using DoodleDiplomacy.Gameplay;
+using DoodleDiplomacy.UI;
 
 namespace DoodleDiplomacy.Ending
 {
@@ -24,7 +26,12 @@ namespace DoodleDiplomacy.Ending
         [Header("Ending Data")]
         [SerializeField] private List<EndingData> endingDataList = new();
 
+        [Header("State Source")]
+        [SerializeField] private GameplayModeHost gameplayModeHost;
+
         private RoundManager _roundManager;
+        private bool _subscribedToHost;
+        private bool _subscribedToRoundManager;
 
         private void Awake()
         {
@@ -36,13 +43,19 @@ namespace DoodleDiplomacy.Ending
 
         private void OnDestroy()
         {
+            UnsubscribeStateSource();
             if (anyClickButton != null)
                 anyClickButton.onClick.RemoveListener(OnAnyClick);
         }
 
+        private void OnEnable()
+        {
+            SubscribeStateSource();
+        }
+
         // ── 공개 API ──────────────────────────────────────────────────────────
 
-        /// <summary>RoundManager.OnStateChanged 이벤트에 연결.</summary>
+        /// <summary>GameplayModeHost 상태 변경 이벤트에 연결.</summary>
         public void OnGameStateChanged(GameState state)
         {
             if (state == GameState.Ending)
@@ -71,7 +84,7 @@ namespace DoodleDiplomacy.Ending
             if (descriptionText != null)
                 descriptionText.text = data != null ? data.description : "";
 
-            if (endingCanvas != null) endingCanvas.SetActive(true);
+            GameStateUiHelper.SetVisible(endingCanvas, true);
 
             Debug.Log($"[EndingController] 결말 표시: {type}");
         }
@@ -80,12 +93,53 @@ namespace DoodleDiplomacy.Ending
 
         private void Hide()
         {
-            if (endingCanvas != null) endingCanvas.SetActive(false);
+            GameStateUiHelper.SetVisible(endingCanvas, false);
+        }
+
+        private void SubscribeStateSource()
+        {
+            if (_subscribedToHost || _subscribedToRoundManager)
+            {
+                return;
+            }
+
+            gameplayModeHost = GameStateUiHelper.ResolveGameplayModeHost(gameplayModeHost);
+            if (gameplayModeHost != null)
+            {
+                gameplayModeHost.StateChanged += OnGameStateChanged;
+                _subscribedToHost = true;
+                OnGameStateChanged(gameplayModeHost.CurrentState);
+                return;
+            }
+
+            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
+            if (_roundManager != null)
+            {
+                _roundManager.OnStateChanged.AddListener(OnGameStateChanged);
+                _subscribedToRoundManager = true;
+                OnGameStateChanged(_roundManager.CurrentState);
+            }
+        }
+
+        private void UnsubscribeStateSource()
+        {
+            if (_subscribedToHost && gameplayModeHost != null)
+            {
+                gameplayModeHost.StateChanged -= OnGameStateChanged;
+            }
+
+            if (_subscribedToRoundManager && _roundManager != null)
+            {
+                _roundManager.OnStateChanged.RemoveListener(OnGameStateChanged);
+            }
+
+            _subscribedToHost = false;
+            _subscribedToRoundManager = false;
         }
 
         private void OnAnyClick()
         {
-            if (_roundManager == null) _roundManager = RoundManager.Instance;
+            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
             _roundManager?.ChangeToTitle();
         }
 

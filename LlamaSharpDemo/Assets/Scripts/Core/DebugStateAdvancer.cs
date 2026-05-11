@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace DoodleDiplomacy.Core
 {
     /// <summary>
@@ -68,3 +69,4 @@ namespace DoodleDiplomacy.Core
         }
     }
 }
+#endif

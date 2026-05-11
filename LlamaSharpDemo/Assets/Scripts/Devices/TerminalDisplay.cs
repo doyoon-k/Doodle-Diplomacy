@@ -14,6 +14,9 @@ namespace DoodleDiplomacy.Devices
         [Header("Display")]
         [SerializeField] private TextMeshProUGUI textMesh;
         [SerializeField] private GameObject screenPanel;
+        [SerializeField] private Canvas sourceCanvas;
+        [SerializeField] private GraphicRaycaster sourceGraphicRaycaster;
+        [SerializeField] private UnityEngine.Camera eventCamera;
 
         [Header("Typing")]
         [Tooltip("Per-character typing delay in seconds.")]
@@ -32,6 +35,10 @@ namespace DoodleDiplomacy.Devices
         [SerializeField, Min(1f)] private float scrollSensitivity = 24f;
         [SerializeField] private bool autoFollowLatestLine = true;
         [SerializeField, Range(0f, 0.1f)] private float bottomSnapThreshold = 0.01f;
+        [SerializeField] private RectMask2D screenMask;
+        [SerializeField] private ContentSizeFitter textSizeFitter;
+        [SerializeField] private LayoutElement textLayoutElement;
+        [SerializeField] private ScrollRect scrollRect;
 
         [Header("Events")]
         public UnityEvent OnTypingComplete = new();
@@ -40,10 +47,8 @@ namespace DoodleDiplomacy.Devices
         private Coroutine _cursorRoutine;
         private string _currentText = string.Empty;
         private bool _isTyping;
-        private ScrollRect _scrollRect;
         private RectTransform _panelRect;
         private RectTransform _textRect;
-        private LayoutElement _textLayoutElement;
         private bool _scrollInitialized;
 
         private static readonly char[] NoiseChars =
@@ -67,16 +72,16 @@ namespace DoodleDiplomacy.Devices
             scrollSensitivity = Mathf.Max(1f, scrollSensitivity);
             bottomSnapThreshold = Mathf.Clamp(bottomSnapThreshold, 0f, 0.1f);
 
-            if (_scrollRect != null)
-                _scrollRect.scrollSensitivity = scrollSensitivity;
+            if (scrollRect != null)
+                scrollRect.scrollSensitivity = scrollSensitivity;
         }
 
         private void OnRectTransformDimensionsChange()
         {
-            if (!_scrollInitialized || _textLayoutElement == null || _panelRect == null)
+            if (!_scrollInitialized || textLayoutElement == null || _panelRect == null)
                 return;
 
-            _textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
+            textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
         }
 
         public void ShowText(string text)
@@ -201,21 +206,14 @@ namespace DoodleDiplomacy.Devices
             if (_panelRect == null || _textRect == null)
                 return;
 
-            Canvas sourceCanvas = _panelRect.GetComponentInParent<Canvas>();
-            if (sourceCanvas != null)
-            {
-                if (sourceCanvas.GetComponent<GraphicRaycaster>() == null)
-                    sourceCanvas.gameObject.AddComponent<GraphicRaycaster>();
+            if (!ValidateScrollReferences())
+                return;
 
-                if (sourceCanvas.renderMode == RenderMode.WorldSpace && sourceCanvas.worldCamera == null)
-                    sourceCanvas.worldCamera = UnityEngine.Camera.main;
-            }
+            if (sourceCanvas.renderMode == RenderMode.WorldSpace && sourceCanvas.worldCamera == null)
+                sourceCanvas.worldCamera = eventCamera;
 
             if (EventSystem.current == null)
                 Debug.LogWarning("[TerminalDisplay] EventSystem is missing. Drag scroll will not receive pointer input.", this);
-
-            if (screenPanel.GetComponent<RectMask2D>() == null)
-                screenPanel.AddComponent<RectMask2D>();
 
             if (_textRect.parent != _panelRect)
                 _textRect.SetParent(_panelRect, false);
@@ -227,31 +225,19 @@ namespace DoodleDiplomacy.Devices
             _textRect.offsetMin = new Vector2(0f, _textRect.offsetMin.y);
             _textRect.offsetMax = Vector2.zero;
 
-            ContentSizeFitter sizeFitter = textMesh.GetComponent<ContentSizeFitter>();
-            if (sizeFitter == null)
-                sizeFitter = textMesh.gameObject.AddComponent<ContentSizeFitter>();
+            textSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            textSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
+            textLayoutElement.flexibleHeight = 0f;
 
-            _textLayoutElement = textMesh.GetComponent<LayoutElement>();
-            if (_textLayoutElement == null)
-                _textLayoutElement = textMesh.gameObject.AddComponent<LayoutElement>();
-
-            _textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
-            _textLayoutElement.flexibleHeight = 0f;
-
-            _scrollRect = screenPanel.GetComponent<ScrollRect>();
-            if (_scrollRect == null)
-                _scrollRect = screenPanel.AddComponent<ScrollRect>();
-
-            _scrollRect.viewport = _panelRect;
-            _scrollRect.content = _textRect;
-            _scrollRect.horizontal = false;
-            _scrollRect.vertical = true;
-            _scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            _scrollRect.inertia = false;
-            _scrollRect.scrollSensitivity = scrollSensitivity;
+            scrollRect.viewport = _panelRect;
+            scrollRect.content = _textRect;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.inertia = false;
+            scrollRect.scrollSensitivity = scrollSensitivity;
 
             _scrollInitialized = true;
             RefreshScrollLayout(true);
@@ -259,23 +245,71 @@ namespace DoodleDiplomacy.Devices
 
         private bool ShouldFollowBottom()
         {
-            if (!autoFollowLatestLine || _scrollRect == null)
+            if (!autoFollowLatestLine || scrollRect == null)
                 return false;
 
-            return _scrollRect.verticalNormalizedPosition <= bottomSnapThreshold;
+            return scrollRect.verticalNormalizedPosition <= bottomSnapThreshold;
         }
 
         private void RefreshScrollLayout(bool forceToBottom)
         {
-            if (!_scrollInitialized || _scrollRect == null)
+            if (!_scrollInitialized || scrollRect == null)
                 return;
 
-            if (_textLayoutElement != null && _panelRect != null)
-                _textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
+            if (textLayoutElement != null && _panelRect != null)
+                textLayoutElement.minHeight = Mathf.Max(1f, _panelRect.rect.height);
 
             Canvas.ForceUpdateCanvases();
             if (forceToBottom)
-                _scrollRect.verticalNormalizedPosition = 0f;
+                scrollRect.verticalNormalizedPosition = 0f;
+        }
+
+        private bool ValidateScrollReferences()
+        {
+            bool valid = true;
+            if (sourceCanvas == null)
+            {
+                Debug.LogError("[TerminalDisplay] Source canvas must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (sourceGraphicRaycaster == null)
+            {
+                Debug.LogError("[TerminalDisplay] Source graphic raycaster must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (sourceCanvas != null && sourceCanvas.renderMode == RenderMode.WorldSpace && eventCamera == null)
+            {
+                Debug.LogError("[TerminalDisplay] Event camera must be assigned for world-space terminal UI.", this);
+                valid = false;
+            }
+
+            if (screenMask == null)
+            {
+                Debug.LogError("[TerminalDisplay] Screen RectMask2D must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (textSizeFitter == null)
+            {
+                Debug.LogError("[TerminalDisplay] Text ContentSizeFitter must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (textLayoutElement == null)
+            {
+                Debug.LogError("[TerminalDisplay] Text LayoutElement must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            if (scrollRect == null)
+            {
+                Debug.LogError("[TerminalDisplay] ScrollRect must be assigned in the Inspector.", this);
+                valid = false;
+            }
+
+            return valid;
         }
 
         private void ApplyRenderedText(string renderedText, bool forceFollowBottom = false)

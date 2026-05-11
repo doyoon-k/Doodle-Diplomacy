@@ -628,6 +628,7 @@ MonoBehaviour:
   crossFadeDuration: 0.1
   idleStateName: Idle
   subtitleDisplay: {fileID: 0}
+  ingameTextTable: {fileID: 11400000, guid: b0db56bf6e8d4ceb9f4d8de96335f6b2, type: 2}
   lookAtMonitorDuration: 1
   mutterDuration: 2
   narratorLingerDuration: 2.5

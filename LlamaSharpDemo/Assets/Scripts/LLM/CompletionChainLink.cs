@@ -7,7 +7,7 @@ using UnityEngine;
 /// </summary>
 public class CompletionChainLink : IStateChainLink
 {
-    private readonly LlmGenerationProfile _settings;
+    private readonly BaseLlmGenerationProfile _settings;
     private readonly PromptTemplate _userPromptTemplate;
     private readonly ILlmService _llmService;
     private readonly Action<string> _log;
@@ -18,7 +18,7 @@ public class CompletionChainLink : IStateChainLink
     private readonly string _thinkingStateKey;
 
     public CompletionChainLink(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPromptTemplate,
         bool useVision = false,
         string imageStateKey = null,
@@ -41,7 +41,7 @@ public class CompletionChainLink : IStateChainLink
 
     public CompletionChainLink(
         ILlmService service,
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPromptTemplate,
         bool useVision = false,
         string imageStateKey = null,
@@ -69,7 +69,7 @@ public class CompletionChainLink : IStateChainLink
         state ??= new PipelineState();
         if (_settings == null)
         {
-            yield return Fail(state, onDone, "[CompletionChainLink] LlmGenerationProfile is missing.");
+            yield return Fail(state, onDone, "[CompletionChainLink] LLM profile is missing.");
             yield break;
         }
 
@@ -245,3 +245,4 @@ public class CompletionChainLink : IStateChainLink
         Debug.Log(message);
     }
 }
+

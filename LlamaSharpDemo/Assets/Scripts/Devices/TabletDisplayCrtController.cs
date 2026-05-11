@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace DoodleDiplomacy.Devices
 {
@@ -7,10 +6,6 @@ namespace DoodleDiplomacy.Devices
     [DefaultExecutionOrder(-320)]
     public sealed class TabletDisplayCrtController : MonoBehaviour
     {
-        private const string CtrShaderName = "DoodleDiplomacy/SharedMonitorCRT";
-        private const string TabletRootPath = "Interactables/tablet";
-        private const string PaintAreaPath = "Interactables/tablet/PaintAreaProxy";
-        private const string SpectrumBarPath = "Interactables/tablet/PhysicalControls/SpectrumBar";
         private const string BaseMapPropertyName = "_BaseMap";
         private const string MainTexPropertyName = "_MainTex";
         private const string ScanlineDensityPropertyName = "_ScanlineDensity";
@@ -61,33 +56,6 @@ namespace DoodleDiplomacy.Devices
         private bool _paintTemplateLinked;
         private bool _ready;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Bootstrap()
-        {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            SceneManager.sceneLoaded += OnSceneLoaded;
-            EnsureController();
-        }
-
-        private static void OnSceneLoaded(Scene _, LoadSceneMode __)
-        {
-            EnsureController();
-        }
-
-        private static void EnsureController()
-        {
-            GameObject tabletRoot = GameObject.Find(TabletRootPath);
-            if (tabletRoot == null)
-            {
-                return;
-            }
-
-            if (tabletRoot.GetComponent<TabletDisplayCrtController>() == null)
-            {
-                tabletRoot.AddComponent<TabletDisplayCrtController>();
-            }
-        }
-
         private void Awake()
         {
             EnsureNow();
@@ -100,14 +68,6 @@ namespace DoodleDiplomacy.Devices
 
         private void OnValidate()
         {
-            AutoAssignReferences();
-#if UNITY_EDITOR
-            if (crtMaterialTemplate == null)
-            {
-                crtMaterialTemplate = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/SharedMonitorCRT.mat");
-            }
-#endif
-
             if (!Application.isPlaying || !isActiveAndEnabled)
             {
                 return;
@@ -119,7 +79,7 @@ namespace DoodleDiplomacy.Devices
 
         public void EnsureNow()
         {
-            AutoAssignReferences();
+            ValidateInspectorReferences();
             EnsureRuntimeMaterials();
             ApplyRuntimeSettings();
         }
@@ -130,46 +90,52 @@ namespace DoodleDiplomacy.Devices
             DestroyRuntimeMaterial(ref _spectrumMaterialInstance);
         }
 
-        private void AutoAssignReferences()
+        private bool ValidateInspectorReferences()
         {
-            drawingBoard ??= GetComponent<DrawingBoardController>();
-
-            if (paintAreaRenderer == null)
+            bool isValid = true;
+            if (drawingBoard == null)
             {
-                GameObject paintAreaObject = GameObject.Find(PaintAreaPath);
-                if (paintAreaObject != null)
-                {
-                    paintAreaRenderer = paintAreaObject.GetComponent<Renderer>();
-                }
+                Debug.LogError("[TabletDisplayCrtController] Drawing board must be assigned in the Inspector.", this);
+                isValid = false;
             }
 
-            if (spectrumBarRenderer == null)
+            if (applyToPaintArea && paintAreaRenderer == null)
             {
-                GameObject spectrumBarObject = GameObject.Find(SpectrumBarPath);
-                if (spectrumBarObject != null)
-                {
-                    spectrumBarRenderer = spectrumBarObject.GetComponent<Renderer>();
-                }
+                Debug.LogError("[TabletDisplayCrtController] Paint area renderer must be assigned in the Inspector.", this);
+                isValid = false;
             }
+
+            if (applyToSpectrumBar && spectrumBarRenderer == null)
+            {
+                Debug.LogError("[TabletDisplayCrtController] Spectrum bar renderer must be assigned in the Inspector.", this);
+                isValid = false;
+            }
+
+            if (crtMaterialTemplate == null)
+            {
+                Debug.LogError("[TabletDisplayCrtController] CRT material template must be assigned in the Inspector.", this);
+                isValid = false;
+            }
+
+            return isValid;
         }
 
         private void EnsureRuntimeMaterials()
         {
-            Shader crtShader = Shader.Find(CtrShaderName);
-            if (crtShader == null)
+            if (!ValidateInspectorReferences())
             {
-                Debug.LogWarning($"[TabletDisplayCrtController] Missing shader: {CtrShaderName}", this);
+                _ready = false;
                 return;
             }
 
             if (applyToPaintArea)
             {
-                EnsureRuntimeMaterial(ref _paintMaterialInstance, crtShader, "TabletPaintCRT");
+                EnsureRuntimeMaterial(ref _paintMaterialInstance, "TabletPaintCRT");
             }
 
             if (applyToSpectrumBar)
             {
-                EnsureRuntimeMaterial(ref _spectrumMaterialInstance, crtShader, "TabletSpectrumCRT");
+                EnsureRuntimeMaterial(ref _spectrumMaterialInstance, "TabletSpectrumCRT");
             }
 
             _ready = true;
@@ -237,17 +203,15 @@ namespace DoodleDiplomacy.Devices
             }
         }
 
-        private void EnsureRuntimeMaterial(ref Material targetMaterial, Shader crtShader, string materialName)
+        private void EnsureRuntimeMaterial(ref Material targetMaterial, string materialName)
         {
-            if (targetMaterial != null && targetMaterial.shader == crtShader)
+            if (targetMaterial != null && targetMaterial.shader == crtMaterialTemplate.shader)
             {
                 return;
             }
 
             DestroyRuntimeMaterial(ref targetMaterial);
-            targetMaterial = crtMaterialTemplate != null
-                ? new Material(crtMaterialTemplate)
-                : new Material(crtShader);
+            targetMaterial = new Material(crtMaterialTemplate);
             targetMaterial.name = $"{materialName}_Runtime";
             targetMaterial.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
         }

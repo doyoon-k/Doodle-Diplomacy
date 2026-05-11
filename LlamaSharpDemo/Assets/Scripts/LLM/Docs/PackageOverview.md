@@ -1,122 +1,112 @@
 # LLM Pipeline Package Overview
 
-This document explains what the package does, which problems it solves, and what the demo project showcases.
+This document explains what the package does and how local GGUF + cloud API inference work together.
 
 ## 1) What This Package Is
 
-This package provides a **local LLM pipeline for Unity** based on **LLamaSharp + GGUF**.
-It is designed to generate **structured AI outputs (JSON)** from game state and apply them directly to gameplay systems.
+This package provides a Unity LLM pipeline that supports:
+
+1. Local inference with LLamaSharp + GGUF (`LlmGenerationProfile`)
+2. Cloud inference with multiple providers (`CloudGenerationProfile`)
+3. Step-level mixed execution (local and cloud in one pipeline)
 
 Core goals:
-- Local/offline-capable inference
-- Stateful prompt pipeline execution
-- Reliable JSON schema-constrained outputs
-- Unity Editor workflow for setup, validation, and packaging
+
+1. Keep existing local GGUF workflows fully compatible
+2. Add cloud inference without requiring pipeline migration
+3. Keep JSON pipeline behavior consistent across providers
 
 ## 2) Problems It Solves
 
-Typical Unity + local LLM integration pain points are:
+Typical Unity integration pain points:
 
-1. Backend setup complexity (`CPU`, `CUDA`, `Vulkan`, `Metal`)
-2. Model path/profile management across scenes and projects
-3. Stable parsing and merging of LLM results into gameplay state
-4. Reusable packaging for migration to another project
+1. Backend setup complexity for local inference (`CPU`, `CUDA`, `Vulkan`, `Metal`)
+2. Switching between local and cloud providers per task
+3. Stable parsing of model output into gameplay state
+4. Packaging reusable tooling for Asset Store consumers
 
 This package addresses those with:
 
-1. `LlmPipelineSetupWizard` for guided dependency/backend setup
-2. `LlmGenerationProfile` + `PromptPipelineAsset` for data-driven configuration
-3. `JSONLLMStateChainLink` for JSON generation + parse + merge + retry
-4. `LlmPackageExportTool` for `Core` / `Release` `.unitypackage` export
+1. `LlmPipelineSetupWizard` for local backend/model setup
+2. Profile type split: local `LlmGenerationProfile` + `CloudGenerationProfile`
+3. `RoutingLlmService` / `RoutingEditorLlmService` automatic service dispatch
+4. Shared JSON handling via `JSONLLMStateChainLink` retry+parse loop
 
 ## 3) Key Features
 
-1. **Local GGUF Inference Runtime**
-- `RuntimeLlamaSharpService` implements `ILlmService`
-- Supports model preload and safe reinitialization when settings change
+1. **Local Runtime (legacy-compatible)**
+- `RuntimeLlamaSharpService` remains available and unchanged in behavior for local profiles.
 
-2. **State-Based Prompt Pipeline**
-- Uses mutable `PipelineState` as shared state
-- Supports both text values and image objects (`Texture2D` / `Sprite`) for VLM steps
-- Supports mixed step types: `JsonLlm`, `CompletionLlm`, `CustomLink`
+2. **Cloud Runtime (v1 scope)**
+- `CloudDirectLlmService` supports text/JSON calls for:
+  - OpenAI
+  - Anthropic
+  - Gemini
+  - DeepSeek (OpenAI-compatible adapter)
+  - Kimi (OpenAI-compatible adapter)
 
-3. **Schema-Constrained JSON Output**
-- `LlmGenerationProfile.jsonFields` drives schema generation
-- Retries automatically on parse/schema failure
+3. **Service Routing**
+- `ILlmService` now accepts `BaseLlmGenerationProfile`.
+- Routing selects local/cloud implementation from profile type.
 
-4. **Native Runtime Bootstrap**
-- `LlamaNativeBootstrap` prepares plugin search paths and runtime layout
-- Reduces backend initialization ambiguity on Windows
+4. **Step-Level Mixing**
+- `PromptPipelineStep.llmProfile` now references `BaseLlmGenerationProfile`.
+- A single pipeline can include local and cloud steps together.
 
-5. **Editor Tooling**
-- Setup Wizard: dependency install, backend apply, model assignment, validation
-- Prompt Pipeline Editor: graph-based pipeline authoring and simulation
-- Packaging Tool: export `Core` / `Release` packages
+5. **Consistent JSON Policy**
+- JSON constraints use prompt guidance + parse retry flow in v1.
+- Cloud HTTP retries are limited to `429` and `5xx` with exponential backoff.
 
-6. **Demo Compatibility Helpers**
-- `DemoInput` for Input System + Legacy compatibility
-- `SampleSceneRenderCompatibility` for URP/non-URP sprite fallback handling
+6. **Credential Policy**
+- Primary source: environment variables
+- Optional editor-only override asset (`CloudCredentialOverridesAsset` under an `Editor` folder)
+- Secrets are masked in cloud traffic logs
+
+7. **Scope Boundaries**
+- Cloud v1 supports text/JSON only
+- Cloud vision and embeddings intentionally return not-supported errors
 
 ## 4) Main Components
 
 | Area | Component | Responsibility |
 |---|---|---|
-| Runtime | `RuntimeLlamaSharpService` | Loads model, executes completion/json requests |
-| Runtime | `LlamaSharpInterop` | Converts profile/runtime params to LLamaSharp calls |
-| Runtime | `GamePipelineRunner` | Executes pipeline steps in sequence |
-| Pipeline | `PromptPipelineAsset` | Defines step graph/order |
-| Pipeline | `JSONLLMStateChainLink` | Structured JSON response and state merge |
+| Profile | `BaseLlmGenerationProfile` | Shared prompt/JSON/sampling settings |
+| Profile | `LlmGenerationProfile` | Local GGUF profile (legacy-compatible) |
+| Profile | `CloudGenerationProfile` | Provider/model/baseUrl/retry/key-env settings |
+| Runtime | `RoutingLlmService` | Routes per-step call to local or cloud |
+| Runtime | `RuntimeLlamaSharpService` | Local LLamaSharp inference |
+| Runtime | `CloudDirectLlmService` | Cloud provider HTTP inference |
+| Runtime | `LlamaSharpInterop` | Shared prompt/inference parameter helpers |
+| Pipeline | `PromptPipelineAsset` | Defines pipeline step graph/order |
+| Pipeline | `JSONLLMStateChainLink` | JSON generation + parse + merge + retry |
 | Pipeline | `CompletionChainLink` | Plain-text completion step |
-| Pipeline | `StatTierEvaluationLink` | Example deterministic custom link |
-| Profile | `LlmGenerationProfile` | Model path, runtime params, generation params, json schema |
-| Editor | `LlmPipelineSetupWizard` | Setup/restore/apply/validate workflows |
-| Editor | `LlmPackageExportTool` | Exports package variants |
+| Editor | `RoutingEditorLlmService` | Editor simulation routing |
+| Editor | `CloudGenerationProfileEditor` | Cloud profile inspector |
+| Editor | `LlmPipelineSetupWizard` | Local backend/model setup wizard |
+| Editor | `LlmPackageExportTool` | Core / Release export |
 
-## 5) What The Demo Shows
+## 5) Preload Behavior
 
-Demo title:
-- **Adaptive Ability & Stat Evolution Engine**
+LLM preparation is now pipeline-aware:
 
-Gameplay loop shown in the sample:
+1. If active pipelines contain at least one local step, local preload is required.
+2. If active pipelines are cloud-only, preload is treated as ready immediately.
 
-1. Player absorbs an item.
-2. `ItemManager` builds state (`item_name`, `item_desc`, current character/stats).
-3. `CharacterItemUsePipeline` runs:
-- Step A: generates updated character/stats JSON
-- Step B: generates new skill JSON from primitive combinations
-4. Result state is applied to `PlayerStats` and `SkillManager`.
-5. HUD reflects evolved stats/skills immediately.
+## 6) Security Notice (Cloud Direct Calls)
 
-Default demo controls:
-- Move: `A/D`
-- Jump: `Space`
-- Basic attack: `J`
-- Shoot: `K`
-- Skills: `Q/E`
-- Use item: `4`
-- Swap item: `T`
+Cloud requests are direct client calls in v1.
 
-## 6) Package Variants
+1. Use your own personal API keys.
+2. Never hardcode production/shared keys in assets or source code.
+3. Keep editor override assets out of builds and out of source control.
+
+## 7) Package Variants
 
 1. `Core`
-- Runtime + pipeline + profile + editor tooling only
-- Best for integrating into an existing game project
+- Runtime + pipeline + profile + editor tooling
 
 2. `Release`
 - `Core` + demo gameplay scripts/assets
-- Best for showcase, onboarding, and reference implementation
-
-## 7) Best Fit / Constraints
-
-Good fit when:
-1. You need local/offline-capable LLM-driven gameplay generation
-2. You need structured outputs rather than free-form text only
-3. You want authoring via ScriptableObjects and editor tooling
-
-Important constraints:
-1. `.gguf` model files are large and should be distributed separately
-2. Backend must match user machine capability (`CPU/CUDA/Vulkan/Metal`)
-3. URP sample visuals require correct renderer setup (2D Renderer for intended look)
 
 ## 8) Recommended Reading Order
 

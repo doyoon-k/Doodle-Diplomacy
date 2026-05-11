@@ -29,7 +29,7 @@ public static class PromptPipelineSimulator
         CancelActiveSimulation();
 
         bool ownsService = service == null;
-        service ??= new LlamaSharpEditorService();
+        service ??= new RoutingEditorLlmService();
         int runSerial = ++_runSerial;
         if (ownsService && service is IDisposable ownedDisposable)
         {
@@ -234,8 +234,7 @@ public static class PromptPipelineSimulator
     {
         if (step.llmProfile == null)
         {
-            throw new InvalidOperationException($"Step '{step.stepName}' requires LlmGenerationProfile.");
+            throw new InvalidOperationException($"Step '{step.stepName}' requires an LLM profile.");
         }
     }
 }
-

@@ -342,6 +342,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17a29466210a31245aab41b43eaa4b04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Devices.TerminalDisplay
+--- !u!114 &45035644 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+  m_PrefabInstance: {fileID: 796133098}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
+--- !u!114 &45035645 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+  m_PrefabInstance: {fileID: 887548415}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
+--- !u!114 &45035646 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+  m_PrefabInstance: {fileID: 3536624680693865213}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
 --- !u!1001 &50699592
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3319,7 +3352,6 @@ GameObject:
   - component: {fileID: 475623044}
   - component: {fileID: 475623043}
   - component: {fileID: 475623042}
-  - component: {fileID: 475623041}
   m_Layer: 0
   m_Name: TitleCanvas
   m_TagString: Untagged
@@ -3327,20 +3359,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &475623041
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 475623040}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0836fd38b13285544b43c22b11c0df64, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.UI.TitleScreenController
-  titleCanvas: {fileID: 475623040}
-  startButton: {fileID: 1911066518}
 --- !u!114 &475623042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3413,7 +3431,7 @@ RectTransform:
   m_GameObject: {fileID: 475623040}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1828736938}
@@ -4900,8 +4918,7 @@ PrefabInstance:
       propertyPath: OnReactionComplete.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1778344080}
-    m_RemovedComponents:
-    - {fileID: 2765348771567934299, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -5520,8 +5537,7 @@ PrefabInstance:
       propertyPath: OnReactionComplete.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1778344080}
-    m_RemovedComponents:
-    - {fileID: 2765348771567934299, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -7738,7 +7754,7 @@ RectTransform:
   m_GameObject: {fileID: 1265570732}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 995931391}
@@ -10122,7 +10138,7 @@ RectTransform:
   m_GameObject: {fileID: 1478619579}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1021490631}
@@ -10828,6 +10844,10 @@ PrefabInstance:
       propertyPath: mainCamera
       value: 
       objectReference: {fileID: 439117878}
+    - target: {fileID: 3845552468368687222, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
+      propertyPath: eventCamera
+      value: 
+      objectReference: {fileID: 439117878}
     - target: {fileID: 3544264357789506336, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 2147483647
@@ -11060,7 +11080,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Devices.TabletPhysicalControlsController
   drawingBoard: {fileID: 1603467082}
-  inputCamera: {fileID: 0}
+  inputCamera: {fileID: 439117878}
   roundManager: {fileID: 1778344080}
   controlsRoot: {fileID: 995931390}
   controlLayerMask:
@@ -11095,7 +11115,16 @@ MonoBehaviour:
   redoButtonIconTexture: {fileID: 2800000, guid: 577ffb6fe33a2f2468e96257d7208139, type: 3}
   clearButtonIconTexture: {fileID: 2800000, guid: f266182b4896a96438e3bfa67936dacd, type: 3}
   useButtonIconOverlays: 1
-  buttonOverlayShaderName: Sprites/Default
+  buttonOverlayMaterial: {fileID: 2100000, guid: 3f22df51b5cb46069585f59792643f01, type: 2}
+  brushOverlayRenderer: {fileID: 865352284}
+  fillOverlayRenderer: {fileID: 2076163288}
+  eraserOverlayRenderer: {fileID: 1761849150}
+  sizeSmallOverlayRenderer: {fileID: 1071684756}
+  sizeMediumOverlayRenderer: {fileID: 1400070675}
+  sizeLargeOverlayRenderer: {fileID: 1504276716}
+  undoOverlayRenderer: {fileID: 721394005}
+  redoOverlayRenderer: {fileID: 1294216056}
+  clearOverlayRenderer: {fileID: 1238917401}
   buttonOverlayDisabledAlpha: 0.35
   buttonOverlayLocalOffset: {x: 0, y: 0, z: 0}
   spectrumBarCollider: {fileID: 13080200}
@@ -11224,13 +11253,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DrawingBoardController
   boardRenderer: {fileID: 1144195043}
   drawingSurfaceCollider: {fileID: 1144195044}
-  drawingCamera: {fileID: 0}
+  drawingCamera: {fileID: 439117878}
   textureWidth: 512
   textureHeight: 512
   autoMatchCanvasResolutionToBoardAspect: 0
   filterMode: 1
   texturePropertyName: _BaseMap
-  boardMaterialTemplate: {fileID: 0}
+  boardMaterialTemplate: {fileID: 2100000, guid: ef437a15daa001f4884594ba0de4f4cd, type: 2}
   boardTextureScale: {x: -1, y: -1}
   boardTextureOffset: {x: 1, y: 1}
   backgroundColor: {r: 1, g: 1, b: 1, a: 1}
@@ -11249,6 +11278,7 @@ MonoBehaviour:
     width: 1
     height: 1
   showBrushPreview: 1
+  brushPreview: {fileID: 2147000003}
   previewSurfaceOffset: 0.01
   previewSegments: 48
   previewBrushColor: {r: 0, g: 0, b: 0, a: 0.9}
@@ -11703,7 +11733,7 @@ RectTransform:
   m_GameObject: {fileID: 1669622145}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1208530455}
@@ -12579,11 +12609,12 @@ GameObject:
   - component: {fileID: 1778344082}
   - component: {fileID: 1778344080}
   - component: {fileID: 1778344081}
-  - component: {fileID: 1778344083}
-  - component: {fileID: 1778344084}
   - component: {fileID: 1778344085}
   - component: {fileID: 1778344086}
-  - component: {fileID: 1778344087}
+  - component: {fileID: 1778344088}
+  - component: {fileID: 1778344089}
+  - component: {fileID: 1778344090}
+  - component: {fileID: 1778344091}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -12613,13 +12644,19 @@ MonoBehaviour:
   terminalDisplay: {fileID: 45035643}
   sharedMonitorDisplay: {fileID: 1651293743}
   drawingBoard: {fileID: 1603467082}
+  alienInteractables:
+  - {fileID: 45035644}
+  - {fileID: 45035645}
+  - {fileID: 45035646}
+  tabletInteractables:
+  - {fileID: 1603467078}
   sharedMonitorInteractable: {fileID: 548640496}
   terminalInteractables:
   - {fileID: 45035642}
   subtitleDisplay: {fileID: 1859998227}
   endingController: {fileID: 1478619580}
-  titleScreenController: {fileID: 475623041}
-  ingameTextTable: {fileID: 0}
+  titleScreenController: {fileID: 1778344088}
+  ingameTextTable: {fileID: 11400000, guid: b0db56bf6e8d4ceb9f4d8de96335f6b2, type: 2}
   introSequence: {fileID: 11400000, guid: ae633883f5568ff4abfae424c9d503a3, type: 2}
   exitDrawingKey: 27
   exitInterpreterKey: 27
@@ -12711,7 +12748,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1778344083
+--- !u!114 &1778344088
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12720,11 +12757,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1778344079}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88879da156444d34ea2c7a80486ae3a0, type: 3}
+  m_Script: {fileID: 11500000, guid: 0836fd38b13285544b43c22b11c0df64, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Core.GameTestStarter
-  isFirstPlay: 1
---- !u!114 &1778344084
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.UI.TitleScreenController
+  titleCanvas: {fileID: 475623040}
+  startButton: {fileID: 1911066518}
+  alwaysPlayIntroOnStart: 1
+--- !u!114 &1778344089
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12733,13 +12772,49 @@ MonoBehaviour:
   m_GameObject: {fileID: 1778344079}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 009ce0db86a631e4d85b8c26f37c13c8, type: 3}
+  m_Script: {fileID: 11500000, guid: a2359a2d82a94f29b49142a5cde80610, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Core.DebugStateAdvancer
-  advanceKey: 98
-  restartKey: 99
-  jumpToDrawingKey: 100
-  enableInBuild: 0
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.SceneReferenceHub
+  roundManager: {fileID: 1778344080}
+  interactionManager: {fileID: 1865518810}
+  cameraController: {fileID: 403058226}
+  dialogueSystem: {fileID: 1804211027}
+  aiPipelineBridge: {fileID: 1778344085}
+  drawingBoard: {fileID: 1603467082}
+  drawingExportBridge: {fileID: 1603467076}
+  subtitleDisplay: {fileID: 1859998227}
+  previewButtonPanel: {fileID: 1669622146}
+  endingController: {fileID: 1478619580}
+--- !u!114 &1778344090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 889a3185da68410b981d3d7b96ec563c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.LegacyRoundModeAdapter
+  modeId: legacy-round
+  roundManager: {fileID: 1778344080}
+--- !u!114 &1778344091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0f685d817c543e2964baf133d40cbf8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.GameplayModeHost
+  sceneReferences: {fileID: 1778344089}
+  defaultModeBehaviour: {fileID: 1778344090}
+  enterDefaultModeOnStart: 1
+  validateSceneReferencesOnAwake: 1
 --- !u!114 &1778344085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12753,7 +12828,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.AI.AIPipelineBridge
   sdSettings: {fileID: 11400000, guid: f4f329f6c6584f6fb4d74f3cfa77b1e2, type: 2}
-  sdModelProfile: {fileID: 11400000, guid: b9b930d88d5a4a7ea8f52a4f2095e36b, type: 2}
+  sdModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
   objectPromptA: studio photo of a single dog, centered, isolated, plain background,
     simple lighting
   objectPromptB: studio photo of a single lantern, centered, isolated, plain background,
@@ -12779,7 +12854,7 @@ MonoBehaviour:
   alienPersonalityProfiles:
   - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
   alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  ingameTextTable: {fileID: 0}
+  ingameTextTable: {fileID: 11400000, guid: b0db56bf6e8d4ceb9f4d8de96335f6b2, type: 2}
   telepathyCorruptedLineRatio: 0
   telepathyCorruptionStrength: 0
   telepathyMinCorruptedLines: 0
@@ -12801,29 +12876,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GamePipelineRunner
   _runtimeService: {fileID: 1537481329}
---- !u!114 &1778344087
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f491b9292b8111c4fa69b1f66004fb24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Core.WordPairPoolQualityInspector
-  pipelineBridge: {fileID: 1778344085}
-  wordPairPool: {fileID: 11400000, guid: 9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b, type: 2}
-  startEnabled: 1
-  autoGenerateFirstPairOnEnable: 1
-  autoGenerateOnPairNavigation: 1
-  wrapAround: 1
-  enableInBuild: 0
-  toggleInspectorKey: 289
-  previousPairKey: 290
-  nextPairKey: 291
-  regeneratePairKey: 292
 --- !u!1 &1781035874
 GameObject:
   m_ObjectHideFlags: 0
@@ -12852,7 +12904,7 @@ RectTransform:
   m_GameObject: {fileID: 1781035874}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1859998228}
@@ -13597,6 +13649,8 @@ MonoBehaviour:
   interactableLayer:
     serializedVersion: 2
     m_Bits: 4294967295
+  mainCamera: {fileID: 439117878}
+  gameplayModeHost: {fileID: 1778344091}
 --- !u!4 &1865518811
 Transform:
   m_ObjectHideFlags: 0
@@ -15781,3 +15835,232 @@ SceneRoots:
   - {fileID: 93881450}
   - {fileID: 322167015}
   - {fileID: 1537481330}
+  - {fileID: 2147000001}
+--- !u!1 &2147000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2147000001}
+  - component: {fileID: 2147000003}
+  m_Layer: 8
+  m_Name: DrawingBrushPreview
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2147000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2147000011}
+  - {fileID: 2147000021}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2147000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95e60563df864a0aa3c2fb704aab295d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DrawingBrushPreview
+  outlineMeshFilter: {fileID: 2147000012}
+  outlineRenderer: {fileID: 2147000013}
+  fillMeshFilter: {fileID: 2147000022}
+  fillRenderer: {fileID: 2147000023}
+--- !u!1 &2147000010
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2147000011}
+  - component: {fileID: 2147000012}
+  - component: {fileID: 2147000013}
+  m_Layer: 8
+  m_Name: BrushPreviewOutline
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2147000011
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000010}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2147000001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &2147000012
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000010}
+  m_Mesh: {fileID: 0}
+--- !u!23 &2147000013
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000010}
+  m_Enabled: 0
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 0
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 3f22df51b5cb46069585f59792643f01, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 1000
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &2147000020
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2147000021}
+  - component: {fileID: 2147000022}
+  - component: {fileID: 2147000023}
+  m_Layer: 8
+  m_Name: BrushPreviewFill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2147000021
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000020}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2147000001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &2147000022
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000020}
+  m_Mesh: {fileID: 0}
+--- !u!23 &2147000023
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2147000020}
+  m_Enabled: 0
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 0
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 3f22df51b5cb46069585f59792643f01, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 1000
+  m_AdditionalVertexStreams: {fileID: 0}

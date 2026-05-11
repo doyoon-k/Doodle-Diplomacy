@@ -1,5 +1,6 @@
 using UnityEngine;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace DoodleDiplomacy.Core
 {
     // 테스트용 — Play 진입 시 StartGame 자동 호출. 완료 후 제거.
@@ -17,3 +18,4 @@ namespace DoodleDiplomacy.Core
         }
     }
 }
+#endif

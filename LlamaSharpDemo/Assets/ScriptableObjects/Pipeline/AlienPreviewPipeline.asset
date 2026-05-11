@@ -41,7 +41,7 @@ MonoBehaviour:
       value: 
     - key: level
       value: 
-    editorPosition: {x: -281, y: -45}
+    editorPosition: {x: -249, y: -55}
     guid: 0d6af805-df2b-4e1b-807d-842970ff4b33
     nextStepGuid: c9e4f723-a51b-4d8e-b297-6f3c018a4e52
   - stepName: AlienPreviewExtract
@@ -75,12 +75,12 @@ MonoBehaviour:
     guid: c9e4f723-a51b-4d8e-b297-6f3c018a4e52
     nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -526, y: -37}
+    inputNodePosition: {x: -466, y: -40}
     outputNodePosition: {x: 1005, y: -126}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 391, y: 256, z: 0}
-    viewScale: {x: 1.15, y: 1.15, z: 1}
+    viewPosition: {x: 552, y: 138, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 166, y: 21}

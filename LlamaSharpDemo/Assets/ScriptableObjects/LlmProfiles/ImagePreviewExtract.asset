@@ -12,19 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: ImagePreviewExtract
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
   format: '{"type":"object","properties":{"preview_scene_reading":{"type":"string"},"preview_visible_relations":{"type":"string"},"preview_uncertainty":{"type":"string"},"preview_object_a_presence":{"type":"string","enum":["visible","unclear","missing"]},"preview_object_b_presence":{"type":"string","enum":["visible","unclear","missing"]}},"required":["preview_scene_reading","preview_visible_relations","preview_uncertainty","preview_object_a_presence","preview_object_b_presence"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  visionProjectorModel: 
-  visionProjectorRelativeToStreamingAssets: 0
   systemPromptTemplate: "You receive a free-text description of a drawing. Extract
     structured fields from it. Return valid JSON only.\n- preview_scene_reading:
     one short sentence for what is happening, written so it can be presented as \"It
     looks like ...\"\n- preview_visible_relations: one short sentence for the clearest
     action between figures \u2014 use action verbs (chases, threatens, flees, grabs,
-    looms over). Prefer action over spatial position.\n- preview_uncertainty:
-    one short sentence about the main ambiguity, or say the read is mostly clear.\n-
+    looms over). Prefer action over spatial position.\n- preview_uncertainty: one
+    short sentence about the main ambiguity, or say the read is mostly clear.\n-
     preview_object_a_presence: visible, unclear, or missing for Object A (first prompted
     word).\n- preview_object_b_presence: visible, unclear, or missing for Object
     B (second prompted word).\nRules:\n- extract from the provided description, do
@@ -101,6 +98,9 @@ MonoBehaviour:
     num_predict: 400
     repeat_penalty: 1.05
     seed: 0
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 0
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
     contextSize: 2048

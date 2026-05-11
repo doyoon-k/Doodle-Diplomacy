@@ -3,9 +3,9 @@ using UnityEngine;
 
 public static class LlmSettingsChangeNotifier
 {
-    public static event Action<LlmGenerationProfile> SettingsChanged;
+    public static event Action<BaseLlmGenerationProfile> SettingsChanged;
 
-    public static void RaiseChanged(LlmGenerationProfile settings)
+    public static void RaiseChanged(BaseLlmGenerationProfile settings)
     {
         if (settings == null)
         {
@@ -15,4 +15,3 @@ public static class LlmSettingsChangeNotifier
         SettingsChanged?.Invoke(settings);
     }
 }
-

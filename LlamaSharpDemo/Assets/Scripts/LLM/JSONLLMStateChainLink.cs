@@ -11,7 +11,7 @@ using UnityEngine;
 public class JSONLLMStateChainLink : IStateChainLink
 {
     private readonly ILlmService _llmService;
-    private readonly LlmGenerationProfile _settings;
+    private readonly BaseLlmGenerationProfile _settings;
     private readonly int _maxRetries;
     private readonly float _delayBetweenRetries;
     private readonly PromptTemplate _userPromptTemplate;
@@ -23,7 +23,7 @@ public class JSONLLMStateChainLink : IStateChainLink
     private readonly string _thinkingStateKey;
 
     public JSONLLMStateChainLink(
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPromptTemplate,
         int maxRetries = 3,
         float delayBetweenRetries = 0.1f,
@@ -51,7 +51,7 @@ public class JSONLLMStateChainLink : IStateChainLink
 
     public JSONLLMStateChainLink(
         ILlmService service,
-        LlmGenerationProfile settings,
+        BaseLlmGenerationProfile settings,
         string userPromptTemplate,
         int maxRetries = 3,
         float delayBetweenRetries = 0.1f,
@@ -84,7 +84,7 @@ public class JSONLLMStateChainLink : IStateChainLink
         state ??= new PipelineState();
         if (_settings == null)
         {
-            yield return Fail(state, onDone, "[JSONLLMStateChainLink] LlmGenerationProfile is missing.");
+            yield return Fail(state, onDone, "[JSONLLMStateChainLink] LLM profile is missing.");
             yield break;
         }
 
@@ -521,3 +521,4 @@ public class JSONLLMStateChainLink : IStateChainLink
         Debug.Log(message);
     }
 }
+

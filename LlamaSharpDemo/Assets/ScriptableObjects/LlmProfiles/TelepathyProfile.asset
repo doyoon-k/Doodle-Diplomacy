@@ -12,12 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: TelepathyProfile
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  model: Models/Qwen3VL-8B-Instruct-Q4_K_M.gguf
   format: 
   stream: 0
   keepAlive: 0
-  visionProjectorModel: 
-  visionProjectorRelativeToStreamingAssets: 1
   systemPromptTemplate: 'You are reconstructing a translated fragment of an alien
     delegation''s internal meeting after they judged a human drawing.
 
@@ -83,6 +80,9 @@ MonoBehaviour:
     num_predict: 400
     repeat_penalty: 1.1
     seed: 0
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
     contextSize: 2048

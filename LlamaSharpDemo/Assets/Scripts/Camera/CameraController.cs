@@ -85,11 +85,9 @@ namespace DoodleDiplomacy.Camera
         private CameraMode _currentMode = CameraMode.Default;
         private bool _isTransitioning;
         private Coroutine _transitionRoutine;
-        private InteractableObject _hoverCandidate;
-        private InteractableObject _activeFocus;
-        private float _hoverCandidateElapsed;
-        private float _browseYaw;
         private bool _isCustomViewActive;
+        private CameraHoverFocusController _hoverFocusController;
+        private CameraEdgeBrowseController _edgeBrowseController;
 
         public CameraMode CurrentMode => _currentMode;
         public UnityEngine.Camera TargetCamera => targetCamera;
@@ -113,6 +111,10 @@ namespace DoodleDiplomacy.Camera
             {
                 Debug.LogError("[CameraController] No camera found. Assign one in the inspector.", this);
             }
+
+            _hoverFocusController = new CameraHoverFocusController(focusAcquireDelay);
+            _edgeBrowseController = new CameraEdgeBrowseController();
+            SyncFreeLookControllers();
         }
 
         private void OnDestroy()
@@ -143,8 +145,8 @@ namespace DoodleDiplomacy.Camera
                 return;
             }
 
-            UpdateHoverDrivenFocus(Time.deltaTime);
-            UpdateEdgeBrowse(Time.deltaTime);
+            SyncFreeLookControllers();
+            UpdateFreeLookAssistControllers(Time.deltaTime);
 
             Quaternion desiredRotation = ResolveFreeLookRotation();
             float t = 1f - Mathf.Exp(-Mathf.Max(0.01f, hoverLookLerpSpeed) * Time.deltaTime);
@@ -247,72 +249,48 @@ namespace DoodleDiplomacy.Camera
             OnTransitionComplete?.Invoke(_currentMode);
         }
 
-        private void UpdateHoverDrivenFocus(float deltaTime)
+        private void UpdateFreeLookAssistControllers(float deltaTime)
         {
             InteractableObject hoveredObject = InteractionManager.Instance != null
                 ? InteractionManager.Instance.HoveredObject
                 : null;
+            _hoverFocusController?.Update(hoveredObject, deltaTime);
 
-            if (hoveredObject == _activeFocus && hoveredObject != null)
+            if (_edgeBrowseController == null || _hoverFocusController == null)
             {
-                _hoverCandidate = null;
-                _hoverCandidateElapsed = 0f;
                 return;
             }
 
-            if (hoveredObject == null)
-            {
-                _hoverCandidate = null;
-                _hoverCandidateElapsed = 0f;
-                return;
-            }
-
-            if (_hoverCandidate != hoveredObject)
-            {
-                _hoverCandidate = hoveredObject;
-                _hoverCandidateElapsed = 0f;
-                return;
-            }
-
-            _hoverCandidateElapsed += deltaTime;
-            if (_hoverCandidateElapsed >= focusAcquireDelay)
-            {
-                _activeFocus = hoveredObject;
-            }
-        }
-
-        private void UpdateEdgeBrowse(float deltaTime)
-        {
             if (!TryGetPointerNormalizedPosition(out Vector2 pointerNormalized))
             {
                 return;
             }
 
-            float edgeThreshold = Mathf.Clamp(edgeBrowseThresholdNormalized, 0.01f, 0.45f);
-            float edgeIntent = 0f;
-
-            if (pointerNormalized.x <= edgeThreshold)
+            if (_edgeBrowseController.TryApplyBrowse(pointerNormalized, deltaTime))
             {
-                edgeIntent = -1f + Mathf.InverseLerp(0f, edgeThreshold, pointerNormalized.x);
+                _hoverFocusController.ClearActiveFocus();
             }
-            else if (pointerNormalized.x >= 1f - edgeThreshold)
-            {
-                edgeIntent = Mathf.InverseLerp(1f - edgeThreshold, 1f, pointerNormalized.x);
-            }
+        }
 
-            if (Mathf.Approximately(edgeIntent, 0f))
+        private void SyncFreeLookControllers()
+        {
+            if (_hoverFocusController != null)
             {
-                return;
+                _hoverFocusController.SetFocusAcquireDelay(focusAcquireDelay);
             }
 
-            _activeFocus = null;
-            _browseYaw += edgeIntent * edgeBrowseYawSpeed * deltaTime;
-            _browseYaw = Mathf.Clamp(_browseYaw, -Mathf.Abs(maxBrowseYaw), Mathf.Abs(maxBrowseYaw));
+            if (_edgeBrowseController != null)
+            {
+                _edgeBrowseController.Configure(
+                    edgeBrowseThresholdNormalized,
+                    edgeBrowseYawSpeed,
+                    maxBrowseYaw);
+            }
         }
 
         private Quaternion ResolveFreeLookRotation()
         {
-            InteractableObject focusObject = _activeFocus;
+            InteractableObject focusObject = _hoverFocusController != null ? _hoverFocusController.ActiveFocus : null;
             if (focusObject != null)
             {
                 Vector3 focusPosition = focusObject.GetCameraFocusPosition();
@@ -325,7 +303,8 @@ namespace DoodleDiplomacy.Camera
 
             Quaternion baseRotation = ResolvePresetRotation(freeLookPreset);
             Vector3 baseEuler = baseRotation.eulerAngles;
-            return Quaternion.Euler(baseEuler.x, baseEuler.y + _browseYaw, baseEuler.z);
+            float browseYaw = _edgeBrowseController != null ? _edgeBrowseController.BrowseYaw : 0f;
+            return Quaternion.Euler(baseEuler.x, baseEuler.y + browseYaw, baseEuler.z);
         }
 
         private bool TryResolvePresetPose(
@@ -369,10 +348,8 @@ namespace DoodleDiplomacy.Camera
 
         private void ResetHoverFocusState()
         {
-            _hoverCandidate = null;
-            _activeFocus = null;
-            _hoverCandidateElapsed = 0f;
-            _browseYaw = 0f;
+            _hoverFocusController?.Reset();
+            _edgeBrowseController?.Reset();
         }
 
         private CameraPreset GetPreset(CameraMode mode) => mode switch

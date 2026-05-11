@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Gameplay;
 
 namespace DoodleDiplomacy.UI
 {
@@ -16,7 +17,15 @@ namespace DoodleDiplomacy.UI
         [SerializeField] private GameObject titleCanvas;
         [SerializeField] private Button     startButton;
 
+        [Header("Startup")]
+        [SerializeField] private bool alwaysPlayIntroOnStart = true;
+
+        [Header("State Source")]
+        [SerializeField] private GameplayModeHost gameplayModeHost;
+
         private RoundManager _roundManager;
+        private bool _subscribedToHost;
+        private bool _subscribedToRoundManager;
 
         private void Awake()
         {
@@ -26,18 +35,25 @@ namespace DoodleDiplomacy.UI
 
         private void Start()
         {
+            SubscribeStateSource();
             // 게임 시작 시 자동 진입
             TryAutoStart();
         }
 
+        private void OnEnable()
+        {
+            SubscribeStateSource();
+        }
+
         private void OnDestroy()
         {
+            UnsubscribeStateSource();
             if (startButton != null) startButton.onClick.RemoveListener(OnStartClicked);
         }
 
         // ── 공개 API ──────────────────────────────────────────────────────────
 
-        /// <summary>RoundManager.OnStateChanged 이벤트에 연결.</summary>
+        /// <summary>GameplayModeHost 상태 변경 이벤트에 연결.</summary>
         public void OnGameStateChanged(GameState state)
         {
             if (state == GameState.Title)
@@ -48,7 +64,7 @@ namespace DoodleDiplomacy.UI
 
         public void ShowTitle()
         {
-            if (titleCanvas != null) titleCanvas.SetActive(true);
+            GameStateUiHelper.SetVisible(titleCanvas, true);
             Debug.Log("[TitleScreenController] 타이틀 화면 표시");
         }
 
@@ -56,14 +72,14 @@ namespace DoodleDiplomacy.UI
 
         private void TryAutoStart()
         {
-            if (_roundManager == null) _roundManager = RoundManager.Instance;
+            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
             if (_roundManager == null)
             {
                 Debug.LogWarning("[TitleScreenController] RoundManager 없음 — 자동 시작 건너뜀");
                 return;
             }
 
-            bool isFirstPlay = !PlayerPrefs.HasKey(FirstPlayKey);
+            bool isFirstPlay = alwaysPlayIntroOnStart || !PlayerPrefs.HasKey(FirstPlayKey);
             if (isFirstPlay)
             {
                 // 첫 플레이: 타이틀 건너뛰고 Intro부터 시작
@@ -80,14 +96,55 @@ namespace DoodleDiplomacy.UI
 
         private void Hide()
         {
-            if (titleCanvas != null) titleCanvas.SetActive(false);
+            GameStateUiHelper.SetVisible(titleCanvas, false);
+        }
+
+        private void SubscribeStateSource()
+        {
+            if (_subscribedToHost || _subscribedToRoundManager)
+            {
+                return;
+            }
+
+            gameplayModeHost = GameStateUiHelper.ResolveGameplayModeHost(gameplayModeHost);
+            if (gameplayModeHost != null)
+            {
+                gameplayModeHost.StateChanged += OnGameStateChanged;
+                _subscribedToHost = true;
+                OnGameStateChanged(gameplayModeHost.CurrentState);
+                return;
+            }
+
+            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
+            if (_roundManager != null)
+            {
+                _roundManager.OnStateChanged.AddListener(OnGameStateChanged);
+                _subscribedToRoundManager = true;
+                OnGameStateChanged(_roundManager.CurrentState);
+            }
+        }
+
+        private void UnsubscribeStateSource()
+        {
+            if (_subscribedToHost && gameplayModeHost != null)
+            {
+                gameplayModeHost.StateChanged -= OnGameStateChanged;
+            }
+
+            if (_subscribedToRoundManager && _roundManager != null)
+            {
+                _roundManager.OnStateChanged.RemoveListener(OnGameStateChanged);
+            }
+
+            _subscribedToHost = false;
+            _subscribedToRoundManager = false;
         }
 
         private void OnStartClicked()
         {
             Hide();
-            if (_roundManager == null) _roundManager = RoundManager.Instance;
-            _roundManager?.StartGame(isFirstPlay: false);
+            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
+            _roundManager?.StartGame(isFirstPlay: alwaysPlayIntroOnStart);
         }
 
         // ── Inspector 컨텍스트 메뉴 테스트 ───────────────────────────────────

@@ -1,11 +1,7 @@
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Gameplay;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.Serialization;
-
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace DoodleDiplomacy.Devices
 {
@@ -13,25 +9,6 @@ namespace DoodleDiplomacy.Devices
     [DefaultExecutionOrder(-250)]
     public sealed class TabletPhysicalControlsController : MonoBehaviour
     {
-        private enum ControlTarget
-        {
-            None = 0,
-            Brush = 1,
-            Fill = 2,
-            Eraser = 3,
-            SizeSmall = 4,
-            SizeMedium = 5,
-            SizeLarge = 6,
-            Undo = 7,
-            Redo = 8,
-            Clear = 9,
-            Spectrum = 10,
-            Knob = 11
-        }
-
-        private const int SmallBrushSize = 3;
-        private const int MediumBrushSize = 6;
-        private const int LargeBrushSize = 12;
         private const int SpectrumSnapCount = 32;
         private const float DefaultOverlayDepthOffset = -0.0005f;
 
@@ -81,8 +58,16 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private Texture2D clearButtonIconTexture;
         [FormerlySerializedAs("useHistoryIconOverlays")]
         [SerializeField] private bool useButtonIconOverlays = true;
-        [FormerlySerializedAs("historyOverlayShaderName")]
-        [SerializeField] private string buttonOverlayShaderName = "Sprites/Default";
+        [SerializeField] private Material buttonOverlayMaterial;
+        [SerializeField] private Renderer brushOverlayRenderer;
+        [SerializeField] private Renderer fillOverlayRenderer;
+        [SerializeField] private Renderer eraserOverlayRenderer;
+        [SerializeField] private Renderer sizeSmallOverlayRenderer;
+        [SerializeField] private Renderer sizeMediumOverlayRenderer;
+        [SerializeField] private Renderer sizeLargeOverlayRenderer;
+        [SerializeField] private Renderer undoOverlayRenderer;
+        [SerializeField] private Renderer redoOverlayRenderer;
+        [SerializeField] private Renderer clearOverlayRenderer;
         [FormerlySerializedAs("historyOverlayDisabledAlpha")]
         [SerializeField] private float buttonOverlayDisabledAlpha = 1f;
         [FormerlySerializedAs("historyOverlayLocalOffset")]
@@ -107,35 +92,72 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private Color disabledButtonColor = new(0.16f, 0.17f, 0.20f, 0.75f);
         [SerializeField] private Color clearButtonColor = new(0.80f, 0.36f, 0.18f, 1f);
 
-        private readonly int[] _brushSizePresets = { SmallBrushSize, MediumBrushSize, LargeBrushSize };
+        private readonly int[] _brushSizePresets = { TabletControlCommands.SmallBrushSize, TabletControlCommands.MediumBrushSize, TabletControlCommands.LargeBrushSize };
         private MaterialPropertyBlock _rendererPropertyBlock;
         private Texture2D _spectrumTexture;
-        private Material _buttonOverlayMaterial;
-        private Renderer _brushOverlayRenderer;
-        private Renderer _fillOverlayRenderer;
-        private Renderer _eraserOverlayRenderer;
-        private Renderer _sizeSmallOverlayRenderer;
-        private Renderer _sizeMediumOverlayRenderer;
-        private Renderer _sizeLargeOverlayRenderer;
-        private Renderer _undoOverlayRenderer;
-        private Renderer _redoOverlayRenderer;
-        private Renderer _clearOverlayRenderer;
+        private bool _missingButtonOverlayReferenceLogged;
         private bool _controlsActive;
         private bool _isDraggingSpectrum;
         private bool _suppressBoardUntilRelease;
         private float _spectrumPositionNormalized;
         private Color _selectedColor = Color.black;
+        private IDrawingControlFeature _drawingControls;
+
+        private void SetDrawingBoard(DrawingBoardController targetDrawingBoard)
+        {
+            if (drawingBoard == targetDrawingBoard && _drawingControls != null)
+            {
+                return;
+            }
+
+            UnsubscribeDrawingBoard();
+            drawingBoard = targetDrawingBoard;
+            _drawingControls = drawingBoard != null ? new DrawingFeature(drawingBoard, null) : null;
+        }
+
+        private bool EnsureDrawingControls()
+        {
+            if (_drawingControls != null)
+            {
+                return true;
+            }
+
+            if (drawingBoard == null)
+            {
+                drawingBoard = GetComponent<DrawingBoardController>();
+            }
+
+            if (drawingBoard == null)
+            {
+                return false;
+            }
+
+            _drawingControls = new DrawingFeature(drawingBoard, null);
+            return true;
+        }
+
+        private void ValidateInspectorReferences()
+        {
+            if (roundManager == null)
+            {
+                Debug.LogError("[TabletPhysicalControlsController] Round manager must be assigned in the Inspector.", this);
+            }
+
+            if (inputCamera == null)
+            {
+                Debug.LogError("[TabletPhysicalControlsController] Input camera must be assigned in the Inspector.", this);
+            }
+        }
 
         public void Initialize(DrawingBoardController targetDrawingBoard)
         {
             if (targetDrawingBoard != null)
             {
-                drawingBoard = targetDrawingBoard;
+                SetDrawingBoard(targetDrawingBoard);
             }
 
-            roundManager ??= RoundManager.Instance ?? FindFirstObjectByType<RoundManager>();
-            inputCamera ??= UnityEngine.Camera.main ?? FindFirstObjectByType<UnityEngine.Camera>();
-
+            ValidateInspectorReferences();
+            EnsureDrawingControls();
             EnsureSpectrumTexture();
             EnsureButtonIconOverlays();
             SubscribeDrawingBoard();
@@ -155,6 +177,7 @@ namespace DoodleDiplomacy.Devices
 
         private void OnEnable()
         {
+            EnsureDrawingControls();
             EnsureSpectrumTexture();
             EnsureButtonIconOverlays();
             SubscribeDrawingBoard();
@@ -181,12 +204,10 @@ namespace DoodleDiplomacy.Devices
             if (Application.isPlaying)
             {
                 Destroy(_spectrumTexture);
-                Destroy(_buttonOverlayMaterial);
             }
             else
             {
                 DestroyImmediate(_spectrumTexture);
-                DestroyImmediate(_buttonOverlayMaterial);
             }
 
         }
@@ -194,40 +215,36 @@ namespace DoodleDiplomacy.Devices
         private void Update()
         {
             RefreshStateFromRoundManager();
-            if (!_controlsActive || drawingBoard == null)
+            if (!_controlsActive || !EnsureDrawingControls())
             {
                 return;
             }
 
             if (inputCamera == null)
             {
-                inputCamera = UnityEngine.Camera.main ?? FindFirstObjectByType<UnityEngine.Camera>();
+                return;
             }
 
-            if (!ReadMouseState(
-                    inputCamera,
-                    out Vector2 pointerScreenPos,
-                    out bool pointerDown,
-                    out bool pointerHeld,
-                    out bool pointerUp,
-                    out bool pointerInsideCameraBounds))
+            if (!TabletControlInputReader.TryRead(inputCamera, out TabletControlPointerState pointerState))
             {
                 return;
             }
 
-            if (pointerUp)
+            if (pointerState.ReleasedThisFrame)
             {
                 EndPointerCapture();
             }
 
-            if (pointerInsideCameraBounds && pointerDown && TryRaycastControl(pointerScreenPos, out ControlTarget target))
+            if (pointerState.IsInsideCameraBounds &&
+                pointerState.PressedThisFrame &&
+                TryRaycastControl(pointerState.ScreenPosition, out TabletControlTarget target))
             {
-                HandleControlPressed(target, pointerScreenPos);
+                HandleControlPressed(target, pointerState.ScreenPosition);
             }
 
-            if (pointerInsideCameraBounds && _isDraggingSpectrum && pointerHeld)
+            if (pointerState.IsInsideCameraBounds && _isDraggingSpectrum && pointerState.Held)
             {
-                UpdateSpectrumFromPointer(pointerScreenPos);
+                UpdateSpectrumFromPointer(pointerState.ScreenPosition);
             }
 
             SetBoardInteractionLocked(_controlsActive && (_isDraggingSpectrum || _suppressBoardUntilRelease));
@@ -262,67 +279,29 @@ namespace DoodleDiplomacy.Devices
 
         private void RefreshStateFromRoundManager()
         {
-            roundManager ??= RoundManager.Instance ?? FindFirstObjectByType<RoundManager>();
+            ValidateInspectorReferences();
             GameState state = roundManager != null ? roundManager.CurrentState : GameState.Title;
             OnGameStateChanged(state);
         }
 
-        private void HandleControlPressed(ControlTarget target, Vector2 pointerScreenPos)
+        private void HandleControlPressed(TabletControlTarget target, Vector2 pointerScreenPos)
         {
-            if (drawingBoard == null)
+            if (!EnsureDrawingControls())
             {
+                return;
+            }
+
+            if (TabletControlCommands.TryExecute(target, _drawingControls))
+            {
+                _suppressBoardUntilRelease = true;
+                RefreshVisuals();
                 return;
             }
 
             switch (target)
             {
-                case ControlTarget.Brush:
-                    drawingBoard.SetToolMode(DrawingToolMode.Brush);
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.Fill:
-                    drawingBoard.SetToolMode(DrawingToolMode.Fill);
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.Eraser:
-                    drawingBoard.SetToolMode(DrawingToolMode.Eraser);
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.SizeSmall:
-                    drawingBoard.SetBrushRadius(SmallBrushSize);
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.SizeMedium:
-                    drawingBoard.SetBrushRadius(MediumBrushSize);
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.SizeLarge:
-                    drawingBoard.SetBrushRadius(LargeBrushSize);
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.Undo:
-                    drawingBoard.Undo();
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.Redo:
-                    drawingBoard.Redo();
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.Clear:
-                    drawingBoard.ClearCanvas();
-                    _suppressBoardUntilRelease = true;
-                    break;
-
-                case ControlTarget.Knob:
-                case ControlTarget.Spectrum:
+                case TabletControlTarget.Knob:
+                case TabletControlTarget.Spectrum:
                     _isDraggingSpectrum = true;
                     _suppressBoardUntilRelease = true;
                     UpdateSpectrumFromPointer(pointerScreenPos);
@@ -332,16 +311,12 @@ namespace DoodleDiplomacy.Devices
             RefreshVisuals();
         }
 
-        private bool TryRaycastControl(Vector2 pointerScreenPos, out ControlTarget target)
+        private bool TryRaycastControl(Vector2 pointerScreenPos, out TabletControlTarget target)
         {
-            target = ControlTarget.None;
+            target = TabletControlTarget.None;
             if (inputCamera == null)
             {
-                inputCamera = UnityEngine.Camera.main ?? FindFirstObjectByType<UnityEngine.Camera>();
-                if (inputCamera == null)
-                {
-                    return false;
-                }
+                return false;
             }
 
             Ray ray = inputCamera.ScreenPointToRay(pointerScreenPos);
@@ -351,72 +326,72 @@ namespace DoodleDiplomacy.Devices
             }
 
             target = ResolveControlTarget(hit.collider);
-            return target != ControlTarget.None;
+            return target != TabletControlTarget.None;
         }
 
-        private ControlTarget ResolveControlTarget(Collider hitCollider)
+        private TabletControlTarget ResolveControlTarget(Collider hitCollider)
         {
             if (MatchesCollider(hitCollider, brushButtonCollider))
             {
-                return ControlTarget.Brush;
+                return TabletControlTarget.Brush;
             }
 
             if (MatchesCollider(hitCollider, fillButtonCollider))
             {
-                return ControlTarget.Fill;
+                return TabletControlTarget.Fill;
             }
 
             if (MatchesCollider(hitCollider, eraserButtonCollider))
             {
-                return ControlTarget.Eraser;
+                return TabletControlTarget.Eraser;
             }
 
             if (MatchesCollider(hitCollider, sizeSmallCollider))
             {
-                return ControlTarget.SizeSmall;
+                return TabletControlTarget.SizeSmall;
             }
 
             if (MatchesCollider(hitCollider, sizeMediumCollider))
             {
-                return ControlTarget.SizeMedium;
+                return TabletControlTarget.SizeMedium;
             }
 
             if (MatchesCollider(hitCollider, sizeLargeCollider))
             {
-                return ControlTarget.SizeLarge;
+                return TabletControlTarget.SizeLarge;
             }
 
             if (MatchesCollider(hitCollider, undoButtonCollider))
             {
-                return ControlTarget.Undo;
+                return TabletControlTarget.Undo;
             }
 
             if (MatchesCollider(hitCollider, redoButtonCollider))
             {
-                return ControlTarget.Redo;
+                return TabletControlTarget.Redo;
             }
 
             if (MatchesCollider(hitCollider, clearButtonCollider))
             {
-                return ControlTarget.Clear;
+                return TabletControlTarget.Clear;
             }
 
             if (MatchesCollider(hitCollider, spectrumKnobCollider))
             {
-                return ControlTarget.Knob;
+                return TabletControlTarget.Knob;
             }
 
             if (MatchesCollider(hitCollider, spectrumBarCollider))
             {
-                return ControlTarget.Spectrum;
+                return TabletControlTarget.Spectrum;
             }
 
-            return ControlTarget.None;
+            return TabletControlTarget.None;
         }
 
         private void UpdateSpectrumFromPointer(Vector2 pointerScreenPos)
         {
-            if (drawingBoard == null || spectrumTrackStart == null || spectrumTrackEnd == null)
+            if (!EnsureDrawingControls() || spectrumTrackStart == null || spectrumTrackEnd == null)
             {
                 return;
             }
@@ -446,13 +421,13 @@ namespace DoodleDiplomacy.Devices
             _selectedColor = spectrumColor;
             UpdateKnobPose();
 
-            if (applyToDrawingBoard && drawingBoard != null)
+            if (applyToDrawingBoard && EnsureDrawingControls())
             {
-                DrawingToolMode modeBeforeChange = drawingBoard.GetCurrentToolMode();
-                drawingBoard.SetBrushColor(spectrumColor);
+                DrawingToolMode modeBeforeChange = _drawingControls.CurrentToolMode;
+                _drawingControls.SetBrushColor(spectrumColor);
                 if (modeBeforeChange == DrawingToolMode.Eraser)
                 {
-                    drawingBoard.SetToolMode(DrawingToolMode.Eraser);
+                    _drawingControls.SetToolMode(DrawingToolMode.Eraser);
                 }
             }
 
@@ -461,12 +436,12 @@ namespace DoodleDiplomacy.Devices
 
         private void SyncFromDrawingBoard()
         {
-            if (drawingBoard == null)
+            if (!EnsureDrawingControls())
             {
                 return;
             }
 
-            _selectedColor = drawingBoard.BrushColor;
+            _selectedColor = _drawingControls.BrushColor;
             _spectrumPositionNormalized = EvaluateSpectrumPositionFromColor(_selectedColor);
             UpdateKnobPose();
         }
@@ -628,23 +603,23 @@ namespace DoodleDiplomacy.Devices
 
         private void RefreshVisuals()
         {
-            if (drawingBoard == null)
+            if (!EnsureDrawingControls())
             {
                 return;
             }
 
-            DrawingToolMode mode = drawingBoard.GetCurrentToolMode();
+            DrawingToolMode mode = _drawingControls.CurrentToolMode;
             SetRendererColor(brushButtonRenderer, mode == DrawingToolMode.Brush ? activeToolColor : neutralButtonColor);
             SetRendererColor(fillButtonRenderer, mode == DrawingToolMode.Fill ? activeToolColor : neutralButtonColor);
             SetRendererColor(eraserButtonRenderer, mode == DrawingToolMode.Eraser ? activeEraserColor : neutralButtonColor);
 
-            int nearestPreset = ResolveNearestBrushPreset(drawingBoard.BrushRadius);
-            SetRendererColor(sizeSmallRenderer, nearestPreset == SmallBrushSize ? activeSizeColor : neutralButtonColor);
-            SetRendererColor(sizeMediumRenderer, nearestPreset == MediumBrushSize ? activeSizeColor : neutralButtonColor);
-            SetRendererColor(sizeLargeRenderer, nearestPreset == LargeBrushSize ? activeSizeColor : neutralButtonColor);
+            int nearestPreset = ResolveNearestBrushPreset(_drawingControls.BrushRadius);
+            SetRendererColor(sizeSmallRenderer, nearestPreset == TabletControlCommands.SmallBrushSize ? activeSizeColor : neutralButtonColor);
+            SetRendererColor(sizeMediumRenderer, nearestPreset == TabletControlCommands.MediumBrushSize ? activeSizeColor : neutralButtonColor);
+            SetRendererColor(sizeLargeRenderer, nearestPreset == TabletControlCommands.LargeBrushSize ? activeSizeColor : neutralButtonColor);
 
-            SetRendererColor(undoButtonRenderer, drawingBoard.CanUndo ? neutralButtonColor : disabledButtonColor);
-            SetRendererColor(redoButtonRenderer, drawingBoard.CanRedo ? neutralButtonColor : disabledButtonColor);
+            SetRendererColor(undoButtonRenderer, _drawingControls.CanUndo ? neutralButtonColor : disabledButtonColor);
+            SetRendererColor(redoButtonRenderer, _drawingControls.CanRedo ? neutralButtonColor : disabledButtonColor);
             SetRendererColor(clearButtonRenderer, clearButtonColor);
             SetRendererColor(spectrumKnobRenderer, _selectedColor);
             RefreshButtonOverlayVisuals();
@@ -654,68 +629,68 @@ namespace DoodleDiplomacy.Devices
         {
             if (!useButtonIconOverlays)
             {
-                SetOverlayRendererEnabled(_brushOverlayRenderer, false);
-                SetOverlayRendererEnabled(_fillOverlayRenderer, false);
-                SetOverlayRendererEnabled(_eraserOverlayRenderer, false);
-                SetOverlayRendererEnabled(_sizeSmallOverlayRenderer, false);
-                SetOverlayRendererEnabled(_sizeMediumOverlayRenderer, false);
-                SetOverlayRendererEnabled(_sizeLargeOverlayRenderer, false);
-                SetOverlayRendererEnabled(_undoOverlayRenderer, false);
-                SetOverlayRendererEnabled(_redoOverlayRenderer, false);
-                SetOverlayRendererEnabled(_clearOverlayRenderer, false);
+                SetOverlayRendererEnabled(brushOverlayRenderer, false);
+                SetOverlayRendererEnabled(fillOverlayRenderer, false);
+                SetOverlayRendererEnabled(eraserOverlayRenderer, false);
+                SetOverlayRendererEnabled(sizeSmallOverlayRenderer, false);
+                SetOverlayRendererEnabled(sizeMediumOverlayRenderer, false);
+                SetOverlayRendererEnabled(sizeLargeOverlayRenderer, false);
+                SetOverlayRendererEnabled(undoOverlayRenderer, false);
+                SetOverlayRendererEnabled(redoOverlayRenderer, false);
+                SetOverlayRendererEnabled(clearOverlayRenderer, false);
                 return;
             }
 
-            _brushOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 brushButtonRenderer,
-                _brushOverlayRenderer,
+                brushOverlayRenderer,
                 "BrushIconOverlay",
                 brushButtonIconTexture);
-            _fillOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 fillButtonRenderer,
-                _fillOverlayRenderer,
+                fillOverlayRenderer,
                 "FillIconOverlay",
                 fillButtonIconTexture);
-            _eraserOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 eraserButtonRenderer,
-                _eraserOverlayRenderer,
+                eraserOverlayRenderer,
                 "EraserIconOverlay",
                 eraserButtonIconTexture);
-            _sizeSmallOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 sizeSmallRenderer,
-                _sizeSmallOverlayRenderer,
+                sizeSmallOverlayRenderer,
                 "SizeSmallIconOverlay",
                 sizeSmallButtonIconTexture);
-            _sizeMediumOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 sizeMediumRenderer,
-                _sizeMediumOverlayRenderer,
+                sizeMediumOverlayRenderer,
                 "SizeMediumIconOverlay",
                 sizeMediumButtonIconTexture);
-            _sizeLargeOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 sizeLargeRenderer,
-                _sizeLargeOverlayRenderer,
+                sizeLargeOverlayRenderer,
                 "SizeLargeIconOverlay",
                 sizeLargeButtonIconTexture);
-            _undoOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 undoButtonRenderer,
-                _undoOverlayRenderer,
+                undoOverlayRenderer,
                 "UndoIconOverlay",
                 undoButtonIconTexture);
-            _redoOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 redoButtonRenderer,
-                _redoOverlayRenderer,
+                redoOverlayRenderer,
                 "RedoIconOverlay",
                 redoButtonIconTexture);
-            _clearOverlayRenderer = EnsureOverlayForButton(
+            EnsureOverlayForButton(
                 clearButtonRenderer,
-                _clearOverlayRenderer,
+                clearOverlayRenderer,
                 "ClearIconOverlay",
                 clearButtonIconTexture);
 
             RefreshButtonOverlayVisuals();
         }
 
-        private Renderer EnsureOverlayForButton(
+        private void EnsureOverlayForButton(
             Renderer buttonRenderer,
             Renderer overlayRenderer,
             string overlayName,
@@ -723,91 +698,38 @@ namespace DoodleDiplomacy.Devices
         {
             if (buttonRenderer == null || iconTexture == null)
             {
-                return overlayRenderer;
+                return;
             }
 
             if (overlayRenderer == null)
             {
-                Transform existing = buttonRenderer.transform.Find(overlayName);
-                if (existing != null)
+                if (!_missingButtonOverlayReferenceLogged)
                 {
-                    overlayRenderer = existing.GetComponent<Renderer>();
+                    Debug.LogError(
+                        $"[TabletPhysicalControlsController] Button icon overlay renderer '{overlayName}' must be assigned in the Inspector.",
+                        this);
+                    _missingButtonOverlayReferenceLogged = true;
                 }
+
+                return;
             }
 
-            if (overlayRenderer == null)
+            if (buttonOverlayMaterial == null)
             {
-                GameObject overlayObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                overlayObject.name = overlayName;
-                overlayObject.transform.SetParent(buttonRenderer.transform, false);
-                overlayObject.transform.localPosition = GetOverlayLocalPosition();
-                overlayObject.transform.localRotation = Quaternion.identity;
-                overlayObject.transform.localScale = ComputeOverlayLocalScale(buttonRenderer, iconTexture);
-                Collider overlayCollider = overlayObject.GetComponent<Collider>();
-                if (overlayCollider != null)
+                if (!_missingButtonOverlayReferenceLogged)
                 {
-                    if (Application.isPlaying)
-                    {
-                        Destroy(overlayCollider);
-                    }
-                    else
-                    {
-                        DestroyImmediate(overlayCollider);
-                    }
+                    Debug.LogError("[TabletPhysicalControlsController] Button overlay material must be assigned in the Inspector.", this);
+                    _missingButtonOverlayReferenceLogged = true;
                 }
-                overlayRenderer = overlayObject.GetComponent<Renderer>();
+
+                return;
             }
 
-            Material overlayMaterial = GetOrCreateButtonOverlayMaterial();
-            if (overlayMaterial == null)
-            {
-                return overlayRenderer;
-            }
-
-            overlayRenderer.sharedMaterial = overlayMaterial;
+            overlayRenderer.sharedMaterial = buttonOverlayMaterial;
+            overlayRenderer.transform.localPosition = GetOverlayLocalPosition();
+            overlayRenderer.transform.localScale = ComputeOverlayLocalScale(buttonRenderer, iconTexture);
             SetOverlayTexture(overlayRenderer, iconTexture);
             SetOverlayRendererEnabled(overlayRenderer, true);
-            return overlayRenderer;
-        }
-
-        private Material GetOrCreateButtonOverlayMaterial()
-        {
-            if (_buttonOverlayMaterial != null)
-            {
-                return _buttonOverlayMaterial;
-            }
-
-            Shader shader = Shader.Find(buttonOverlayShaderName);
-            if (shader == null)
-            {
-                shader = Shader.Find("Unlit/Transparent");
-            }
-
-            if (shader == null)
-            {
-                return null;
-            }
-
-            _buttonOverlayMaterial = new Material(shader)
-            {
-                name = "TabletButtonIconOverlay_Runtime",
-                hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild,
-                renderQueue = 3000
-            };
-            if (_buttonOverlayMaterial.HasProperty("_Cull"))
-            {
-                _buttonOverlayMaterial.SetInt("_Cull", 0);
-            }
-            if (_buttonOverlayMaterial.HasProperty("_ZWrite"))
-            {
-                _buttonOverlayMaterial.SetInt("_ZWrite", 0);
-            }
-            if (_buttonOverlayMaterial.HasProperty("_ZTest"))
-            {
-                _buttonOverlayMaterial.SetInt("_ZTest", (int)CompareFunction.Always);
-            }
-
-            return _buttonOverlayMaterial;
         }
 
         private Vector3 GetOverlayLocalPosition()
@@ -863,20 +785,20 @@ namespace DoodleDiplomacy.Devices
 
         private void RefreshButtonOverlayVisuals()
         {
-            if (!useButtonIconOverlays || drawingBoard == null)
+            if (!useButtonIconOverlays || !EnsureDrawingControls())
             {
                 return;
             }
 
-            SetOverlayVisual(_brushOverlayRenderer, true);
-            SetOverlayVisual(_fillOverlayRenderer, true);
-            SetOverlayVisual(_eraserOverlayRenderer, true);
-            SetOverlayVisual(_sizeSmallOverlayRenderer, true);
-            SetOverlayVisual(_sizeMediumOverlayRenderer, true);
-            SetOverlayVisual(_sizeLargeOverlayRenderer, true);
-            SetOverlayVisual(_undoOverlayRenderer, drawingBoard.CanUndo);
-            SetOverlayVisual(_redoOverlayRenderer, drawingBoard.CanRedo);
-            SetOverlayVisual(_clearOverlayRenderer, true);
+            SetOverlayVisual(brushOverlayRenderer, true);
+            SetOverlayVisual(fillOverlayRenderer, true);
+            SetOverlayVisual(eraserOverlayRenderer, true);
+            SetOverlayVisual(sizeSmallOverlayRenderer, true);
+            SetOverlayVisual(sizeMediumOverlayRenderer, true);
+            SetOverlayVisual(sizeLargeOverlayRenderer, true);
+            SetOverlayVisual(undoOverlayRenderer, _drawingControls.CanUndo);
+            SetOverlayVisual(redoOverlayRenderer, _drawingControls.CanRedo);
+            SetOverlayVisual(clearOverlayRenderer, true);
         }
 
         private void SetOverlayVisual(Renderer overlayRenderer, bool enabled)
@@ -924,29 +846,26 @@ namespace DoodleDiplomacy.Devices
 
         private void SubscribeDrawingBoard()
         {
-            if (drawingBoard == null)
+            if (!EnsureDrawingControls())
             {
                 return;
             }
 
-            drawingBoard.BrushRadiusChanged -= OnDrawingBoardChanged;
-            drawingBoard.BrushRadiusChanged += OnDrawingBoardChanged;
-            drawingBoard.HistoryStateChanged -= OnDrawingBoardHistoryChanged;
-            drawingBoard.HistoryStateChanged += OnDrawingBoardHistoryChanged;
-            drawingBoard.SketchGuideStateChanged -= OnDrawingBoardSketchGuideChanged;
-            drawingBoard.SketchGuideStateChanged += OnDrawingBoardSketchGuideChanged;
+            _drawingControls.BrushRadiusChanged -= OnDrawingBoardChanged;
+            _drawingControls.BrushRadiusChanged += OnDrawingBoardChanged;
+            _drawingControls.HistoryStateChanged -= OnDrawingBoardHistoryChanged;
+            _drawingControls.HistoryStateChanged += OnDrawingBoardHistoryChanged;
         }
 
         private void UnsubscribeDrawingBoard()
         {
-            if (drawingBoard == null)
+            if (_drawingControls == null)
             {
                 return;
             }
 
-            drawingBoard.BrushRadiusChanged -= OnDrawingBoardChanged;
-            drawingBoard.HistoryStateChanged -= OnDrawingBoardHistoryChanged;
-            drawingBoard.SketchGuideStateChanged -= OnDrawingBoardSketchGuideChanged;
+            _drawingControls.BrushRadiusChanged -= OnDrawingBoardChanged;
+            _drawingControls.HistoryStateChanged -= OnDrawingBoardHistoryChanged;
         }
 
         private void OnDrawingBoardChanged(int _)
@@ -959,11 +878,6 @@ namespace DoodleDiplomacy.Devices
             RefreshVisuals();
         }
 
-        private void OnDrawingBoardSketchGuideChanged(bool _, bool __)
-        {
-            RefreshVisuals();
-        }
-
         private void EndPointerCapture()
         {
             _isDraggingSpectrum = false;
@@ -972,7 +886,10 @@ namespace DoodleDiplomacy.Devices
 
         private void SetBoardInteractionLocked(bool locked)
         {
-            drawingBoard?.SetInteractionLocked(locked);
+            if (EnsureDrawingControls())
+            {
+                _drawingControls.SetInteractionLocked(locked);
+            }
         }
 
         private static void SetColliderEnabled(Collider collider, bool enabled)
@@ -1114,60 +1031,5 @@ namespace DoodleDiplomacy.Devices
             return segmentStart + (segmentDirection * segmentT);
         }
 
-        private static bool ReadMouseState(
-            UnityEngine.Camera referenceCamera,
-            out Vector2 pointerScreenPos,
-            out bool pointerDown,
-            out bool pointerHeld,
-            out bool pointerUp,
-            out bool pointerInsideCameraBounds)
-        {
-            pointerScreenPos = default;
-            pointerDown = false;
-            pointerHeld = false;
-            pointerUp = false;
-            pointerInsideCameraBounds = false;
-
-#if ENABLE_INPUT_SYSTEM
-            Mouse mouse = Mouse.current;
-            if (mouse != null)
-            {
-                pointerScreenPos = mouse.position.ReadValue();
-                pointerDown = mouse.leftButton.wasPressedThisFrame;
-                pointerHeld = mouse.leftButton.isPressed;
-                pointerUp = mouse.leftButton.wasReleasedThisFrame;
-                pointerInsideCameraBounds = IsPointerWithinCameraBounds(referenceCamera, pointerScreenPos);
-                return true;
-            }
-#endif
-
-            pointerScreenPos = Input.mousePosition;
-            pointerDown = Input.GetMouseButtonDown(0);
-            pointerHeld = Input.GetMouseButton(0);
-            pointerUp = Input.GetMouseButtonUp(0);
-            pointerInsideCameraBounds = IsPointerWithinCameraBounds(referenceCamera, pointerScreenPos);
-            return true;
-        }
-
-        private static bool IsPointerWithinCameraBounds(UnityEngine.Camera referenceCamera, Vector2 pointerScreenPos)
-        {
-            if (float.IsNaN(pointerScreenPos.x) || float.IsNaN(pointerScreenPos.y))
-            {
-                return false;
-            }
-
-            Rect pixelRect = referenceCamera != null && referenceCamera.pixelRect.width > 0f && referenceCamera.pixelRect.height > 0f
-                ? referenceCamera.pixelRect
-                : new Rect(0f, 0f, Mathf.Max(1f, Screen.width), Mathf.Max(1f, Screen.height));
-            if (pixelRect.width <= 0f || pixelRect.height <= 0f)
-            {
-                return false;
-            }
-
-            return pointerScreenPos.x >= pixelRect.xMin &&
-                   pointerScreenPos.x <= pixelRect.xMax &&
-                   pointerScreenPos.y >= pixelRect.yMin &&
-                   pointerScreenPos.y <= pixelRect.yMax;
-        }
     }
 }

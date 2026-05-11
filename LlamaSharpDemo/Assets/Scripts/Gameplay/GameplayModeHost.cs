@@ -1,0 +1,153 @@
+using System;
+using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Interaction;
+using UnityEngine;
+
+namespace DoodleDiplomacy.Gameplay
+{
+    public class GameplayModeHost : MonoBehaviour, IGameplayStateObservable
+    {
+        public static GameplayModeHost Instance { get; private set; }
+
+        [Header("Mode")]
+        [SerializeField] private SceneReferenceHub sceneReferences;
+        [SerializeField] private MonoBehaviour defaultModeBehaviour;
+        [SerializeField] private bool enterDefaultModeOnStart = true;
+        [SerializeField] private bool validateSceneReferencesOnAwake = true;
+
+        private GameplayModeContext _context;
+        private IGameplayMode _activeMode;
+        private IGameplayStateObservable _activeStateObservable;
+        private bool _hasEnteredMode;
+
+        public event Action<GameState> StateChanged;
+
+        public IGameplayMode ActiveMode => _activeMode;
+        public string ActiveModeId => _activeMode != null ? _activeMode.ModeId : string.Empty;
+        public GameState CurrentState => _activeMode != null ? _activeMode.CurrentState : GameState.Title;
+        public GameplayModeContext Context => _context;
+        public bool HasActiveMode => _activeMode != null && _hasEnteredMode;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+
+            if (sceneReferences == null)
+            {
+                sceneReferences = GetComponent<SceneReferenceHub>();
+            }
+
+            if (defaultModeBehaviour == null)
+            {
+                defaultModeBehaviour = GetComponent<LegacyRoundModeAdapter>();
+            }
+
+            if (validateSceneReferencesOnAwake && sceneReferences != null)
+            {
+                sceneReferences.ValidateReferences();
+            }
+
+            if (sceneReferences != null)
+            {
+                sceneReferences.ConfigureRuntime(this);
+                _context = sceneReferences.CreateContext();
+            }
+        }
+
+        private void Start()
+        {
+            if (enterDefaultModeOnStart && defaultModeBehaviour != null)
+            {
+                EnterMode(defaultModeBehaviour);
+            }
+        }
+
+        private void Update()
+        {
+            _activeMode?.Tick(Time.deltaTime);
+        }
+
+        private void OnDestroy()
+        {
+            ExitActiveMode();
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        public bool EnterMode(MonoBehaviour modeBehaviour)
+        {
+            if (modeBehaviour == null)
+            {
+                Debug.LogError("[GameplayModeHost] Cannot enter a null gameplay mode.", this);
+                return false;
+            }
+
+            if (modeBehaviour is not IGameplayMode mode)
+            {
+                Debug.LogError($"[GameplayModeHost] '{modeBehaviour.name}' does not implement IGameplayMode.", modeBehaviour);
+                return false;
+            }
+
+            if (_context == null)
+            {
+                Debug.LogError("[GameplayModeHost] Cannot enter gameplay mode because SceneReferenceHub/context is missing.", this);
+                return false;
+            }
+
+            ExitActiveMode();
+            _activeMode = mode;
+            _activeStateObservable = mode as IGameplayStateObservable;
+            if (_activeStateObservable != null)
+            {
+                _activeStateObservable.StateChanged += HandleActiveModeStateChanged;
+            }
+
+            _activeMode.Enter(_context);
+            _hasEnteredMode = true;
+            StateChanged?.Invoke(_activeMode.CurrentState);
+            Debug.Log($"[GameplayModeHost] Entered mode '{_activeMode.ModeId}'.", this);
+            return true;
+        }
+
+        public void ExitActiveMode()
+        {
+            if (_activeStateObservable != null)
+            {
+                _activeStateObservable.StateChanged -= HandleActiveModeStateChanged;
+                _activeStateObservable = null;
+            }
+
+            if (_activeMode != null)
+            {
+                _activeMode.Exit();
+            }
+
+            _activeMode = null;
+            _hasEnteredMode = false;
+        }
+
+        public bool TryHandleInteraction(InteractionType type, InteractableObject source)
+        {
+            if (_activeMode == null || !_hasEnteredMode)
+            {
+                return false;
+            }
+
+            _activeMode.HandleInteraction(type, source);
+            return true;
+        }
+
+        private void HandleActiveModeStateChanged(GameState state)
+        {
+            StateChanged?.Invoke(state);
+        }
+    }
+}

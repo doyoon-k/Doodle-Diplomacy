@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using DoodleDiplomacy.AI;
 using DoodleDiplomacy.Camera;
@@ -8,6 +7,7 @@ using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Devices;
 using DoodleDiplomacy.Dialogue;
 using DoodleDiplomacy.Ending;
+using DoodleDiplomacy.Gameplay;
 using DoodleDiplomacy.Interaction;
 using DoodleDiplomacy.UI;
 using UnityEngine;
@@ -18,26 +18,8 @@ namespace DoodleDiplomacy.Core
     [Serializable]
     public class GameStateUnityEvent : UnityEvent<GameState> { }
 
-    public class RoundManager : MonoBehaviour
+    public class RoundManager : MonoBehaviour, IRoundStateEntryContext, IRoundPlayerActionContext, IRoundStartupContext
     {
-        private const string PreviewFallbackText = "(analysis unavailable)";
-        private const string PreviewTerminalHeader = "[ALIEN FIRST PASS]";
-        private const string DefaultPreviewAnalyzingMessage = "The alien is trying to understand your drawing...";
-        private const string DefaultPreviewReadyToInspectMessage = "First-pass analysis is complete. Click the terminal to inspect the result.";
-        private const string DefaultTerminalSignalReadyMessage = "A signal has reached the terminal. Click the terminal to inspect it.";
-        private const string DefaultNoSignalMessage = "No readable signal was recovered. Open the terminal to continue.";
-        private const string DefaultRegeneratingReferencesMessage = "Regenerating the object references with the same prompts...";
-        private const string DefaultOpenTerminalFirstMessage = "Open the terminal first.";
-        private const string DefaultAdjutantDisabledMessage = "The adjutant can no longer review drawings. Click the alien for first-pass review.";
-        private const string DefaultGeneratingAlienObjectsMessage = "Generating the alien objects...";
-        private const string DefaultObjectGeneratorMissingMessage = "Object generator is missing. Assign AIPipelineBridge before starting the round.";
-        private const string DefaultObjectGenerationFailedRetryMessage = "Object generation failed. Click the alien to retry.";
-        private const string DefaultObjectGenerationFailedPrefix = "Object generation failed: ";
-        private const string DefaultObjectPresentedHintMessage = "Click the tablet to start drawing, or click the alien to regenerate the references.";
-        private const string DefaultDrawingReadyHintTemplate = "Press {0} when the drawing is ready to submit.";
-        private const string DefaultPreviewReadyHintMessage = "Click the alien to get a first-pass read, or click the tablet to keep drawing.";
-        private const string DefaultSubmittingHintMessage = "Submitting the drawing to the alien delegation...";
-        private const float TerminalCloseGuardSeconds = 0.15f;
         private const float DefaultFirstRoundPrefetchTimeoutSeconds = 180f;
 
         public static RoundManager Instance { get; private set; }
@@ -59,6 +41,8 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private DrawingBoardController drawingBoard;
 
         [Header("Interaction Targets (Inspector Wiring)")]
+        [SerializeField] private InteractableObject[] alienInteractables = Array.Empty<InteractableObject>();
+        [SerializeField] private InteractableObject[] tabletInteractables = Array.Empty<InteractableObject>();
         [SerializeField] private InteractableObject sharedMonitorInteractable;
         [SerializeField] private InteractableObject[] terminalInteractables = Array.Empty<InteractableObject>();
 
@@ -88,24 +72,128 @@ namespace DoodleDiplomacy.Core
         [Header("Events")]
         public GameStateUnityEvent OnStateChanged;
 
-        private GameState _currentState = GameState.Title;
+        private readonly RoundRuntimeServices _services = new();
         private int _currentRound;
-        private int _stateVersion;
         private SatisfactionLevel _lastSatisfaction = SatisfactionLevel.Neutral;
         private bool _preserveRoundIndexOnNextWaitingState;
         private float _interpreterOpenedAt;
         private bool _isSharedMonitorZoomActive;
         private bool _hasOpenedInterpreterThisRound;
-        private bool _monitorClickConsumedUntilRelease;
-        private bool _isPreviewTerminalOpen;
-        private bool _hasShownPreviewTerminalOnce;
-        private string _cachedPreviewTerminalOutput = string.Empty;
-        private Coroutine _startGameRoutine;
-        private DialogueSequence _runtimeIntroSequence;
+        private IRoundAiGateway _aiGateway;
+        private IDrawingFeature _drawingFeature;
+        private ICameraModeService _cameraModeService;
+        private IInteractionStateService _interactionStateService;
+        private bool _reportedMissingDrawingFeature;
+        private bool _reportedMissingCameraModeService;
+        private bool _reportedMissingInteractionStateService;
+        private bool _hasBoundLegacyInspectorInteractions;
 
-        public GameState CurrentState => _currentState;
+        public GameState CurrentState => _services.FlowController?.CurrentState ?? GameState.Title;
         public int CurrentRound => _currentRound;
         public bool HasOpenedInterpreterThisRound => _hasOpenedInterpreterThisRound;
+
+        IRoundAiGateway IRoundStateEntryContext.AiGateway => _aiGateway;
+        ScoreManager IRoundStateEntryContext.ScoreManager => scoreManager;
+        ScoreConfig IRoundStateEntryContext.ScoreConfig => scoreConfig;
+        DialogueSystem IRoundStateEntryContext.DialogueSystem => dialogueSystem;
+        DialogueSequence IRoundStateEntryContext.IntroSequence => introSequence;
+        DialogueSequence IRoundStateEntryContext.RuntimeIntroSequence
+        {
+            get
+            {
+                EnsureRoundServices();
+                return _services.IntroSequenceProvider?.RuntimeSequence;
+            }
+        }
+        TerminalDisplay IRoundStateEntryContext.TerminalDisplay => terminalDisplay;
+        AlienReactionController IRoundStateEntryContext.AlienReactionController => alienReactionController;
+        EndingController IRoundStateEntryContext.EndingController => endingController;
+        TitleScreenController IRoundStateEntryContext.TitleScreenController => titleScreenController;
+        RoundHintPresenter IRoundStateEntryContext.HintPresenter => _services.HintPresenter;
+        RoundDrawingInteractionGate IRoundStateEntryContext.DrawingInteractionGate => _services.DrawingInteractionGate;
+        int IRoundStateEntryContext.CurrentRound
+        {
+            get => _currentRound;
+            set => _currentRound = value;
+        }
+        bool IRoundStateEntryContext.PreserveRoundIndexOnNextWaitingState
+        {
+            get => _preserveRoundIndexOnNextWaitingState;
+            set => _preserveRoundIndexOnNextWaitingState = value;
+        }
+        bool IRoundStateEntryContext.HasOpenedInterpreterThisRound
+        {
+            get => _hasOpenedInterpreterThisRound;
+            set => _hasOpenedInterpreterThisRound = value;
+        }
+        bool IRoundStateEntryContext.IsPreviewTerminalOpen
+        {
+            get
+            {
+                EnsureRoundServices();
+                return _services.PreviewTerminalPresenter?.IsOpen ?? false;
+            }
+            set
+            {
+                EnsureRoundServices();
+                if (_services.PreviewTerminalPresenter != null)
+                {
+                    _services.PreviewTerminalPresenter.IsOpen = value;
+                }
+            }
+        }
+        SatisfactionLevel IRoundStateEntryContext.LastSatisfaction
+        {
+            get => _lastSatisfaction;
+            set => _lastSatisfaction = value;
+        }
+        IRoundAiGateway IRoundPlayerActionContext.AiGateway => _aiGateway;
+        ScoreConfig IRoundPlayerActionContext.ScoreConfig => scoreConfig;
+        bool IRoundPlayerActionContext.IsPreviewTerminalOpen
+        {
+            get
+            {
+                EnsureRoundServices();
+                return _services.PreviewTerminalPresenter?.IsOpen ?? false;
+            }
+            set
+            {
+                EnsureRoundServices();
+                if (_services.PreviewTerminalPresenter != null)
+                {
+                    _services.PreviewTerminalPresenter.IsOpen = value;
+                }
+            }
+        }
+        bool IRoundPlayerActionContext.IsSharedMonitorZoomActive => _isSharedMonitorZoomActive;
+        float IRoundPlayerActionContext.InterpreterOpenedAt
+        {
+            get => _interpreterOpenedAt;
+            set => _interpreterOpenedAt = value;
+        }
+        IRoundAiGateway IRoundStartupContext.AiGateway => _aiGateway;
+        ScoreManager IRoundStartupContext.ScoreManager => scoreManager;
+        float IRoundStartupContext.FirstRoundPrefetchTimeoutSeconds => firstRoundPrefetchTimeoutSeconds;
+        int IRoundStartupContext.CurrentRound
+        {
+            get => _currentRound;
+            set => _currentRound = value;
+        }
+        SatisfactionLevel IRoundStartupContext.LastSatisfaction
+        {
+            get => _lastSatisfaction;
+            set => _lastSatisfaction = value;
+        }
+        bool IRoundStartupContext.PreserveRoundIndexOnNextWaitingState
+        {
+            get => _preserveRoundIndexOnNextWaitingState;
+            set => _preserveRoundIndexOnNextWaitingState = value;
+        }
+        bool IRoundStartupContext.HasOpenedInterpreterThisRound
+        {
+            get => _hasOpenedInterpreterThisRound;
+            set => _hasOpenedInterpreterThisRound = value;
+        }
 
         private void Awake()
         {
@@ -116,24 +204,26 @@ namespace DoodleDiplomacy.Core
             }
 
             Instance = this;
+            ResolveAiGateway();
         }
 
         private void Start()
         {
-            drawingBoard ??= FindFirstObjectByType<DrawingBoardController>();
-            UpdateDrawingBoardInteractionForState(_currentState);
+            InitializeRoundServices();
+            ResolveAiGateway();
+            UpdateDrawingBoardInteractionForState(CurrentState);
             BindInspectorInteractions();
             SubscribeToBridgeEvents();
-            interactionManager?.SetInteractablesForState(_currentState);
-            ApplyCameraMode(_currentState);
+            ApplyInteractionPolicyForCurrentState();
+            ApplyCameraMode(CurrentState);
         }
 
         private void OnDestroy()
         {
-            StopStartGameRoutine();
+            _services.StartupFlow?.Stop();
             UnbindInspectorInteractions();
             UnsubscribeFromBridgeEvents();
-            ReleaseRuntimeIntroSequence();
+            _services.IntroSequenceProvider?.Release();
 
             if (Instance == this)
             {
@@ -143,313 +233,50 @@ namespace DoodleDiplomacy.Core
 
         private void Update()
         {
-            RefreshMonitorClickLatch();
-
-            if (_isSharedMonitorZoomActive && WasKeyPressed(exitMonitorZoomKey))
-            {
-                ExitSharedMonitorZoom();
-                return;
-            }
-
-            if (_currentState == GameState.Drawing && WasKeyPressed(exitDrawingKey))
-            {
-                OnDrawingComplete();
-            }
-
-            if (_currentState == GameState.Interpreter && WasKeyPressed(exitInterpreterKey))
-            {
-                OnInterpreterClose();
-            }
+            EnsureRoundServices();
+            _services.InputRouter?.Tick();
         }
 
         public void StartGame(bool isFirstPlay = true)
         {
-            StopStartGameRoutine();
-            CancelActiveAiOperations();
-
-            _currentRound = 0;
-            _lastSatisfaction = SatisfactionLevel.Neutral;
-            _preserveRoundIndexOnNextWaitingState = false;
-            _hasOpenedInterpreterThisRound = false;
-            ResetPreviewInspectionState();
-
-            scoreManager?.Reset();
-            aipipelineBridge?.ResetRound();
-            ResetTelepathyState();
-
-            if (aipipelineBridge == null)
-            {
-                ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
-                return;
-            }
-
-            _startGameRoutine = StartCoroutine(StartGameAfterFirstRoundPrefetchRoutine(isFirstPlay));
+            EnsureRoundServices();
+            _services.StartupFlow?.StartGame(isFirstPlay);
         }
 
         public void ChangeToTitle()
         {
-            StopStartGameRoutine();
-            CancelActiveAiOperations();
-            ResetTelepathyState();
-            ResetPreviewInspectionState();
-            _hasOpenedInterpreterThisRound = false;
-            ChangeState(GameState.Title);
-        }
-
-        private IEnumerator StartGameAfterFirstRoundPrefetchRoutine(bool isFirstPlay)
-        {
-            try
-            {
-                if (aipipelineBridge == null)
-                {
-                    ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
-                    yield break;
-                }
-
-                Debug.Log("[RoundManager] Preparing first-round objects and LLM runtime before starting gameplay.");
-                aipipelineBridge.EnsureObjectGenerationPreparation(
-                    forceRetry: aipipelineBridge.HasObjectGenerationPreparationFailed);
-                aipipelineBridge.EnsureLlmPreparation(forceRetry: aipipelineBridge.HasLlmPreparationFailed);
-                aipipelineBridge.StartNextRoundPrefetch();
-
-                float timeout = Mathf.Max(0f, firstRoundPrefetchTimeoutSeconds);
-                float elapsed = 0f;
-                while (aipipelineBridge.IsNextRoundPrefetchRunning)
-                {
-                    aipipelineBridge.RefreshLlmPreparationStatus();
-                    if (timeout > 0f && elapsed >= timeout)
-                    {
-                        break;
-                    }
-
-                    elapsed += Time.unscaledDeltaTime;
-                    yield return null;
-                }
-
-                aipipelineBridge.RefreshLlmPreparationStatus();
-
-                if (aipipelineBridge.IsNextRoundPrefetchReady)
-                {
-                    Debug.Log("[RoundManager] First-round prefetch finished. Starting gameplay.");
-                }
-                else if (aipipelineBridge.HasNextRoundPrefetchFailed)
-                {
-                    Debug.LogWarning(
-                        $"[RoundManager] First-round prefetch failed before start: {aipipelineBridge.NextRoundPrefetchError}. " +
-                        "Will fall back to normal presenting generation.");
-                }
-                else if (aipipelineBridge.IsNextRoundPrefetchRunning)
-                {
-                    Debug.LogWarning(
-                        $"[RoundManager] First-round prefetch timed out after {timeout:0.##}s. " +
-                        "Will fall back to normal presenting generation.");
-                }
-
-                if (aipipelineBridge.IsLlmPreparationReady)
-                {
-                    Debug.Log("[RoundManager] LLM preload finished. Starting gameplay.");
-                }
-                else if (aipipelineBridge.HasLlmPreparationFailed)
-                {
-                    Debug.LogWarning(
-                        $"[RoundManager] LLM preload failed before start: {aipipelineBridge.LastLlmPreparationError}. " +
-                        "Gameplay will continue and LLM calls may fall back or stall.");
-                }
-                else if (aipipelineBridge.IsLlmPreparationRunning)
-                {
-                    Debug.Log(
-                        "[RoundManager] LLM preload is still running in background. " +
-                        "Gameplay starts now and first LLM call may still warm up.");
-                }
-
-                ChangeState(isFirstPlay ? GameState.Intro : GameState.WaitingForRound);
-            }
-            finally
-            {
-                _startGameRoutine = null;
-            }
+            EnsureRoundServices();
+            _services.StartupFlow?.ChangeToTitle();
         }
 
         public void OnAlienClicked()
         {
-            if (_currentState == GameState.WaitingForRound)
-            {
-                if (aipipelineBridge != null && !aipipelineBridge.IsRoundStartReady)
-                {
-                    aipipelineBridge.EnsureObjectGenerationPreparation(
-                        forceRetry: aipipelineBridge.HasObjectGenerationPreparationFailed);
-                    aipipelineBridge.PrepareRoundKeywords(forceRefresh: false);
-                    ShowHint("System", aipipelineBridge.GetRoundStartAvailabilityMessage());
-                    interactionManager?.SetInteractablesForState(_currentState);
-                    return;
-                }
-
-                ChangeState(GameState.Presenting);
-                return;
-            }
-
-            if (_currentState == GameState.ObjectPresented)
-            {
-                ShowHint(
-                    "System",
-                    GetConfiguredText(
-                        table => table.regeneratingReferencesMessage,
-                        DefaultRegeneratingReferencesMessage));
-                ChangeState(GameState.Presenting);
-                return;
-            }
-
-            if (_currentState == GameState.PreviewReady)
-            {
-                ChangeState(GameState.PreviewAnalyzing);
-                return;
-            }
-
-            if (_currentState == GameState.InterpreterReady)
-            {
-                if (!_hasOpenedInterpreterThisRound)
-                {
-                    ShowHint(
-                        "System",
-                        GetConfiguredText(
-                            table => table.openTerminalFirstMessage,
-                            DefaultOpenTerminalFirstMessage));
-                    return;
-                }
-
-                bool isLastRound = scoreConfig != null && _currentRound >= scoreConfig.totalRounds;
-                ChangeState(isLastRound ? GameState.Ending : GameState.WaitingForRound);
-            }
-
+            EnsureRoundServices();
+            _services.PlayerActionHandler?.OnAlienClicked();
         }
 
         public void OnTabletClicked()
         {
-            if (_currentState == GameState.ObjectPresented || _currentState == GameState.PreviewReady)
-            {
-                if (_currentState == GameState.PreviewReady)
-                {
-                    ResetCachedInterpretationForRedraw();
-                }
-
-                ChangeState(GameState.Drawing);
-            }
+            EnsureRoundServices();
+            _services.PlayerActionHandler?.OnTabletClicked();
         }
 
         public void OnAdjutantClicked()
         {
-            if (_currentState == GameState.PreviewReady)
-            {
-                ShowHint(
-                    "System",
-                    GetConfiguredText(
-                        table => table.adjutantDisabledMessage,
-                        DefaultAdjutantDisabledMessage));
-            }
+            EnsureRoundServices();
+            _services.PlayerActionHandler?.OnAdjutantClicked();
         }
+
         public void OnTerminalClicked()
         {
-            if (_currentState == GameState.Preview)
-            {
-                if (_isPreviewTerminalOpen)
-                {
-                    if (Time.unscaledTime - _interpreterOpenedAt < TerminalCloseGuardSeconds)
-                    {
-                        return;
-                    }
-
-                    _isPreviewTerminalOpen = false;
-                    ApplyCameraMode(_currentState);
-                    return;
-                }
-
-                _interpreterOpenedAt = Time.unscaledTime;
-                _isPreviewTerminalOpen = true;
-                cameraController?.SetMode(CameraMode.TerminalZoom);
-
-                string previewOutput = string.IsNullOrWhiteSpace(_cachedPreviewTerminalOutput)
-                    ? BuildPreviewTerminalOutput(PreviewFallbackText)
-                    : _cachedPreviewTerminalOutput;
-                bool instant = _hasShownPreviewTerminalOnce;
-                terminalDisplay?.ShowText(previewOutput, instant);
-                _hasShownPreviewTerminalOnce = true;
-                subtitleDisplay?.Hide();
-                return;
-            }
-
-            if (_currentState == GameState.InterpreterReady)
-            {
-                _interpreterOpenedAt = Time.unscaledTime;
-                ChangeState(GameState.Interpreter);
-            }
-            else if (_currentState == GameState.Interpreter)
-            {
-                if (Time.unscaledTime - _interpreterOpenedAt < TerminalCloseGuardSeconds)
-                {
-                    return;
-                }
-
-                OnInterpreterClose();
-            }
+            EnsureRoundServices();
+            _services.PlayerActionHandler?.OnTerminalClicked();
         }
 
         public void OnSharedMonitorClicked()
         {
-            if (_monitorClickConsumedUntilRelease)
-            {
-                return;
-            }
-
-            _monitorClickConsumedUntilRelease = true;
-
-            if (!(_currentState == GameState.ObjectPresented || _currentState == GameState.PreviewReady))
-            {
-                return;
-            }
-
-            if (!CanUseSharedMonitorZoom())
-            {
-                return;
-            }
-
-            if (_isSharedMonitorZoomActive)
-            {
-                ExitSharedMonitorZoom();
-            }
-            else
-            {
-                EnterSharedMonitorZoom();
-            }
-        }
-
-        private void RefreshMonitorClickLatch()
-        {
-            if (!_monitorClickConsumedUntilRelease)
-            {
-                return;
-            }
-
-            if (!IsPrimaryPointerHeld())
-            {
-                _monitorClickConsumedUntilRelease = false;
-            }
-        }
-
-        private static bool IsPrimaryPointerHeld()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var mouse = UnityEngine.InputSystem.Mouse.current;
-            if (mouse != null)
-            {
-                return mouse.leftButton.isPressed;
-            }
-#endif
-
-#if ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetMouseButton(0);
-#else
-            return false;
-#endif
+            EnsureRoundServices();
+            _services.PlayerActionHandler?.OnSharedMonitorClicked();
         }
 
         public void OnIntroComplete() => TryTransition(GameState.Intro, GameState.WaitingForRound);
@@ -458,113 +285,76 @@ namespace DoodleDiplomacy.Core
         public void OnPreviewSubmit() => TryTransition(GameState.Preview, GameState.Submitting);
         public void OnPreviewModify()
         {
-            if (_currentState != GameState.Preview)
-            {
-                return;
-            }
-
-            ResetCachedInterpretationForRedraw();
-            ChangeState(GameState.Drawing);
+            EnsureRoundServices();
+            _services.PlayerActionHandler?.OnPreviewModify();
         }
+
+        public void ConfigureDrawingFeature(IDrawingFeature drawingFeature)
+        {
+            _drawingFeature = drawingFeature;
+            _reportedMissingDrawingFeature = false;
+            _services.DrawingInteractionGate = drawingFeature != null
+                ? new RoundDrawingInteractionGate(drawingFeature)
+                : null;
+        }
+
+        public void ConfigureCameraModeService(ICameraModeService cameraModeService)
+        {
+            _cameraModeService = cameraModeService;
+            _reportedMissingCameraModeService = false;
+            _services.CameraModeApplier = cameraModeService != null
+                ? new RoundCameraModeApplier(cameraModeService)
+                : null;
+        }
+
+        public void ConfigureInteractionStateService(IInteractionStateService interactionStateService)
+        {
+            _interactionStateService = interactionStateService;
+            _reportedMissingInteractionStateService = false;
+            _services.InteractionGate = interactionStateService != null
+                ? new RoundInteractionGate(interactionStateService)
+                : null;
+        }
+
         public void OnSubmitComplete() => TryTransition(GameState.Submitting, GameState.AlienReaction);
         public void OnReactionComplete() => TryTransition(GameState.AlienReaction, GameState.InterpreterReady);
         public void OnInterpreterClose() => TryTransition(GameState.Interpreter, GameState.InterpreterReady);
 
         private void BindInspectorInteractions()
         {
-            BindTabletInteractions();
-
-            if (sharedMonitorInteractable != null)
+            if (HasGameplayModeHostInteractionRoute())
             {
-                sharedMonitorInteractable.interactionType = InteractionType.Monitor;
-                sharedMonitorInteractable.OnInteracted.RemoveListener(OnTabletClicked);
-                sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
-                sharedMonitorInteractable.OnInteracted.AddListener(OnSharedMonitorClicked);
-            }
-            else
-            {
-                Debug.LogWarning("[RoundManager] sharedMonitorInteractable is not assigned. Monitor click zoom will be disabled.");
-            }
-
-            if (terminalInteractables == null || terminalInteractables.Length == 0)
-            {
-                Debug.LogWarning("[RoundManager] terminalInteractables is empty. Terminal click interaction must be wired in inspector.");
+                _hasBoundLegacyInspectorInteractions = false;
                 return;
             }
 
-            for (int i = 0; i < terminalInteractables.Length; i++)
-            {
-                InteractableObject terminalInteractable = terminalInteractables[i];
-                if (terminalInteractable == null)
-                {
-                    continue;
-                }
-
-                terminalInteractable.interactionType = InteractionType.Terminal;
-                terminalInteractable.OnInteracted.RemoveListener(OnTabletClicked);
-                terminalInteractable.OnInteracted.RemoveListener(OnTerminalClicked);
-                terminalInteractable.OnInteracted.AddListener(OnTerminalClicked);
-            }
+            EnsureRoundServices();
+            _services.InteractionBinder?.Bind(
+                OnAlienClicked,
+                OnTabletClicked,
+                OnTerminalClicked,
+                OnSharedMonitorClicked);
+            _hasBoundLegacyInspectorInteractions = true;
         }
 
         private void UnbindInspectorInteractions()
         {
-            UnbindTabletInteractions();
-
-            if (sharedMonitorInteractable != null)
-            {
-                sharedMonitorInteractable.OnInteracted.RemoveListener(OnSharedMonitorClicked);
-            }
-
-            if (terminalInteractables == null)
+            if (!_hasBoundLegacyInspectorInteractions)
             {
                 return;
             }
 
-            for (int i = 0; i < terminalInteractables.Length; i++)
-            {
-                if (terminalInteractables[i] == null)
-                {
-                    continue;
-                }
-
-                terminalInteractables[i].OnInteracted.RemoveListener(OnTerminalClicked);
-            }
+            _services.InteractionBinder?.Unbind(
+                OnAlienClicked,
+                OnTabletClicked,
+                OnTerminalClicked,
+                OnSharedMonitorClicked);
+            _hasBoundLegacyInspectorInteractions = false;
         }
 
-        private void BindTabletInteractions()
+        private bool HasGameplayModeHostInteractionRoute()
         {
-            InteractableObject[] interactables = FindObjectsByType<InteractableObject>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
-            for (int i = 0; i < interactables.Length; i++)
-            {
-                InteractableObject interactable = interactables[i];
-                if (interactable == null || interactable.interactionType != InteractionType.Tablet)
-                {
-                    continue;
-                }
-
-                interactable.OnInteracted.RemoveListener(OnTabletClicked);
-                interactable.OnInteracted.AddListener(OnTabletClicked);
-            }
-        }
-
-        private void UnbindTabletInteractions()
-        {
-            InteractableObject[] interactables = FindObjectsByType<InteractableObject>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
-            for (int i = 0; i < interactables.Length; i++)
-            {
-                InteractableObject interactable = interactables[i];
-                if (interactable == null || interactable.interactionType != InteractionType.Tablet)
-                {
-                    continue;
-                }
-
-                interactable.OnInteracted.RemoveListener(OnTabletClicked);
-            }
+            return interactionManager != null && interactionManager.GameplayModeHost != null;
         }
 
         private bool CanUseSharedMonitorZoom()
@@ -574,19 +364,13 @@ namespace DoodleDiplomacy.Core
 
         private void EnterSharedMonitorZoom()
         {
-            if (cameraController == null)
+            EnsureRoundServices();
+            if (_services.CameraModeApplier == null || !_services.CameraModeApplier.TryApplySharedMonitorZoom(this))
             {
-                return;
-            }
-
-            if (!cameraController.HasValidPreset(CameraMode.SharedMonitorZoom))
-            {
-                Debug.LogWarning("[RoundManager] Shared monitor zoom preset is not configured on CameraController.");
                 return;
             }
 
             _isSharedMonitorZoomActive = true;
-            cameraController.SetMode(CameraMode.SharedMonitorZoom);
         }
 
         private void ExitSharedMonitorZoom()
@@ -597,31 +381,25 @@ namespace DoodleDiplomacy.Core
             }
 
             _isSharedMonitorZoomActive = false;
-            if (cameraController != null)
-            {
-                ApplyCameraMode(_currentState);
-            }
+            ApplyCameraMode(CurrentState);
         }
 
         [ContextMenu("Debug: Advance State")]
         public void Debug_AdvanceState()
         {
-            switch (_currentState)
+            if (RoundDebugTransitionPolicy.TryGetNextState(CurrentState, out GameState nextState))
             {
-                case GameState.Intro:
-                    ChangeState(GameState.WaitingForRound);
-                    break;
+                ChangeState(nextState);
+                return;
+            }
+
+            switch (CurrentState)
+            {
                 case GameState.Presenting:
                     OnPresentingComplete();
                     break;
                 case GameState.Drawing:
                     OnDrawingComplete();
-                    break;
-                case GameState.PreviewReady:
-                    ChangeState(GameState.PreviewAnalyzing);
-                    break;
-                case GameState.PreviewAnalyzing:
-                    ChangeState(GameState.Preview);
                     break;
                 case GameState.Preview:
                     OnPreviewSubmit();
@@ -639,125 +417,27 @@ namespace DoodleDiplomacy.Core
                     ChangeToTitle();
                     break;
                 default:
-                    Debug.Log($"[RoundManager] Debug_AdvanceState ignored in state '{_currentState}'.");
+                    Debug.Log($"[RoundManager] Debug_AdvanceState ignored in state '{CurrentState}'.");
                     break;
             }
         }
 
         public void Debug_JumpToState(GameState target)
         {
-            Debug.Log($"[RoundManager] Debug_JumpToState: {_currentState} -> {target}");
+            Debug.Log($"[RoundManager] Debug_JumpToState: {CurrentState} -> {target}");
             ChangeState(target);
-        }
-
-        private bool WasKeyPressed(KeyCode keyCode)
-        {
-            var keyboard = UnityEngine.InputSystem.Keyboard.current;
-            if (keyboard == null)
-            {
-                return false;
-            }
-
-            var keyControl = GetInputSystemKeyControl(keyboard, keyCode);
-            return keyControl != null && keyControl.wasPressedThisFrame;
-        }
-
-        private static UnityEngine.InputSystem.Controls.KeyControl GetInputSystemKeyControl(
-            UnityEngine.InputSystem.Keyboard keyboard,
-            KeyCode keyCode)
-        {
-            return keyCode switch
-            {
-                KeyCode.Escape => keyboard.escapeKey,
-                KeyCode.Space => keyboard.spaceKey,
-                KeyCode.Return => keyboard.enterKey,
-                KeyCode.KeypadEnter => keyboard.numpadEnterKey,
-                KeyCode.Tab => keyboard.tabKey,
-                KeyCode.Backspace => keyboard.backspaceKey,
-                KeyCode.Delete => keyboard.deleteKey,
-                KeyCode.UpArrow => keyboard.upArrowKey,
-                KeyCode.DownArrow => keyboard.downArrowKey,
-                KeyCode.LeftArrow => keyboard.leftArrowKey,
-                KeyCode.RightArrow => keyboard.rightArrowKey,
-                KeyCode.A => keyboard.aKey,
-                KeyCode.B => keyboard.bKey,
-                KeyCode.C => keyboard.cKey,
-                KeyCode.D => keyboard.dKey,
-                KeyCode.E => keyboard.eKey,
-                KeyCode.F => keyboard.fKey,
-                KeyCode.G => keyboard.gKey,
-                KeyCode.H => keyboard.hKey,
-                KeyCode.I => keyboard.iKey,
-                KeyCode.J => keyboard.jKey,
-                KeyCode.K => keyboard.kKey,
-                KeyCode.L => keyboard.lKey,
-                KeyCode.M => keyboard.mKey,
-                KeyCode.N => keyboard.nKey,
-                KeyCode.O => keyboard.oKey,
-                KeyCode.P => keyboard.pKey,
-                KeyCode.Q => keyboard.qKey,
-                KeyCode.R => keyboard.rKey,
-                KeyCode.S => keyboard.sKey,
-                KeyCode.T => keyboard.tKey,
-                KeyCode.U => keyboard.uKey,
-                KeyCode.V => keyboard.vKey,
-                KeyCode.W => keyboard.wKey,
-                KeyCode.X => keyboard.xKey,
-                KeyCode.Y => keyboard.yKey,
-                KeyCode.Z => keyboard.zKey,
-                KeyCode.Alpha0 => keyboard.digit0Key,
-                KeyCode.Alpha1 => keyboard.digit1Key,
-                KeyCode.Alpha2 => keyboard.digit2Key,
-                KeyCode.Alpha3 => keyboard.digit3Key,
-                KeyCode.Alpha4 => keyboard.digit4Key,
-                KeyCode.Alpha5 => keyboard.digit5Key,
-                KeyCode.Alpha6 => keyboard.digit6Key,
-                KeyCode.Alpha7 => keyboard.digit7Key,
-                KeyCode.Alpha8 => keyboard.digit8Key,
-                KeyCode.Alpha9 => keyboard.digit9Key,
-                _ => keyboard.escapeKey
-            };
         }
 
         private void TryTransition(GameState required, GameState next)
         {
-            if (_currentState == required)
-            {
-                ChangeState(next);
-            }
+            EnsureRoundServices();
+            _services.FlowController?.TryTransition(required, next);
         }
 
         private void ChangeState(GameState newState)
         {
-            if (_currentState == newState)
-            {
-                return;
-            }
-
-            if (_isSharedMonitorZoomActive)
-            {
-                _isSharedMonitorZoomActive = false;
-            }
-
-            GameState oldState = _currentState;
-            int newStateVersion = _stateVersion + 1;
-
-            ExitState(oldState);
-
-            Debug.Log($"[RoundManager] State: {oldState} -> {newState}");
-            _currentState = newState;
-            _stateVersion = newStateVersion;
-            UpdateDrawingBoardInteractionForState(newState);
-
-            EnterState(newState, newStateVersion);
-            if (!IsStateCurrent(newState, newStateVersion))
-            {
-                return;
-            }
-
-            OnStateChanged?.Invoke(newState);
-            interactionManager?.SetInteractablesForState(newState);
-            ApplyCameraMode(newState);
+            EnsureRoundServices();
+            _services.FlowController?.ChangeState(newState);
         }
 
         private void ExitState(GameState state)
@@ -769,280 +449,96 @@ namespace DoodleDiplomacy.Core
             }
         }
 
-        private void EnterState(GameState state, int stateVersion)
+        private void ClearSharedMonitorZoomForStateChange()
         {
-            switch (state)
-            {
-                case GameState.Intro:
-                    subtitleDisplay?.Hide();
-                    if (introSequence != null)
-                    {
-                        RebuildRuntimeIntroSequence();
-                        dialogueSystem?.PlaySequence(_runtimeIntroSequence != null ? _runtimeIntroSequence : introSequence);
-                    }
-                    break;
+            _isSharedMonitorZoomActive = false;
+        }
 
-                case GameState.WaitingForRound:
-                    subtitleDisplay?.Hide();
-                    _hasOpenedInterpreterThisRound = false;
-                    ResetPreviewInspectionState();
-                    if (_preserveRoundIndexOnNextWaitingState)
-                    {
-                        _preserveRoundIndexOnNextWaitingState = false;
-                    }
-                    else
-                    {
-                        _currentRound++;
-                    }
-
-                    ResetTelepathyState();
-                    aipipelineBridge?.ResetRound();
-                    aipipelineBridge?.EnsureObjectGenerationPreparation();
-                    bool adoptedPrefetch = aipipelineBridge != null && aipipelineBridge.TryAdoptPrefetchedRound();
-                    if (!adoptedPrefetch)
-                    {
-                        aipipelineBridge?.PrepareRoundKeywords();
-                    }
-                    Debug.Log($"[RoundManager] Waiting for round {_currentRound} / {scoreConfig?.totalRounds}.");
-                    ShowHint(
-                        "System",
-                        aipipelineBridge != null
-                            ? aipipelineBridge.GetRoundStartAvailabilityMessage()
-                            : GetConfiguredText(
-                                table => table.objectGeneratorMissingMessage,
-                                DefaultObjectGeneratorMissingMessage));
-                    break;
-
-                case GameState.Presenting:
-                    ShowHint(
-                        "System",
-                        GetConfiguredText(
-                            table => table.generatingAlienObjectsMessage,
-                            DefaultGeneratingAlienObjectsMessage));
-                    if (aipipelineBridge != null)
-                    {
-                        aipipelineBridge.GenerateObjects(success =>
-                        {
-                            if (!IsStateCurrent(GameState.Presenting, stateVersion))
-                            {
-                                return;
-                            }
-
-                            if (!success)
-                            {
-                                Debug.LogWarning(
-                                    $"[RoundManager] Object generation failed: {aipipelineBridge.LastObjectGenerationError}");
-                                ShowHint(
-                                    "System",
-                                    BuildObjectGenerationFailureHint(aipipelineBridge.LastObjectGenerationError));
-                                ReturnToWaitingForRoundAfterPresentingFailure();
-                                return;
-                            }
-
-                            OnPresentingComplete();
-                        });
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[RoundManager] AIPipelineBridge is missing. Cannot generate alien objects.");
-                        ShowHint(
-                            "System",
-                            GetConfiguredText(
-                                table => table.objectGeneratorMissingMessage,
-                                DefaultObjectGeneratorMissingMessage));
-                        ReturnToWaitingForRoundAfterPresentingFailure();
-                    }
-                    break;
-
-                case GameState.ObjectPresented:
-                    ShowHint(
-                        "System",
-                        GetConfiguredText(
-                            table => table.objectPresentedHintMessage,
-                            DefaultObjectPresentedHintMessage));
-                    Debug.Log("[RoundManager] Objects are ready. Waiting for tablet interaction.");
-                    aipipelineBridge?.StartNextRoundPrefetch();
-                    break;
-
-                case GameState.Drawing:
-                    EnsureDrawingBoardReadyForEditing();
-                    ShowHint("System", GetDrawingReadyHintMessage());
-                    break;
-
-                case GameState.PreviewReady:
-                    ShowHint(
-                        "System",
-                        GetConfiguredText(
-                            table => table.previewReadyHintMessage,
-                            DefaultPreviewReadyHintMessage));
-                    Debug.Log("[RoundManager] Drawing marked complete. Waiting for alien first-pass review.");
-                    break;
-
-                case GameState.PreviewAnalyzing:
-                    _isPreviewTerminalOpen = false;
-                    _hasShownPreviewTerminalOnce = false;
-                    _cachedPreviewTerminalOutput = string.Empty;
-                    terminalDisplay?.Clear();
-                    ShowHint(
-                        "System",
-                        GetConfiguredText(
-                            table => table.previewAnalyzingMessage,
-                            DefaultPreviewAnalyzingMessage));
-                    if (aipipelineBridge != null)
-                    {
-                        aipipelineBridge.GetPreview(analysis =>
-                        {
-                            if (!IsStateCurrent(GameState.PreviewAnalyzing, stateVersion))
-                            {
-                                return;
-                            }
-
-                            CachePreviewResult(analysis);
-                            ChangeState(GameState.Preview);
-                        });
-                    }
-                    else
-                    {
-                        CachePreviewResult("(AI analysis unavailable)");
-                        ChangeState(GameState.Preview);
-                    }
-                    break;
-
-                case GameState.Preview:
-                    _isPreviewTerminalOpen = false;
-                    ShowHint(
-                        "System",
-                        GetConfiguredText(
-                            table => table.previewReadyToInspectMessage,
-                            DefaultPreviewReadyToInspectMessage));
-                    Debug.Log("[RoundManager] Preview analysis complete. Waiting for submit or modify.");
-                    break;
-
-                case GameState.Submitting:
-                    ShowHint(
-                        "System",
-                        GetConfiguredText(
-                            table => table.submittingHintMessage,
-                            DefaultSubmittingHintMessage));
-                    if (aipipelineBridge != null)
-                    {
-                        aipipelineBridge.GetJudgment(satisfaction =>
-                        {
-                            if (!IsStateCurrent(GameState.Submitting, stateVersion))
-                            {
-                                return;
-                            }
-
-                            _lastSatisfaction = satisfaction;
-                            scoreManager?.RecordRound(satisfaction);
-                            OnSubmitComplete();
-                        });
-                    }
-                    else
-                    {
-                        _lastSatisfaction = SatisfactionLevel.Neutral;
-                        scoreManager?.RecordRound(SatisfactionLevel.Neutral);
-                        ResetTelepathyState();
-                        OnSubmitComplete();
-                    }
-                    break;
-
-                case GameState.AlienReaction:
-                    subtitleDisplay?.Hide();
-                    if (alienReactionController != null)
-                    {
-                        alienReactionController.OnReactionComplete.RemoveListener(OnReactionComplete);
-                        alienReactionController.OnReactionComplete.AddListener(OnReactionComplete);
-                        alienReactionController.PlayReaction(_lastSatisfaction);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[RoundManager] AlienReactionController is missing. Skipping reaction.");
-                        OnReactionComplete();
-                    }
-                    break;
-
-                case GameState.InterpreterReady:
-                    if (aipipelineBridge != null && aipipelineBridge.HasTelepathyResult)
-                    {
-                        ShowHint(
-                            "System",
-                            GetConfiguredText(
-                                table => table.terminalSignalReadyMessage,
-                                DefaultTerminalSignalReadyMessage));
-                    }
-                    else
-                    {
-                        ShowHint(
-                            "System",
-                            GetConfiguredText(
-                                table => table.noSignalMessage,
-                                DefaultNoSignalMessage));
-                    }
-
-                    Debug.Log("[RoundManager] Interpreter is ready.");
-                    break;
-
-                case GameState.Interpreter:
-                    subtitleDisplay?.Hide();
-                    bool instantTerminalDisplay = _hasOpenedInterpreterThisRound;
-                    if (aipipelineBridge != null && aipipelineBridge.HasTelepathyResult)
-                    {
-                        terminalDisplay?.ShowText(aipipelineBridge.LastTelepathy, instantTerminalDisplay);
-                    }
-                    else if (terminalDisplay != null)
-                    {
-                        terminalDisplay.ShowText(
-                            "[TRANSLATOR v1.0]\n> No captured alien signal.\n> _",
-                            instantTerminalDisplay);
-                    }
-
-                    _hasOpenedInterpreterThisRound = true;
-                    break;
-
-                case GameState.Ending:
-                    subtitleDisplay?.Hide();
-                    EndingType ending = scoreManager?.GetEndingType() ?? EndingType.Diplomacy;
-                    Debug.Log($"[RoundManager] Ending: {ending}");
-                    endingController?.ShowEnding(ending);
-                    break;
-
-                case GameState.Title:
-                    subtitleDisplay?.Hide();
-                    titleScreenController?.ShowTitle();
-                    break;
-            }
+        private void PublishStateChanged(GameState state)
+        {
+            OnStateChanged?.Invoke(state);
         }
 
         private bool IsStateCurrent(GameState state, int stateVersion)
         {
-            return _currentState == state && _stateVersion == stateVersion;
+            EnsureRoundServices();
+            return _services.FlowController != null && _services.FlowController.IsCurrent(state, stateVersion);
         }
+
+        bool IRoundStateEntryContext.IsStateCurrent(GameState state, int stateVersion) => IsStateCurrent(state, stateVersion);
+        void IRoundStateEntryContext.RebuildRuntimeIntroSequence()
+        {
+            EnsureRoundServices();
+            _services.IntroSequenceProvider?.Rebuild();
+        }
+        void IRoundStateEntryContext.ResetPreviewInspectionState() => ResetPreviewInspectionState();
+        void IRoundStateEntryContext.ResetTelepathyState(bool clearCachedText) => ResetTelepathyState(clearCachedText);
+        void IRoundStateEntryContext.ReturnToWaitingForRoundAfterPresentingFailure() => ReturnToWaitingForRoundAfterPresentingFailure();
+        void IRoundStateEntryContext.CachePreviewResult(string analysis) => CachePreviewResult(analysis);
+        void IRoundStateEntryContext.ChangeStateFromEntryAction(GameState state) => ChangeState(state);
+        void IRoundStateEntryContext.ShowHint(string speaker, string text) => ShowHint(speaker, text);
+        string IRoundStateEntryContext.GetConfiguredText(Func<IngameTextTable, string> selector, string fallback) =>
+            GetConfiguredText(selector, fallback);
+        string IRoundStateEntryContext.GetDrawingReadyHintMessage() => GetDrawingReadyHintMessage();
+        string IRoundStateEntryContext.BuildObjectGenerationFailureHint(string objectGenerationError) =>
+            BuildObjectGenerationFailureHint(objectGenerationError);
+        bool IRoundPlayerActionContext.TryConsumeSharedMonitorClick()
+        {
+            EnsureRoundServices();
+            return _services.InputRouter == null || _services.InputRouter.TryConsumePrimaryClick();
+        }
+        bool IRoundPlayerActionContext.CanUseSharedMonitorZoom() => CanUseSharedMonitorZoom();
+        void IRoundPlayerActionContext.EnterSharedMonitorZoom() => EnterSharedMonitorZoom();
+        void IRoundPlayerActionContext.ExitSharedMonitorZoom() => ExitSharedMonitorZoom();
+        void IRoundPlayerActionContext.ChangeStateFromPlayerAction(GameState state) => ChangeState(state);
+        void IRoundPlayerActionContext.ApplyInteractionPolicyForPlayerAction() => ApplyInteractionPolicyForCurrentState();
+        void IRoundPlayerActionContext.ApplyCameraModeForPlayerAction(GameState state) => ApplyCameraMode(state);
+        void IRoundPlayerActionContext.ApplyCameraModeForPlayerAction(CameraMode mode)
+        {
+            EnsureRoundServices();
+            _services.CameraModeApplier?.Apply(mode);
+        }
+        void IRoundPlayerActionContext.ResetCachedInterpretationForRedraw() => ResetCachedInterpretationForRedraw();
+        void IRoundPlayerActionContext.ShowPreviewTerminal() => ShowPreviewTerminal();
+        void IRoundPlayerActionContext.ShowHint(string speaker, string text) => ShowHint(speaker, text);
+        string IRoundPlayerActionContext.GetConfiguredText(Func<IngameTextTable, string> selector, string fallback) =>
+            GetConfiguredText(selector, fallback);
+        Coroutine IRoundStartupContext.StartStartupCoroutine(System.Collections.IEnumerator routine) => StartCoroutine(routine);
+        void IRoundStartupContext.StopStartupCoroutine(Coroutine routine)
+        {
+            if (routine != null)
+            {
+                StopCoroutine(routine);
+            }
+        }
+        void IRoundStartupContext.ResetPreviewInspectionState() => ResetPreviewInspectionState();
+        void IRoundStartupContext.ResetTelepathyState(bool clearCachedText) => ResetTelepathyState(clearCachedText);
+        void IRoundStartupContext.ChangeStateFromStartup(GameState state) => ChangeState(state);
 
         private void SubscribeToBridgeEvents()
         {
-            if (aipipelineBridge != null)
+            if (_aiGateway != null)
             {
-                aipipelineBridge.RoundStartReadinessChanged -= HandleRoundStartReadinessChanged;
-                aipipelineBridge.RoundStartReadinessChanged += HandleRoundStartReadinessChanged;
+                _aiGateway.RoundStartReadinessChanged -= HandleRoundStartReadinessChanged;
+                _aiGateway.RoundStartReadinessChanged += HandleRoundStartReadinessChanged;
             }
         }
 
         private void UnsubscribeFromBridgeEvents()
         {
-            if (aipipelineBridge != null)
+            if (_aiGateway != null)
             {
-                aipipelineBridge.RoundStartReadinessChanged -= HandleRoundStartReadinessChanged;
+                _aiGateway.RoundStartReadinessChanged -= HandleRoundStartReadinessChanged;
             }
         }
 
         private void HandleRoundStartReadinessChanged(bool isReady)
         {
-            interactionManager?.SetInteractablesForState(_currentState);
+            ApplyInteractionPolicyForCurrentState();
 
-            if (_currentState == GameState.WaitingForRound && aipipelineBridge != null)
+            if (CurrentState == GameState.WaitingForRound && _aiGateway != null)
             {
-                ShowHint("System", aipipelineBridge.GetRoundStartAvailabilityMessage());
+                ShowHint("System", _aiGateway.GetRoundStartAvailabilityMessage());
             }
         }
 
@@ -1052,27 +548,11 @@ namespace DoodleDiplomacy.Core
             ChangeState(GameState.WaitingForRound);
         }
 
-        private void CancelActiveAiOperations()
-        {
-            aipipelineBridge?.CancelActiveOperations();
-        }
-
-        private void StopStartGameRoutine()
-        {
-            if (_startGameRoutine == null)
-            {
-                return;
-            }
-
-            StopCoroutine(_startGameRoutine);
-            _startGameRoutine = null;
-        }
-
         private void ResetTelepathyState(bool clearCachedText = true)
         {
             if (clearCachedText)
             {
-                aipipelineBridge?.ResetRound();
+                _aiGateway?.ResetRound();
             }
         }
 
@@ -1080,89 +560,50 @@ namespace DoodleDiplomacy.Core
         {
             ResetTelepathyState();
             ResetPreviewInspectionState();
-            terminalDisplay?.Clear();
+            _services.PreviewTerminalPresenter?.ClearTerminal();
+        }
+
+        private void ShowPreviewTerminal()
+        {
+            EnsureRoundServices();
+            _services.PreviewTerminalPresenter?.Show();
         }
 
         private void CachePreviewResult(string analysis)
         {
-            string resolvedAnalysis = string.IsNullOrWhiteSpace(analysis)
-                ? PreviewFallbackText
-                : analysis.Trim();
-            _cachedPreviewTerminalOutput = BuildPreviewTerminalOutput(resolvedAnalysis);
-        }
-
-        private static string BuildPreviewTerminalOutput(string previewLine)
-        {
-            string line = string.IsNullOrWhiteSpace(previewLine)
-                ? PreviewFallbackText
-                : previewLine.Trim();
-            return $"{PreviewTerminalHeader}\n> {line}\n> _";
+            EnsureRoundServices();
+            _services.PreviewTerminalPresenter?.CacheResult(analysis);
         }
 
         private void ResetPreviewInspectionState()
         {
-            _isPreviewTerminalOpen = false;
-            _hasShownPreviewTerminalOnce = false;
-            _cachedPreviewTerminalOutput = string.Empty;
+            EnsureRoundServices();
+            _services.PreviewTerminalPresenter?.Reset();
         }
 
         private void ShowHint(string speaker, string text)
         {
-            if (subtitleDisplay == null)
-            {
-                return;
-            }
-
-            subtitleDisplay.Show(speaker, text);
+            EnsureRoundServices();
+            _services.HintPresenter?.Show(speaker, text);
         }
 
         private string GetDrawingReadyHintMessage()
         {
-            string template = GetConfiguredText(
-                table => table.drawingReadyHintTemplate,
-                DefaultDrawingReadyHintTemplate);
-            if (string.IsNullOrWhiteSpace(template))
-            {
-                template = DefaultDrawingReadyHintTemplate;
-            }
-
-            try
-            {
-                return string.Format(template, exitDrawingKey);
-            }
-            catch (FormatException)
-            {
-                Debug.LogWarning(
-                    $"[RoundManager] drawingReadyHintTemplate is invalid ('{template}'). Falling back to default template.");
-                return string.Format(DefaultDrawingReadyHintTemplate, exitDrawingKey);
-            }
+            EnsureRoundServices();
+            return _services.TextProvider?.GetDrawingReadyHintMessage() ?? string.Empty;
         }
 
         private string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback)
         {
-            IngameTextTable table = ResolveIngameTextTable();
-            if (table == null)
-            {
-                return fallback;
-            }
-
-            string configured = selector(table);
-            return string.IsNullOrWhiteSpace(configured) ? fallback : configured;
+            EnsureRoundServices();
+            return _services.TextProvider?.GetConfiguredText(selector, fallback) ?? fallback;
         }
 
         private string BuildObjectGenerationFailureHint(string objectGenerationError)
         {
-            if (string.IsNullOrWhiteSpace(objectGenerationError))
-            {
-                return GetConfiguredText(
-                    table => table.objectGenerationFailedRetryMessage,
-                    DefaultObjectGenerationFailedRetryMessage);
-            }
-
-            string prefix = GetConfiguredText(
-                table => table.objectGenerationFailedPrefix,
-                DefaultObjectGenerationFailedPrefix);
-            return $"{prefix}{objectGenerationError}";
+            EnsureRoundServices();
+            return _services.TextProvider?.BuildObjectGenerationFailureHint(objectGenerationError)
+                ?? objectGenerationError;
         }
 
         private IngameTextTable ResolveIngameTextTable()
@@ -1170,135 +611,198 @@ namespace DoodleDiplomacy.Core
             return ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
         }
 
-        private void RebuildRuntimeIntroSequence()
+        private void InitializeRoundServices()
         {
-            ReleaseRuntimeIntroSequence();
-
-            if (introSequence == null)
-            {
-                return;
-            }
-
-            IngameTextTable table = ResolveIngameTextTable();
-            if (table == null)
-            {
-                return;
-            }
-
-            _runtimeIntroSequence = Instantiate(introSequence);
-            _runtimeIntroSequence.name = $"{introSequence.name} (Runtime)";
-
-            ApplyIntroSpeakerOverride(_runtimeIntroSequence, table.introAdjutantSpeaker);
-            ApplyIntroLineOverride(_runtimeIntroSequence, 0, table.introAdjutantLine1);
-            ApplyIntroLineOverride(_runtimeIntroSequence, 1, table.introAdjutantLine2);
-            ApplyIntroLineOverride(_runtimeIntroSequence, 2, table.introAdjutantLine3);
+            _services.HintPresenter = new RoundHintPresenter(subtitleDisplay);
+            _services.CameraModeApplier = CreateCameraModeApplier();
+            _services.InteractionGate = CreateInteractionGate();
+            _services.InteractionBinder = new RoundInteractableEventBinder(
+                alienInteractables,
+                tabletInteractables,
+                sharedMonitorInteractable,
+                terminalInteractables,
+                this);
+            _services.InputRouter = CreateInputRouter();
+            _services.PlayerActionHandler = new RoundPlayerActionHandler(this);
+            _services.StartupFlow = new RoundStartupFlow(this);
+            _services.PreviewTerminalPresenter = new RoundPreviewTerminalPresenter(terminalDisplay, () => _services.HintPresenter);
+            _services.TextProvider = new RoundTextProvider(ResolveIngameTextTable, () => exitDrawingKey);
+            _services.IntroSequenceProvider = new RoundIntroSequenceProvider(() => introSequence, ResolveIngameTextTable);
+            IDrawingFeature drawingFeature = ResolveDrawingFeature();
+            _services.DrawingInteractionGate = drawingFeature != null
+                ? new RoundDrawingInteractionGate(drawingFeature)
+                : null;
+            _services.StateEntryActions = new RoundStateEntryActions(this);
+            _services.FlowController = CreateFlowController();
         }
 
-        private void ReleaseRuntimeIntroSequence()
+        private void EnsureRoundServices()
         {
-            if (_runtimeIntroSequence == null)
+            _services.HintPresenter ??= new RoundHintPresenter(subtitleDisplay);
+            _services.CameraModeApplier ??= CreateCameraModeApplier();
+            _services.InteractionGate ??= CreateInteractionGate();
+            _services.InteractionBinder ??= new RoundInteractableEventBinder(
+                alienInteractables,
+                tabletInteractables,
+                sharedMonitorInteractable,
+                terminalInteractables,
+                this);
+            _services.InputRouter ??= CreateInputRouter();
+            _services.PlayerActionHandler ??= new RoundPlayerActionHandler(this);
+            _services.StartupFlow ??= new RoundStartupFlow(this);
+            _services.PreviewTerminalPresenter ??= new RoundPreviewTerminalPresenter(terminalDisplay, () => _services.HintPresenter);
+            _services.TextProvider ??= new RoundTextProvider(ResolveIngameTextTable, () => exitDrawingKey);
+            _services.IntroSequenceProvider ??= new RoundIntroSequenceProvider(() => introSequence, ResolveIngameTextTable);
+
+            if (_services.DrawingInteractionGate == null)
             {
-                return;
+                IDrawingFeature drawingFeature = ResolveDrawingFeature();
+                if (drawingFeature != null)
+                {
+                    _services.DrawingInteractionGate = new RoundDrawingInteractionGate(drawingFeature);
+                }
             }
 
-            Destroy(_runtimeIntroSequence);
-            _runtimeIntroSequence = null;
+            _services.StateEntryActions ??= new RoundStateEntryActions(this);
+            _services.FlowController ??= CreateFlowController();
         }
 
-        private static void ApplyIntroSpeakerOverride(DialogueSequence sequence, string speaker)
+        private RoundFlowController CreateFlowController()
         {
-            if (string.IsNullOrWhiteSpace(speaker))
-            {
-                return;
-            }
-
-            ApplyIntroSpeakerOverride(sequence, 0, speaker);
-            ApplyIntroSpeakerOverride(sequence, 1, speaker);
-            ApplyIntroSpeakerOverride(sequence, 2, speaker);
+            return new RoundFlowController(
+                GameState.Title,
+                () => _services.StateEntryActions,
+                ExitState,
+                ClearSharedMonitorZoomForStateChange,
+                UpdateDrawingBoardInteractionForState,
+                ApplyInteractionPolicyForCurrentState,
+                ApplyCameraMode,
+                PublishStateChanged);
         }
 
-        private static void ApplyIntroSpeakerOverride(DialogueSequence sequence, int index, string speaker)
+        private IDrawingFeature ResolveDrawingFeature()
         {
-            if (!TryGetDialogueLine(sequence, index, out DialogueLineData line))
+            if (_drawingFeature != null)
             {
-                return;
+                return _drawingFeature;
             }
 
-            line.characterID = speaker;
+            if (drawingBoard != null)
+            {
+                _drawingFeature = new DrawingFeature(drawingBoard, null);
+                return _drawingFeature;
+            }
+
+            if (!_reportedMissingDrawingFeature)
+            {
+                Debug.LogError("[RoundManager] Drawing feature is missing. Assign DrawingBoardController in the inspector or inject IDrawingFeature from GameplayModeContext.", this);
+                _reportedMissingDrawingFeature = true;
+            }
+
+            return null;
         }
 
-        private static void ApplyIntroLineOverride(DialogueSequence sequence, int index, string overrideText)
+        private RoundInteractionGate CreateInteractionGate()
         {
-            if (string.IsNullOrWhiteSpace(overrideText))
-            {
-                return;
-            }
-
-            if (!TryGetDialogueLine(sequence, index, out DialogueLineData line))
-            {
-                return;
-            }
-
-            line.text = overrideText;
+            IInteractionStateService interactionStateService = ResolveInteractionStateService();
+            return interactionStateService != null ? new RoundInteractionGate(interactionStateService) : null;
         }
 
-        private static bool TryGetDialogueLine(DialogueSequence sequence, int index, out DialogueLineData line)
+        private IInteractionStateService ResolveInteractionStateService()
         {
-            line = null;
-            if (sequence == null || sequence.lines == null || index < 0 || index >= sequence.lines.Count)
+            if (_interactionStateService != null)
             {
-                return false;
+                return _interactionStateService;
             }
 
-            line = sequence.lines[index];
-            return line != null;
+            if (interactionManager != null)
+            {
+                _interactionStateService = new InteractionStateService(interactionManager, new LegacyRoundInteractionPolicy());
+                return _interactionStateService;
+            }
+
+            if (!_reportedMissingInteractionStateService)
+            {
+                Debug.LogError("[RoundManager] Interaction state service is missing. Assign InteractionManager in the inspector or inject IInteractionStateService from GameplayModeContext.", this);
+                _reportedMissingInteractionStateService = true;
+            }
+
+            return null;
+        }
+
+        private RoundCameraModeApplier CreateCameraModeApplier()
+        {
+            ICameraModeService cameraModeService = ResolveCameraModeService();
+            return cameraModeService != null ? new RoundCameraModeApplier(cameraModeService) : null;
+        }
+
+        private ICameraModeService ResolveCameraModeService()
+        {
+            if (_cameraModeService != null)
+            {
+                return _cameraModeService;
+            }
+
+            if (cameraController != null)
+            {
+                _cameraModeService = new CameraModeService(cameraController);
+                return _cameraModeService;
+            }
+
+            if (!_reportedMissingCameraModeService)
+            {
+                Debug.LogError("[RoundManager] Camera mode service is missing. Assign CameraController in the inspector or inject ICameraModeService from GameplayModeContext.", this);
+                _reportedMissingCameraModeService = true;
+            }
+
+            return null;
+        }
+
+        private RoundInputRouter CreateInputRouter()
+        {
+            return new RoundInputRouter(
+                () => CurrentState,
+                () => _isSharedMonitorZoomActive,
+                exitDrawingKey,
+                exitInterpreterKey,
+                exitMonitorZoomKey,
+                ExitSharedMonitorZoom,
+                OnDrawingComplete,
+                OnInterpreterClose);
+        }
+
+        private void ResolveAiGateway()
+        {
+            _aiGateway = new AIPipelineRoundAiGateway(aipipelineBridge);
+        }
+
+        private void ApplyInteractionPolicyForCurrentState()
+        {
+            EnsureRoundServices();
+            bool roundStartReady = _aiGateway != null && _aiGateway.IsRoundStartReady;
+            _services.InteractionGate?.Apply(
+                CurrentState,
+                roundStartReady,
+                _hasOpenedInterpreterThisRound);
         }
 
         private void EnsureDrawingBoardReadyForEditing()
         {
-            drawingBoard ??= FindFirstObjectByType<DrawingBoardController>();
-            if (drawingBoard == null)
-            {
-                return;
-            }
-
-            drawingBoard.enabled = true;
-            drawingBoard.SetInteractionLocked(false);
+            EnsureRoundServices();
+            _services.DrawingInteractionGate?.UnlockForEditing();
         }
 
         private void UpdateDrawingBoardInteractionForState(GameState state)
         {
-            drawingBoard ??= FindFirstObjectByType<DrawingBoardController>();
-            if (drawingBoard == null)
-            {
-                return;
-            }
-
-            drawingBoard.enabled = true;
-            drawingBoard.SetInteractionLocked(state != GameState.Drawing);
+            EnsureRoundServices();
+            _services.DrawingInteractionGate?.Apply(state);
         }
 
         private void ApplyCameraMode(GameState state)
         {
-            if (cameraController == null)
-            {
-                return;
-            }
-
-            CameraMode mode = state switch
-            {
-                GameState.ObjectPresented => CameraMode.Default,
-                GameState.Drawing => CameraMode.TabletView,
-                GameState.PreviewReady => CameraMode.FreeLook,
-                GameState.PreviewAnalyzing => CameraMode.AlienReaction,
-                GameState.Preview => CameraMode.FreeLook,
-                GameState.AlienReaction => CameraMode.AlienReaction,
-                GameState.InterpreterReady => CameraMode.FreeLook,
-                GameState.Interpreter => CameraMode.TerminalZoom,
-                _ => CameraMode.Default
-            };
-
-            cameraController.SetMode(mode);
+            EnsureRoundServices();
+            _services.CameraModeApplier?.Apply(state);
         }
     }
 }
+

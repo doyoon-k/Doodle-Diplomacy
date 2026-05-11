@@ -1,113 +1,111 @@
 # LLM Pipeline Troubleshooting
 
-This file lists common setup/runtime problems and fast fixes.
+Common setup/runtime issues and fixes for local + cloud mode.
 
-## A) Duplicate Plugin Name Errors
+## A) Duplicate Local Plugin Name Errors
 
 Example:
 - `Multiple plugins with the same name 'llama' ... only one plugin at a time can be used by Editor`
 
 Cause:
-- CPU and CUDA backend native DLLs are enabled together for Editor.
+- Multiple local backend variants enabled together.
 
 Fix:
 1. Open `Tools > LLM Pipeline > Setup Wizard`.
-2. Choose one backend (`CPU` or `CUDA12`).
+2. Select one backend.
 3. Click `Install/Update Dependencies`.
 4. Click `Apply Backend Configuration`.
-5. Reopen Unity if needed.
 
-## B) `NativeApi` Initialization Failed
+## B) Local Native Init Failure
 
 Example:
 - `LLama.Exceptions.RuntimeError: The native library cannot be correctly loaded`
 
-Common causes:
-1. Backend binaries are missing.
-2. CUDA backend selected but CUDA runtime dependencies are not available.
-3. Backend package/runtime mismatch.
-
 Fix checklist:
-1. Confirm backend mode is applied in Setup Wizard.
-2. If `NuGet` menu is missing, click `Install NuGetForUnity` and wait for import/compile.
-3. Run `Install/Update Dependencies` then `Run NuGet Restore`.
-4. Confirm required native DLLs exist in `Assets/Plugins/x86_64`.
-5. For CUDA mode, confirm CUDA 12 runtime path is available on machine.
-6. Restart Unity after dependency changes.
+1. Verify backend was applied in Setup Wizard.
+2. Re-run `Install/Update Dependencies`.
+3. Run `Run NuGet Restore`.
+4. Confirm required DLLs exist in `Assets/Plugins/x86_64`.
 
-## C) `DllNotFoundException: llama` or `libllama`
-
-Cause:
-- Native DLL name/path is not resolvable by runtime.
-
-Fix:
-1. Keep required DLLs in `Assets/Plugins/x86_64`.
-2. Avoid mixing old backend copies from multiple locations.
-3. Re-run backend apply in Setup Wizard.
-
-## D) Model Not Found
+## C) Local Model Not Found
 
 Example:
 - `Model file not found: ...`
 
 Fix:
-1. Place `.gguf` under `Assets/StreamingAssets/Models`.
-2. Apply model path via Setup Wizard (`Apply Model To All Profiles`).
-3. Validate path in each `LlmGenerationProfile`.
+1. Put `.gguf` under `Assets/StreamingAssets/Models`.
+2. Use Setup Wizard `Apply Model To All Local Profiles`.
+3. Check `model` path in each `LlmGenerationProfile`.
 
-## E) First Request Freezes or Stutters
-
-Cause:
-- Initial native/model warm-up and memory allocation.
-
-Fix:
-1. Keep preload enabled (default behavior in current runtime service).
-2. Wait for preload completion before starting gameplay-critical inference.
-3. Tune threads/context size if frame spikes are high.
-
-## F) Slow Model Download in Editor
-
-Likely factors:
-1. Hugging Face anonymous throttling.
-2. Network route/CDN variance.
-3. Editor-side transfer overhead.
-
-Fix:
-1. Use Hugging Face access token.
-2. Prefer browser download for very large models if faster in your environment.
-3. Import completed file into `StreamingAssets/Models`.
-
-## G) Infinite Import Loop for `.part` Files
+## D) Cloud API Key Missing
 
 Example:
-- `An infinite import loop has been detected ... .gguf.part`
-
-Cause:
-- Temporary partial download file under `Assets` triggers repeated imports.
+- `API key missing for provider ...`
 
 Fix:
-1. Keep temp/partial files outside `Assets` while downloading.
-2. Move final file into `Assets/StreamingAssets/Models` only after completion.
+1. Set provider-specific environment variable.
+2. Or create `CloudCredentialOverridesAsset` under an `Editor` folder.
+3. Confirm `CloudGenerationProfile.apiKeyEnvironmentVariable` override if customized.
 
-## H) `InvalidOperationException` About `UnityEngine.Input`
+Priority order:
+1. Environment variable
+2. Editor-only override asset
 
-Example:
-- `You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package`
+## E) Cloud Authentication or Request Errors (401/403/400)
 
-Cause:
-- Project is set to `Input System Package` only, while gameplay code expects legacy input calls.
+Behavior:
+- Cloud v1 fails immediately on auth/request-format errors.
+
+Checklist:
+1. Verify API key value and provider match.
+2. Check `modelId` validity for that provider.
+3. Check `baseUrl` points to API root (not full endpoint path).
+
+## F) Cloud Throttling / Transient Server Errors
+
+Behavior:
+- Automatic retry only for `429` and `5xx` (max 2 retries, exponential backoff).
+
+If it still fails:
+1. Reduce traffic.
+2. Increase limits on your provider account.
+3. Retry manually after cooldown.
+
+## G) Cloud JSON Parse Failures
+
+Symptoms:
+- `Failed to parse valid JSON after ... attempts`
 
 Fix:
-1. Update to the latest package scripts (they now use `DemoInput` compatibility wrapper).
-2. Or temporary workaround: set `Project Settings > Player > Active Input Handling` to `Both`.
+1. Simplify prompt.
+2. Reduce schema complexity in JSON fields.
+3. Increase step-level `jsonMaxRetries`.
 
-## I) Sample Scene Characters/Terrain Appear Black
+## H) Vision/Embedding Not Supported in Cloud v1
 
-Cause:
-- Sample scene sprites use URP 2D lit materials. This can render dark/black when:
-  1. project is non-URP, or
-  2. project is URP but active renderer is not `2D Renderer`.
+Behavior:
+- Cloud service returns explicit not-supported errors for:
+  - `GenerateCompletionWithImage`
+  - `Embed`
 
-Fix:
-1. Latest sample includes runtime fallback in `SampleScene` to `Sprites/Default`.
-2. For intended URP visuals, install/enable URP and use a `2D Renderer` asset in project graphics/quality settings.
+Use local profile steps for these features until cloud scope expands.
+
+## I) Preload Never Becomes Ready
+
+Check pipeline composition:
+1. If pipeline has local steps, GGUF preload must complete.
+2. If pipeline is cloud-only, readiness should be immediate.
+
+If local preload is required:
+1. Verify model path and backend setup.
+2. Check runtime logs for local load errors.
+
+## J) Security Warning: Key Exposure Risk
+
+Avoid:
+1. Hardcoding API keys in scenes/prefabs/scripts
+2. Committing editor override key assets
+
+Recommended:
+1. Environment variables for day-to-day development
+2. Editor override asset only for local temporary workflow

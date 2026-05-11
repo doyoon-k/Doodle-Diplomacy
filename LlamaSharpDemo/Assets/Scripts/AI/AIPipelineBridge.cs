@@ -496,17 +496,24 @@ namespace DoodleDiplomacy.AI
                 return;
             }
 
-            RuntimeLlamaSharpService runtimeService = ResolveRuntimeLlmService();
+            RoutingLlmService runtimeService = ResolveRuntimeLlmService();
             if (runtimeService == null)
             {
                 SetLlmPreparationAvailability(
                     LlmPreparationAvailabilityState.Failed,
-                    "RuntimeLlamaSharpService is missing.",
-                    "Cannot preload LLM because RuntimeLlamaSharpService is missing.");
+                    "RoutingLlmService is missing.",
+                    "Cannot preload LLM because RoutingLlmService is missing.");
                 return;
             }
 
-            runtimeService.StartPreload();
+            PromptPipelineAsset[] llmPipelines = GetActiveLlmPipelines();
+            if (!runtimeService.RequiresLocalPreload(llmPipelines))
+            {
+                SetLlmPreparationAvailability(LlmPreparationAvailabilityState.Ready, string.Empty, string.Empty);
+                return;
+            }
+
+            runtimeService.StartPreloadIfRequired(llmPipelines);
             UpdateLlmPreparationAvailabilityFromService(runtimeService);
         }
 
@@ -518,17 +525,23 @@ namespace DoodleDiplomacy.AI
                 return;
             }
 
-            RuntimeLlamaSharpService runtimeService = ResolveRuntimeLlmService();
+            RoutingLlmService runtimeService = ResolveRuntimeLlmService();
             if (runtimeService == null)
             {
                 if (_llmPreparationAvailability == LlmPreparationAvailabilityState.Preparing)
                 {
                     SetLlmPreparationAvailability(
                         LlmPreparationAvailabilityState.Failed,
-                        "RuntimeLlamaSharpService disappeared while waiting for LLM preload.",
-                        "LLM preload failed because RuntimeLlamaSharpService became unavailable.");
+                        "RoutingLlmService disappeared while waiting for LLM preload.",
+                        "LLM preload failed because RoutingLlmService became unavailable.");
                 }
 
+                return;
+            }
+
+            if (!runtimeService.RequiresLocalPreload(GetActiveLlmPipelines()))
+            {
+                SetLlmPreparationAvailability(LlmPreparationAvailabilityState.Ready, string.Empty, string.Empty);
                 return;
             }
 
@@ -2595,24 +2608,24 @@ namespace DoodleDiplomacy.AI
             }
         }
 
-        private RuntimeLlamaSharpService ResolveRuntimeLlmService()
+        private RoutingLlmService ResolveRuntimeLlmService()
         {
             if (GamePipelineRunner.Instance != null)
             {
                 return GamePipelineRunner.Instance.RuntimeService;
             }
 
-            return FindFirstObjectByType<RuntimeLlamaSharpService>();
+            return FindFirstObjectByType<RoutingLlmService>();
         }
 
-        private void UpdateLlmPreparationAvailabilityFromService(RuntimeLlamaSharpService runtimeService)
+        private void UpdateLlmPreparationAvailabilityFromService(RoutingLlmService runtimeService)
         {
             if (runtimeService == null)
             {
                 SetLlmPreparationAvailability(
                     LlmPreparationAvailabilityState.Failed,
-                    "RuntimeLlamaSharpService is missing.",
-                    "LLM preload failed because RuntimeLlamaSharpService is missing.");
+                    "RoutingLlmService is missing.",
+                    "LLM preload failed because RoutingLlmService is missing.");
                 return;
             }
 
@@ -2632,6 +2645,17 @@ namespace DoodleDiplomacy.AI
                 LlmPreparationAvailabilityState.Failed,
                 "LLM preload completed without a ready model.",
                 "LLM preload completed without a ready model.");
+        }
+
+        private PromptPipelineAsset[] GetActiveLlmPipelines()
+        {
+            return new[]
+            {
+                previewDialoguePipeline,
+                judgmentPipeline,
+                telepathyPipeline,
+                wordsSelectionPipeline
+            };
         }
 
         private IEnumerator PrepareRoundKeywordsRoutine()

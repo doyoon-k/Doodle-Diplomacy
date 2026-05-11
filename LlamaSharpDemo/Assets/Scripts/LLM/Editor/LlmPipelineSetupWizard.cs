@@ -207,7 +207,8 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         EditorGUILayout.LabelField("LLM Pipeline Setup Wizard", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
             "This wizard configures native backends, imports GGUF models into StreamingAssets, " +
-            "and applies a model path to every LlmGenerationProfile.",
+            "and applies a model path to every local LlmGenerationProfile. " +
+            "CloudGenerationProfile API keys are configured separately via environment variables (or editor-local override asset).",
             MessageType.Info);
 
         DrawBackendSection();
@@ -317,7 +318,7 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
                 ImportModelToStreamingAssets();
             }
 
-            if (GUILayout.Button("Apply Model To All Profiles", GUILayout.Height(26f)))
+            if (GUILayout.Button("Apply Model To All Local Profiles", GUILayout.Height(26f)))
             {
                 ApplyModelToAllProfiles();
             }
@@ -345,7 +346,7 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
                 MessageType.Warning);
         }
         _hfAutoApplyAfterDownload = EditorGUILayout.ToggleLeft(
-            "Auto-apply downloaded model to all LlmGenerationProfile assets",
+            "Auto-apply downloaded model to all local LlmGenerationProfile assets",
             _hfAutoApplyAfterDownload);
 
         if (DrawActiveTransferUiIfNeeded(HfDownloadApplyMode.LlmProfiles))
@@ -1953,7 +1954,7 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
         string[] profileGuids = AssetDatabase.FindAssets("t:LlmGenerationProfile");
         if (profileGuids.Length == 0)
         {
-            SetStatus("No LlmGenerationProfile assets found.", MessageType.Warning);
+            SetStatus("No local LlmGenerationProfile assets found.", MessageType.Warning);
             return;
         }
 
@@ -2003,7 +2004,7 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
             AssetDatabase.SaveAssets();
         }
 
-        SetStatus($"Applied model to {updatedCount} profile(s).", MessageType.Info);
+        SetStatus($"Applied model to {updatedCount} local profile(s).", MessageType.Info);
     }
 
     private void RunQuickValidation()
@@ -2028,7 +2029,8 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
             .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        int profileCount = AssetDatabase.FindAssets("t:LlmGenerationProfile").Length;
+        int localProfileCount = AssetDatabase.FindAssets("t:LlmGenerationProfile").Length;
+        int cloudProfileCount = AssetDatabase.FindAssets("t:CloudGenerationProfile").Length;
         int modelCount = FindStreamingAssetModels().Count;
 
         if (duplicateNames.Count > 0)
@@ -2039,19 +2041,21 @@ public sealed class LlmPipelineSetupWizard : EditorWindow
             return;
         }
 
-        if (profileCount == 0)
+        if (localProfileCount == 0 && cloudProfileCount == 0)
         {
-            SetStatus("Validation warning: no LlmGenerationProfile assets found.", MessageType.Warning);
+            SetStatus("Validation warning: no LLM profile assets found.", MessageType.Warning);
             return;
         }
 
-        if (modelCount == 0)
+        if (localProfileCount > 0 && modelCount == 0)
         {
-            SetStatus("Validation warning: no GGUF model found in StreamingAssets.", MessageType.Warning);
+            SetStatus("Validation warning: local profiles exist but no GGUF model was found in StreamingAssets.", MessageType.Warning);
             return;
         }
 
-        SetStatus($"Validation passed. Profiles={profileCount}, Models={modelCount}, EnabledPlugins={enabled.Count}", MessageType.Info);
+        SetStatus(
+            $"Validation passed. LocalProfiles={localProfileCount}, CloudProfiles={cloudProfileCount}, Models={modelCount}, EnabledPlugins={enabled.Count}",
+            MessageType.Info);
     }
 
     private static BackendMode DetectBackendMode()

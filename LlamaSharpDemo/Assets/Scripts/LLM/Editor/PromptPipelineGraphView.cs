@@ -955,7 +955,7 @@ public class PromptPipelineGraphView : GraphView
         return _stepNodes.FirstOrDefault(n => n.Step.guid == node.Step.nextStepGuid);
     }
 
-    private void OnLlmSettingsChanged(LlmGenerationProfile settings)
+    private void OnLlmSettingsChanged(BaseLlmGenerationProfile settings)
     {
         if (settings == null || _asset?.steps == null)
         {
@@ -1427,12 +1427,12 @@ internal class PromptPipelineStepNode : Node
 
         _settingsField = new ObjectField("LLM Profile")
         {
-            objectType = typeof(LlmGenerationProfile),
+                    objectType = typeof(BaseLlmGenerationProfile),
             value = step.llmProfile
         };
         _settingsField.RegisterValueChangedCallback(evt =>
         {
-            ApplyChange("Assign LLM Profile", () => step.llmProfile = evt.newValue as LlmGenerationProfile);
+                ApplyChange("Assign LLM Profile", () => step.llmProfile = evt.newValue as BaseLlmGenerationProfile);
             UpdateSettingsInspector();
             UpdatePromptInputsEnabled();
         });
@@ -1921,7 +1921,7 @@ internal class PromptPipelineStepNode : Node
     {
         if (_settingsEditor == null)
         {
-            EditorGUILayout.HelpBox("Assign LlmGenerationProfile to edit inline.", MessageType.Info);
+            EditorGUILayout.HelpBox("Assign an LLM profile to edit inline.", MessageType.Info);
             return;
         }
 
@@ -2369,4 +2369,3 @@ internal class StateSnapshotNode : Node
         extensionContainer.Add(scroll);
     }
 }
-

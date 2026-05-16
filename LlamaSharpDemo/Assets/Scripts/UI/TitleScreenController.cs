@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Gameplay;
 
 namespace DoodleDiplomacy.UI
@@ -23,9 +24,7 @@ namespace DoodleDiplomacy.UI
         [Header("State Source")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
 
-        private RoundManager _roundManager;
         private bool _subscribedToHost;
-        private bool _subscribedToRoundManager;
 
         private void Awake()
         {
@@ -72,10 +71,16 @@ namespace DoodleDiplomacy.UI
 
         private void TryAutoStart()
         {
-            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
-            if (_roundManager == null)
+            gameplayModeHost = GameStateUiHelper.ResolveGameplayModeHost(gameplayModeHost);
+            if (IsFlowOwnedSession())
             {
-                Debug.LogWarning("[TitleScreenController] RoundManager 없음 — 자동 시작 건너뜀");
+                return;
+            }
+
+            IGameplaySessionController session = GameStateUiHelper.ResolveSessionController(gameplayModeHost);
+            if (session == null)
+            {
+                Debug.LogWarning("[TitleScreenController] Gameplay session 없음 — 자동 시작 건너뜀");
                 return;
             }
 
@@ -85,13 +90,19 @@ namespace DoodleDiplomacy.UI
                 // 첫 플레이: 타이틀 건너뛰고 Intro부터 시작
                 PlayerPrefs.SetInt(FirstPlayKey, 1);
                 PlayerPrefs.Save();
-                _roundManager.StartGame(isFirstPlay: true);
+                session.StartGame(isFirstPlay: true);
             }
             else
             {
                 // 재플레이: 타이틀 화면 표시
                 ShowTitle();
             }
+        }
+
+        private bool IsFlowOwnedSession()
+        {
+            GameplayModeContext context = gameplayModeHost != null ? gameplayModeHost.Context : null;
+            return context?.Services?.TryGet<FlowEntryDefinition>(out _) == true;
         }
 
         private void Hide()
@@ -101,7 +112,7 @@ namespace DoodleDiplomacy.UI
 
         private void SubscribeStateSource()
         {
-            if (_subscribedToHost || _subscribedToRoundManager)
+            if (_subscribedToHost)
             {
                 return;
             }
@@ -114,14 +125,6 @@ namespace DoodleDiplomacy.UI
                 OnGameStateChanged(gameplayModeHost.CurrentState);
                 return;
             }
-
-            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
-            if (_roundManager != null)
-            {
-                _roundManager.OnStateChanged.AddListener(OnGameStateChanged);
-                _subscribedToRoundManager = true;
-                OnGameStateChanged(_roundManager.CurrentState);
-            }
         }
 
         private void UnsubscribeStateSource()
@@ -131,20 +134,14 @@ namespace DoodleDiplomacy.UI
                 gameplayModeHost.StateChanged -= OnGameStateChanged;
             }
 
-            if (_subscribedToRoundManager && _roundManager != null)
-            {
-                _roundManager.OnStateChanged.RemoveListener(OnGameStateChanged);
-            }
-
             _subscribedToHost = false;
-            _subscribedToRoundManager = false;
         }
 
         private void OnStartClicked()
         {
             Hide();
-            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
-            _roundManager?.StartGame(isFirstPlay: alwaysPlayIntroOnStart);
+            IGameplaySessionController session = GameStateUiHelper.ResolveSessionController(gameplayModeHost);
+            session?.StartGame(isFirstPlay: alwaysPlayIntroOnStart);
         }
 
         // ── Inspector 컨텍스트 메뉴 테스트 ───────────────────────────────────

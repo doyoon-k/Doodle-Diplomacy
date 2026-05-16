@@ -19,6 +19,7 @@ public class RoutingLlmService : MonoBehaviour, ILlmService
     public bool IsPreloadInProgress => localRuntimeService != null && localRuntimeService.IsPreloadInProgress;
     public bool IsPreloadComplete => localRuntimeService != null && localRuntimeService.IsPreloadComplete;
     public bool IsModelReady => localRuntimeService != null && localRuntimeService.IsModelReady;
+    public bool LogTrafficEnabled => logTraffic;
 
     private void Awake()
     {

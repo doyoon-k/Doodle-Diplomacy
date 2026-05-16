@@ -11,15 +11,15 @@ namespace DoodleDiplomacy.UI
     /// </summary>
     public class PreviewButtonPanel : MonoBehaviour
     {
+        private const string ObjectPairModeId = "object-pair-drawing";
+
         [Header("References")]
         [SerializeField] private GameObject panel;
         [SerializeField] private Button submitButton;
         [SerializeField] private Button modifyButton;
         [SerializeField] private GameplayModeHost gameplayModeHost;
-        [SerializeField] private RoundManager roundManager;
 
         private bool _subscribedToHost;
-        private bool _subscribedToRoundManager;
 
         private void Awake()
         {
@@ -53,7 +53,7 @@ namespace DoodleDiplomacy.UI
 
         public void OnGameStateChanged(GameState state)
         {
-            if (state == GameState.Preview)
+            if (state == GameState.Preview && IsObjectPairDrawingModeActive())
             {
                 Show();
             }
@@ -68,9 +68,16 @@ namespace DoodleDiplomacy.UI
         private void Show() => GameStateUiHelper.SetVisible(panel, true);
         private void Hide() => GameStateUiHelper.SetVisible(panel, false);
 
+        private bool IsObjectPairDrawingModeActive()
+        {
+            gameplayModeHost = GameStateUiHelper.ResolveGameplayModeHost(gameplayModeHost);
+            return gameplayModeHost == null ||
+                   string.Equals(gameplayModeHost.ActiveModeId, ObjectPairModeId, System.StringComparison.Ordinal);
+        }
+
         private void SubscribeStateSource()
         {
-            if (_subscribedToHost || _subscribedToRoundManager)
+            if (_subscribedToHost)
             {
                 return;
             }
@@ -83,14 +90,6 @@ namespace DoodleDiplomacy.UI
                 OnGameStateChanged(gameplayModeHost.CurrentState);
                 return;
             }
-
-            roundManager = GameStateUiHelper.ResolveRoundManager(roundManager);
-            if (roundManager != null)
-            {
-                roundManager.OnStateChanged.AddListener(OnGameStateChanged);
-                _subscribedToRoundManager = true;
-                OnGameStateChanged(roundManager.CurrentState);
-            }
         }
 
         private void UnsubscribeStateSource()
@@ -100,25 +99,17 @@ namespace DoodleDiplomacy.UI
                 gameplayModeHost.StateChanged -= OnGameStateChanged;
             }
 
-            if (_subscribedToRoundManager && roundManager != null)
-            {
-                roundManager.OnStateChanged.RemoveListener(OnGameStateChanged);
-            }
-
             _subscribedToHost = false;
-            _subscribedToRoundManager = false;
         }
 
         private void OnSubmit()
         {
-            roundManager = GameStateUiHelper.ResolveRoundManager(roundManager);
-            roundManager?.OnPreviewSubmit();
+            GameStateUiHelper.ResolveSessionController(gameplayModeHost)?.SubmitPreview();
         }
 
         private void OnModify()
         {
-            roundManager = GameStateUiHelper.ResolveRoundManager(roundManager);
-            roundManager?.OnPreviewModify();
+            GameStateUiHelper.ResolveSessionController(gameplayModeHost)?.ModifyPreview();
         }
     }
 }

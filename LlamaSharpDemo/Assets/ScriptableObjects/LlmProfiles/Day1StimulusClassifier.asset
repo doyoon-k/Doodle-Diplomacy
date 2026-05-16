@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: Day1StimulusClassifier
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  format: '{"type":"object","properties":{"object_count":{"type":"number"},"candidates":{"type":"array","items":{"type":"string"},"minItems":1,"maxItems":3}},"required":["object_count","candidates"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: "Identify the main black shape in the image.\r\n\r\nReturn
+    only valid JSON:\r\n{\r\n  \"object_count\": number,\r\n  \"candidates\": [\"label
+    1\", \"label 2\", \"label 3\"]\r\n}\r\n\r\nRules:\r\n- object_count is the number
+    of separate recognizable visual things.\r\n- If there is one recognizable thing,
+    return object_count 1 and 1 to 3 short lowercase English noun phrases.\r\n- If
+    there are multiple separate things, return object_count greater than 1 and name
+    the main things.\r\n- If the image is mostly writing, numbers, or has no recognizable
+    visual thing, return {\"object_count\":0,\"candidates\":[]}.\r\n- Candidates
+    must name what the shape visually resembles, not the medium, canvas, interface,
+    or task.\r\n- Do not explain. Do not add extra fields."
+  jsonSchemaDeliveryMode: 0
+  thinkingMode: 0
+  jsonFields:
+  - fieldName: object_count
+    fieldType: 1
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: candidates
+    fieldType: 5
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 1
+    maxItems: 3
+  modelParams:
+    temperature: 0
+    top_p: 0.9
+    top_k: 20
+    num_predict: 220
+    repeat_penalty: 1.05
+    seed: 0
+  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  visionProjectorModel: Models/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf
+  visionProjectorRelativeToStreamingAssets: 1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 16
+    threads: 12

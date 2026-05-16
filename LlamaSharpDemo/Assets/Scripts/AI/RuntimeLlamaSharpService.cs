@@ -45,6 +45,7 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     public bool IsPreloadInProgress { get; private set; }
     public bool IsPreloadComplete { get; private set; }
     public bool IsModelReady => _executor != null;
+    public bool LogTrafficEnabled => logTraffic;
 
     /// <summary>
     /// Invoked when default profile preload ends. bool = success.

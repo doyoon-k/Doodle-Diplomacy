@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using DoodleDiplomacy.Gameplay;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace DoodleDiplomacy.Core
@@ -7,7 +8,7 @@ namespace DoodleDiplomacy.Core
     /// <summary>
     /// 개발 전용: 키보드로 게임 상태를 강제 진행.
     /// Phase 4(AIPipelineBridge) 구현 전까지 전체 흐름을 수동으로 테스트할 때 사용.
-    /// RoundManager와 같은 GameObject에 붙이거나, 독립 GameObject에 붙여서 사용.
+    /// GameplayModeHost와 같은 GameObject에 붙이거나, 독립 GameObject에 붙여서 사용.
     /// </summary>
     public class DebugStateAdvancer : MonoBehaviour
     {
@@ -45,27 +46,53 @@ namespace DoodleDiplomacy.Core
         {
             if (IsPressed(advanceKey))
             {
-                var rm = RoundManager.Instance;
-                if (rm == null) { Debug.LogWarning("[DebugStateAdvancer] RoundManager 없음"); return; }
-                Debug.Log($"[DebugStateAdvancer] F5 → AdvanceState (현재: {rm.CurrentState})");
-                rm.Debug_AdvanceState();
+                if (!TryResolveDebugController(out IGameplayDebugController debug, out GameState state)) { return; }
+                Debug.Log($"[DebugStateAdvancer] F5 → AdvanceState (현재: {state})");
+                debug.DebugAdvanceState();
             }
 
             if (IsPressed(restartKey))
             {
-                var rm = RoundManager.Instance;
-                if (rm == null) { Debug.LogWarning("[DebugStateAdvancer] RoundManager 없음"); return; }
+                if (!TryResolveSession(out IGameplaySessionController session)) { return; }
                 Debug.Log("[DebugStateAdvancer] F6 → StartGame(false) — WaitingForRound부터 재시작");
-                rm.StartGame(false);
+                session.StartGame(false);
             }
 
             if (IsPressed(jumpToDrawingKey))
             {
-                var rm = RoundManager.Instance;
-                if (rm == null) { Debug.LogWarning("[DebugStateAdvancer] RoundManager 없음"); return; }
+                if (!TryResolveDebugController(out IGameplayDebugController debug, out _)) { return; }
                 Debug.Log("[DebugStateAdvancer] F7 → Drawing 상태로 강제 점프");
-                rm.Debug_JumpToState(GameState.Drawing);
+                debug.DebugJumpToState(GameState.Drawing);
             }
+        }
+
+        private static bool TryResolveSession(out IGameplaySessionController session)
+        {
+            GameplayModeHost host = GameplayModeHost.Instance;
+            host?.EnsureDefaultModeEntered();
+            session = host?.ActiveMode as IGameplaySessionController;
+            if (session != null)
+            {
+                return true;
+            }
+
+            Debug.LogWarning("[DebugStateAdvancer] Gameplay session controller 없음");
+            return false;
+        }
+
+        private static bool TryResolveDebugController(out IGameplayDebugController debug, out GameState state)
+        {
+            GameplayModeHost host = GameplayModeHost.Instance;
+            host?.EnsureDefaultModeEntered();
+            debug = host?.ActiveMode as IGameplayDebugController;
+            state = host != null ? host.CurrentState : GameState.Title;
+            if (debug != null)
+            {
+                return true;
+            }
+
+            Debug.LogWarning("[DebugStateAdvancer] Gameplay debug controller 없음");
+            return false;
         }
     }
 }

@@ -15,7 +15,7 @@ namespace DoodleDiplomacy.Devices
         [Header("References")]
         [SerializeField] private DrawingBoardController drawingBoard;
         [SerializeField] private UnityEngine.Camera inputCamera;
-        [SerializeField] private RoundManager roundManager;
+        [SerializeField] private GameplayModeHost gameplayModeHost;
         [SerializeField] private GameObject controlsRoot;
 
         [Header("Input")]
@@ -138,9 +138,10 @@ namespace DoodleDiplomacy.Devices
 
         private void ValidateInspectorReferences()
         {
-            if (roundManager == null)
+            gameplayModeHost = gameplayModeHost != null ? gameplayModeHost : GameplayModeHost.Instance;
+            if (gameplayModeHost == null)
             {
-                Debug.LogError("[TabletPhysicalControlsController] Round manager must be assigned in the Inspector.", this);
+                Debug.LogError("[TabletPhysicalControlsController] GameplayModeHost must be assigned in the Inspector.", this);
             }
 
             if (inputCamera == null)
@@ -182,7 +183,7 @@ namespace DoodleDiplomacy.Devices
             EnsureButtonIconOverlays();
             SubscribeDrawingBoard();
             SyncFromDrawingBoard();
-            RefreshStateFromRoundManager();
+            RefreshStateFromGameplayModeHost();
             RefreshVisuals();
         }
 
@@ -214,7 +215,7 @@ namespace DoodleDiplomacy.Devices
 
         private void Update()
         {
-            RefreshStateFromRoundManager();
+            RefreshStateFromGameplayModeHost();
             if (!_controlsActive || !EnsureDrawingControls())
             {
                 return;
@@ -277,10 +278,10 @@ namespace DoodleDiplomacy.Devices
             RefreshVisuals();
         }
 
-        private void RefreshStateFromRoundManager()
+        private void RefreshStateFromGameplayModeHost()
         {
             ValidateInspectorReferences();
-            GameState state = roundManager != null ? roundManager.CurrentState : GameState.Title;
+            GameState state = gameplayModeHost != null ? gameplayModeHost.CurrentState : GameState.Title;
             OnGameStateChanged(state);
         }
 

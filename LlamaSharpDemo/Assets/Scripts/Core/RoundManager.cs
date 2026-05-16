@@ -18,11 +18,21 @@ namespace DoodleDiplomacy.Core
     [Serializable]
     public class GameStateUnityEvent : UnityEvent<GameState> { }
 
-    public class RoundManager : MonoBehaviour, IRoundStateEntryContext, IRoundPlayerActionContext, IRoundStartupContext
+    public class RoundManager : MonoBehaviour,
+        IGameplayMode,
+        IGameplayStateObservable,
+        IGameplaySessionController,
+        IGameplayDebugController,
+        IRoundStateEntryContext,
+        IRoundPlayerActionContext,
+        IRoundStartupContext
     {
         private const float DefaultFirstRoundPrefetchTimeoutSeconds = 180f;
 
         public static RoundManager Instance { get; private set; }
+
+        [Header("Mode")]
+        [SerializeField] private string modeId = "object-pair-drawing";
 
         [Header("Core Dependencies")]
         [SerializeField] private ScoreManager scoreManager;
@@ -86,11 +96,15 @@ namespace DoodleDiplomacy.Core
         private bool _reportedMissingDrawingFeature;
         private bool _reportedMissingCameraModeService;
         private bool _reportedMissingInteractionStateService;
-        private bool _hasBoundLegacyInspectorInteractions;
+        private bool _hasBoundInspectorFallbackInteractions;
+        private bool _runtimeInitialized;
+        private bool _enteredByGameplayHost;
 
+        public string ModeId => string.IsNullOrWhiteSpace(modeId) ? "object-pair-drawing" : modeId;
         public GameState CurrentState => _services.FlowController?.CurrentState ?? GameState.Title;
         public int CurrentRound => _currentRound;
         public bool HasOpenedInterpreterThisRound => _hasOpenedInterpreterThisRound;
+        public event Action<GameState> StateChanged;
 
         IRoundAiGateway IRoundStateEntryContext.AiGateway => _aiGateway;
         ScoreManager IRoundStateEntryContext.ScoreManager => scoreManager;
@@ -209,13 +223,7 @@ namespace DoodleDiplomacy.Core
 
         private void Start()
         {
-            InitializeRoundServices();
-            ResolveAiGateway();
-            UpdateDrawingBoardInteractionForState(CurrentState);
-            BindInspectorInteractions();
-            SubscribeToBridgeEvents();
-            ApplyInteractionPolicyForCurrentState();
-            ApplyCameraMode(CurrentState);
+            InitializeRuntime();
         }
 
         private void OnDestroy()
@@ -233,8 +241,71 @@ namespace DoodleDiplomacy.Core
 
         private void Update()
         {
+            if (!_enteredByGameplayHost)
+            {
+                Tick(Time.deltaTime);
+            }
+        }
+
+        public void Enter(GameplayModeContext context)
+        {
+            _enteredByGameplayHost = true;
+
+            if (context != null)
+            {
+                ConfigureDrawingFeature(context.Drawing);
+                ConfigureCameraModeService(context.Camera);
+                ConfigureInteractionStateService(context.InteractionState);
+                if (context.AiGateway != null && !ReferenceEquals(_aiGateway, context.AiGateway))
+                {
+                    UnsubscribeFromBridgeEvents();
+                    _aiGateway = context.AiGateway;
+                    SubscribeToBridgeEvents();
+                }
+            }
+
+            InitializeRuntime();
+            ApplyInteractionPolicyForCurrentState();
+            ApplyCameraMode(CurrentState);
+            StateChanged?.Invoke(CurrentState);
+        }
+
+        public void Exit()
+        {
+            _enteredByGameplayHost = false;
+            _services.StartupFlow?.Stop();
+            UnsubscribeFromBridgeEvents();
+        }
+
+        public void Tick(float deltaTime)
+        {
             EnsureRoundServices();
             _services.InputRouter?.Tick();
+        }
+
+        public void HandleInteraction(InteractionType type, InteractableObject source)
+        {
+            switch (type)
+            {
+                case InteractionType.Alien:
+                    OnAlienClicked();
+                    break;
+                case InteractionType.Tablet:
+                    OnTabletClicked();
+                    break;
+                case InteractionType.Adjutant:
+                    OnAdjutantClicked();
+                    break;
+                case InteractionType.Terminal:
+                    OnTerminalClicked();
+                    break;
+                case InteractionType.Monitor:
+                    OnSharedMonitorClicked();
+                    break;
+                default:
+                    Debug.LogWarning($"[RoundManager] Unhandled interaction type: {type}.", source);
+                    break;
+            }
         }
 
         public void StartGame(bool isFirstPlay = true)
@@ -283,11 +354,13 @@ namespace DoodleDiplomacy.Core
         public void OnPresentingComplete() => TryTransition(GameState.Presenting, GameState.ObjectPresented);
         public void OnDrawingComplete() => TryTransition(GameState.Drawing, GameState.PreviewReady);
         public void OnPreviewSubmit() => TryTransition(GameState.Preview, GameState.Submitting);
+        public void SubmitPreview() => OnPreviewSubmit();
         public void OnPreviewModify()
         {
             EnsureRoundServices();
             _services.PlayerActionHandler?.OnPreviewModify();
         }
+        public void ModifyPreview() => OnPreviewModify();
 
         public void ConfigureDrawingFeature(IDrawingFeature drawingFeature)
         {
@@ -324,7 +397,7 @@ namespace DoodleDiplomacy.Core
         {
             if (HasGameplayModeHostInteractionRoute())
             {
-                _hasBoundLegacyInspectorInteractions = false;
+                _hasBoundInspectorFallbackInteractions = false;
                 return;
             }
 
@@ -334,12 +407,12 @@ namespace DoodleDiplomacy.Core
                 OnTabletClicked,
                 OnTerminalClicked,
                 OnSharedMonitorClicked);
-            _hasBoundLegacyInspectorInteractions = true;
+            _hasBoundInspectorFallbackInteractions = true;
         }
 
         private void UnbindInspectorInteractions()
         {
-            if (!_hasBoundLegacyInspectorInteractions)
+            if (!_hasBoundInspectorFallbackInteractions)
             {
                 return;
             }
@@ -349,7 +422,7 @@ namespace DoodleDiplomacy.Core
                 OnTabletClicked,
                 OnTerminalClicked,
                 OnSharedMonitorClicked);
-            _hasBoundLegacyInspectorInteractions = false;
+            _hasBoundInspectorFallbackInteractions = false;
         }
 
         private bool HasGameplayModeHostInteractionRoute()
@@ -422,11 +495,15 @@ namespace DoodleDiplomacy.Core
             }
         }
 
+        public void DebugAdvanceState() => Debug_AdvanceState();
+
         public void Debug_JumpToState(GameState target)
         {
             Debug.Log($"[RoundManager] Debug_JumpToState: {CurrentState} -> {target}");
             ChangeState(target);
         }
+
+        public void DebugJumpToState(GameState target) => Debug_JumpToState(target);
 
         private void TryTransition(GameState required, GameState next)
         {
@@ -457,6 +534,7 @@ namespace DoodleDiplomacy.Core
         private void PublishStateChanged(GameState state)
         {
             OnStateChanged?.Invoke(state);
+            StateChanged?.Invoke(state);
         }
 
         private bool IsStateCurrent(GameState state, int stateVersion)
@@ -636,6 +714,26 @@ namespace DoodleDiplomacy.Core
             _services.FlowController = CreateFlowController();
         }
 
+        private void InitializeRuntime()
+        {
+            if (_runtimeInitialized)
+            {
+                return;
+            }
+
+            InitializeRoundServices();
+            if (_aiGateway == null)
+            {
+                ResolveAiGateway();
+            }
+            UpdateDrawingBoardInteractionForState(CurrentState);
+            BindInspectorInteractions();
+            SubscribeToBridgeEvents();
+            ApplyInteractionPolicyForCurrentState();
+            ApplyCameraMode(CurrentState);
+            _runtimeInitialized = true;
+        }
+
         private void EnsureRoundServices()
         {
             _services.HintPresenter ??= new RoundHintPresenter(subtitleDisplay);
@@ -717,7 +815,7 @@ namespace DoodleDiplomacy.Core
 
             if (interactionManager != null)
             {
-                _interactionStateService = new InteractionStateService(interactionManager, new LegacyRoundInteractionPolicy());
+                _interactionStateService = new InteractionStateService(interactionManager, new ObjectPairDrawingInteractionPolicy());
                 return _interactionStateService;
             }
 

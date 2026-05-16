@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Gameplay;
 
 public enum DrawingToolMode
 {
@@ -158,6 +159,7 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         Color32[] compositePixels = _canvas.CopyPixels();
+        OrientPixelsForSurfaceExport(compositePixels, _canvas.Width, _canvas.Height);
 
         _exportCanvas.ApplyRegion(
             new RectInt(0, 0, _canvas.Width, _canvas.Height),
@@ -763,6 +765,63 @@ public class DrawingBoardController : MonoBehaviour
         HistoryStateChanged?.Invoke(CanUndo, CanRedo);
     }
 
+    private void OrientPixelsForSurfaceExport(Color32[] pixels, int width, int height)
+    {
+        // The tablet material can use negative UV scale so drawing input and display line up
+        // on the physical board. Export should match what the player saw, not the backing buffer.
+        if (boardTextureScale.x < 0f)
+        {
+            FlipPixelsHorizontally(pixels, width, height);
+        }
+
+        if (boardTextureScale.y < 0f)
+        {
+            FlipPixelsVertically(pixels, width, height);
+        }
+    }
+
+    private static void FlipPixelsHorizontally(Color32[] pixels, int width, int height)
+    {
+        if (pixels == null || width <= 1 || height <= 0)
+        {
+            return;
+        }
+
+        int halfColumns = width / 2;
+        for (int y = 0; y < height; y++)
+        {
+            int rowOffset = y * width;
+            for (int x = 0; x < halfColumns; x++)
+            {
+                int leftIndex = rowOffset + x;
+                int rightIndex = rowOffset + (width - 1 - x);
+                (pixels[leftIndex], pixels[rightIndex]) = (pixels[rightIndex], pixels[leftIndex]);
+            }
+        }
+    }
+
+    private static void FlipPixelsVertically(Color32[] pixels, int width, int height)
+    {
+        if (pixels == null || width <= 0 || height <= 1)
+        {
+            return;
+        }
+
+        int halfRows = height / 2;
+        for (int y = 0; y < halfRows; y++)
+        {
+            int oppositeY = height - 1 - y;
+            int topOffset = y * width;
+            int bottomOffset = oppositeY * width;
+            for (int x = 0; x < width; x++)
+            {
+                int topIndex = topOffset + x;
+                int bottomIndex = bottomOffset + x;
+                (pixels[topIndex], pixels[bottomIndex]) = (pixels[bottomIndex], pixels[topIndex]);
+            }
+        }
+    }
+
     private void RefreshDisplayFullCanvas()
     {
         DrawingDisplayComposer.RefreshFullCanvas(
@@ -1140,8 +1199,8 @@ public class DrawingBoardController : MonoBehaviour
 
     private static bool IsDrawingPhaseActive()
     {
-        RoundManager manager = RoundManager.Instance;
-        return manager == null || manager.CurrentState == GameState.Drawing;
+        GameplayModeHost host = GameplayModeHost.Instance;
+        return host == null || host.CurrentState == GameState.Drawing;
     }
 
     private bool TryGetPointerScreenPosition(out Vector2 screenPosition)

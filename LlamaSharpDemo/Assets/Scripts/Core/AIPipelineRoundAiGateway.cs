@@ -116,6 +116,17 @@ namespace DoodleDiplomacy.Core
             _bridge.GetJudgment(onComplete);
         }
 
+        public void ClassifyVisualStimulus(Action<VisualStimulusClassificationResult> onComplete)
+        {
+            if (_bridge == null)
+            {
+                onComplete?.Invoke(VisualStimulusClassificationResult.Failed("AI bridge is missing."));
+                return;
+            }
+
+            _bridge.ClassifyVisualStimulus(onComplete);
+        }
+
         public void CancelActiveOperations()
         {
             _bridge?.CancelActiveOperations();

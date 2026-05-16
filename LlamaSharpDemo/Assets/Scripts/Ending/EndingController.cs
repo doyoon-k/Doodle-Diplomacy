@@ -11,7 +11,7 @@ namespace DoodleDiplomacy.Ending
 {
     /// <summary>
     /// Ending 상태 진입 시 EndingCanvas에 결말 이미지·제목·설명을 표시한다.
-    /// 화면 클릭 시 RoundManager.Title로 전환한다.
+    /// 화면 클릭 시 현재 gameplay session을 Title 상태로 전환한다.
     /// </summary>
     public class EndingController : MonoBehaviour
     {
@@ -29,9 +29,7 @@ namespace DoodleDiplomacy.Ending
         [Header("State Source")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
 
-        private RoundManager _roundManager;
         private bool _subscribedToHost;
-        private bool _subscribedToRoundManager;
 
         private void Awake()
         {
@@ -98,7 +96,7 @@ namespace DoodleDiplomacy.Ending
 
         private void SubscribeStateSource()
         {
-            if (_subscribedToHost || _subscribedToRoundManager)
+            if (_subscribedToHost)
             {
                 return;
             }
@@ -111,14 +109,6 @@ namespace DoodleDiplomacy.Ending
                 OnGameStateChanged(gameplayModeHost.CurrentState);
                 return;
             }
-
-            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
-            if (_roundManager != null)
-            {
-                _roundManager.OnStateChanged.AddListener(OnGameStateChanged);
-                _subscribedToRoundManager = true;
-                OnGameStateChanged(_roundManager.CurrentState);
-            }
         }
 
         private void UnsubscribeStateSource()
@@ -128,19 +118,12 @@ namespace DoodleDiplomacy.Ending
                 gameplayModeHost.StateChanged -= OnGameStateChanged;
             }
 
-            if (_subscribedToRoundManager && _roundManager != null)
-            {
-                _roundManager.OnStateChanged.RemoveListener(OnGameStateChanged);
-            }
-
             _subscribedToHost = false;
-            _subscribedToRoundManager = false;
         }
 
         private void OnAnyClick()
         {
-            _roundManager = GameStateUiHelper.ResolveRoundManager(_roundManager);
-            _roundManager?.ChangeToTitle();
+            GameStateUiHelper.ResolveSessionController(gameplayModeHost)?.ChangeToTitle();
         }
 
         private EndingData FindEndingData(EndingType type)

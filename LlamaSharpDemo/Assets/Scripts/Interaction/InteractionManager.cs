@@ -24,7 +24,7 @@ namespace DoodleDiplomacy.Interaction
         private InteractableObject _hoveredObject;
         private InteractableObject _lastInteractedObject;
         private bool _inputLocked;
-        private IInteractionPolicy _interactionPolicy = new LegacyRoundInteractionPolicy();
+        private IInteractionPolicy _interactionPolicy = new ObjectPairDrawingInteractionPolicy();
 
         public InteractableObject HoveredObject => _hoveredObject;
         public InteractableObject LastInteractedObject => _lastInteractedObject;
@@ -37,7 +37,7 @@ namespace DoodleDiplomacy.Interaction
 
         public void ConfigureInteractionPolicy(IInteractionPolicy interactionPolicy)
         {
-            _interactionPolicy = interactionPolicy ?? new LegacyRoundInteractionPolicy();
+            _interactionPolicy = interactionPolicy ?? new ObjectPairDrawingInteractionPolicy();
         }
 
         private void Awake()
@@ -128,7 +128,7 @@ namespace DoodleDiplomacy.Interaction
 
         public void ApplyStatePolicy(InteractionStateContext context)
         {
-            IInteractionPolicy policy = _interactionPolicy ?? new LegacyRoundInteractionPolicy();
+            IInteractionPolicy policy = _interactionPolicy ?? new ObjectPairDrawingInteractionPolicy();
             SetInputLocked(!HasAnyAllowedInteraction(context, policy));
 
             foreach (var obj in _registered)
@@ -191,7 +191,7 @@ namespace DoodleDiplomacy.Interaction
                     return;
                 }
 
-                // Legacy fallback for scenes that have not been migrated to GameplayModeHost yet.
+                // Direct interactable events remain available for debug-only scenes without a mode host.
                 interactable.Interact();
             }
         }

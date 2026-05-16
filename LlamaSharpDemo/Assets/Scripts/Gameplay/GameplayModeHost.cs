@@ -19,20 +19,21 @@ namespace DoodleDiplomacy.Gameplay
         private IGameplayMode _activeMode;
         private IGameplayStateObservable _activeStateObservable;
         private bool _hasEnteredMode;
+        private GameplayModeContext _activeContext;
 
         public event Action<GameState> StateChanged;
 
         public IGameplayMode ActiveMode => _activeMode;
         public string ActiveModeId => _activeMode != null ? _activeMode.ModeId : string.Empty;
         public GameState CurrentState => _activeMode != null ? _activeMode.CurrentState : GameState.Title;
-        public GameplayModeContext Context => _context;
+        public GameplayModeContext Context => _activeContext ?? _context;
         public bool HasActiveMode => _activeMode != null && _hasEnteredMode;
 
         private void Awake()
         {
             if (Instance != null && Instance != this)
             {
-                Destroy(gameObject);
+                Destroy(this);
                 return;
             }
 
@@ -43,11 +44,6 @@ namespace DoodleDiplomacy.Gameplay
                 sceneReferences = GetComponent<SceneReferenceHub>();
             }
 
-            if (defaultModeBehaviour == null)
-            {
-                defaultModeBehaviour = GetComponent<LegacyRoundModeAdapter>();
-            }
-
             if (validateSceneReferencesOnAwake && sceneReferences != null)
             {
                 sceneReferences.ValidateReferences();
@@ -56,16 +52,22 @@ namespace DoodleDiplomacy.Gameplay
             if (sceneReferences != null)
             {
                 sceneReferences.ConfigureRuntime(this);
-                _context = sceneReferences.CreateContext();
+                _context = sceneReferences.CreateContext(this);
+                if (defaultModeBehaviour == null)
+                {
+                    defaultModeBehaviour = sceneReferences.GetDefaultModeBehaviour();
+                }
+            }
+
+            if (defaultModeBehaviour == null)
+            {
+                defaultModeBehaviour = FindModeBehaviourOnObject();
             }
         }
 
         private void Start()
         {
-            if (enterDefaultModeOnStart && defaultModeBehaviour != null)
-            {
-                EnterMode(defaultModeBehaviour);
-            }
+            EnsureDefaultModeEntered();
         }
 
         private void Update()
@@ -84,6 +86,26 @@ namespace DoodleDiplomacy.Gameplay
 
         public bool EnterMode(MonoBehaviour modeBehaviour)
         {
+            return EnterMode(modeBehaviour, null);
+        }
+
+        public bool EnsureDefaultModeEntered()
+        {
+            if (!enterDefaultModeOnStart)
+            {
+                return HasActiveMode;
+            }
+
+            if (HasActiveMode)
+            {
+                return true;
+            }
+
+            return defaultModeBehaviour != null && EnterMode(defaultModeBehaviour);
+        }
+
+        public bool EnterMode(MonoBehaviour modeBehaviour, GameplayModeContext contextOverride)
+        {
             if (modeBehaviour == null)
             {
                 Debug.LogError("[GameplayModeHost] Cannot enter a null gameplay mode.", this);
@@ -96,7 +118,8 @@ namespace DoodleDiplomacy.Gameplay
                 return false;
             }
 
-            if (_context == null)
+            GameplayModeContext context = contextOverride ?? _context;
+            if (context == null)
             {
                 Debug.LogError("[GameplayModeHost] Cannot enter gameplay mode because SceneReferenceHub/context is missing.", this);
                 return false;
@@ -104,13 +127,14 @@ namespace DoodleDiplomacy.Gameplay
 
             ExitActiveMode();
             _activeMode = mode;
+            _activeContext = context;
             _activeStateObservable = mode as IGameplayStateObservable;
             if (_activeStateObservable != null)
             {
                 _activeStateObservable.StateChanged += HandleActiveModeStateChanged;
             }
 
-            _activeMode.Enter(_context);
+            _activeMode.Enter(context);
             _hasEnteredMode = true;
             StateChanged?.Invoke(_activeMode.CurrentState);
             Debug.Log($"[GameplayModeHost] Entered mode '{_activeMode.ModeId}'.", this);
@@ -131,6 +155,7 @@ namespace DoodleDiplomacy.Gameplay
             }
 
             _activeMode = null;
+            _activeContext = null;
             _hasEnteredMode = false;
         }
 
@@ -148,6 +173,19 @@ namespace DoodleDiplomacy.Gameplay
         private void HandleActiveModeStateChanged(GameState state)
         {
             StateChanged?.Invoke(state);
+        }
+
+        private MonoBehaviour FindModeBehaviourOnObject()
+        {
+            foreach (MonoBehaviour behaviour in GetComponents<MonoBehaviour>())
+            {
+                if (behaviour != this && behaviour is IGameplayMode)
+                {
+                    return behaviour;
+                }
+            }
+
+            return null;
         }
     }
 }

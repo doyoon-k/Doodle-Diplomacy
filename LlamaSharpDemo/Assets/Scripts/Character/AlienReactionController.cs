@@ -78,12 +78,34 @@ namespace DoodleDiplomacy.Character
                 StopCoroutine(_reactionRoutine);
             }
 
-            _reactionRoutine = StartCoroutine(ReactionRoutine(satisfaction));
+            _reactionRoutine = StartCoroutine(ReactionRoutine(satisfaction, null, null, null));
+        }
+
+        public void PlayReaction(
+            SatisfactionLevel satisfaction,
+            string speakerOverride,
+            string mutterOverride,
+            string narrationOverride)
+        {
+            if (_reactionRoutine != null)
+            {
+                StopCoroutine(_reactionRoutine);
+            }
+
+            _reactionRoutine = StartCoroutine(ReactionRoutine(
+                satisfaction,
+                speakerOverride,
+                mutterOverride,
+                narrationOverride));
         }
 
         public void OnGameStateChanged(GameState state) { }
 
-        private IEnumerator ReactionRoutine(SatisfactionLevel satisfaction)
+        private IEnumerator ReactionRoutine(
+            SatisfactionLevel satisfaction,
+            string speakerOverride,
+            string mutterOverride,
+            string narrationOverride)
         {
             if (TryResolveBinding(satisfaction, out ReactionAnimationBinding binding, out bool usedNeutralFallback))
             {
@@ -126,7 +148,11 @@ namespace DoodleDiplomacy.Character
                 elapsed += lookWait;
             }
 
-            subtitleDisplay?.Show(GetReactionSpeaker(), GetMutterText(satisfaction));
+            string speaker = string.IsNullOrWhiteSpace(speakerOverride)
+                ? GetReactionSpeaker()
+                : speakerOverride.Trim();
+            string mutterText = mutterOverride ?? GetMutterText(satisfaction);
+            ShowSubtitleIfNotEmpty(speaker, mutterText);
             float mutterWait = GetStageDuration(mutterDuration, clipDuration, elapsed);
             if (mutterWait > 0f)
             {
@@ -134,7 +160,8 @@ namespace DoodleDiplomacy.Character
                 elapsed += mutterWait;
             }
 
-            subtitleDisplay?.Show(GetReactionSpeaker(), GetNarrationText(satisfaction));
+            string narrationText = narrationOverride ?? GetNarrationText(satisfaction);
+            ShowSubtitleIfNotEmpty(speaker, narrationText);
             float narrationWait = GetStageDuration(narratorLingerDuration, clipDuration, elapsed);
             if (narrationWait > 0f)
             {
@@ -152,6 +179,17 @@ namespace DoodleDiplomacy.Character
 
             _reactionRoutine = null;
             OnReactionComplete?.Invoke();
+        }
+
+        private void ShowSubtitleIfNotEmpty(string speaker, string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                subtitleDisplay?.Hide();
+                return;
+            }
+
+            subtitleDisplay?.Show(speaker, text);
         }
 
         private bool TryResolveBinding(

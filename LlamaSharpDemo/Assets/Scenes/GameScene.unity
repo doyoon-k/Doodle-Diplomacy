@@ -12613,8 +12613,10 @@ GameObject:
   - component: {fileID: 1778344086}
   - component: {fileID: 1778344088}
   - component: {fileID: 1778344089}
-  - component: {fileID: 1778344090}
   - component: {fileID: 1778344091}
+  - component: {fileID: 1778344092}
+  - component: {fileID: 1778344093}
+  - component: {fileID: 1778344094}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -12775,6 +12777,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2359a2d82a94f29b49142a5cde80610, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.SceneReferenceHub
+  sceneId: current-gameplay
+  defaultModeBehaviour: {fileID: 1778344093}
   roundManager: {fileID: 1778344080}
   interactionManager: {fileID: 1865518810}
   cameraController: {fileID: 403058226}
@@ -12785,20 +12789,10 @@ MonoBehaviour:
   subtitleDisplay: {fileID: 1859998227}
   previewButtonPanel: {fileID: 1669622146}
   endingController: {fileID: 1478619580}
---- !u!114 &1778344090
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 889a3185da68410b981d3d7b96ec563c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.LegacyRoundModeAdapter
-  modeId: legacy-round
-  roundManager: {fileID: 1778344080}
+  terminalDisplay: {fileID: 45035643}
+  sharedMonitorDisplay: {fileID: 1651293743}
+  alienReactionController: {fileID: 798370299}
+  day1StimulusLibrary: {fileID: 1778344092}
 --- !u!114 &1778344091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12812,9 +12806,54 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.GameplayModeHost
   sceneReferences: {fileID: 1778344089}
-  defaultModeBehaviour: {fileID: 1778344090}
+  defaultModeBehaviour: {fileID: 1778344093}
   enterDefaultModeOnStart: 1
   validateSceneReferencesOnAwake: 1
+--- !u!114 &1778344092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e24f421831a041aa80912b616a23cf96, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.Day1StimulusLibrary
+  relativeFolder: first_contact/day1
+--- !u!114 &1778344093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30e4e82a09ab4bd28656561caee27bb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.Day1CalibrationMode
+  modeId: day1-calibration
+  stimulusLibrary: {fileID: 1778344092}
+  stimulusButtonPanel: {fileID: 1778344094}
+  terminalDisplay: {fileID: 45035643}
+  sharedMonitorDisplay: {fileID: 1651293743}
+  alienReactionController: {fileID: 798370299}
+  minimumDialogueAdvanceSeconds: 0.15
+  transmissionHoldSeconds: 0.6
+--- !u!114 &1778344094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc0b343f83d74cf18d27a55f7293ce3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.UI.Day1StimulusButtonPanel
 --- !u!114 &1778344085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12840,6 +12879,7 @@ MonoBehaviour:
   judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
   telepathyPipeline: {fileID: 11400000, guid: d6a1fbcfc287e004c8d88d504212d82e, type: 2}
   wordsSelectionPipeline: {fileID: 11400000, guid: b5e597c4b554f77409946243478c8943, type: 2}
+  day1StimulusClassifierPipeline: {fileID: 11400000, guid: 87eab6a22ae54c388f549d7928f7536c, type: 2}
   wordPairPool: {fileID: 11400000, guid: 9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b, type: 2}
   drawingImageKey: reference_image
   alienPersonalityKey: alien_personality

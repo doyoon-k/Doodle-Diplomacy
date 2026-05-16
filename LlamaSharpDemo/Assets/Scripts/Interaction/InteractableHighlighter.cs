@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -200,10 +201,10 @@ namespace DoodleDiplomacy.Interaction
                 return false;
             }
 
-            RoundManager manager = RoundManager.Instance;
-            if (manager != null)
+            GameplayModeHost host = GameplayModeHost.Instance;
+            if (host != null)
             {
-                return manager.CurrentState == GameState.Drawing;
+                return host.CurrentState == GameState.Drawing;
             }
 
             return _drawingBoard.enabled && !_drawingBoard.IsInteractionLocked;

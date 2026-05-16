@@ -1,4 +1,5 @@
 using UnityEngine;
+using DoodleDiplomacy.Gameplay;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace DoodleDiplomacy.Core
@@ -11,10 +12,15 @@ namespace DoodleDiplomacy.Core
 
         private void Start()
         {
-            if (RoundManager.Instance != null)
-                RoundManager.Instance.StartGame(isFirstPlay);
-            else
-                Debug.LogError("[GameTestStarter] RoundManager.Instance가 없습니다!");
+            GameplayModeHost host = GameplayModeHost.Instance;
+            host?.EnsureDefaultModeEntered();
+            if (host != null && host.ActiveMode is IGameplaySessionController session)
+            {
+                session.StartGame(isFirstPlay);
+                return;
+            }
+
+            Debug.LogError("[GameTestStarter] Gameplay session controller가 없습니다!");
         }
     }
 }

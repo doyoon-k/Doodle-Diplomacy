@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -119,6 +120,8 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private PromptPipelineAsset telepathyPipeline;
         [Tooltip("Round keyword selection pipeline. Expected output key: words")]
         [SerializeField] private PromptPipelineAsset wordsSelectionPipeline;
+        [Tooltip("Day 1 visual stimulus classifier. Expected output keys: object_count, candidates")]
+        [SerializeField] private PromptPipelineAsset day1StimulusClassifierPipeline;
         [Tooltip("Curated word pair pool. When assigned, pairs are drawn from here first and the LLM pipeline is skipped.")]
         [SerializeField] private DoodleDiplomacy.Data.WordPairPool wordPairPool;
         [Header("Pipeline State Keys")]
@@ -136,6 +139,9 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private DrawingExportBridge drawingExportBridge;
         [SerializeField] private AlienPersonality[] alienPersonalityProfiles = Array.Empty<AlienPersonality>();
         [SerializeField] private AlienPersonality alienPersonality;
+
+        [Header("Debug")]
+        [SerializeField] private string day1VlmSubmissionLogDirectory = "first_contact/debug/vlm_submissions";
 
         [Header("Text")]
         [SerializeField] private IngameTextTable ingameTextTable;
@@ -294,6 +300,11 @@ namespace DoodleDiplomacy.AI
         public void GetJudgment(Action<SatisfactionLevel> onComplete = null)
         {
             StartCoroutine(GetJudgmentRoutine(onComplete));
+        }
+
+        public void ClassifyVisualStimulus(Action<VisualStimulusClassificationResult> onComplete = null)
+        {
+            StartCoroutine(ClassifyVisualStimulusRoutine(onComplete));
         }
 
         public void GetTelepathy(Action<string> onComplete = null)
@@ -2654,7 +2665,8 @@ namespace DoodleDiplomacy.AI
                 previewDialoguePipeline,
                 judgmentPipeline,
                 telepathyPipeline,
-                wordsSelectionPipeline
+                wordsSelectionPipeline,
+                day1StimulusClassifierPipeline
             };
         }
 
@@ -2952,6 +2964,115 @@ namespace DoodleDiplomacy.AI
                 $"[AIPipelineBridge] Preview dialogue generation finished. Length={LastPreviewDialogue.Length}, " +
                 $"objectA={LastPreviewObjectAPresence}, objectB={LastPreviewObjectBPresence}");
             onComplete?.Invoke(LastPreviewDialogue);
+        }
+
+        private IEnumerator ClassifyVisualStimulusRoutine(Action<VisualStimulusClassificationResult> onComplete)
+        {
+            bool hasDrawingTexture = TryGetCurrentDrawingForPipeline(out Texture2D drawingTexture);
+            if (LastDrawingWasBlank)
+            {
+                onComplete?.Invoke(VisualStimulusClassificationResult.Failed("Drawing is blank."));
+                yield break;
+            }
+
+            if (!hasDrawingTexture)
+            {
+                onComplete?.Invoke(VisualStimulusClassificationResult.Failed("Drawing texture is unavailable."));
+                yield break;
+            }
+
+            if (day1StimulusClassifierPipeline == null)
+            {
+                Debug.LogWarning("[AIPipelineBridge] Day1 stimulus classifier pipeline is not assigned.");
+                onComplete?.Invoke(VisualStimulusClassificationResult.Failed("Day1 classifier pipeline is not assigned."));
+                yield break;
+            }
+
+            if (GamePipelineRunner.Instance == null)
+            {
+                Debug.LogWarning("[AIPipelineBridge] GamePipelineRunner is missing.");
+                onComplete?.Invoke(VisualStimulusClassificationResult.Failed("GamePipelineRunner is missing."));
+                yield break;
+            }
+
+            var state = new PipelineState();
+            LogDay1VlmSubmittedImage(drawingTexture);
+            state.SetImage(drawingImageKey, drawingTexture);
+
+            bool done = false;
+            PipelineState finalState = null;
+            GamePipelineRunner.Instance.RunPipeline(day1StimulusClassifierPipeline, state, result =>
+            {
+                finalState = result;
+                done = true;
+            });
+            yield return new WaitUntil(() => done);
+
+            if (VisualStimulusClassificationResult.TryFromPipelineState(finalState, out VisualStimulusClassificationResult classification))
+            {
+                onComplete?.Invoke(classification);
+                yield break;
+            }
+
+            Debug.LogWarning($"[AIPipelineBridge] Day1 stimulus classification rejected: {classification?.error}");
+            onComplete?.Invoke(classification ?? VisualStimulusClassificationResult.Failed("Classification unstable."));
+        }
+
+        private void LogDay1VlmSubmittedImage(Texture2D texture)
+        {
+            if (!IsLlmTrafficLoggingEnabled() || texture == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!PipelineImageUtility.TryEncodeToPng(texture, out byte[] pngBytes, out string encodeError))
+                {
+                    Debug.LogWarning($"[AIPipelineBridge] Failed to encode Day1 VLM submitted image for debug log: {encodeError}", this);
+                    return;
+                }
+
+                string directory = ResolveDay1VlmSubmissionLogDirectory();
+                Directory.CreateDirectory(directory);
+
+                string fileName = $"day1_vlm_submission_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
+                string path = Path.Combine(directory, fileName);
+                File.WriteAllBytes(path, pngBytes);
+
+                Debug.Log(
+                    $"[AIPipelineBridge] Day1 VLM submitted image saved: {path} ({texture.width}x{texture.height})",
+                    this);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[AIPipelineBridge] Failed to save Day1 VLM submitted image debug log: {ex.Message}", this);
+            }
+        }
+
+        private static bool IsLlmTrafficLoggingEnabled()
+        {
+            return LlmServiceLocator.Current switch
+            {
+                RoutingLlmService routingService => routingService.LogTrafficEnabled,
+                RuntimeLlamaSharpService runtimeService => runtimeService.LogTrafficEnabled,
+                _ => false
+            };
+        }
+
+        private string ResolveDay1VlmSubmissionLogDirectory()
+        {
+            string relativeDirectory = string.IsNullOrWhiteSpace(day1VlmSubmissionLogDirectory)
+                ? "first_contact/debug/vlm_submissions"
+                : day1VlmSubmissionLogDirectory.Trim();
+
+            relativeDirectory = relativeDirectory
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .Replace('/', Path.DirectorySeparatorChar);
+
+            return Path.IsPathRooted(relativeDirectory)
+                ? relativeDirectory
+                : Path.Combine(Application.persistentDataPath, relativeDirectory);
         }
 
         private IEnumerator GetJudgmentRoutine(Action<SatisfactionLevel> onComplete)

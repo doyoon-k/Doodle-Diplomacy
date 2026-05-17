@@ -1,73 +1,96 @@
-# Unity LLM Pipeline (LLamaSharp + GGUF)
+# Unity LLM / VLM / Stable Diffusion Integration
 
-A Unity-focused local LLM pipeline toolkit for generating structured gameplay data from in-scene state.
+A Unity 6 AI integration project for building prompt pipelines that can route between local GGUF inference, cloud model APIs, vision-capable model calls, structured JSON outputs, and local image generation through `stable-diffusion.cpp`.
 
-This project includes:
-- Local GGUF inference runtime (`LLamaSharp`)
-- Stateful prompt pipeline execution
-- JSON schema-guided output and retry flow
-- Unity editor tools for dependency/backend setup and packaging
-- A gameplay demo: adaptive stat + skill evolution from absorbed items
+The project is centered on reusable Unity tooling:
 
-### Pipeline editor example pictures
-#### Node based pipeline editor that defines the data processing flow using LLM.
-![alt text](image-1.png)
-#### You can also simulate the pipeline in the editor with example input.
-![alt text](image.png)
+- Local LLM inference with `LLamaSharp` and GGUF models.
+- Vision-capable LLM/VLM requests through pipeline image inputs and optional multimodal projector configuration.
+- Prompt pipeline assets with step-based execution, JSON parsing, retry handling, and state merging.
+- A visual GraphView pipeline editor with validation and editor-time simulation.
+- Cloud generation profiles for OpenAI, Anthropic, Gemini, DeepSeek, and Kimi.
+- Per-step routing between local `LlmGenerationProfile` assets and cloud `CloudGenerationProfile` assets.
+- Local image generation with `stable-diffusion.cpp`, packaged runtime binaries, and a persistent sidecar worker path.
 
-## Demo Media
+## Pipeline Editor
 
-### Demo Video
-#### What it does
-- The defined LLM pipeline takes the player stat and Item desctiption data as context
-- Evaluates how the Item will affect the player stats 
-- Generates a new skill that matches the item effect and player stat by combining the pre-defined skill effects in order that makes the most sense and give name and description to the new skill.
+### Visual pipeline authoring
 
-[Watch demo video (Google Drive)](https://drive.google.com/file/d/1lVmrjelVQk4QazHObGEMpEyvTqLnsWqG/view?usp=sharing)
+![Pipeline graph editor](image-1.png)
 
-## Setup Instructions
+### Editor-time pipeline simulation
 
-1. Import this package/project content into your Unity project.
+![Pipeline simulation panel](image.png)
+
+## Repository Layout
+
+- `LlamaSharpDemo/` - Unity project folder.
+- `LlamaSharpDemo/Assets/Scripts/LLM/` - prompt pipeline runtime, profiles, cloud adapters, editor tools, and package docs.
+- `LlamaSharpDemo/Assets/Scripts/AI/StableDiffusionCpp/` - `stable-diffusion.cpp` runtime integration.
+- `LlamaSharpDemo/Assets/StreamingAssets/Models/` - expected location for local GGUF LLM/VLM model files.
+- `LlamaSharpDemo/Assets/StreamingAssets/SDCpp/` - expected location for packaged `stable-diffusion.cpp` runtime binaries.
+- `LlamaSharpDemo/Assets/StreamingAssets/SDModels/` - expected location for Stable Diffusion model files.
+- `Docs/` - supplemental AI tooling documentation.
+
+## Setup
+
+1. Open `LlamaSharpDemo` in Unity Hub with Unity `6000.2.11f1`.
 2. Open `Tools > LLM Pipeline > Setup Wizard`.
-3. Click `Use Recommended`.
-4. Click `Install/Update Dependencies`.
-5. Click `Apply Backend Configuration`.
-6. Put a GGUF model in `Assets/StreamingAssets/Models/`.
-7. In Setup Wizard, apply that model to all `LlmGenerationProfile` assets.
-8. Open the sample scene included in the demo and press Play.
+3. Click `Use Recommended`, then install/update dependencies and apply the backend configuration.
+4. Put local `.gguf` model files under `Assets/StreamingAssets/Models/`.
+5. For local vision profiles, configure the model profile with the required multimodal projector file if the selected model requires one.
+6. In the setup wizard, apply the selected model to local `LlmGenerationProfile` assets and run quick validation.
+7. Open `Window > LLM > Prompt Pipeline Editor` to create, validate, save, and simulate `PromptPipelineAsset` files.
 
-## What The Demo Does
+## Cloud Profiles
 
-1. Player absorbs an item.
-2. Gameplay context is converted into pipeline state.
-3. Pipeline generates structured JSON for evolved stats and skill composition.
-4. Gameplay systems apply the results in real time.
+Cloud calls use `CloudGenerationProfile` assets and provider-specific API keys. Prefer environment variables over serialized credentials:
+
+| Provider | Environment variable |
+|---|---|
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Gemini | `GEMINI_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| Kimi | `MOONSHOT_API_KEY` |
+
+Each pipeline step can reference either a local profile or a cloud profile. Runtime routing selects the matching service per step, so local-only, cloud-only, and mixed pipelines can share the same pipeline asset format.
+
+## Stable Diffusion CPP
+
+Optional local image generation uses `stable-diffusion.cpp`.
+
+Expected layout:
+
+```text
+Assets/StreamingAssets/
+  SDCpp/
+    win-x64/
+      sd-cli.exe
+      stable-diffusion.dll
+      (required runtime DLLs)
+  SDModels/
+    stable-diffusion-v1-5-pruned-emaonly-Q4_1.gguf
+    sd_turbo-f16-q8_0.gguf
+```
+
+Use `Tools > AI > Stable Diffusion CPP > Generator` to prepare the runtime, run generation requests, preview outputs, and inspect execution logs.
+
+Large model files and native runtime binaries are expected to be supplied outside the repository.
 
 ## Documentation
 
-Main docs are under `Docs/`.
+Recommended AI/tooling references:
 
-Recommended order:
-1. `Docs/PackageOverview.md`
-2. `Docs/Tutorial.html`
-3. `Docs/QuickStart.md`
-4. `Docs/PipelineEditorGuide.md`
-5. `Docs/Troubleshooting.md`
-6. `Docs/StableDiffusionCppRuntime.md` (stable-diffusion.cpp local image generation path)
-
-## Practical Requirements
-
-- Unity project with compatible editor/runtime settings
-- NuGetForUnity (Setup Wizard can install it)
-- One backend package matching machine capability (`CPU`, `CUDA12`, `Vulkan`, or `Metal`)
-- One GGUF model file
+1. [`PackageOverview.md`](LlamaSharpDemo/Assets/Scripts/LLM/Docs/PackageOverview.md)
+2. [`QuickStart.md`](LlamaSharpDemo/Assets/Scripts/LLM/Docs/QuickStart.md)
+3. [`PipelineEditorGuide.md`](LlamaSharpDemo/Assets/Scripts/LLM/Docs/PipelineEditorGuide.md)
+4. [`Troubleshooting.md`](LlamaSharpDemo/Assets/Scripts/LLM/Docs/Troubleshooting.md)
+5. [`Docs/PipelineEditorGuide.md`](Docs/PipelineEditorGuide.md)
+6. [`Docs/StableDiffusionCppRuntime.md`](Docs/StableDiffusionCppRuntime.md)
 
 ## Notes
 
-- Do not enable multiple backend native plugin variants for Editor at the same time.
-- For Input System-only projects, use compatibility input wrapper scripts in the demo.
-- For intended sample visuals, confirm URP/2D renderer setup.
-
-## Third-Party Notices
-
-See `Docs/ThirdPartyNotices.md`.
+- Do not enable multiple native backend variants for the Unity Editor at the same time.
+- Keep cloud API keys out of source control.
+- Keep large model binaries and generated runtime packages out of Git unless there is an explicit distribution reason.

@@ -25,29 +25,13 @@ namespace DoodleDiplomacy.UI
             SetVisible(true);
         }
 
-        public void ShowCandidates(
-            IReadOnlyList<string> candidates,
-            Action<string> onCandidateSelected,
-            Action onRedraw)
+        public void ShowConfirmation(Action onConfirm, Action onRedraw)
         {
             EnsureBuilt();
             ClearButtons();
 
             _promptText.text = string.Empty;
-            if (candidates != null)
-            {
-                for (int i = 0; i < candidates.Count && i < 3; i++)
-                {
-                    string label = candidates[i]?.Trim() ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(label))
-                    {
-                        continue;
-                    }
-
-                    AddButton(label, () => onCandidateSelected?.Invoke(label), preferredWidth: 210f);
-                }
-            }
-
+            AddButton("Confirm", () => onConfirm?.Invoke(), preferredWidth: 170f);
             AddButton("Redraw", () => onRedraw?.Invoke(), preferredWidth: 170f);
             SetVisible(true);
         }

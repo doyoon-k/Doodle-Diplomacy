@@ -30,6 +30,10 @@ public class DrawingBoardController : MonoBehaviour
     [SerializeField] private Vector2 boardTextureScale = new(-1f, -1f);
     [SerializeField] private Vector2 boardTextureOffset = new(1f, 1f);
 
+    [Header("Export")]
+    [SerializeField] private bool flipExportHorizontally;
+    [SerializeField] private bool flipExportVertically;
+
     [Header("Brush")]
     [SerializeField] private Color backgroundColor = Color.white;
     [SerializeField] private Color nonPaintAreaDisplayColor = new(0.88f, 0.90f, 0.94f, 1f);
@@ -767,14 +771,12 @@ public class DrawingBoardController : MonoBehaviour
 
     private void OrientPixelsForSurfaceExport(Color32[] pixels, int width, int height)
     {
-        // The tablet material can use negative UV scale so drawing input and display line up
-        // on the physical board. Export should match what the player saw, not the backing buffer.
-        if (boardTextureScale.x < 0f)
+        if (flipExportHorizontally)
         {
             FlipPixelsHorizontally(pixels, width, height);
         }
 
-        if (boardTextureScale.y < 0f)
+        if (flipExportVertically)
         {
             FlipPixelsVertically(pixels, width, height);
         }

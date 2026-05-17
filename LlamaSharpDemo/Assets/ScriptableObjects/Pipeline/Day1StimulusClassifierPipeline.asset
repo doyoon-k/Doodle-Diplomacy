@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Day1StimulusClassifierPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: Day1StimulusClassifierPipeline
-  description: Day 1 completed drawing VLM classifier. Returns object_count and candidates
-    only.
+  description: Day 1 completed drawing VLM classifier. Returns object_count and label
+    only; written text must be labeled as written text.
   steps:
   - stepName: Day1StimulusClassifier
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: b44ecb8b450f47448e76339d6cb52a4d, type: 2}
-    userPromptTemplate: Classify the image. Return JSON only.
+    userPromptTemplate: Classify this drawing.
     jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
     useVision: 1

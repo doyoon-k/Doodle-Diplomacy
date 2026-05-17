@@ -12,12 +12,12 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         public void VisualStimulusParsingAcceptsValidJson()
         {
             bool parsed = VisualStimulusClassificationResult.TryFromJson(
-                "{\"object_count\":1,\"candidates\":[\"apple\",\"fruit\",\"round object\"]}",
+                "{\"object_count\":1,\"label\":\"apple\"}",
                 out VisualStimulusClassificationResult result);
 
             Assert.IsTrue(parsed, result?.error);
             Assert.AreEqual(1, result.objectCount);
-            CollectionAssert.AreEqual(new[] { "apple", "fruit", "round object" }, result.candidates);
+            Assert.AreEqual("apple", result.label);
         }
 
         [Test]
@@ -35,7 +35,7 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         public void VisualStimulusParsingRejectsForbiddenKeys()
         {
             bool parsed = VisualStimulusClassificationResult.TryFromJson(
-                "{\"object_count\":1,\"candidates\":[\"apple\"],\"confidence\":0.91}",
+                "{\"object_count\":1,\"label\":\"apple\",\"confidence\":0.91}",
                 out VisualStimulusClassificationResult result);
 
             Assert.IsFalse(parsed);
@@ -43,10 +43,10 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
-        public void VisualStimulusParsingRejectsEmptyCandidates()
+        public void VisualStimulusParsingRejectsEmptyLabel()
         {
             bool parsed = VisualStimulusClassificationResult.TryFromJson(
-                "{\"object_count\":1,\"candidates\":[]}",
+                "{\"object_count\":1,\"label\":\"\"}",
                 out VisualStimulusClassificationResult result);
 
             Assert.IsFalse(parsed);
@@ -54,15 +54,45 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
+        public void VisualStimulusParsingRejectsLegacyCandidatesKey()
+        {
+            bool parsed = VisualStimulusClassificationResult.TryFromJson(
+                "{\"object_count\":1,\"label\":\"apple\",\"candidates\":[\"apple\"]}",
+                out VisualStimulusClassificationResult result);
+
+            Assert.IsFalse(parsed);
+            StringAssert.Contains("unexpected", result.error);
+        }
+
+        [Test]
         public void VisualStimulusParsingKeepsMultiObjectResult()
         {
             bool parsed = VisualStimulusClassificationResult.TryFromJson(
-                "{\"object_count\":2,\"candidates\":[\"apple\",\"knife\"]}",
+                "{\"object_count\":2,\"label\":\"multiple objects\"}",
                 out VisualStimulusClassificationResult result);
 
             Assert.IsTrue(parsed, result?.error);
             Assert.AreEqual(2, result.objectCount);
-            CollectionAssert.AreEqual(new[] { "apple", "knife" }, result.candidates);
+            Assert.AreEqual("multiple objects", result.label);
+        }
+
+        [TestCase("written text")]
+        [TestCase("apple and written text")]
+        [TestCase("letter A")]
+        [TestCase("handwriting")]
+        [TestCase("number 12")]
+        public void VisualStimulusTextLabelsAreRecognized(string label)
+        {
+            Assert.IsTrue(VisualStimulusClassificationResult.LabelIndicatesWrittenText(label));
+        }
+
+        [TestCase("abstract symbol")]
+        [TestCase("ritual icon")]
+        [TestCase("textured ball")]
+        [TestCase("envelope")]
+        public void VisualStimulusNonTextLabelsAreNotRecognizedAsText(string label)
+        {
+            Assert.IsFalse(VisualStimulusClassificationResult.LabelIndicatesWrittenText(label));
         }
 
         [TestCase("handgun", ReactionTier.Strong)]

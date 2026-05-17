@@ -9,16 +9,16 @@ namespace DoodleDiplomacy.Core
     public sealed class VisualStimulusClassificationResult
     {
         public int objectCount;
-        public List<string> candidates = new();
+        public string label = string.Empty;
         public string error = string.Empty;
 
         private const string ObjectCountKey = "object_count";
-        private const string CandidatesKey = "candidates";
+        private const string LabelKey = "label";
 
         private static readonly HashSet<string> AllowedKeys = new(StringComparer.Ordinal)
         {
             ObjectCountKey,
-            CandidatesKey,
+            LabelKey,
             PromptPipelineConstants.ErrorKey
         };
 
@@ -35,6 +35,42 @@ namespace DoodleDiplomacy.Core
             "explanation"
         };
 
+        private static readonly string[] WrittenTextPhrases =
+        {
+            "written text",
+            "handwritten text",
+            "typed text",
+            "written word",
+            "written words",
+            "written letter",
+            "written letters",
+            "written number",
+            "written numbers",
+            "written language"
+        };
+
+        private static readonly HashSet<string> WrittenTextTokens = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "text",
+            "word",
+            "words",
+            "letter",
+            "letters",
+            "number",
+            "numbers",
+            "digit",
+            "digits",
+            "handwriting",
+            "writing",
+            "alphabet",
+            "glyph",
+            "glyphs",
+            "caption",
+            "captions",
+            "inscription",
+            "inscriptions"
+        };
+
         public bool IsSuccess => string.IsNullOrWhiteSpace(error);
 
         public static VisualStimulusClassificationResult Failed(string message)
@@ -42,7 +78,7 @@ namespace DoodleDiplomacy.Core
             return new VisualStimulusClassificationResult
             {
                 objectCount = 0,
-                candidates = new List<string>(),
+                label = string.Empty,
                 error = string.IsNullOrWhiteSpace(message) ? "Classification unstable." : message.Trim()
             };
         }
@@ -85,17 +121,17 @@ namespace DoodleDiplomacy.Core
                 return false;
             }
 
-            if (!state.TryGetString(CandidatesKey, out string candidatesText) ||
-                !TryParseCandidates(candidatesText, out List<string> candidates))
+            if (!state.TryGetString(LabelKey, out string labelText) ||
+                !TryParseLabel(labelText, out string label))
             {
-                result = Failed("Classifier result is missing candidates.");
+                result = Failed("Classifier result is missing label.");
                 return false;
             }
 
             result = new VisualStimulusClassificationResult
             {
                 objectCount = objectCount,
-                candidates = candidates,
+                label = label,
                 error = string.Empty
             };
             return true;
@@ -142,17 +178,17 @@ namespace DoodleDiplomacy.Core
                     return false;
                 }
 
-                if (!root.TryGetProperty(CandidatesKey, out JsonElement candidatesElement) ||
-                    !TryReadCandidates(candidatesElement, out List<string> candidates))
+                if (!root.TryGetProperty(LabelKey, out JsonElement labelElement) ||
+                    !TryReadLabel(labelElement, out string label))
                 {
-                    result = Failed("Classifier result is missing candidates.");
+                    result = Failed("Classifier result is missing label.");
                     return false;
                 }
 
                 result = new VisualStimulusClassificationResult
                 {
                     objectCount = objectCount,
-                    candidates = candidates,
+                    label = label,
                     error = string.Empty
                 };
                 return true;
@@ -164,9 +200,60 @@ namespace DoodleDiplomacy.Core
             }
         }
 
+        public static bool LabelIndicatesWrittenText(string label)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return false;
+            }
+
+            string normalized = label.Trim().ToLowerInvariant();
+            foreach (string phrase in WrittenTextPhrases)
+            {
+                if (normalized.IndexOf(phrase, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            foreach (string token in EnumerateLabelTokens(normalized))
+            {
+                if (WrittenTextTokens.Contains(token))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsForbiddenKey(string key)
         {
             return !string.IsNullOrWhiteSpace(key) && ForbiddenKeys.Contains(key.Trim());
+        }
+
+        private static IEnumerable<string> EnumerateLabelTokens(string label)
+        {
+            int start = -1;
+            for (int i = 0; i < label.Length; i++)
+            {
+                if (char.IsLetterOrDigit(label[i]))
+                {
+                    start = start < 0 ? i : start;
+                    continue;
+                }
+
+                if (start >= 0)
+                {
+                    yield return label.Substring(start, i - start);
+                    start = -1;
+                }
+            }
+
+            if (start >= 0)
+            {
+                yield return label.Substring(start);
+            }
         }
 
         private static bool TryParseObjectCount(string value, out int objectCount)
@@ -229,57 +316,21 @@ namespace DoodleDiplomacy.Core
             }
         }
 
-        private static bool TryParseCandidates(string value, out List<string> candidates)
+        private static bool TryParseLabel(string value, out string label)
         {
-            candidates = null;
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return false;
-            }
-
-            try
-            {
-                using JsonDocument document = JsonDocument.Parse(value);
-                return TryReadCandidates(document.RootElement, out candidates);
-            }
-            catch (JsonException)
-            {
-                candidates = null;
-                return false;
-            }
+            label = value?.Trim() ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(label);
         }
 
-        private static bool TryReadCandidates(JsonElement element, out List<string> candidates)
+        private static bool TryReadLabel(JsonElement element, out string label)
         {
-            candidates = new List<string>();
-            if (element.ValueKind != JsonValueKind.Array)
+            label = string.Empty;
+            if (element.ValueKind != JsonValueKind.String)
             {
-                candidates = null;
                 return false;
             }
 
-            foreach (JsonElement item in element.EnumerateArray())
-            {
-                if (item.ValueKind != JsonValueKind.String)
-                {
-                    candidates = null;
-                    return false;
-                }
-
-                string candidate = item.GetString()?.Trim() ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(candidate))
-                {
-                    candidates.Add(candidate);
-                }
-            }
-
-            if (candidates.Count == 0 || candidates.Count > 3)
-            {
-                candidates = null;
-                return false;
-            }
-
-            return true;
+            return TryParseLabel(element.GetString(), out label);
         }
     }
 }

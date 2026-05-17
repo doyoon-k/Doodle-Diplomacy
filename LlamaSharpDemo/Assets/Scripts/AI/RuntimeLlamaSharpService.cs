@@ -32,6 +32,8 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     [Tooltip("Log prompts and responses.")]
     public bool logTraffic;
 
+    [SerializeField] private string visionRequestLogDirectory = "first_contact/debug/vlm_requests";
+
     [Tooltip("Use explicit native bootstrap logic. Disable to rely on Unity plugin loading only.")]
     [SerializeField] private bool useNativeBootstrap;
 
@@ -259,6 +261,7 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
 
         if (logTraffic)
         {
+            LogVisionRequestImage(image, pngBytes);
             Debug.Log($"[RuntimeLlamaSharpService] System Prompt:\n{systemPrompt}\nUser Prompt:\n{prompt}\nImage: {image.name} ({image.width}x{image.height})");
         }
 
@@ -276,6 +279,44 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
             inferenceTimeoutSeconds,
             "vision inference",
             onResponse);
+    }
+
+    private void LogVisionRequestImage(Texture2D image, byte[] pngBytes)
+    {
+        if (!logTraffic || image == null || pngBytes == null || pngBytes.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            string directory = ResolveVisionRequestLogDirectory();
+            Directory.CreateDirectory(directory);
+
+            string fileName = $"vlm_request_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
+            string path = Path.Combine(directory, fileName);
+            File.WriteAllBytes(path, pngBytes);
+            Debug.Log($"[RuntimeLlamaSharpService] VLM request image saved: {path} ({image.width}x{image.height})", this);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[RuntimeLlamaSharpService] Failed to save VLM request image: {ex.Message}", this);
+        }
+    }
+
+    private string ResolveVisionRequestLogDirectory()
+    {
+        string relativeDirectory = string.IsNullOrWhiteSpace(visionRequestLogDirectory)
+            ? "first_contact/debug/vlm_requests"
+            : visionRequestLogDirectory.Trim();
+
+        relativeDirectory = relativeDirectory
+            .Replace('\\', Path.DirectorySeparatorChar)
+            .Replace('/', Path.DirectorySeparatorChar);
+
+        return Path.IsPathRooted(relativeDirectory)
+            ? relativeDirectory
+            : Path.Combine(Application.persistentDataPath, relativeDirectory);
     }
 
     public IEnumerator ChatCompletion(

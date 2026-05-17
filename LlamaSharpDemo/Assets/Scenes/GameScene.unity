@@ -7754,7 +7754,7 @@ RectTransform:
   m_GameObject: {fileID: 1265570732}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 995931391}
@@ -10066,6 +10066,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 70bdb04b20e651a47a3b3057915c44e9, type: 2}
   - {fileID: 11400000, guid: 63b3241530cd611498a92a620ee3e2c7, type: 2}
   - {fileID: 11400000, guid: 73fe4199c8ea8d647acfe895cdf4a1f4, type: 2}
+  gameplayModeHost: {fileID: 0}
 --- !u!114 &1478619581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10751,7 +10752,8 @@ MonoBehaviour:
   onPreloadCompleted:
     m_PersistentCalls:
       m_Calls: []
-  logTraffic: 0
+  logTraffic: 1
+  visionRequestLogDirectory: first_contact/debug/vlm_requests
   useNativeBootstrap: 0
   modelLoadTimeoutSeconds: 120
   inferenceTimeoutSeconds: 180
@@ -10844,14 +10846,14 @@ PrefabInstance:
       propertyPath: mainCamera
       value: 
       objectReference: {fileID: 439117878}
-    - target: {fileID: 3845552468368687222, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
-      propertyPath: eventCamera
-      value: 
-      objectReference: {fileID: 439117878}
     - target: {fileID: 3544264357789506336, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
+    - target: {fileID: 3845552468368687222, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
+      propertyPath: eventCamera
+      value: 
+      objectReference: {fileID: 439117878}
     - target: {fileID: 3845552468368687222, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
       propertyPath: typingSpeed
       value: 0.01
@@ -10890,6 +10892,10 @@ PrefabInstance:
       objectReference: {fileID: -7205947238355699593, guid: fe7a3cf619fa00a4eacc791e6c95aa79, type: 2}
     - target: {fileID: 6011086256618693539, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
       propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7745946918306044012, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
+      propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7989700304250009304, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
@@ -11081,7 +11087,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Devices.TabletPhysicalControlsController
   drawingBoard: {fileID: 1603467082}
   inputCamera: {fileID: 439117878}
-  roundManager: {fileID: 1778344080}
+  gameplayModeHost: {fileID: 0}
   controlsRoot: {fileID: 995931390}
   controlLayerMask:
     serializedVersion: 2
@@ -11262,6 +11268,8 @@ MonoBehaviour:
   boardMaterialTemplate: {fileID: 2100000, guid: ef437a15daa001f4884594ba0de4f4cd, type: 2}
   boardTextureScale: {x: -1, y: -1}
   boardTextureOffset: {x: 1, y: 1}
+  flipExportHorizontally: 0
+  flipExportVertically: 0
   backgroundColor: {r: 1, g: 1, b: 1, a: 1}
   nonPaintAreaDisplayColor: {r: 0, g: 0.039532796, b: 0.103773594, a: 1}
   paintAreaDividerColor: {r: 0.64, g: 0.69, b: 0.77, a: 1}
@@ -11417,6 +11425,8 @@ MonoBehaviour:
   idleTexture: {fileID: 2800000, guid: 1ee16beaea574304883df439497b26a3, type: 3}
   fadeDuration: 0.3
   flipSlotsVertically: 1
+  flipSubmissionHorizontally: 1
+  flipSubmissionVertically: 1
   overridePixelResolution: 1
   pixelResolution: {x: 320, y: 180}
   pixelateStrength: 1
@@ -11660,7 +11670,7 @@ MonoBehaviour:
   panel: {fileID: 1208530454}
   submitButton: {fileID: 1371280266}
   modifyButton: {fileID: 376041857}
-  roundManager: {fileID: 1778344080}
+  gameplayModeHost: {fileID: 0}
 --- !u!114 &1669622147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11733,7 +11743,7 @@ RectTransform:
   m_GameObject: {fileID: 1669622145}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1208530455}
@@ -12636,6 +12646,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b2b22232479090479fb5531e3bedf29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Core.RoundManager
+  modeId: object-pair-drawing
   scoreManager: {fileID: 1778344081}
   cameraController: {fileID: 403058226}
   interactionManager: {fileID: 1865518810}
@@ -12750,6 +12761,69 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1778344085
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8dea8f0906e85d4cb02e962e6b45c24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.AI.AIPipelineBridge
+  sdSettings: {fileID: 11400000, guid: f4f329f6c6584f6fb4d74f3cfa77b1e2, type: 2}
+  sdModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
+  objectPromptA: studio photo of a single dog, centered, isolated, plain background,
+    simple lighting
+  objectPromptB: studio photo of a single lantern, centered, isolated, plain background,
+    simple lighting
+  sdNegativePrompt: 
+  usePreGeneratedCatalog: 1
+  preGeneratedCatalog: {fileID: 11400000, guid: 2e48d65f49517b542a06834084186a28, type: 2}
+  previewDialoguePipeline: {fileID: 11400000, guid: 1b6f09a5c4e54ee4a8574fc5d1a8331d, type: 2}
+  judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
+  telepathyPipeline: {fileID: 11400000, guid: d6a1fbcfc287e004c8d88d504212d82e, type: 2}
+  wordsSelectionPipeline: {fileID: 11400000, guid: b5e597c4b554f77409946243478c8943, type: 2}
+  day1StimulusClassifierPipeline: {fileID: 11400000, guid: 87eab6a22ae54c388f549d7928f7536c, type: 2}
+  wordPairPool: {fileID: 11400000, guid: 9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b, type: 2}
+  drawingImageKey: reference_image
+  alienPersonalityKey: alien_personality
+  targetObjectsKey: target_objects
+  judgmentSatisfactionKey: satisfaction
+  judgmentSceneReadingKey: scene_reading
+  judgmentReasonKey: judgment_reason
+  wordsSelectionWordsKey: words
+  selectedKeywordPromptTemplate: '{0}'
+  monitorDisplay: {fileID: 1651293743}
+  drawingExportBridge: {fileID: 1603467076}
+  alienPersonalityProfiles:
+  - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
+  alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
+  day1VlmSubmissionLogDirectory: first_contact/debug/vlm_submissions
+  ingameTextTable: {fileID: 11400000, guid: b0db56bf6e8d4ceb9f4d8de96335f6b2, type: 2}
+  telepathyCorruptedLineRatio: 0
+  telepathyCorruptionStrength: 0
+  telepathyMinCorruptedLines: 0
+  telepathyMaxCorruptedLines: 0
+  telepathyNoiseBursts:
+  - 2!@#@$
+  - '@@!%^^@'
+  - $#%!%
+--- !u!114 &1778344086
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5dd557c73502df64cb17eb21fc934fe2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GamePipelineRunner
+  _runtimeService: {fileID: 0}
 --- !u!114 &1778344088
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12765,6 +12839,7 @@ MonoBehaviour:
   titleCanvas: {fileID: 475623040}
   startButton: {fileID: 1911066518}
   alwaysPlayIntroOnStart: 1
+  gameplayModeHost: {fileID: 0}
 --- !u!114 &1778344089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12854,68 +12929,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc0b343f83d74cf18d27a55f7293ce3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.UI.Day1StimulusButtonPanel
---- !u!114 &1778344085
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8dea8f0906e85d4cb02e962e6b45c24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.AI.AIPipelineBridge
-  sdSettings: {fileID: 11400000, guid: f4f329f6c6584f6fb4d74f3cfa77b1e2, type: 2}
-  sdModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
-  objectPromptA: studio photo of a single dog, centered, isolated, plain background,
-    simple lighting
-  objectPromptB: studio photo of a single lantern, centered, isolated, plain background,
-    simple lighting
-  sdNegativePrompt: 
-  usePreGeneratedCatalog: 1
-  preGeneratedCatalog: {fileID: 11400000, guid: 2e48d65f49517b542a06834084186a28, type: 2}
-  previewDialoguePipeline: {fileID: 11400000, guid: 1b6f09a5c4e54ee4a8574fc5d1a8331d, type: 2}
-  judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
-  telepathyPipeline: {fileID: 11400000, guid: d6a1fbcfc287e004c8d88d504212d82e, type: 2}
-  wordsSelectionPipeline: {fileID: 11400000, guid: b5e597c4b554f77409946243478c8943, type: 2}
-  day1StimulusClassifierPipeline: {fileID: 11400000, guid: 87eab6a22ae54c388f549d7928f7536c, type: 2}
-  wordPairPool: {fileID: 11400000, guid: 9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b, type: 2}
-  drawingImageKey: reference_image
-  alienPersonalityKey: alien_personality
-  targetObjectsKey: target_objects
-  judgmentSatisfactionKey: satisfaction
-  judgmentSceneReadingKey: scene_reading
-  judgmentReasonKey: judgment_reason
-  wordsSelectionWordsKey: words
-  selectedKeywordPromptTemplate: '{0}'
-  monitorDisplay: {fileID: 1651293743}
-  drawingExportBridge: {fileID: 1603467076}
-  alienPersonalityProfiles:
-  - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  ingameTextTable: {fileID: 11400000, guid: b0db56bf6e8d4ceb9f4d8de96335f6b2, type: 2}
-  telepathyCorruptedLineRatio: 0
-  telepathyCorruptionStrength: 0
-  telepathyMinCorruptedLines: 0
-  telepathyMaxCorruptedLines: 0
-  telepathyNoiseBursts:
-  - 2!@#@$
-  - '@@!%^^@'
-  - $#%!%
---- !u!114 &1778344086
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5dd557c73502df64cb17eb21fc934fe2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GamePipelineRunner
-  _runtimeService: {fileID: 1537481329}
 --- !u!1 &1781035874
 GameObject:
   m_ObjectHideFlags: 0
@@ -12944,7 +12957,7 @@ RectTransform:
   m_GameObject: {fileID: 1781035874}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1859998228}
@@ -15754,128 +15767,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6530586757822023823, guid: d13b939810f4e164d9e46d93ddefc456, type: 3}
   m_PrefabInstance: {fileID: 2143084858}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &3536624680693865213
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 307829290}
-    m_Modifications:
-    - target: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: OnInteracted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1778344080}
-    - target: {fileID: 3533601573625300685, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_Name
-      value: Alien
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 1.941
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: hoverEmissionColor.b
-      value: 0.1882353
-      objectReference: {fileID: 0}
-    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: hoverEmissionColor.g
-      value: 0.1882353
-      objectReference: {fileID: 0}
-    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: hoverEmissionColor.r
-      value: 0.1882353
-      objectReference: {fileID: 0}
-    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: hoverEmissionIntensity
-      value: 0.03
-      objectReference: {fileID: 0}
-    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: 'additionalRendererRoots.Array.data[0]'
-      value: 
-      objectReference: {fileID: 887548416}
-    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: 'additionalRendererRoots.Array.data[1]'
-      value: 
-      objectReference: {fileID: 796133099}
-    - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: subtitleDisplay
-      value: 
-      objectReference: {fileID: 1859998227}
-    - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: crossFadeDuration
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      propertyPath: OnReactionComplete.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1778344080}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 667321733}
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
---- !u!1660057539 &9223372036854775807
-SceneRoots:
-  m_ObjectHideFlags: 0
-  m_Roots:
-  - {fileID: 439117879}
-  - {fileID: 1778344082}
-  - {fileID: 1865518811}
-  - {fileID: 403058227}
-  - {fileID: 1804211028}
-  - {fileID: 1442241563}
-  - {fileID: 307829290}
-  - {fileID: 1582625471}
-  - {fileID: 1386509422}
-  - {fileID: 870910601}
-  - {fileID: 1523307613}
-  - {fileID: 1439023362}
-  - {fileID: 1163514219}
-  - {fileID: 842925467}
-  - {fileID: 93881450}
-  - {fileID: 322167015}
-  - {fileID: 1537481330}
-  - {fileID: 2147000001}
 --- !u!1 &2147000000
 GameObject:
   m_ObjectHideFlags: 0
@@ -16104,3 +15995,125 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1000
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1001 &3536624680693865213
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 307829290}
+    m_Modifications:
+    - target: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: OnInteracted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1778344080}
+    - target: {fileID: 3533601573625300685, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_Name
+      value: Alien
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.941
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: hoverEmissionColor.b
+      value: 0.1882353
+      objectReference: {fileID: 0}
+    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: hoverEmissionColor.g
+      value: 0.1882353
+      objectReference: {fileID: 0}
+    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: hoverEmissionColor.r
+      value: 0.1882353
+      objectReference: {fileID: 0}
+    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: hoverEmissionIntensity
+      value: 0.03
+      objectReference: {fileID: 0}
+    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: 'additionalRendererRoots.Array.data[0]'
+      value: 
+      objectReference: {fileID: 887548416}
+    - target: {fileID: 4994536153064977959, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: 'additionalRendererRoots.Array.data[1]'
+      value: 
+      objectReference: {fileID: 796133099}
+    - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: subtitleDisplay
+      value: 
+      objectReference: {fileID: 1859998227}
+    - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: crossFadeDuration
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      propertyPath: OnReactionComplete.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1778344080}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4197934588854721655, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 667321733}
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
+--- !u!1660057539 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 439117879}
+  - {fileID: 1778344082}
+  - {fileID: 1865518811}
+  - {fileID: 403058227}
+  - {fileID: 1804211028}
+  - {fileID: 1442241563}
+  - {fileID: 307829290}
+  - {fileID: 1582625471}
+  - {fileID: 1386509422}
+  - {fileID: 870910601}
+  - {fileID: 1523307613}
+  - {fileID: 1439023362}
+  - {fileID: 1163514219}
+  - {fileID: 842925467}
+  - {fileID: 93881450}
+  - {fileID: 322167015}
+  - {fileID: 1537481330}
+  - {fileID: 2147000001}

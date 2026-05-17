@@ -63,6 +63,7 @@ public static class LlamaSharpInterop
     private const int AutoBatchThreadCap = 1;
     private const string FallbackVisionMarker = "<image>";
     private const string QwenVisionMarker = "<|vision_start|><|image_pad|><|vision_end|>";
+    private static readonly IReadOnlyList<string> NoAntiPrompts = Array.Empty<string>();
     private static readonly SemaphoreSlim InferenceGate = new SemaphoreSlim(1, 1);
     private static readonly object GrammarCacheLock = new object();
     private static readonly Dictionary<string, GrammarCacheEntry> GrammarCache =
@@ -72,6 +73,11 @@ public static class LlamaSharpInterop
         "<|im_end|>",
         "<|im_start|>user",
         "<|im_start|>system"
+    };
+    private static readonly IReadOnlyList<string> GemmaAntiPrompts = new[]
+    {
+        "<end_of_turn>",
+        "<start_of_turn>user"
     };
 
     public static string ResolveModelPath(BaseLlmGenerationProfile settings)
@@ -214,12 +220,17 @@ public static class LlamaSharpInterop
         }
 
         bool useQwenChatTemplate = UsesQwenChatTemplate(settings);
+        bool useGemmaChatTemplate = UsesGemmaChatTemplate(settings);
         return new InferenceParams
         {
             MaxTokens = source.num_predict > 0 ? source.num_predict : -1,
             SamplingPipeline = sampling,
-            AntiPrompts = useQwenChatTemplate ? QwenAntiPrompts : null,
-            DecodeSpecialTokens = useQwenChatTemplate
+            AntiPrompts = useQwenChatTemplate
+                ? QwenAntiPrompts
+                : useGemmaChatTemplate
+                    ? GemmaAntiPrompts
+                    : NoAntiPrompts,
+            DecodeSpecialTokens = useQwenChatTemplate || useGemmaChatTemplate
         };
     }
 
@@ -245,6 +256,11 @@ public static class LlamaSharpInterop
         if (UsesQwenChatTemplate(settings))
         {
             return BuildQwenPrompt(settings, userContent, systemPrompt, includeVisionMarker);
+        }
+
+        if (UsesGemmaChatTemplate(settings))
+        {
+            return BuildGemmaPrompt(settings, userContent, systemPrompt, includeVisionMarker);
         }
 
         var builder = new StringBuilder();
@@ -286,6 +302,11 @@ public static class LlamaSharpInterop
         }
 
         string sanitized = completion.Trim();
+        if (UsesGemmaChatTemplate(settings))
+        {
+            return StripGemmaTurnMarkers(sanitized);
+        }
+
         if (!UsesQwenChatTemplate(settings))
         {
             return sanitized;
@@ -328,6 +349,27 @@ public static class LlamaSharpInterop
         if (settings is CloudGenerationProfile cloudSettings)
         {
             return ContainsIgnoreCase(cloudSettings.modelId, "qwen");
+        }
+
+        return false;
+    }
+
+    public static bool UsesGemmaChatTemplate(BaseLlmGenerationProfile settings)
+    {
+        if (settings == null)
+        {
+            return false;
+        }
+
+        if (settings is LlmGenerationProfile localSettings)
+        {
+            return ContainsIgnoreCase(localSettings.model, "gemma") ||
+                   ContainsIgnoreCase(localSettings.visionProjectorModel, "gemma");
+        }
+
+        if (settings is CloudGenerationProfile cloudSettings)
+        {
+            return ContainsIgnoreCase(cloudSettings.modelId, "gemma");
         }
 
         return false;
@@ -416,6 +458,68 @@ public static class LlamaSharpInterop
         return builder.ToString();
     }
 
+    private static string BuildGemmaPrompt(
+        BaseLlmGenerationProfile settings,
+        string userContent,
+        string systemPrompt,
+        bool includeVisionMarker)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("<start_of_turn>user");
+
+        if (!string.IsNullOrWhiteSpace(systemPrompt))
+        {
+            builder.AppendLine(systemPrompt.Trim());
+            builder.AppendLine();
+        }
+
+        if (includeVisionMarker)
+        {
+            string visionMarker = ResolveVisionMarker(settings);
+            if (!string.IsNullOrWhiteSpace(visionMarker))
+            {
+                builder.AppendLine(visionMarker);
+                if (!string.IsNullOrWhiteSpace(userContent))
+                {
+                    builder.AppendLine();
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(userContent))
+        {
+            builder.AppendLine(userContent.Trim());
+        }
+
+        builder.AppendLine("<end_of_turn>");
+        builder.Append("<start_of_turn>model\n");
+        return builder.ToString();
+    }
+
+    private static string StripGemmaTurnMarkers(string completion)
+    {
+        string sanitized = completion.Trim();
+        const string ModelPrefix = "<start_of_turn>model";
+        while (sanitized.StartsWith(ModelPrefix, StringComparison.Ordinal))
+        {
+            sanitized = sanitized.Substring(ModelPrefix.Length).TrimStart('\r', '\n', ' ');
+        }
+
+        int endTurnIndex = sanitized.IndexOf("<end_of_turn>", StringComparison.Ordinal);
+        if (endTurnIndex >= 0)
+        {
+            sanitized = sanitized.Substring(0, endTurnIndex);
+        }
+
+        int nextTurnIndex = sanitized.IndexOf("<start_of_turn>", StringComparison.Ordinal);
+        if (nextTurnIndex >= 0)
+        {
+            sanitized = sanitized.Substring(0, nextTurnIndex);
+        }
+
+        return sanitized.Trim();
+    }
+
     private static bool ContainsIgnoreCase(string source, string value)
     {
         return !string.IsNullOrWhiteSpace(source) &&
@@ -437,6 +541,9 @@ public static class LlamaSharpInterop
         {
             return string.Empty;
         }
+
+        inferenceParams ??= new InferenceParams();
+        inferenceParams.AntiPrompts ??= NoAntiPrompts;
 
         await InferenceGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try

@@ -30,6 +30,8 @@ namespace DoodleDiplomacy.Devices
 
         [Header("Display")]
         [SerializeField] private bool flipSlotsVertically = true;
+        [SerializeField] private bool flipSubmissionHorizontally = true;
+        [SerializeField] private bool flipSubmissionVertically = true;
         [SerializeField] private bool overridePixelResolution = true;
         [SerializeField] private Vector2Int pixelResolution = new(320, 180);
         [SerializeField, Range(0f, 1f)] private float pixelateStrength = 1f;
@@ -38,6 +40,7 @@ namespace DoodleDiplomacy.Devices
         private string _resolvedTexturePropertyName;
         private string _resolvedColorPropertyName;
         private Texture2D _splitTexture;
+        private Texture2D _submissionTexture;
         private Color32[] _splitClearPixels;
         private Coroutine _fadeRoutine;
 
@@ -109,7 +112,7 @@ namespace DoodleDiplomacy.Devices
         public void ShowSubmission(Texture2D submission)
         {
             CurrentState = MonitorState.DisplaySubmission;
-            StartFade(submission != null ? submission : idleTexture);
+            StartFade(PrepareSubmissionTexture(submission));
         }
 
         public void OnGameStateChanged(GameState state)
@@ -261,6 +264,8 @@ namespace DoodleDiplomacy.Devices
             StopFade();
             if (_splitTexture != null)
                 Destroy(_splitTexture);
+            if (_submissionTexture != null)
+                Destroy(_submissionTexture);
         }
 
         private void OnValidate()
@@ -339,6 +344,91 @@ namespace DoodleDiplomacy.Devices
                 copyWidth,
                 copyHeight,
                 sourcePixels);
+        }
+
+        private Texture2D PrepareSubmissionTexture(Texture2D source)
+        {
+            if (source == null)
+                return idleTexture;
+
+            if (!flipSubmissionHorizontally && !flipSubmissionVertically)
+                return source;
+
+            EnsureSubmissionTexture(source);
+            Color32[] pixels = source.GetPixels32();
+
+            if (flipSubmissionHorizontally)
+                FlipPixelsHorizontally(pixels, source.width, source.height);
+
+            if (flipSubmissionVertically)
+                FlipPixelsVertically(pixels, source.width, source.height);
+
+            _submissionTexture.SetPixels32(pixels);
+            _submissionTexture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+            return _submissionTexture;
+        }
+
+        private void EnsureSubmissionTexture(Texture2D source)
+        {
+            if (source == null)
+                return;
+
+            if (_submissionTexture != null &&
+                _submissionTexture.width == source.width &&
+                _submissionTexture.height == source.height)
+            {
+                _submissionTexture.filterMode = source.filterMode;
+                _submissionTexture.wrapMode = TextureWrapMode.Clamp;
+                return;
+            }
+
+            if (_submissionTexture != null)
+                Destroy(_submissionTexture);
+
+            _submissionTexture = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false)
+            {
+                filterMode = source.filterMode,
+                wrapMode = TextureWrapMode.Clamp,
+                name = "SharedMonitorSubmissionTexture"
+            };
+        }
+
+        private static void FlipPixelsHorizontally(Color32[] pixels, int width, int height)
+        {
+            if (pixels == null || width <= 1 || height <= 0)
+                return;
+
+            int halfColumns = width / 2;
+            for (int y = 0; y < height; y++)
+            {
+                int rowOffset = y * width;
+                for (int x = 0; x < halfColumns; x++)
+                {
+                    int leftIndex = rowOffset + x;
+                    int rightIndex = rowOffset + (width - 1 - x);
+                    (pixels[leftIndex], pixels[rightIndex]) =
+                        (pixels[rightIndex], pixels[leftIndex]);
+                }
+            }
+        }
+
+        private static void FlipPixelsVertically(Color32[] pixels, int width, int height)
+        {
+            if (pixels == null || width <= 0 || height <= 1)
+                return;
+
+            int halfRows = height / 2;
+            for (int y = 0; y < halfRows; y++)
+            {
+                int oppositeY = height - 1 - y;
+                int topOffset = y * width;
+                int bottomOffset = oppositeY * width;
+                for (int x = 0; x < width; x++)
+                {
+                    (pixels[topOffset + x], pixels[bottomOffset + x]) =
+                        (pixels[bottomOffset + x], pixels[topOffset + x]);
+                }
+            }
         }
 
         private static void FlipPixelsVertically(Color[] pixels, int width, int height)

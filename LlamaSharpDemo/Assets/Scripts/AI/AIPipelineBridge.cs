@@ -120,7 +120,7 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private PromptPipelineAsset telepathyPipeline;
         [Tooltip("Round keyword selection pipeline. Expected output key: words")]
         [SerializeField] private PromptPipelineAsset wordsSelectionPipeline;
-        [Tooltip("Day 1 visual stimulus classifier. Expected output keys: object_count, candidates")]
+        [Tooltip("Day 1 visual stimulus classifier. Expected output keys: object_count, label")]
         [SerializeField] private PromptPipelineAsset day1StimulusClassifierPipeline;
         [Tooltip("Curated word pair pool. When assigned, pairs are drawn from here first and the LLM pipeline is skipped.")]
         [SerializeField] private DoodleDiplomacy.Data.WordPairPool wordPairPool;

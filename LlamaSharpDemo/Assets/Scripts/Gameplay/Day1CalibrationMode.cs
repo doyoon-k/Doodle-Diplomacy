@@ -27,7 +27,7 @@ namespace DoodleDiplomacy.Gameplay
 
         private static readonly string[] OpeningLines =
         {
-            "Mr. President, draw one visual stimulus on the tablet.",
+            "Mr. President, draw one simple picture on the tablet.",
             "The delegation will only see the completed image. Not the drawing process.",
             "The apparatus will classify the image before transmission. Once the label is confirmed, we will show it to them and record the response."
         };
@@ -57,6 +57,7 @@ namespace DoodleDiplomacy.Gameplay
         private int _scanVersion;
         private Texture2D _pendingTexture;
         private byte[] _pendingPngBytes;
+        private string _pendingLabel;
         private bool _entered;
 
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? Day1ModeId : modeId;
@@ -147,6 +148,7 @@ namespace DoodleDiplomacy.Gameplay
             _slot = 1;
             _pendingTexture = null;
             _pendingPngBytes = null;
+            _pendingLabel = null;
             _scanVersion = 0;
 
             stimulusLibrary?.BeginSession(clearExisting: true);
@@ -169,6 +171,7 @@ namespace DoodleDiplomacy.Gameplay
         {
             _pendingTexture = null;
             _pendingPngBytes = null;
+            _pendingLabel = null;
 
             if (clearCanvas)
             {
@@ -230,7 +233,7 @@ namespace DoodleDiplomacy.Gameplay
         {
             _context?.Drawing?.SetInteractionLocked(true);
             stimulusButtonPanel?.Hide();
-            yield return Speak(ScienceOfficer, "The tablet is blank, Mr. President. Please draw one isolated stimulus.");
+            yield return Speak(ScienceOfficer, "The tablet is blank, Mr. President. Please draw one picture by itself.");
             BeginDrawing(clearCanvas: false);
             _routine = null;
         }
@@ -251,14 +254,14 @@ namespace DoodleDiplomacy.Gameplay
                 result = VisualStimulusClassificationResult.Failed("AI gateway is missing.");
             }
 
-            yield return Speak(ScienceOfficer, "Scanning visual stimulus. Hold transmission.");
+            yield return Speak(ScienceOfficer, "Scanning drawing. Hold transmission.");
             yield return new WaitUntil(() => done);
             if (version != _scanVersion)
             {
                 yield break;
             }
 
-            if (result == null || !result.IsSuccess || result.candidates == null || result.candidates.Count == 0)
+            if (result == null || !result.IsSuccess)
             {
                 yield return Speak(ScienceOfficer, "Classification unstable. The response data would be contaminated. Please redraw.");
                 BeginDrawing(clearCanvas: true);
@@ -266,18 +269,39 @@ namespace DoodleDiplomacy.Gameplay
                 yield break;
             }
 
-            if (result.objectCount != 1)
+            string normalizedResultLabel = Day1ReactionTierEvaluator.NormalizeLabel(result.label);
+            if (VisualStimulusClassificationResult.LabelIndicatesWrittenText(normalizedResultLabel))
             {
-                yield return Speak(ScienceOfficer, "Multiple stimuli detected. We cannot calibrate the response this way. Please draw one isolated stimulus.");
+                yield return Speak(ScienceOfficer, "Written text detected. The apparatus cannot calibrate language input this way. Please draw one picture instead.");
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
             }
 
+            if (result.objectCount != 1)
+            {
+                string detectedSummary = string.IsNullOrWhiteSpace(normalizedResultLabel)
+                    ? "multiple objects"
+                    : normalizedResultLabel;
+                yield return Speak(ScienceOfficer, $"Multiple objects detected: {detectedSummary}. We cannot calibrate the response this way. Please draw one thing by itself.");
+                BeginDrawing(clearCanvas: true);
+                _routine = null;
+                yield break;
+            }
+
+            string label = normalizedResultLabel;
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                yield return Speak(ScienceOfficer, "Classification unstable. The response data would be contaminated. Please redraw.");
+                BeginDrawing(clearCanvas: true);
+                _routine = null;
+                yield break;
+            }
+
+            _pendingLabel = label;
             ChangeState(GameState.Preview);
-            string candidateText = FormatCandidatesForDialogue(result.candidates);
-            yield return Speak(ScienceOfficer, $"The apparatus identifies this stimulus as: {candidateText}. Confirm the transmission label.");
-            stimulusButtonPanel?.ShowCandidates(result.candidates, ConfirmCandidate, RedrawCandidate);
+            yield return Speak(ScienceOfficer, $"The apparatus identifies this drawing as: {label}. Confirm the transmission label.");
+            stimulusButtonPanel?.ShowConfirmation(ConfirmLabel, RedrawCandidate);
             _routine = null;
         }
 
@@ -307,14 +331,14 @@ namespace DoodleDiplomacy.Gameplay
             _routine = null;
         }
 
-        private void ConfirmCandidate(string label)
+        private void ConfirmLabel()
         {
             if (_currentState != GameState.Preview)
             {
                 return;
             }
 
-            string normalizedLabel = Day1ReactionTierEvaluator.NormalizeLabel(label);
+            string normalizedLabel = Day1ReactionTierEvaluator.NormalizeLabel(_pendingLabel);
             if (string.IsNullOrWhiteSpace(normalizedLabel))
             {
                 RedrawCandidate();
@@ -323,10 +347,10 @@ namespace DoodleDiplomacy.Gameplay
 
             StopActiveRoutine();
             stimulusButtonPanel?.Hide();
-            _routine = StartCoroutine(ConfirmCandidateRoutine(normalizedLabel));
+            _routine = StartCoroutine(ConfirmLabelRoutine(normalizedLabel));
         }
 
-        private IEnumerator ConfirmCandidateRoutine(string label)
+        private IEnumerator ConfirmLabelRoutine(string label)
         {
             ReactionTier reactionTier = Day1ReactionTierEvaluator.Evaluate(label);
             _context?.Drawing?.SetInteractionLocked(true);
@@ -335,10 +359,10 @@ namespace DoodleDiplomacy.Gameplay
 
             sharedMonitorDisplay?.ShowSubmission(_pendingTexture);
             terminalDisplay?.ShowText(
-                $"TRANSMISSION ACTIVE\nVISUAL STIMULUS: {label}\nRESPONSE MONITORING ONLINE",
+                $"TRANSMISSION ACTIVE\nDRAWING: {label}\nRESPONSE MONITORING ONLINE",
                 instant: true);
 
-            yield return Speak(ScienceOfficer, $"Transmission label confirmed: {label}. Presenting stimulus to the delegation.");
+            yield return Speak(ScienceOfficer, $"Transmission label confirmed: {label}. Presenting drawing to the delegation.");
             if (transmissionHoldSeconds > 0f)
             {
                 yield return new WaitForSeconds(transmissionHoldSeconds);
@@ -359,7 +383,7 @@ namespace DoodleDiplomacy.Gameplay
                 yield break;
             }
 
-            yield return Speak(ScienceOfficer, "Response pattern logged. Next stimulus, Mr. President.");
+            yield return Speak(ScienceOfficer, "Response pattern logged. Next drawing, Mr. President.");
             _slot++;
             BeginDrawing(clearCanvas: true);
             _routine = null;
@@ -399,7 +423,7 @@ namespace DoodleDiplomacy.Gameplay
             ApplyCameraMode(GameState.Ending);
 
             yield return Speak(ScienceOfficer, "Calibration set complete. The interpreter now has a preliminary visual-response map.");
-            yield return Speak(ScienceOfficer, "These images will remain in the stimulus library. We may need them again tomorrow.");
+            yield return Speak(ScienceOfficer, "These images will remain in the drawing library. We may need them again tomorrow.");
             yield return Speak(Adjutant, "We have enough data for the interpreter.");
             yield return Speak(Adjutant, "I should warn you, Mr. President: they did not simply look at the images. They reacted to your choices.");
             _routine = null;
@@ -550,26 +574,6 @@ namespace DoodleDiplomacy.Gameplay
             return texture;
         }
 
-        private static string FormatCandidatesForDialogue(IReadOnlyList<string> candidates)
-        {
-            if (candidates == null || candidates.Count == 0)
-            {
-                return "an unstable object";
-            }
-
-            if (candidates.Count == 1)
-            {
-                return candidates[0];
-            }
-
-            if (candidates.Count == 2)
-            {
-                return $"{candidates[0]} or {candidates[1]}";
-            }
-
-            return $"{candidates[0]}, {candidates[1]}, or {candidates[2]}";
-        }
-
         private static SatisfactionLevel MapReactionTierToSatisfaction(ReactionTier reactionTier)
         {
             return reactionTier switch
@@ -588,8 +592,8 @@ namespace DoodleDiplomacy.Gameplay
             {
                 ReactionTier.None => "Minimal response. Logging baseline pattern.",
                 ReactionTier.Subtle => "Subtle response from the delegation. Logging association pattern.",
-                ReactionTier.Moderate => "Moderate cross-delegate activity. The stimulus registered clearly.",
-                ReactionTier.Strong => "Strong response. All three delegates reacted to the stimulus.",
+                ReactionTier.Moderate => "Moderate cross-delegate activity. The drawing registered clearly.",
+                ReactionTier.Strong => "Strong response. All three delegates reacted to the drawing.",
                 _ => "Subtle response from the delegation. Logging association pattern."
             };
         }

@@ -68,13 +68,19 @@ LlamaSharpDemo/Assets/StreamingAssets/Models/gemma-3-4b-it-q4_k_m.gguf.meta
 
 LlamaSharpDemo/Assets/StreamingAssets/Models/*.gguf
 
+LlamaSharpDemo/Assets/StreamingAssets/Models/*.gguf.part
+
 LlamaSharpDemo/Assets/StreamingAssets/Models/*.gguf.meta
 
 LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.gguf
 
+LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.gguf.part
+
 LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.gguf.meta
 
 LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.safetensors
+
+LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.safetensors.part
 
 LlamaSharpDemo/Assets/StreamingAssets/SDModels/*.safetensors.meta
 ExecutableBuild

@@ -1,0 +1,565 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a2e6df8a44a4c49b7d2c3a5f0e1b6a8, type: 3}
+  m_Name: LocalizedStringTable
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Localization.LocalizedStringTable
+  entries:
+  - key: speaker.science_officer
+    sourceText: Science Officer
+    translations:
+    - locale: ko-KR
+      text: 과학 장교
+  - key: speaker.adjutant
+    sourceText: Adjutant
+    translations:
+    - locale: ko-KR
+      text: 부관
+  - key: speaker.alien
+    sourceText: Alien
+    translations:
+    - locale: ko-KR
+      text: 외계인
+  - key: speaker.system
+    sourceText: System
+    translations:
+    - locale: ko-KR
+      text: 시스템
+  - key: intro.adjutant.line1
+    sourceText: Ambassador, the alien delegation has arrived.
+    translations:
+    - locale: ko-KR
+      text: 대사님, 외계 대표단이 도착했습니다.
+  - key: intro.adjutant.line2
+    sourceText: "They cannot understand our language.\n\nWe must communicate through drawings."
+    translations:
+    - locale: ko-KR
+      text: "그들은 우리의 언어를 이해하지 못합니다.\n\n우리는 그림으로 소통해야 합니다."
+  - key: intro.adjutant.line3
+    sourceText: Press the button in front of the alien to begin negotiations.
+    translations:
+    - locale: ko-KR
+      text: 협상을 시작하려면 외계인 앞의 버튼을 누르십시오.
+  - key: round.references.regenerating
+    sourceText: Regenerating the object references with the same prompts...
+    translations:
+    - locale: ko-KR
+      text: 같은 프롬프트로 참조 물체를 다시 생성하는 중입니다...
+  - key: round.terminal.open_first
+    sourceText: Open the terminal first.
+    translations:
+    - locale: ko-KR
+      text: 먼저 터미널을 여십시오.
+  - key: round.adjutant.disabled
+    sourceText: The adjutant can no longer review drawings. Click the alien for first-pass review.
+    translations:
+    - locale: ko-KR
+      text: 부관은 더 이상 그림을 검토할 수 없습니다. 1차 판독을 받으려면 외계인을 클릭하십시오.
+  - key: round.objects.generating
+    sourceText: Generating the alien objects...
+    translations:
+    - locale: ko-KR
+      text: 외계 물체를 생성하는 중입니다...
+  - key: round.objects.generator_missing
+    sourceText: Object generator is missing. Assign AIPipelineBridge before starting the round.
+    translations:
+    - locale: ko-KR
+      text: 오브젝트 생성기가 없습니다. 라운드를 시작하기 전에 AIPipelineBridge를 할당하십시오.
+  - key: round.objects.generation_failed_retry
+    sourceText: Object generation failed. Click the alien to retry.
+    translations:
+    - locale: ko-KR
+      text: 오브젝트 생성에 실패했습니다. 외계인을 클릭해 다시 시도하십시오.
+  - key: round.objects.generation_failed_prefix
+    sourceText: "Object generation failed: "
+    translations:
+    - locale: ko-KR
+      text: "오브젝트 생성 실패: "
+  - key: round.objects.presented_hint
+    sourceText: Click the tablet to start drawing, or click the alien to regenerate the references.
+    translations:
+    - locale: ko-KR
+      text: 그림을 시작하려면 태블릿을 클릭하고, 참조 물체를 다시 생성하려면 외계인을 클릭하십시오.
+  - key: round.preview.ready_hint
+    sourceText: Click the alien to get a first-pass read, or click the tablet to keep drawing.
+    translations:
+    - locale: ko-KR
+      text: 1차 판독을 받으려면 외계인을 클릭하고, 계속 그리려면 태블릿을 클릭하십시오.
+  - key: round.preview.analyzing
+    sourceText: The alien is trying to understand your drawing...
+    translations:
+    - locale: ko-KR
+      text: 외계인이 대통령님의 그림을 이해하려고 합니다...
+  - key: round.preview.ai_analysis_unavailable
+    sourceText: (AI analysis unavailable)
+    translations:
+    - locale: ko-KR
+      text: (AI 분석 불가)
+  - key: round.preview.ready_to_inspect
+    sourceText: First-pass analysis is complete. Click the terminal to inspect the result.
+    translations:
+    - locale: ko-KR
+      text: 1차 분석이 완료되었습니다. 결과를 확인하려면 터미널을 클릭하십시오.
+  - key: round.submitting_hint
+    sourceText: Submitting the drawing to the alien delegation...
+    translations:
+    - locale: ko-KR
+      text: 그림을 외계 대표단에게 제출하는 중입니다...
+  - key: round.preview.terminal.fallback_analysis
+    sourceText: (analysis unavailable)
+    translations:
+    - locale: ko-KR
+      text: (분석 불가)
+  - key: round.preview.terminal.header
+    sourceText: "[ALIEN FIRST PASS]"
+    translations:
+    - locale: ko-KR
+      text: "[외계인 1차 판독]"
+  - key: round.interpreter.signal_ready
+    sourceText: A signal has reached the terminal. Click the terminal to inspect it.
+    translations:
+    - locale: ko-KR
+      text: 신호가 터미널에 도착했습니다. 확인하려면 터미널을 클릭하십시오.
+  - key: round.interpreter.no_signal
+    sourceText: No readable signal was recovered. Open the terminal to continue.
+    translations:
+    - locale: ko-KR
+      text: 읽을 수 있는 신호를 복구하지 못했습니다. 계속하려면 터미널을 여십시오.
+  - key: round.interpreter.terminal.no_captured_signal
+    sourceText: "[TRANSLATOR v1.0]\n> No captured alien signal.\n> _"
+    translations:
+    - locale: ko-KR
+      text: "[번역기 v1.0]\n> 포착된 외계 신호 없음.\n> _"
+  - key: round.drawing.ready_hint
+    sourceText: Press {key} when the drawing is ready to submit.
+    translations:
+    - locale: ko-KR
+      text: 그림을 제출할 준비가 되면 {key} 키를 누르십시오.
+  - key: round.start.click_alien
+    sourceText: Click the alien to begin the round.
+    translations:
+    - locale: ko-KR
+      text: 라운드를 시작하려면 외계인을 클릭하십시오.
+  - key: round.start.preparing_sd_server
+    sourceText: Preparing the bundled SD server. Wait until the alien becomes interactable.
+    translations:
+    - locale: ko-KR
+      text: 번들 SD 서버를 준비 중입니다. 외계인과 상호작용할 수 있을 때까지 기다리십시오.
+  - key: round.start.object_generator_unavailable_prefix
+    sourceText: "Object generator unavailable: "
+    translations:
+    - locale: ko-KR
+      text: "오브젝트 생성기 사용 불가: "
+  - key: round.start.object_generator_not_ready
+    sourceText: Object generator is not ready yet.
+    translations:
+    - locale: ko-KR
+      text: 오브젝트 생성기가 아직 준비되지 않았습니다.
+  - key: round.start.preparing_round_objects
+    sourceText: Preparing the round objects. Wait until the alien becomes interactable.
+    translations:
+    - locale: ko-KR
+      text: 라운드 오브젝트를 준비 중입니다. 외계인과 상호작용할 수 있을 때까지 기다리십시오.
+  - key: round.start.study_objects_and_click_alien
+    sourceText: Study the two object images. Click the alien to begin the round.
+    translations:
+    - locale: ko-KR
+      text: 두 오브젝트 이미지를 살펴본 뒤 외계인을 클릭해 라운드를 시작하십시오.
+  - key: round.llm.ready
+    sourceText: LLM runtime is ready.
+    translations:
+    - locale: ko-KR
+      text: LLM 런타임이 준비되었습니다.
+  - key: round.llm.loading
+    sourceText: Loading LLM runtime. Game will start after preload completes.
+    translations:
+    - locale: ko-KR
+      text: LLM 런타임을 불러오는 중입니다. 사전 로드가 끝나면 게임이 시작됩니다.
+  - key: round.llm.preload_failed_prefix
+    sourceText: "LLM preload failed: "
+    translations:
+    - locale: ko-KR
+      text: "LLM 사전 로드 실패: "
+  - key: round.llm.not_ready
+    sourceText: LLM runtime is not ready yet.
+    translations:
+    - locale: ko-KR
+      text: LLM 런타임이 아직 준비되지 않았습니다.
+  - key: alien.reaction.mutter.very_dissatisfied
+    sourceText: The aliens are conferring with each other...
+    translations:
+    - locale: ko-KR
+      text: 외계인들이 서로 협의하고 있습니다...
+  - key: alien.reaction.mutter.dissatisfied
+    sourceText: The aliens exchange glances...
+    translations:
+    - locale: ko-KR
+      text: 외계인들이 시선을 주고받습니다...
+  - key: alien.reaction.mutter.neutral
+    sourceText: The aliens observe quietly...
+    translations:
+    - locale: ko-KR
+      text: 외계인들이 조용히 관찰합니다...
+  - key: alien.reaction.mutter.satisfied
+    sourceText: The aliens murmur amongst themselves...
+    translations:
+    - locale: ko-KR
+      text: 외계인들이 낮게 웅성거립니다...
+  - key: alien.reaction.mutter.very_satisfied
+    sourceText: The aliens react with visible excitement!
+    translations:
+    - locale: ko-KR
+      text: 외계인들이 눈에 띄게 흥분한 반응을 보입니다!
+  - key: alien.reaction.narration.very_dissatisfied
+    sourceText: They seem very displeased...
+    translations:
+    - locale: ko-KR
+      text: 그들은 매우 불쾌해 보입니다...
+  - key: alien.reaction.narration.dissatisfied
+    sourceText: They do not appear to like it.
+    translations:
+    - locale: ko-KR
+      text: 그들은 마음에 들어 하지 않는 것 같습니다.
+  - key: alien.reaction.narration.neutral
+    sourceText: Not much of a reaction.
+    translations:
+    - locale: ko-KR
+      text: 반응은 크지 않습니다.
+  - key: alien.reaction.narration.satisfied
+    sourceText: A positive response.
+    translations:
+    - locale: ko-KR
+      text: 긍정적인 반응입니다.
+  - key: alien.reaction.narration.very_satisfied
+    sourceText: They seem quite impressed!
+    translations:
+    - locale: ko-KR
+      text: 그들은 꽤 깊은 인상을 받은 것 같습니다!
+  - key: ui.title.start
+    sourceText: START
+    translations:
+    - locale: ko-KR
+      text: 시작
+  - key: ui.title.settings
+    sourceText: SETTINGS
+    translations:
+    - locale: ko-KR
+      text: 설정
+  - key: ui.settings.title
+    sourceText: Settings
+    translations:
+    - locale: ko-KR
+      text: 설정
+  - key: ui.settings.language
+    sourceText: Language
+    translations:
+    - locale: ko-KR
+      text: 언어
+  - key: ui.settings.english
+    sourceText: English
+    translations:
+    - locale: ko-KR
+      text: English
+  - key: ui.settings.korean
+    sourceText: Korean
+    translations:
+    - locale: ko-KR
+      text: 한국어
+  - key: ui.settings.back
+    sourceText: Back
+    translations:
+    - locale: ko-KR
+      text: 뒤로
+  - key: ui.preview.submit
+    sourceText: SUBMIT
+    translations:
+    - locale: ko-KR
+      text: 제출
+  - key: ui.preview.modify
+    sourceText: MODIFY
+    translations:
+    - locale: ko-KR
+      text: 수정
+  - key: ui.day1.submit
+    sourceText: Submit
+    translations:
+    - locale: ko-KR
+      text: 제출
+  - key: ui.day1.confirm
+    sourceText: Confirm
+    translations:
+    - locale: ko-KR
+      text: 확인
+  - key: ui.day1.redraw
+    sourceText: Redraw
+    translations:
+    - locale: ko-KR
+      text: 다시 그리기
+  - key: day1.opening.1
+    sourceText: Mr. President, draw one simple picture on the tablet.
+    translations:
+    - locale: ko-KR
+      text: 대통령님, 태블릿에 간단한 그림 하나를 그려 주십시오.
+  - key: day1.opening.2
+    sourceText: The delegation will only see the completed image. Not the drawing process.
+    translations:
+    - locale: ko-KR
+      text: 대표단은 완성된 이미지만 보게 됩니다. 그리는 과정은 보지 않습니다.
+  - key: day1.opening.3
+    sourceText: The apparatus will classify the image before transmission. Once the label is confirmed, we will show it to them and record the response.
+    translations:
+    - locale: ko-KR
+      text: 장치는 송신 전에 이미지를 분류합니다. 라벨이 확인되면 대표단에게 보여 주고 반응을 기록하겠습니다.
+  - key: day1.tablet_blank
+    sourceText: The tablet is blank, Mr. President. Please draw one picture by itself.
+    translations:
+    - locale: ko-KR
+      text: 태블릿이 비어 있습니다, 대통령님. 그림 하나만 그려 주십시오.
+  - key: day1.scanning
+    sourceText: Scanning drawing. Hold transmission.
+    translations:
+    - locale: ko-KR
+      text: 그림을 스캔 중입니다. 송신을 보류합니다.
+  - key: day1.classification_unstable
+    sourceText: Classification unstable. The response data would be contaminated. Please redraw.
+    translations:
+    - locale: ko-KR
+      text: 분류가 불안정합니다. 반응 데이터가 오염될 수 있습니다. 다시 그려 주십시오.
+  - key: day1.written_text_detected
+    sourceText: Written text detected. The apparatus cannot calibrate language input this way. Please draw one picture instead.
+    translations:
+    - locale: ko-KR
+      text: 문자가 감지되었습니다. 이 장치는 언어 입력으로 보정할 수 없습니다. 대신 그림 하나를 그려 주십시오.
+  - key: day1.multiple_objects_detected
+    sourceText: "Multiple objects detected: {label}. We cannot calibrate the response this way. Please draw one thing by itself."
+    translations:
+    - locale: ko-KR
+      text: "여러 물체가 감지되었습니다: {label}. 이런 방식으로는 반응을 보정할 수 없습니다. 하나의 대상만 그려 주십시오."
+  - key: day1.identifies_drawing
+    sourceText: "The apparatus identifies this drawing as: {label}. Confirm the transmission label."
+    translations:
+    - locale: ko-KR
+      text: "장치는 이 그림을 다음으로 식별했습니다: {label}. 송신 라벨을 확인해 주십시오."
+  - key: day1.previous_image_not_transmitted
+    sourceText: Understood. The previous image will not be transmitted.
+    translations:
+    - locale: ko-KR
+      text: 알겠습니다. 이전 이미지는 송신하지 않겠습니다.
+  - key: day1.terminal.transmission_active
+    sourceText: "TRANSMISSION ACTIVE\nDRAWING: {label}\nRESPONSE MONITORING ONLINE"
+    translations:
+    - locale: ko-KR
+      text: "송신 활성화\n그림: {label}\n응답 감시 온라인"
+  - key: day1.transmission_label_confirmed
+    sourceText: "Transmission label confirmed: {label}. Presenting drawing to the delegation."
+    translations:
+    - locale: ko-KR
+      text: "송신 라벨 확인: {label}. 대표단에게 그림을 제시합니다."
+  - key: day1.response_pattern_logged
+    sourceText: Response pattern logged. Next drawing, Mr. President.
+    translations:
+    - locale: ko-KR
+      text: 반응 패턴을 기록했습니다. 다음 그림입니다, 대통령님.
+  - key: day1.complete.1
+    sourceText: Calibration set complete. The interpreter now has a preliminary visual-response map.
+    translations:
+    - locale: ko-KR
+      text: 보정 세트가 완료되었습니다. 통역기는 이제 예비 시각 반응 지도를 확보했습니다.
+  - key: day1.complete.2
+    sourceText: These images will remain in the drawing library. We may need them again tomorrow.
+    translations:
+    - locale: ko-KR
+      text: 이 이미지들은 그림 라이브러리에 남습니다. 내일 다시 필요할 수 있습니다.
+  - key: day1.complete.3
+    sourceText: We have enough data for the interpreter.
+    translations:
+    - locale: ko-KR
+      text: 통역기에 필요한 데이터는 충분합니다.
+  - key: day1.complete.4
+    sourceText: "I should warn you, Mr. President: they did not simply look at the images. They reacted to your choices."
+    translations:
+    - locale: ko-KR
+      text: "경고드려야겠습니다, 대통령님. 그들은 이미지를 단순히 본 것이 아닙니다. 대통령님의 선택에 반응했습니다."
+  - key: day1.reaction.none
+    sourceText: Minimal response. Logging baseline pattern.
+    translations:
+    - locale: ko-KR
+      text: 반응은 미미합니다. 기준 패턴으로 기록합니다.
+  - key: day1.reaction.subtle
+    sourceText: Subtle response from the delegation. Logging association pattern.
+    translations:
+    - locale: ko-KR
+      text: 대표단에게서 미약한 반응이 있습니다. 연관 패턴을 기록합니다.
+  - key: day1.reaction.moderate
+    sourceText: Moderate cross-delegate activity. The drawing registered clearly.
+    translations:
+    - locale: ko-KR
+      text: 대표단 전반에서 중간 수준의 활동이 감지됩니다. 그림이 분명히 전달되었습니다.
+  - key: day1.reaction.strong
+    sourceText: Strong response. All three delegates reacted to the drawing.
+    translations:
+    - locale: ko-KR
+      text: 강한 반응입니다. 세 대표 모두 그림에 반응했습니다.
+  - key: label.blank
+    sourceText: blank
+    translations:
+    - locale: ko-KR
+      text: 빈 그림
+  - key: label.written_text
+    sourceText: written text
+    translations:
+    - locale: ko-KR
+      text: 문자
+  - key: label.multiple_objects
+    sourceText: multiple objects
+    translations:
+    - locale: ko-KR
+      text: 여러 물체
+  - key: label.conjunction.and
+    sourceText: " and "
+    translations:
+    - locale: ko-KR
+      text: " 및 "
+  - key: label.apple
+    sourceText: apple
+    translations:
+    - locale: ko-KR
+      text: 사과
+  - key: label.banana
+    sourceText: banana
+    translations:
+    - locale: ko-KR
+      text: 바나나
+  - key: label.lemon
+    sourceText: lemon
+    translations:
+    - locale: ko-KR
+      text: 레몬
+  - key: label.orange
+    sourceText: orange
+    translations:
+    - locale: ko-KR
+      text: 오렌지
+  - key: label.pear
+    sourceText: pear
+    translations:
+    - locale: ko-KR
+      text: 배
+  - key: label.fruit
+    sourceText: fruit
+    translations:
+    - locale: ko-KR
+      text: 과일
+  - key: label.house
+    sourceText: house
+    translations:
+    - locale: ko-KR
+      text: 집
+  - key: label.tree
+    sourceText: tree
+    translations:
+    - locale: ko-KR
+      text: 나무
+  - key: label.flower
+    sourceText: flower
+    translations:
+    - locale: ko-KR
+      text: 꽃
+  - key: label.sun
+    sourceText: sun
+    translations:
+    - locale: ko-KR
+      text: 태양
+  - key: label.moon
+    sourceText: moon
+    translations:
+    - locale: ko-KR
+      text: 달
+  - key: label.star
+    sourceText: star
+    translations:
+    - locale: ko-KR
+      text: 별
+  - key: label.car
+    sourceText: car
+    translations:
+    - locale: ko-KR
+      text: 자동차
+  - key: label.bird
+    sourceText: bird
+    translations:
+    - locale: ko-KR
+      text: 새
+  - key: label.cat
+    sourceText: cat
+    translations:
+    - locale: ko-KR
+      text: 고양이
+  - key: label.dog
+    sourceText: dog
+    translations:
+    - locale: ko-KR
+      text: 개
+  - key: label.fish
+    sourceText: fish
+    translations:
+    - locale: ko-KR
+      text: 물고기
+  - key: label.face
+    sourceText: face
+    translations:
+    - locale: ko-KR
+      text: 얼굴
+  - key: label.eye
+    sourceText: eye
+    translations:
+    - locale: ko-KR
+      text: 눈
+  - key: label.hand
+    sourceText: hand
+    translations:
+    - locale: ko-KR
+      text: 손
+  - key: label.heart
+    sourceText: heart
+    translations:
+    - locale: ko-KR
+      text: 하트
+  - key: label.sword
+    sourceText: sword
+    translations:
+    - locale: ko-KR
+      text: 검
+  - key: label.knife
+    sourceText: knife
+    translations:
+    - locale: ko-KR
+      text: 칼
+  - key: label.gun
+    sourceText: gun
+    translations:
+    - locale: ko-KR
+      text: 총
+  - key: label.handgun
+    sourceText: handgun
+    translations:
+    - locale: ko-KR
+      text: 권총
+  - key: label.flag
+    sourceText: flag
+    translations:
+    - locale: ko-KR
+      text: 깃발
+  - key: label.abstract_mark
+    sourceText: abstract mark
+    translations:
+    - locale: ko-KR
+      text: 추상적인 표시

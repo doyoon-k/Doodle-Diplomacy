@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DoodleDiplomacy.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,29 +16,49 @@ namespace DoodleDiplomacy.UI
         private GameObject _panel;
         private TextMeshProUGUI _promptText;
         private RectTransform _buttonRoot;
+        private Action _submitAction;
+        private Action _confirmAction;
+        private Action _redrawAction;
+        private PanelMode _mode;
+
+        private enum PanelMode
+        {
+            None,
+            Submit,
+            Confirmation
+        }
 
         public void ShowSubmit(Action onSubmit)
         {
+            _mode = PanelMode.Submit;
+            _submitAction = onSubmit;
+            _confirmAction = null;
+            _redrawAction = null;
             EnsureBuilt();
             ClearButtons();
             _promptText.text = string.Empty;
-            AddButton("Submit", () => onSubmit?.Invoke(), preferredWidth: 170f);
+            AddButton(L10n.T("ui.day1.submit", "Submit"), () => _submitAction?.Invoke(), preferredWidth: 170f);
             SetVisible(true);
         }
 
         public void ShowConfirmation(Action onConfirm, Action onRedraw)
         {
+            _mode = PanelMode.Confirmation;
+            _submitAction = null;
+            _confirmAction = onConfirm;
+            _redrawAction = onRedraw;
             EnsureBuilt();
             ClearButtons();
 
             _promptText.text = string.Empty;
-            AddButton("Confirm", () => onConfirm?.Invoke(), preferredWidth: 170f);
-            AddButton("Redraw", () => onRedraw?.Invoke(), preferredWidth: 170f);
+            AddButton(L10n.T("ui.day1.confirm", "Confirm"), () => _confirmAction?.Invoke(), preferredWidth: 170f);
+            AddButton(L10n.T("ui.day1.redraw", "Redraw"), () => _redrawAction?.Invoke(), preferredWidth: 170f);
             SetVisible(true);
         }
 
         public void Hide()
         {
+            _mode = PanelMode.None;
             SetVisible(false);
         }
 
@@ -186,10 +207,39 @@ namespace DoodleDiplomacy.UI
 
         private void OnDestroy()
         {
+            L10n.LocaleChanged -= OnLocaleChanged;
             ClearButtons();
             if (_canvas != null)
             {
                 Destroy(_canvas.gameObject);
+            }
+        }
+
+        private void OnEnable()
+        {
+            L10n.LocaleChanged += OnLocaleChanged;
+        }
+
+        private void OnDisable()
+        {
+            L10n.LocaleChanged -= OnLocaleChanged;
+        }
+
+        private void OnLocaleChanged(string locale)
+        {
+            if (_panel == null || !_panel.activeSelf)
+            {
+                return;
+            }
+
+            switch (_mode)
+            {
+                case PanelMode.Submit:
+                    ShowSubmit(_submitAction);
+                    break;
+                case PanelMode.Confirmation:
+                    ShowConfirmation(_confirmAction, _redrawAction);
+                    break;
             }
         }
     }

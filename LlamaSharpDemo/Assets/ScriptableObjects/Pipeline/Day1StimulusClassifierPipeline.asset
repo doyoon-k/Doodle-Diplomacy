@@ -25,21 +25,26 @@ MonoBehaviour:
     useVision: 1
     imageStateKey: reference_image
     requireImage: 1
-    resizeLongestSide: 768
-    customLinkTypeName: 
+    resizeLongestSide: 1024
+    customLinkTypeName: SafeTranslateResponseChainLink, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
     customAsset: {fileID: 0}
-    customLinkParameters: []
-    editorPosition: {x: 0, y: 0}
+    customLinkParameters:
+    - key: parameters
+      value: 
+    - key: service
+      value: 
+    editorPosition: {x: -168, y: -40}
     guid: 07894473-8e85-40ba-80f0-b481a5c46dcb
     nextStepGuid: 
   layoutSettings:
     inputNodePosition: {x: -420, y: 0}
-    outputNodePosition: {x: 520, y: 0}
+    outputNodePosition: {x: 664, y: -46}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 0, y: 0, z: 0}
-    viewScale: {x: 1, y: 1, z: 1}
+    viewPosition: {x: 542, y: -326.66666, z: 0}
+    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 0, y: 0}
+    - {x: 352.66666, y: -27.333336}
     snapshotPositionsInitialized: 1

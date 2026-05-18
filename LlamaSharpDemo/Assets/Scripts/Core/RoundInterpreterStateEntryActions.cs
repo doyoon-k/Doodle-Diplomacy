@@ -1,4 +1,5 @@
 using DoodleDiplomacy.Data;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Core
@@ -37,17 +38,13 @@ namespace DoodleDiplomacy.Core
             {
                 _context.ShowHint(
                     "System",
-                    _context.GetConfiguredText(
-                        table => table.terminalSignalReadyMessage,
-                        DefaultTerminalSignalReadyMessage));
+                    L10n.T("round.interpreter.signal_ready", DefaultTerminalSignalReadyMessage));
             }
             else
             {
                 _context.ShowHint(
                     "System",
-                    _context.GetConfiguredText(
-                        table => table.noSignalMessage,
-                        DefaultNoSignalMessage));
+                    L10n.T("round.interpreter.no_signal", DefaultNoSignalMessage));
             }
 
             Debug.Log("[RoundManager] Interpreter is ready.");
@@ -65,7 +62,9 @@ namespace DoodleDiplomacy.Core
             else if (_context.TerminalDisplay != null)
             {
                 _context.TerminalDisplay.ShowText(
-                    "[TRANSLATOR v1.0]\n> No captured alien signal.\n> _",
+                    L10n.T(
+                        "round.interpreter.terminal.no_captured_signal",
+                        "[TRANSLATOR v1.0]\n> No captured alien signal.\n> _"),
                     instantTerminalDisplay);
             }
 

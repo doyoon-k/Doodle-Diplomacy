@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -9,6 +8,7 @@ using System.Threading.Tasks;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Devices;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.AI
@@ -122,10 +122,13 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private PromptPipelineAsset wordsSelectionPipeline;
         [Tooltip("Day 1 visual stimulus classifier. Expected output keys: object_count, label")]
         [SerializeField] private PromptPipelineAsset day1StimulusClassifierPipeline;
+        [Tooltip("Day 1 alien neural response evaluator. Expected output keys: reaction_tier, reason")]
+        [SerializeField] private PromptPipelineAsset day1ReactionEvaluatorPipeline;
         [Tooltip("Curated word pair pool. When assigned, pairs are drawn from here first and the LLM pipeline is skipped.")]
         [SerializeField] private DoodleDiplomacy.Data.WordPairPool wordPairPool;
         [Header("Pipeline State Keys")]
         [SerializeField] private string drawingImageKey = "reference_image";
+        [SerializeField] private string day1StimulusLabelKey = "stimulus_label";
         [SerializeField] private string alienPersonalityKey = "alien_personality";
         [SerializeField] private string targetObjectsKey = "target_objects";
         [SerializeField] private string judgmentSatisfactionKey = "satisfaction";
@@ -140,11 +143,8 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private AlienPersonality[] alienPersonalityProfiles = Array.Empty<AlienPersonality>();
         [SerializeField] private AlienPersonality alienPersonality;
 
-        [Header("Debug")]
-        [SerializeField] private string day1VlmSubmissionLogDirectory = "first_contact/debug/vlm_submissions";
-
-        [Header("Text")]
-        [SerializeField] private IngameTextTable ingameTextTable;
+        [Header("Localization")]
+        [SerializeField] private LlmLocalizationSettings localizationSettings;
 
         [Header("Telepathy Postprocess")]
         [Range(0f, 1f)]
@@ -305,6 +305,11 @@ namespace DoodleDiplomacy.AI
         public void ClassifyVisualStimulus(Action<VisualStimulusClassificationResult> onComplete = null)
         {
             StartCoroutine(ClassifyVisualStimulusRoutine(onComplete));
+        }
+
+        public void EvaluateDay1ReactionTier(string label, Action<Day1ReactionEvaluationResult> onComplete = null)
+        {
+            StartCoroutine(EvaluateDay1ReactionTierRoutine(label, onComplete));
         }
 
         public void GetTelepathy(Action<string> onComplete = null)
@@ -563,29 +568,23 @@ namespace DoodleDiplomacy.AI
         {
             if (IsObjectGenerationReady)
             {
-                return GetConfiguredText(
-                    table => table.clickAlienToBeginRoundMessage,
-                    DefaultClickAlienToBeginRoundMessage);
+                return L10n.T("round.start.click_alien", DefaultClickAlienToBeginRoundMessage);
             }
 
             if (IsObjectGenerationPreparing)
             {
-                return GetConfiguredText(
-                    table => table.preparingSdServerMessage,
-                    DefaultPreparingSdServerMessage);
+                return L10n.T("round.start.preparing_sd_server", DefaultPreparingSdServerMessage);
             }
 
             if (!string.IsNullOrWhiteSpace(LastObjectGenerationError))
             {
-                string prefix = GetConfiguredText(
-                    table => table.objectGeneratorUnavailablePrefix,
+                string prefix = L10n.T(
+                    "round.start.object_generator_unavailable_prefix",
                     DefaultObjectGeneratorUnavailablePrefix);
                 return $"{prefix}{LastObjectGenerationError}";
             }
 
-            return GetConfiguredText(
-                table => table.objectGeneratorNotReadyMessage,
-                DefaultObjectGeneratorNotReadyMessage);
+            return L10n.T("round.start.object_generator_not_ready", DefaultObjectGeneratorNotReadyMessage);
         }
 
         public string GetRoundStartAvailabilityMessage()
@@ -593,9 +592,7 @@ namespace DoodleDiplomacy.AI
             RefreshLlmPreparationStatus();
             if (IsRoundKeywordSelectionInProgress)
             {
-                return GetConfiguredText(
-                    table => table.preparingRoundObjectsMessage,
-                    DefaultPreparingRoundObjectsMessage);
+                return L10n.T("round.start.preparing_round_objects", DefaultPreparingRoundObjectsMessage);
             }
 
             if (!IsObjectGenerationReady)
@@ -606,14 +603,10 @@ namespace DoodleDiplomacy.AI
             string keywords = GetCurrentRoundKeywordsLabel();
             if (!string.IsNullOrWhiteSpace(keywords))
             {
-                return GetConfiguredText(
-                    table => table.studyObjectsAndClickAlienMessage,
-                    DefaultStudyObjectsAndClickAlienMessage);
+                return L10n.T("round.start.study_objects_and_click_alien", DefaultStudyObjectsAndClickAlienMessage);
             }
 
-            return GetConfiguredText(
-                table => table.clickAlienToBeginRoundMessage,
-                DefaultClickAlienToBeginRoundMessage);
+            return L10n.T("round.start.click_alien", DefaultClickAlienToBeginRoundMessage);
         }
 
         public string GetLlmPreparationAvailabilityMessage()
@@ -622,41 +615,21 @@ namespace DoodleDiplomacy.AI
 
             if (IsLlmPreparationReady)
             {
-                return GetConfiguredText(
-                    table => table.llmRuntimeReadyMessage,
-                    DefaultLlmRuntimeReadyMessage);
+                return L10n.T("round.llm.ready", DefaultLlmRuntimeReadyMessage);
             }
 
             if (IsLlmPreparationRunning)
             {
-                return GetConfiguredText(
-                    table => table.llmRuntimeLoadingMessage,
-                    DefaultLlmRuntimeLoadingMessage);
+                return L10n.T("round.llm.loading", DefaultLlmRuntimeLoadingMessage);
             }
 
             if (!string.IsNullOrWhiteSpace(LastLlmPreparationError))
             {
-                string prefix = GetConfiguredText(
-                    table => table.llmPreloadFailedPrefix,
-                    DefaultLlmPreloadFailedPrefix);
+                string prefix = L10n.T("round.llm.preload_failed_prefix", DefaultLlmPreloadFailedPrefix);
                 return $"{prefix}{LastLlmPreparationError}";
             }
 
-            return GetConfiguredText(
-                table => table.llmRuntimeNotReadyMessage,
-                DefaultLlmRuntimeNotReadyMessage);
-        }
-
-        private string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback)
-        {
-            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
-            if (table == null)
-            {
-                return fallback;
-            }
-
-            string configured = selector(table);
-            return string.IsNullOrWhiteSpace(configured) ? fallback : configured;
+            return L10n.T("round.llm.not_ready", DefaultLlmRuntimeNotReadyMessage);
         }
 
         public string GetCurrentRoundKeywordsLabel()
@@ -1715,6 +1688,7 @@ namespace DoodleDiplomacy.AI
             }
 
             var state = new PipelineState();
+            ApplyLocalizationState(state);
             if (!string.IsNullOrWhiteSpace(LastJudgmentSceneReading))
             {
                 state.SetString(judgmentSceneReadingKey, LastJudgmentSceneReading);
@@ -1905,11 +1879,15 @@ namespace DoodleDiplomacy.AI
             LastPreviewUncertainty = uncertainty?.Trim() ?? string.Empty;
             _lastPreviewObjectAPresence = objectAPresence;
             _lastPreviewObjectBPresence = objectBPresence;
-            LastPreviewDialogue = EnsurePreviewDialogueStyle(
-                SanitizePreviewDialogue(
-                    BuildPreviewDialogueFromRead(
-                        LastPreviewSceneReading,
-                        previewDialogue)));
+
+            string dialogue = SanitizePreviewDialogue(
+                BuildPreviewDialogueFromRead(
+                    LastPreviewSceneReading,
+                    previewDialogue));
+
+            LastPreviewDialogue = ShouldPreserveLocalizedPreviewDialogue(previewDialogue)
+                ? EnsureSentenceEnding(dialogue)
+                : EnsurePreviewDialogueStyle(dialogue);
         }
 
         private void SetFallbackPreviewRead(bool isBlankDrawing)
@@ -2029,6 +2007,13 @@ namespace DoodleDiplomacy.AI
             return lastChar is '.' or '!' or '?' ? trimmed : $"{trimmed}.";
         }
 
+        private bool ShouldPreserveLocalizedPreviewDialogue(string explicitPreviewDialogue)
+        {
+            return !string.IsNullOrWhiteSpace(explicitPreviewDialogue) &&
+                   localizationSettings != null &&
+                   !LlmLocalizationSettings.IsEnglishLocale(localizationSettings.targetLocale);
+        }
+
         private void ApplyPreviewReadFromState(PipelineState finalState)
         {
             string sceneReading = finalState != null &&
@@ -2076,10 +2061,16 @@ namespace DoodleDiplomacy.AI
                 uncertainty = "The main action and intent are ambiguous.";
             }
 
+            string previewDialogue = finalState != null &&
+                                     finalState.TryGetString(PromptPipelineConstants.AnswerKey, out string previewValue)
+                ? previewValue
+                : null;
+
             SetPreviewRead(
                 sceneReading,
                 visibleRelations,
                 uncertainty,
+                previewDialogue,
                 objectAPresence: objectAPresence,
                 objectBPresence: objectBPresence);
         }
@@ -2666,8 +2657,29 @@ namespace DoodleDiplomacy.AI
                 judgmentPipeline,
                 telepathyPipeline,
                 wordsSelectionPipeline,
-                day1StimulusClassifierPipeline
+                day1StimulusClassifierPipeline,
+                day1ReactionEvaluatorPipeline
             };
+        }
+
+        private void ApplyLocalizationState(PipelineState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            if (localizationSettings != null)
+            {
+                localizationSettings.ApplyTo(state);
+                return;
+            }
+
+            state.SetString(PromptPipelineConstants.LlmTranslationEnabledKey, "true");
+            state.SetString(PromptPipelineConstants.SourceLocaleKey, "en-US");
+            state.SetString(PromptPipelineConstants.TargetLocaleKey, "en-US");
+            state.SetString(PromptPipelineConstants.TargetLanguageKey, "English");
+            state.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "English");
         }
 
         private IEnumerator PrepareRoundKeywordsRoutine()
@@ -2942,6 +2954,7 @@ namespace DoodleDiplomacy.AI
             }
 
             var state = new PipelineState();
+            ApplyLocalizationState(state);
             state.SetImage(drawingImageKey, drawingTexture);
             string targetObjects = BuildTargetObjectsSummary();
             if (!string.IsNullOrWhiteSpace(targetObjects))
@@ -2988,6 +3001,13 @@ namespace DoodleDiplomacy.AI
                 yield break;
             }
 
+            if (!ValidateDay1StimulusClassifierPipeline(out string classifierConfigError))
+            {
+                Debug.LogError($"[AIPipelineBridge] {classifierConfigError}");
+                onComplete?.Invoke(VisualStimulusClassificationResult.Failed(classifierConfigError));
+                yield break;
+            }
+
             if (GamePipelineRunner.Instance == null)
             {
                 Debug.LogWarning("[AIPipelineBridge] GamePipelineRunner is missing.");
@@ -2996,7 +3016,6 @@ namespace DoodleDiplomacy.AI
             }
 
             var state = new PipelineState();
-            LogDay1VlmSubmittedImage(drawingTexture);
             state.SetImage(drawingImageKey, drawingTexture);
 
             bool done = false;
@@ -3018,61 +3037,99 @@ namespace DoodleDiplomacy.AI
             onComplete?.Invoke(classification ?? VisualStimulusClassificationResult.Failed("Classification unstable."));
         }
 
-        private void LogDay1VlmSubmittedImage(Texture2D texture)
+        private IEnumerator EvaluateDay1ReactionTierRoutine(
+            string label,
+            Action<Day1ReactionEvaluationResult> onComplete)
         {
-            if (!IsLlmTrafficLoggingEnabled() || texture == null)
+            string normalizedLabel = Day1ReactionTierEvaluator.NormalizeLabel(label);
+            if (string.IsNullOrWhiteSpace(normalizedLabel))
             {
-                return;
+                onComplete?.Invoke(Day1ReactionEvaluationResult.Failed("Reaction evaluation requires a label."));
+                yield break;
             }
 
-            try
+            if (day1ReactionEvaluatorPipeline == null)
             {
-                if (!PipelineImageUtility.TryEncodeToPng(texture, out byte[] pngBytes, out string encodeError))
+                Debug.LogWarning("[AIPipelineBridge] Day1 reaction evaluator pipeline is not assigned.");
+                onComplete?.Invoke(Day1ReactionEvaluationResult.Failed("Day1 reaction evaluator pipeline is not assigned."));
+                yield break;
+            }
+
+            if (GamePipelineRunner.Instance == null)
+            {
+                Debug.LogWarning("[AIPipelineBridge] GamePipelineRunner is missing.");
+                onComplete?.Invoke(Day1ReactionEvaluationResult.Failed("GamePipelineRunner is missing."));
+                yield break;
+            }
+
+            var state = new PipelineState();
+            state.SetString(GetDay1StimulusLabelKey(), normalizedLabel);
+
+            bool done = false;
+            PipelineState finalState = null;
+            GamePipelineRunner.Instance.RunPipeline(day1ReactionEvaluatorPipeline, state, result =>
+            {
+                finalState = result;
+                done = true;
+            });
+            yield return new WaitUntil(() => done);
+
+            finalState?.Remove(GetDay1StimulusLabelKey());
+            if (Day1ReactionEvaluationResult.TryFromPipelineState(finalState, out Day1ReactionEvaluationResult evaluation))
+            {
+                Debug.Log(
+                    $"[AIPipelineBridge] Day1 reaction tier evaluated. label={normalizedLabel}, " +
+                    $"tier={evaluation.reactionTier}, reason={evaluation.reason}");
+                onComplete?.Invoke(evaluation);
+                yield break;
+            }
+
+            Debug.LogWarning($"[AIPipelineBridge] Day1 reaction tier evaluation rejected: {evaluation?.error}");
+            onComplete?.Invoke(evaluation ?? Day1ReactionEvaluationResult.Failed("Reaction evaluation failed."));
+        }
+
+        private bool ValidateDay1StimulusClassifierPipeline(out string error)
+        {
+            error = string.Empty;
+
+            if (day1StimulusClassifierPipeline == null ||
+                day1StimulusClassifierPipeline.steps == null ||
+                day1StimulusClassifierPipeline.steps.Count == 0)
+            {
+                error = "Day1 classifier pipeline is empty.";
+                return false;
+            }
+
+            string expectedImageKey = string.IsNullOrWhiteSpace(drawingImageKey)
+                ? "reference_image"
+                : drawingImageKey.Trim();
+            bool hasLlmStep = false;
+
+            foreach (PromptPipelineStep step in day1StimulusClassifierPipeline.steps)
+            {
+                if (step == null)
                 {
-                    Debug.LogWarning($"[AIPipelineBridge] Failed to encode Day1 VLM submitted image for debug log: {encodeError}", this);
-                    return;
+                    continue;
                 }
 
-                string directory = ResolveDay1VlmSubmissionLogDirectory();
-                Directory.CreateDirectory(directory);
+                if (step.stepKind != PromptPipelineStepKind.JsonLlm &&
+                    step.stepKind != PromptPipelineStepKind.CompletionLlm)
+                {
+                    continue;
+                }
 
-                string fileName = $"day1_vlm_submission_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png";
-                string path = Path.Combine(directory, fileName);
-                File.WriteAllBytes(path, pngBytes);
-
-                Debug.Log(
-                    $"[AIPipelineBridge] Day1 VLM submitted image saved: {path} ({texture.width}x{texture.height})",
-                    this);
+                hasLlmStep = true;
+                if (step.useVision &&
+                    string.Equals(step.imageStateKey?.Trim(), expectedImageKey, StringComparison.Ordinal))
+                {
+                    return true;
+                }
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[AIPipelineBridge] Failed to save Day1 VLM submitted image debug log: {ex.Message}", this);
-            }
-        }
 
-        private static bool IsLlmTrafficLoggingEnabled()
-        {
-            return LlmServiceLocator.Current switch
-            {
-                RoutingLlmService routingService => routingService.LogTrafficEnabled,
-                RuntimeLlamaSharpService runtimeService => runtimeService.LogTrafficEnabled,
-                _ => false
-            };
-        }
-
-        private string ResolveDay1VlmSubmissionLogDirectory()
-        {
-            string relativeDirectory = string.IsNullOrWhiteSpace(day1VlmSubmissionLogDirectory)
-                ? "first_contact/debug/vlm_submissions"
-                : day1VlmSubmissionLogDirectory.Trim();
-
-            relativeDirectory = relativeDirectory
-                .Replace('\\', Path.DirectorySeparatorChar)
-                .Replace('/', Path.DirectorySeparatorChar);
-
-            return Path.IsPathRooted(relativeDirectory)
-                ? relativeDirectory
-                : Path.Combine(Application.persistentDataPath, relativeDirectory);
+            error = hasLlmStep
+                ? $"Day1 classifier pipeline must enable vision and use image key '{expectedImageKey}'."
+                : "Day1 classifier pipeline has no LLM step that can read an image.";
+            return false;
         }
 
         private IEnumerator GetJudgmentRoutine(Action<SatisfactionLevel> onComplete)
@@ -3392,6 +3449,13 @@ namespace DoodleDiplomacy.AI
             return string.IsNullOrWhiteSpace(judgmentSatisfactionKey)
                 ? DefaultSatisfactionStateKey
                 : judgmentSatisfactionKey.Trim();
+        }
+
+        private string GetDay1StimulusLabelKey()
+        {
+            return string.IsNullOrWhiteSpace(day1StimulusLabelKey)
+                ? "stimulus_label"
+                : day1StimulusLabelKey.Trim();
         }
 
         private static bool TryReadStateString(PipelineState state, string key, out string value)

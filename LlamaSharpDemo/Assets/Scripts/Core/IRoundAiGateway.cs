@@ -32,6 +32,7 @@ namespace DoodleDiplomacy.Core
         void GetPreview(Action<string> onComplete);
         void GetJudgment(Action<SatisfactionLevel> onComplete);
         void ClassifyVisualStimulus(Action<VisualStimulusClassificationResult> onComplete);
+        void EvaluateDay1ReactionTier(string label, Action<Day1ReactionEvaluationResult> onComplete);
         void CancelActiveOperations();
         void ResetRound();
     }

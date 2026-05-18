@@ -1,6 +1,7 @@
 using System;
 using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Dialogue;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Core
@@ -8,16 +9,12 @@ namespace DoodleDiplomacy.Core
     public sealed class RoundIntroSequenceProvider
     {
         private readonly Func<DialogueSequence> _sourceSequenceProvider;
-        private readonly Func<IngameTextTable> _textTableProvider;
 
         public DialogueSequence RuntimeSequence { get; private set; }
 
-        internal RoundIntroSequenceProvider(
-            Func<DialogueSequence> sourceSequenceProvider,
-            Func<IngameTextTable> textTableProvider)
+        internal RoundIntroSequenceProvider(Func<DialogueSequence> sourceSequenceProvider)
         {
             _sourceSequenceProvider = sourceSequenceProvider;
-            _textTableProvider = textTableProvider;
         }
 
         public void Rebuild()
@@ -30,19 +27,22 @@ namespace DoodleDiplomacy.Core
                 return;
             }
 
-            IngameTextTable table = _textTableProvider?.Invoke();
-            if (table == null)
-            {
-                return;
-            }
-
             RuntimeSequence = UnityEngine.Object.Instantiate(sourceSequence);
             RuntimeSequence.name = $"{sourceSequence.name} (Runtime)";
 
-            ApplyIntroSpeakerOverride(RuntimeSequence, table.introAdjutantSpeaker);
-            ApplyIntroLineOverride(RuntimeSequence, 0, table.introAdjutantLine1);
-            ApplyIntroLineOverride(RuntimeSequence, 1, table.introAdjutantLine2);
-            ApplyIntroLineOverride(RuntimeSequence, 2, table.introAdjutantLine3);
+            ApplyIntroSpeakerOverride(RuntimeSequence, L10n.T("speaker.adjutant", "Adjutant"));
+            ApplyIntroLineOverride(
+                RuntimeSequence,
+                0,
+                L10n.T("intro.adjutant.line1", "Ambassador, the alien delegation has arrived."));
+            ApplyIntroLineOverride(
+                RuntimeSequence,
+                1,
+                L10n.T("intro.adjutant.line2", "They cannot understand our language.\n\nWe must communicate through drawings."));
+            ApplyIntroLineOverride(
+                RuntimeSequence,
+                2,
+                L10n.T("intro.adjutant.line3", "Press the button in front of the alien to begin negotiations."));
         }
 
         public void Release()

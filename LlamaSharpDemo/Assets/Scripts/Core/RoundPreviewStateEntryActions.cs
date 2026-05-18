@@ -1,4 +1,5 @@
 using DoodleDiplomacy.Data;
+using DoodleDiplomacy.Localization;
 
 namespace DoodleDiplomacy.Core
 {
@@ -20,9 +21,7 @@ namespace DoodleDiplomacy.Core
         {
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.previewReadyHintMessage,
-                    DefaultPreviewReadyHintMessage));
+                L10n.T("round.preview.ready_hint", DefaultPreviewReadyHintMessage));
             UnityEngine.Debug.Log("[RoundManager] Drawing marked complete. Waiting for alien first-pass review.");
         }
 
@@ -32,9 +31,7 @@ namespace DoodleDiplomacy.Core
             _context.TerminalDisplay?.Clear();
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.previewAnalyzingMessage,
-                    DefaultPreviewAnalyzingMessage));
+                L10n.T("round.preview.analyzing", DefaultPreviewAnalyzingMessage));
 
             IRoundAiGateway aiGateway = _context.AiGateway;
             if (aiGateway != null && aiGateway.IsAvailable)
@@ -52,7 +49,7 @@ namespace DoodleDiplomacy.Core
                 return;
             }
 
-            _context.CachePreviewResult("(AI analysis unavailable)");
+            _context.CachePreviewResult(L10n.T("round.preview.ai_analysis_unavailable", "(AI analysis unavailable)"));
             _context.ChangeStateFromEntryAction(GameState.Preview);
         }
 
@@ -61,9 +58,7 @@ namespace DoodleDiplomacy.Core
             _context.IsPreviewTerminalOpen = false;
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.previewReadyToInspectMessage,
-                    DefaultPreviewReadyToInspectMessage));
+                L10n.T("round.preview.ready_to_inspect", DefaultPreviewReadyToInspectMessage));
             UnityEngine.Debug.Log("[RoundManager] Preview analysis complete. Waiting for submit or modify.");
         }
 
@@ -71,9 +66,7 @@ namespace DoodleDiplomacy.Core
         {
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.submittingHintMessage,
-                    DefaultSubmittingHintMessage));
+                L10n.T("round.submitting_hint", DefaultSubmittingHintMessage));
 
             IRoundAiGateway aiGateway = _context.AiGateway;
             if (aiGateway != null && aiGateway.IsAvailable)

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using DoodleDiplomacy.Core;
-using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Dialogue;
+using DoodleDiplomacy.Localization;
 
 namespace DoodleDiplomacy.Character
 {
@@ -27,7 +27,6 @@ namespace DoodleDiplomacy.Character
 
         [Header("Dialogue")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
-        [SerializeField] private IngameTextTable ingameTextTable;
 
         [Header("Timing")]
         [SerializeField] private float lookAtMonitorDuration = 1f;
@@ -326,47 +325,43 @@ namespace DoodleDiplomacy.Character
 
         private string GetReactionSpeaker()
         {
-            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
-            if (table == null || string.IsNullOrWhiteSpace(table.alienReactionSpeaker))
-            {
-                return DefaultReactionSpeaker;
-            }
-
-            return table.alienReactionSpeaker;
+            return L10n.T("speaker.alien", DefaultReactionSpeaker);
         }
 
         private string GetMutterText(SatisfactionLevel level)
         {
-            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
-            if (table == null)
-            {
-                return GetMappedText(MutterMap, level);
-            }
-
-            string text = table.GetMutterText(level);
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return GetMappedText(MutterMap, level);
-            }
-
-            return text;
+            return L10n.T(GetMutterKey(level), GetMappedText(MutterMap, level));
         }
 
         private string GetNarrationText(SatisfactionLevel level)
         {
-            IngameTextTable table = ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
-            if (table == null)
-            {
-                return GetMappedText(NarrationMap, level);
-            }
+            return L10n.T(GetNarrationKey(level), GetMappedText(NarrationMap, level));
+        }
 
-            string text = table.GetNarrationText(level);
-            if (string.IsNullOrWhiteSpace(text))
+        private static string GetMutterKey(SatisfactionLevel level)
+        {
+            return level switch
             {
-                return GetMappedText(NarrationMap, level);
-            }
+                SatisfactionLevel.VeryDissatisfied => "alien.reaction.mutter.very_dissatisfied",
+                SatisfactionLevel.Dissatisfied => "alien.reaction.mutter.dissatisfied",
+                SatisfactionLevel.Neutral => "alien.reaction.mutter.neutral",
+                SatisfactionLevel.Satisfied => "alien.reaction.mutter.satisfied",
+                SatisfactionLevel.VerySatisfied => "alien.reaction.mutter.very_satisfied",
+                _ => "alien.reaction.mutter.neutral"
+            };
+        }
 
-            return text;
+        private static string GetNarrationKey(SatisfactionLevel level)
+        {
+            return level switch
+            {
+                SatisfactionLevel.VeryDissatisfied => "alien.reaction.narration.very_dissatisfied",
+                SatisfactionLevel.Dissatisfied => "alien.reaction.narration.dissatisfied",
+                SatisfactionLevel.Neutral => "alien.reaction.narration.neutral",
+                SatisfactionLevel.Satisfied => "alien.reaction.narration.satisfied",
+                SatisfactionLevel.VerySatisfied => "alien.reaction.narration.very_satisfied",
+                _ => "alien.reaction.narration.neutral"
+            };
         }
 
         [ContextMenu("Test: VeryDissatisfied")]

@@ -61,9 +61,6 @@ namespace DoodleDiplomacy.Core
         [SerializeField] private EndingController endingController;
         [SerializeField] private TitleScreenController titleScreenController;
 
-        [Header("Text")]
-        [SerializeField] private IngameTextTable ingameTextTable;
-
         [Header("Sequences")]
         [SerializeField] private DialogueSequence introSequence;
 
@@ -555,8 +552,6 @@ namespace DoodleDiplomacy.Core
         void IRoundStateEntryContext.CachePreviewResult(string analysis) => CachePreviewResult(analysis);
         void IRoundStateEntryContext.ChangeStateFromEntryAction(GameState state) => ChangeState(state);
         void IRoundStateEntryContext.ShowHint(string speaker, string text) => ShowHint(speaker, text);
-        string IRoundStateEntryContext.GetConfiguredText(Func<IngameTextTable, string> selector, string fallback) =>
-            GetConfiguredText(selector, fallback);
         string IRoundStateEntryContext.GetDrawingReadyHintMessage() => GetDrawingReadyHintMessage();
         string IRoundStateEntryContext.BuildObjectGenerationFailureHint(string objectGenerationError) =>
             BuildObjectGenerationFailureHint(objectGenerationError);
@@ -579,8 +574,6 @@ namespace DoodleDiplomacy.Core
         void IRoundPlayerActionContext.ResetCachedInterpretationForRedraw() => ResetCachedInterpretationForRedraw();
         void IRoundPlayerActionContext.ShowPreviewTerminal() => ShowPreviewTerminal();
         void IRoundPlayerActionContext.ShowHint(string speaker, string text) => ShowHint(speaker, text);
-        string IRoundPlayerActionContext.GetConfiguredText(Func<IngameTextTable, string> selector, string fallback) =>
-            GetConfiguredText(selector, fallback);
         Coroutine IRoundStartupContext.StartStartupCoroutine(System.Collections.IEnumerator routine) => StartCoroutine(routine);
         void IRoundStartupContext.StopStartupCoroutine(Coroutine routine)
         {
@@ -671,22 +664,11 @@ namespace DoodleDiplomacy.Core
             return _services.TextProvider?.GetDrawingReadyHintMessage() ?? string.Empty;
         }
 
-        private string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback)
-        {
-            EnsureRoundServices();
-            return _services.TextProvider?.GetConfiguredText(selector, fallback) ?? fallback;
-        }
-
         private string BuildObjectGenerationFailureHint(string objectGenerationError)
         {
             EnsureRoundServices();
             return _services.TextProvider?.BuildObjectGenerationFailureHint(objectGenerationError)
                 ?? objectGenerationError;
-        }
-
-        private IngameTextTable ResolveIngameTextTable()
-        {
-            return ingameTextTable != null ? ingameTextTable : IngameTextTable.LoadDefault();
         }
 
         private void InitializeRoundServices()
@@ -704,8 +686,8 @@ namespace DoodleDiplomacy.Core
             _services.PlayerActionHandler = new RoundPlayerActionHandler(this);
             _services.StartupFlow = new RoundStartupFlow(this);
             _services.PreviewTerminalPresenter = new RoundPreviewTerminalPresenter(terminalDisplay, () => _services.HintPresenter);
-            _services.TextProvider = new RoundTextProvider(ResolveIngameTextTable, () => exitDrawingKey);
-            _services.IntroSequenceProvider = new RoundIntroSequenceProvider(() => introSequence, ResolveIngameTextTable);
+            _services.TextProvider = new RoundTextProvider(() => exitDrawingKey);
+            _services.IntroSequenceProvider = new RoundIntroSequenceProvider(() => introSequence);
             IDrawingFeature drawingFeature = ResolveDrawingFeature();
             _services.DrawingInteractionGate = drawingFeature != null
                 ? new RoundDrawingInteractionGate(drawingFeature)
@@ -749,8 +731,8 @@ namespace DoodleDiplomacy.Core
             _services.PlayerActionHandler ??= new RoundPlayerActionHandler(this);
             _services.StartupFlow ??= new RoundStartupFlow(this);
             _services.PreviewTerminalPresenter ??= new RoundPreviewTerminalPresenter(terminalDisplay, () => _services.HintPresenter);
-            _services.TextProvider ??= new RoundTextProvider(ResolveIngameTextTable, () => exitDrawingKey);
-            _services.IntroSequenceProvider ??= new RoundIntroSequenceProvider(() => introSequence, ResolveIngameTextTable);
+            _services.TextProvider ??= new RoundTextProvider(() => exitDrawingKey);
+            _services.IntroSequenceProvider ??= new RoundIntroSequenceProvider(() => introSequence);
 
             if (_services.DrawingInteractionGate == null)
             {

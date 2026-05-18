@@ -1,4 +1,3 @@
-using System;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Data;
 
@@ -27,6 +26,5 @@ namespace DoodleDiplomacy.Core
         void ShowPreviewTerminal();
         void OnInterpreterClose();
         void ShowHint(string speaker, string text);
-        string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback);
     }
 }

@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Gameplay;
+using DoodleDiplomacy.Localization;
+using TMPro;
 
 namespace DoodleDiplomacy.UI
 {
@@ -33,6 +35,7 @@ namespace DoodleDiplomacy.UI
 
             submitButton?.onClick.AddListener(OnSubmit);
             modifyButton?.onClick.AddListener(OnModify);
+            RefreshLocalizedText();
 
             Hide();
         }
@@ -40,13 +43,20 @@ namespace DoodleDiplomacy.UI
         private void OnEnable()
         {
             SubscribeStateSource();
+            L10n.LocaleChanged += OnLocaleChanged;
         }
 
         private void OnDestroy()
         {
             UnsubscribeStateSource();
+            L10n.LocaleChanged -= OnLocaleChanged;
             submitButton?.onClick.RemoveListener(OnSubmit);
             modifyButton?.onClick.RemoveListener(OnModify);
+        }
+
+        private void OnDisable()
+        {
+            L10n.LocaleChanged -= OnLocaleChanged;
         }
 
         // ── 공개 API ──────────────────────────────────────────────────────────
@@ -67,6 +77,31 @@ namespace DoodleDiplomacy.UI
 
         private void Show() => GameStateUiHelper.SetVisible(panel, true);
         private void Hide() => GameStateUiHelper.SetVisible(panel, false);
+
+        private void OnLocaleChanged(string locale)
+        {
+            RefreshLocalizedText();
+        }
+
+        private void RefreshLocalizedText()
+        {
+            SetButtonText(submitButton, L10n.T("ui.preview.submit", "SUBMIT"));
+            SetButtonText(modifyButton, L10n.T("ui.preview.modify", "MODIFY"));
+        }
+
+        private static void SetButtonText(Button button, string text)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(includeInactive: true);
+            if (label != null)
+            {
+                label.text = text;
+            }
+        }
 
         private bool IsObjectPairDrawingModeActive()
         {

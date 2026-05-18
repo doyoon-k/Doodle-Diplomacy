@@ -95,6 +95,50 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsFalse(VisualStimulusClassificationResult.LabelIndicatesWrittenText(label));
         }
 
+        [Test]
+        public void Day1ReactionEvaluationParsingAcceptsValidJson()
+        {
+            bool parsed = Day1ReactionEvaluationResult.TryFromJson(
+                "{\"reaction_tier\":\"strong\",\"reason\":\"weapon-like stimulus\"}",
+                out Day1ReactionEvaluationResult result);
+
+            Assert.IsTrue(parsed, result?.error);
+            Assert.AreEqual(ReactionTier.Strong, result.reactionTier);
+            Assert.AreEqual("weapon-like stimulus", result.reason);
+        }
+
+        [Test]
+        public void Day1ReactionEvaluationParsingRejectsUnknownTier()
+        {
+            bool parsed = Day1ReactionEvaluationResult.TryFromJson(
+                "{\"reaction_tier\":\"extreme\",\"reason\":\"unsupported\"}",
+                out Day1ReactionEvaluationResult result);
+
+            Assert.IsFalse(parsed);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(result.error));
+        }
+
+        [TestCase("blank")]
+        [TestCase("simple line")]
+        [TestCase("dot")]
+        [TestCase("basic shape")]
+        [TestCase("geometric shapes")]
+        [TestCase("circle")]
+        [TestCase("island")]
+        public void Day1SubmissionPolicyBlocksNonStimuli(string label)
+        {
+            Assert.IsTrue(Day1StimulusSubmissionPolicy.IsBlockedLabel(label));
+        }
+
+        [TestCase("abstract symbol")]
+        [TestCase("heart symbol")]
+        [TestCase("handgun")]
+        [TestCase("apple")]
+        public void Day1SubmissionPolicyAllowsRecognizableStimuli(string label)
+        {
+            Assert.IsFalse(Day1StimulusSubmissionPolicy.IsBlockedLabel(label));
+        }
+
         [TestCase("handgun", ReactionTier.Strong)]
         [TestCase("reproductive organ icon", ReactionTier.Strong)]
         [TestCase("abstract symbol", ReactionTier.Moderate)]

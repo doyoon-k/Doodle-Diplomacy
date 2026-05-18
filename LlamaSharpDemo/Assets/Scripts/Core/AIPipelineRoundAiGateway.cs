@@ -127,6 +127,17 @@ namespace DoodleDiplomacy.Core
             _bridge.ClassifyVisualStimulus(onComplete);
         }
 
+        public void EvaluateDay1ReactionTier(string label, Action<Day1ReactionEvaluationResult> onComplete)
+        {
+            if (_bridge == null)
+            {
+                onComplete?.Invoke(Day1ReactionEvaluationResult.Failed("AI bridge is missing."));
+                return;
+            }
+
+            _bridge.EvaluateDay1ReactionTier(label, onComplete);
+        }
+
         public void CancelActiveOperations()
         {
             _bridge?.CancelActiveOperations();

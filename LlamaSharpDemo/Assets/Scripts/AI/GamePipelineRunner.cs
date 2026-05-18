@@ -191,7 +191,7 @@ public class GamePipelineRunner : MonoBehaviour
 
     private IStateChainLink InstantiateCustomLink(PromptPipelineStep step)
     {
-        return PromptPipelineAsset.InstantiateCustomLink(step);
+        return PromptPipelineAsset.InstantiateCustomLink(step, _runtimeService);
     }
 
     private static PipelineState CreateErrorState(PipelineState sourceState, string error)

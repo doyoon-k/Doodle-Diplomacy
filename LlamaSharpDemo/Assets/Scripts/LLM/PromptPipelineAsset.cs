@@ -153,7 +153,7 @@ public class PromptPipelineAsset : ScriptableObject
         }
     }
 
-    public static IStateChainLink InstantiateCustomLink(PromptPipelineStep step)
+    public static IStateChainLink InstantiateCustomLink(PromptPipelineStep step, ILlmService service = null)
     {
         if (string.IsNullOrEmpty(step.customLinkTypeName))
         {
@@ -179,18 +179,30 @@ public class PromptPipelineAsset : ScriptableObject
         var args = (step.customLinkParameters ?? new List<CustomLinkParameter>())
             .Where(p => p != null && !string.IsNullOrWhiteSpace(p.key))
             .ToDictionary(p => p.key, p => p.value ?? string.Empty, StringComparer.Ordinal);
+        ScriptableObject customLinkAsset = step.customAsset != null ? step.customAsset : step.llmProfile;
 
-        // 1. Try constructor (Dictionary<string, string>, ScriptableObject) for custom parameter bags + asset.
-        var dictAssetCtor = type.GetConstructor(new[] { typeof(Dictionary<string, string>), typeof(ScriptableObject) });
-        if (dictAssetCtor != null)
+        // 1. Try constructor (Dictionary<string, string>, ScriptableObject, ILlmService) for
+        // custom links that need to run another LLM call through the active pipeline service.
+        var dictAssetServiceCtor = type.GetConstructor(new[] { typeof(Dictionary<string, string>), typeof(ScriptableObject), typeof(ILlmService) });
+        if (dictAssetServiceCtor != null)
         {
-            if (dictAssetCtor.Invoke(new object[] { args, step.customAsset }) is IStateChainLink instance)
+            if (dictAssetServiceCtor.Invoke(new object[] { args, customLinkAsset, service }) is IStateChainLink instance)
             {
                 return instance;
             }
         }
 
-        // 2. Try constructor (ScriptableObject or derived)
+        // 2. Try constructor (Dictionary<string, string>, ScriptableObject) for custom parameter bags + asset.
+        var dictAssetCtor = type.GetConstructor(new[] { typeof(Dictionary<string, string>), typeof(ScriptableObject) });
+        if (dictAssetCtor != null)
+        {
+            if (dictAssetCtor.Invoke(new object[] { args, customLinkAsset }) is IStateChainLink instance)
+            {
+                return instance;
+            }
+        }
+
+        // 3. Try constructor (ScriptableObject or derived)
         var assetCtor = type.GetConstructors()
             .FirstOrDefault(c =>
             {
@@ -200,13 +212,13 @@ public class PromptPipelineAsset : ScriptableObject
 
         if (assetCtor != null)
         {
-            if (assetCtor.Invoke(new object[] { step.customAsset }) is IStateChainLink instance)
+            if (assetCtor.Invoke(new object[] { customLinkAsset }) is IStateChainLink instance)
             {
                 return instance;
             }
         }
 
-        // 3. Try constructor (Dictionary<string, string>) for custom parameter bags.
+        // 4. Try constructor (Dictionary<string, string>) for custom parameter bags.
         var dictCtor = type.GetConstructor(new[] { typeof(Dictionary<string, string>) });
         if (dictCtor != null)
         {
@@ -216,7 +228,7 @@ public class PromptPipelineAsset : ScriptableObject
             }
         }
 
-        // 4. Try to bind simple constructors (string/int/float/double/bool/long) by parameter name.
+        // 5. Try to bind simple constructors (string/int/float/double/bool/long) by parameter name.
         var bindableCtor = FindBindableConstructor(type);
         if (bindableCtor != null)
         {
@@ -227,7 +239,7 @@ public class PromptPipelineAsset : ScriptableObject
             }
         }
 
-        // 5. Fallback to parameterless ctor.
+        // 6. Fallback to parameterless ctor.
         if (Activator.CreateInstance(type) is not IStateChainLink fallbackInstance)
         {
             throw new InvalidOperationException($"Failed to instantiate custom link '{step.customLinkTypeName}'.");

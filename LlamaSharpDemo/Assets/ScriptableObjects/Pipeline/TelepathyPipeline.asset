@@ -46,10 +46,39 @@ MonoBehaviour:
       value: 
     editorPosition: {x: -16, y: -58}
     guid: 701b0c4e-fd91-4ba7-b615-d5ef020d9cd7
+    nextStepGuid: 386ca406-4f56-4e9a-a19f-424294a15a33
+  - stepName: TranslateResponse
+    stepKind: 2
+    llmProfile: {fileID: 11400000, guid: 7d2a1b72f1cc4d5fb13a6e0c4a2d66f1, type: 2}
+    userPromptTemplate: 
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: SafeTranslateResponseChainLink, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: sourceKey
+      value: response
+    - key: outputKey
+      value: response
+    - key: localeKey
+      value: target_locale
+    - key: languageKey
+      value: target_language
+    - key: nativeLanguageKey
+      value: target_language_native
+    - key: enabledKey
+      value: llm_translation_enabled
+    editorPosition: {x: 596, y: -58}
+    guid: 386ca406-4f56-4e9a-a19f-424294a15a33
     nextStepGuid: 
   layoutSettings:
     inputNodePosition: {x: -173, y: -37}
-    outputNodePosition: {x: 625, y: -37}
+    outputNodePosition: {x: 1050, y: -37}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
     viewPosition: {x: 488, y: 166, z: 0}
@@ -57,4 +86,5 @@ MonoBehaviour:
     viewInitialized: 1
     snapshotPositions:
     - {x: 404, y: -37}
+    - {x: 820, y: -37}
     snapshotPositionsInitialized: 1

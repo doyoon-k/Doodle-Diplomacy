@@ -1,4 +1,5 @@
 using DoodleDiplomacy.Camera;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Core
@@ -40,9 +41,7 @@ namespace DoodleDiplomacy.Core
             {
                 _context.ShowHint(
                     "System",
-                    _context.GetConfiguredText(
-                        table => table.regeneratingReferencesMessage,
-                        DefaultRegeneratingReferencesMessage));
+                    L10n.T("round.references.regenerating", DefaultRegeneratingReferencesMessage));
                 _context.ChangeStateFromPlayerAction(GameState.Presenting);
                 return;
             }
@@ -62,9 +61,7 @@ namespace DoodleDiplomacy.Core
             {
                 _context.ShowHint(
                     "System",
-                    _context.GetConfiguredText(
-                        table => table.openTerminalFirstMessage,
-                        DefaultOpenTerminalFirstMessage));
+                    L10n.T("round.terminal.open_first", DefaultOpenTerminalFirstMessage));
                 return;
             }
 
@@ -96,9 +93,7 @@ namespace DoodleDiplomacy.Core
 
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.adjutantDisabledMessage,
-                    DefaultAdjutantDisabledMessage));
+                L10n.T("round.adjutant.disabled", DefaultAdjutantDisabledMessage));
         }
 
         public void OnTerminalClicked()

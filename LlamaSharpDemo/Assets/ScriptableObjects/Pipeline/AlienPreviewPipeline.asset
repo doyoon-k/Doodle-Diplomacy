@@ -73,16 +73,46 @@ MonoBehaviour:
       value: 
     editorPosition: {x: 357, y: -50}
     guid: c9e4f723-a51b-4d8e-b297-6f3c018a4e52
+    nextStepGuid: f10e99ce-8776-4cf8-a7e6-eadc23bd1d29
+  - stepName: TranslatePreviewResponse
+    stepKind: 2
+    llmProfile: {fileID: 11400000, guid: 7d2a1b72f1cc4d5fb13a6e0c4a2d66f1, type: 2}
+    userPromptTemplate: 
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 768
+    customLinkTypeName: SafeTranslateResponseChainLink, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: sourceKey
+      value: preview_scene_reading
+    - key: outputKey
+      value: response
+    - key: localeKey
+      value: target_locale
+    - key: languageKey
+      value: target_language
+    - key: nativeLanguageKey
+      value: target_language_native
+    - key: enabledKey
+      value: llm_translation_enabled
+    editorPosition: {x: 839, y: -50}
+    guid: f10e99ce-8776-4cf8-a7e6-eadc23bd1d29
     nextStepGuid: 
   layoutSettings:
     inputNodePosition: {x: -466, y: -40}
-    outputNodePosition: {x: 1005, y: -126}
+    outputNodePosition: {x: 1295, y: -126}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 552, y: 138, z: 0}
-    viewScale: {x: 1, y: 1, z: 1}
+    viewPosition: {x: 354, y: 132, z: 0}
+    viewScale: {x: 0.57175326, y: 0.57175326, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 166, y: 21}
     - {x: 772, y: -30}
+    - {x: 1054, y: -30}
     snapshotPositionsInitialized: 1

@@ -57,8 +57,6 @@ namespace DoodleDiplomacy.Core
         public void ReturnToWaitingForRoundAfterPresentingFailure() => _context.ReturnToWaitingForRoundAfterPresentingFailure();
         public void OnPresentingComplete() => _context.OnPresentingComplete();
         public void ShowHint(string speaker, string text) => _context.ShowHint(speaker, text);
-        public string GetConfiguredText(System.Func<IngameTextTable, string> selector, string fallback) =>
-            _context.GetConfiguredText(selector, fallback);
         public string GetDrawingReadyHintMessage() => _context.GetDrawingReadyHintMessage();
         public string BuildObjectGenerationFailureHint(string objectGenerationError) =>
             _context.BuildObjectGenerationFailureHint(objectGenerationError);
@@ -94,8 +92,6 @@ namespace DoodleDiplomacy.Core
         public void ChangeStateFromEntryAction(GameState state) => _context.ChangeStateFromEntryAction(state);
         public void OnSubmitComplete() => _context.OnSubmitComplete();
         public void ShowHint(string speaker, string text) => _context.ShowHint(speaker, text);
-        public string GetConfiguredText(System.Func<IngameTextTable, string> selector, string fallback) =>
-            _context.GetConfiguredText(selector, fallback);
     }
 
     internal sealed class RoundInterpreterStateEntryContextAdapter : IRoundInterpreterStateEntryContext
@@ -124,7 +120,5 @@ namespace DoodleDiplomacy.Core
 
         public void OnReactionComplete() => _context.OnReactionComplete();
         public void ShowHint(string speaker, string text) => _context.ShowHint(speaker, text);
-        public string GetConfiguredText(System.Func<IngameTextTable, string> selector, string fallback) =>
-            _context.GetConfiguredText(selector, fallback);
     }
 }

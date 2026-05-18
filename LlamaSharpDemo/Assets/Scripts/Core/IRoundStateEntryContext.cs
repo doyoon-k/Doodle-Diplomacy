@@ -40,7 +40,6 @@ namespace DoodleDiplomacy.Core
         void OnSubmitComplete();
         void OnReactionComplete();
         void ShowHint(string speaker, string text);
-        string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback);
         string GetDrawingReadyHintMessage();
         string BuildObjectGenerationFailureHint(string objectGenerationError);
     }
@@ -75,7 +74,6 @@ namespace DoodleDiplomacy.Core
         void ReturnToWaitingForRoundAfterPresentingFailure();
         void OnPresentingComplete();
         void ShowHint(string speaker, string text);
-        string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback);
         string GetDrawingReadyHintMessage();
         string BuildObjectGenerationFailureHint(string objectGenerationError);
     }
@@ -96,7 +94,6 @@ namespace DoodleDiplomacy.Core
         void ChangeStateFromEntryAction(GameState state);
         void OnSubmitComplete();
         void ShowHint(string speaker, string text);
-        string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback);
     }
 
     internal interface IRoundInterpreterStateEntryContext
@@ -111,6 +108,5 @@ namespace DoodleDiplomacy.Core
 
         void OnReactionComplete();
         void ShowHint(string speaker, string text);
-        string GetConfiguredText(Func<IngameTextTable, string> selector, string fallback);
     }
 }

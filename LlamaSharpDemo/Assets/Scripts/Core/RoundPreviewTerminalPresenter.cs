@@ -1,5 +1,6 @@
 using System;
 using DoodleDiplomacy.Devices;
+using DoodleDiplomacy.Localization;
 
 namespace DoodleDiplomacy.Core
 {
@@ -39,7 +40,7 @@ namespace DoodleDiplomacy.Core
         public void CacheResult(string analysis)
         {
             string resolvedAnalysis = string.IsNullOrWhiteSpace(analysis)
-                ? PreviewFallbackText
+                ? L10n.T("round.preview.terminal.fallback_analysis", PreviewFallbackText)
                 : analysis.Trim();
             _cachedOutput = BuildOutput(resolvedAnalysis);
         }
@@ -57,10 +58,12 @@ namespace DoodleDiplomacy.Core
 
         private static string BuildOutput(string previewLine)
         {
+            string fallbackText = L10n.T("round.preview.terminal.fallback_analysis", PreviewFallbackText);
             string line = string.IsNullOrWhiteSpace(previewLine)
-                ? PreviewFallbackText
+                ? fallbackText
                 : previewLine.Trim();
-            return $"{PreviewTerminalHeader}\n> {line}\n> _";
+            string header = L10n.T("round.preview.terminal.header", PreviewTerminalHeader);
+            return $"{header}\n> {line}\n> _";
         }
     }
 }

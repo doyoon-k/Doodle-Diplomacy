@@ -1,4 +1,5 @@
 using DoodleDiplomacy.Dialogue;
+using DoodleDiplomacy.Localization;
 
 namespace DoodleDiplomacy.Core
 {
@@ -13,12 +14,19 @@ namespace DoodleDiplomacy.Core
 
         public void Show(string speaker, string text)
         {
-            _subtitleDisplay?.Show(speaker, text);
+            _subtitleDisplay?.Show(LocalizeSpeaker(speaker), text);
         }
 
         public void Hide()
         {
             _subtitleDisplay?.Hide();
+        }
+
+        private static string LocalizeSpeaker(string speaker)
+        {
+            return string.Equals(speaker, "System", System.StringComparison.OrdinalIgnoreCase)
+                ? L10n.T("speaker.system", "System")
+                : speaker;
         }
     }
 }

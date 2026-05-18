@@ -1,4 +1,5 @@
 using DoodleDiplomacy.Data;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Core
@@ -45,18 +46,14 @@ namespace DoodleDiplomacy.Core
                 "System",
                 aiGateway != null && aiGateway.IsAvailable
                     ? aiGateway.GetRoundStartAvailabilityMessage()
-                    : _context.GetConfiguredText(
-                        table => table.objectGeneratorMissingMessage,
-                        DefaultObjectGeneratorMissingMessage));
+                    : L10n.T("round.objects.generator_missing", DefaultObjectGeneratorMissingMessage));
         }
 
         public void EnterPresenting(int stateVersion)
         {
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.generatingAlienObjectsMessage,
-                    DefaultGeneratingAlienObjectsMessage));
+                L10n.T("round.objects.generating", DefaultGeneratingAlienObjectsMessage));
 
             IRoundAiGateway aiGateway = _context.AiGateway;
             if (aiGateway != null && aiGateway.IsAvailable)
@@ -84,9 +81,7 @@ namespace DoodleDiplomacy.Core
             Debug.LogWarning("[RoundManager] AIPipelineBridge is missing. Cannot generate alien objects.");
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.objectGeneratorMissingMessage,
-                    DefaultObjectGeneratorMissingMessage));
+                L10n.T("round.objects.generator_missing", DefaultObjectGeneratorMissingMessage));
             _context.ReturnToWaitingForRoundAfterPresentingFailure();
         }
 
@@ -94,9 +89,7 @@ namespace DoodleDiplomacy.Core
         {
             _context.ShowHint(
                 "System",
-                _context.GetConfiguredText(
-                    table => table.objectPresentedHintMessage,
-                    DefaultObjectPresentedHintMessage));
+                L10n.T("round.objects.presented_hint", DefaultObjectPresentedHintMessage));
             Debug.Log("[RoundManager] Objects are ready. Waiting for tablet interaction.");
             _context.AiGateway?.StartNextRoundPrefetch();
         }

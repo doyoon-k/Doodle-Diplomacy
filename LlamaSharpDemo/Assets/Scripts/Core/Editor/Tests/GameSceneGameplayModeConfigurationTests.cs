@@ -9,6 +9,7 @@ namespace DoodleDiplomacy.Core.Editor.Tests
 {
     public sealed class GameSceneGameplayModeConfigurationTests
     {
+        private const string MainMenuScenePath = "Assets/Scenes/MainMenuScene.unity";
         private const string GameRootScenePath = "Assets/Scenes/GameRoot.unity";
         private const string GameScenePath = "Assets/Scenes/GameScene.unity";
         private const string GameFlowPath = "Assets/Data/FirstContactGameFlow.asset";
@@ -84,8 +85,17 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         [Test]
         public void GameplayFlowScenesAreEnabledInBuildSettings()
         {
+            AssertSceneEnabled(MainMenuScenePath);
             AssertSceneEnabled(GameRootScenePath);
             AssertSceneEnabled(GameScenePath);
+        }
+
+        [Test]
+        public void MainMenuIsBuildStartScene()
+        {
+            Assert.Greater(EditorBuildSettings.scenes.Length, 0, "Build Settings must contain at least one scene.");
+            Assert.AreEqual(MainMenuScenePath, EditorBuildSettings.scenes[0].path);
+            Assert.IsTrue(EditorBuildSettings.scenes[0].enabled, "MainMenuScene must be the enabled build start scene.");
         }
 
         private static void AssertSceneEnabled(string scenePath)

@@ -75,6 +75,7 @@ namespace DoodleDiplomacy.Gameplay
         private Texture2D _pendingTexture;
         private byte[] _pendingPngBytes;
         private string _pendingLabel;
+        private string _pendingDisplayLabel;
         private bool _entered;
 
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? Day1ModeId : modeId;
@@ -166,6 +167,7 @@ namespace DoodleDiplomacy.Gameplay
             _pendingTexture = null;
             _pendingPngBytes = null;
             _pendingLabel = null;
+            _pendingDisplayLabel = null;
             _scanVersion = 0;
 
             stimulusLibrary?.BeginSession(clearExisting: true);
@@ -189,6 +191,7 @@ namespace DoodleDiplomacy.Gameplay
             _pendingTexture = null;
             _pendingPngBytes = null;
             _pendingLabel = null;
+            _pendingDisplayLabel = null;
 
             if (clearCanvas)
             {
@@ -273,9 +276,10 @@ namespace DoodleDiplomacy.Gameplay
                 result = VisualStimulusClassificationResult.Failed("AI gateway is missing.");
             }
 
-            yield return Speak(ScienceOfficer, L10n.T(
+            ShowDialogue(ScienceOfficer, L10n.T(
                 "day1.scanning",
                 "Scanning drawing. Hold transmission."));
+            yield return null;
             yield return new WaitUntil(() => done);
             if (version != _scanVersion)
             {
@@ -293,34 +297,45 @@ namespace DoodleDiplomacy.Gameplay
             }
 
             string normalizedResultLabel = Day1ReactionTierEvaluator.NormalizeLabel(result.label);
+            if (Day1StimulusSubmissionPolicy.IsActionOrSceneLabel(normalizedResultLabel))
+            {
+                yield return Speak(ScienceOfficer, L10n.T(
+                    "day1.action_or_scene_detected",
+                    "Action or scene detected: {label}. Day 1 calibration only accepts still objects or repeated copies of one object.",
+                    L10n.Arg("label", GetDisplayLabel(result, normalizedResultLabel))));
+                BeginDrawing(clearCanvas: true);
+                _routine = null;
+                yield break;
+            }
+
+            if (Day1StimulusSubmissionPolicy.IsWrittenTextLabel(normalizedResultLabel))
+            {
+                yield return Speak(ScienceOfficer, L10n.T(
+                    "day1.written_text_detected",
+                    "Written text, letters, or symbols detected. The apparatus cannot calibrate language input this way. Please draw one picture instead."));
+                BeginDrawing(clearCanvas: true);
+                _routine = null;
+                yield break;
+            }
+
             if (result.objectCount <= 0 || Day1StimulusSubmissionPolicy.IsBlockedLabel(normalizedResultLabel))
             {
                 yield return Speak(ScienceOfficer, L10n.T(
                     "day1.non_stimulus_detected",
-                    "The apparatus cannot calibrate blank marks, simple lines, dots, islands, or basic geometric shapes. Please draw one recognizable object."));
+                    "The apparatus cannot calibrate blank marks, simple lines, dots, islands, letters, written symbols, or basic geometric shapes. Please draw one recognizable object."));
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
             }
 
-            if (VisualStimulusClassificationResult.LabelIndicatesWrittenText(normalizedResultLabel))
-            {
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.written_text_detected",
-                    "Written text detected. The apparatus cannot calibrate language input this way. Please draw one picture instead."));
-                BeginDrawing(clearCanvas: true);
-                _routine = null;
-                yield break;
-            }
-
-            if (result.objectCount != 1)
+            if (!Day1StimulusSubmissionPolicy.IsAllowedObjectCount(result.objectCount, normalizedResultLabel))
             {
                 string detectedSummary = string.IsNullOrWhiteSpace(normalizedResultLabel)
                     ? L10n.Label("multiple objects")
-                    : L10n.Label(normalizedResultLabel);
+                    : GetDisplayLabel(result, normalizedResultLabel);
                 yield return Speak(ScienceOfficer, L10n.T(
                     "day1.multiple_objects_detected",
-                    "Multiple objects detected: {label}. We cannot calibrate the response this way. Please draw one thing by itself.",
+                    "Multiple object types detected: {label}. Please draw one recognizable concept, or repeated copies of the same thing.",
                     L10n.Arg("label", detectedSummary)));
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
@@ -339,11 +354,12 @@ namespace DoodleDiplomacy.Gameplay
             }
 
             _pendingLabel = label;
+            _pendingDisplayLabel = GetDisplayLabel(result, label);
             ChangeState(GameState.Preview);
             yield return Speak(ScienceOfficer, L10n.T(
                 "day1.identifies_drawing",
                 "The apparatus identifies this drawing as: {label}. Confirm the transmission label.",
-                L10n.Arg("label", L10n.Label(label))));
+                L10n.Arg("label", _pendingDisplayLabel)));
             stimulusButtonPanel?.ShowConfirmation(ConfirmLabel, RedrawCandidate);
             _routine = null;
         }
@@ -399,7 +415,7 @@ namespace DoodleDiplomacy.Gameplay
 
         private IEnumerator ConfirmLabelRoutine(string label)
         {
-            string displayLabel = L10n.Label(label);
+            string displayLabel = GetPendingDisplayLabel(label);
             _context?.Drawing?.SetInteractionLocked(true);
             ChangeState(GameState.Submitting);
             ApplyCameraMode(GameState.Submitting);
@@ -568,7 +584,7 @@ namespace DoodleDiplomacy.Gameplay
 
         private IEnumerator Speak(string speaker, string text)
         {
-            _context?.Subtitles?.Show(LocalizeSpeaker(speaker), text);
+            ShowDialogue(speaker, text);
 
             yield return null;
 
@@ -588,6 +604,28 @@ namespace DoodleDiplomacy.Gameplay
             {
                 yield return null;
             }
+        }
+
+        private void ShowDialogue(string speaker, string text)
+        {
+            _context?.Subtitles?.Show(LocalizeSpeaker(speaker), text);
+        }
+
+        private string GetDisplayLabel(VisualStimulusClassificationResult result, string fallbackLabel)
+        {
+            return !string.IsNullOrWhiteSpace(result?.localizedLabel)
+                ? result.localizedLabel.Trim()
+                : L10n.Label(fallbackLabel);
+        }
+
+        private string GetPendingDisplayLabel(string label)
+        {
+            string normalizedLabel = Day1ReactionTierEvaluator.NormalizeLabel(label);
+            string normalizedPendingLabel = Day1ReactionTierEvaluator.NormalizeLabel(_pendingLabel);
+            return !string.IsNullOrWhiteSpace(_pendingDisplayLabel) &&
+                   string.Equals(normalizedLabel, normalizedPendingLabel, StringComparison.Ordinal)
+                ? _pendingDisplayLabel.Trim()
+                : L10n.Label(label);
         }
 
         private static bool GetDialogueAdvanceThisFrame()

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Day1ReactionEvaluatorPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: Day1ReactionEvaluatorPipeline
-  description: Day 1 alien neural response tier evaluator. Uses the approved classifier
-    label and returns reaction_tier plus reason.
+  description: Day 1 alien neural response tier evaluator. Returns reaction_tier
+    plus English reason for logs.
   steps:
   - stepName: Day1ReactionEvaluator
     stepKind: 0
@@ -35,17 +35,17 @@ MonoBehaviour:
     customLinkTypeName: 
     customAsset: {fileID: 0}
     customLinkParameters: []
-    editorPosition: {x: -24, y: -40}
+    editorPosition: {x: -382, y: -56}
     guid: 91f440e3-5fe5-4ba1-99e3-d08e4cb2ed82
     nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -360, y: -40}
+    inputNodePosition: {x: -579, y: -40}
     outputNodePosition: {x: 590, y: -40}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 240, y: -220, z: 0}
+    viewPosition: {x: -67, y: 97, z: 0}
     viewScale: {x: 1, y: 1, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 160, y: -40}
+    - {x: 105, y: 45}
     snapshotPositionsInitialized: 1

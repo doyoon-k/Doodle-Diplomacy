@@ -10,15 +10,18 @@ namespace DoodleDiplomacy.Core
     {
         public int objectCount;
         public string label = string.Empty;
+        public string localizedLabel = string.Empty;
         public string error = string.Empty;
 
         private const string ObjectCountKey = "object_count";
         private const string LabelKey = "label";
+        private const string LocalizedLabelKey = "localized_label";
 
         private static readonly HashSet<string> AllowedKeys = new(StringComparer.Ordinal)
         {
             ObjectCountKey,
             LabelKey,
+            LocalizedLabelKey,
             PromptPipelineConstants.ErrorKey
         };
 
@@ -79,6 +82,7 @@ namespace DoodleDiplomacy.Core
             {
                 objectCount = 0,
                 label = string.Empty,
+                localizedLabel = string.Empty,
                 error = string.IsNullOrWhiteSpace(message) ? "Classification unstable." : message.Trim()
             };
         }
@@ -132,6 +136,7 @@ namespace DoodleDiplomacy.Core
             {
                 objectCount = objectCount,
                 label = label,
+                localizedLabel = ReadOptionalLabel(state, LocalizedLabelKey),
                 error = string.Empty
             };
             return true;
@@ -189,6 +194,7 @@ namespace DoodleDiplomacy.Core
                 {
                     objectCount = objectCount,
                     label = label,
+                    localizedLabel = ReadOptionalLabel(root, LocalizedLabelKey),
                     error = string.Empty
                 };
                 return true;
@@ -320,6 +326,24 @@ namespace DoodleDiplomacy.Core
         {
             label = value?.Trim() ?? string.Empty;
             return !string.IsNullOrWhiteSpace(label);
+        }
+
+        private static string ReadOptionalLabel(PipelineState state, string key)
+        {
+            return state != null &&
+                   state.TryGetString(key, out string value) &&
+                   TryParseLabel(value, out string label)
+                ? label
+                : string.Empty;
+        }
+
+        private static string ReadOptionalLabel(JsonElement root, string key)
+        {
+            return root.ValueKind == JsonValueKind.Object &&
+                   root.TryGetProperty(key, out JsonElement element) &&
+                   TryReadLabel(element, out string label)
+                ? label
+                : string.Empty;
         }
 
         private static bool TryReadLabel(JsonElement element, out string label)

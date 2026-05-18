@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using LLama.Abstractions;
 using NUnit.Framework;
 using UnityEngine;
@@ -69,6 +70,47 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
             Assert.AreEqual("Alien1: 위치를 지켜.", state.GetString(PromptPipelineConstants.AnswerKey));
             StringAssert.Contains("Do not summarize, expand, soften, intensify, censor, or rewrite", service.LastPrompt);
             StringAssert.DoesNotContain("Keep the tone and brevity suitable for in-game UI", service.LastPrompt);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+    }
+
+    [Test]
+    public void Execute_CustomSourceAndOutputKeysStoresLocalizedLabel()
+    {
+        var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
+        var service = new FakeLlmService("{\"response\":\"사과\"}");
+        LlmServiceLocator.Register(service);
+
+        try
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                ["sourceKey"] = "label",
+                ["outputKey"] = "localized_label",
+                ["localeKey"] = PromptPipelineConstants.TargetLocaleKey,
+                ["languageKey"] = PromptPipelineConstants.TargetLanguageKey,
+                ["nativeLanguageKey"] = PromptPipelineConstants.TargetLanguageNativeNameKey,
+                ["enabledKey"] = PromptPipelineConstants.LlmTranslationEnabledKey,
+                ["promptStyle"] = "label",
+            };
+            var link = new SafeTranslateResponseChainLink(parameters, profile);
+            var state = new PipelineState();
+            state.SetString("label", "apple");
+            state.SetString(PromptPipelineConstants.TargetLocaleKey, "ko-KR");
+            state.SetString(PromptPipelineConstants.TargetLanguageKey, "Korean");
+            state.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "한국어");
+
+            RunEnumerator(link.Execute(state, _ => { }));
+
+            Assert.AreEqual(1, service.CallCount);
+            Assert.AreEqual("apple", state.GetString("label"));
+            Assert.AreEqual("사과", state.GetString("localized_label"));
+            StringAssert.Contains("short English UI label", service.LastPrompt);
+            StringAssert.Contains("apple", service.LastPrompt);
+            StringAssert.DoesNotContain("speaker labels", service.LastPrompt);
         }
         finally
         {

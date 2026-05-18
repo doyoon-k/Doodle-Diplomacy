@@ -25,6 +25,7 @@ public class SafeTranslateResponseChainLink : IStateChainLink, ICustomLinkStateP
     private readonly string _languageKey;
     private readonly string _nativeLanguageKey;
     private readonly string _enabledKey;
+    private readonly string _promptStyle;
     private readonly ILlmService _service;
 
     public SafeTranslateResponseChainLink()
@@ -60,6 +61,7 @@ public class SafeTranslateResponseChainLink : IStateChainLink, ICustomLinkStateP
         _languageKey = GetParameter(parameters, "languageKey", DefaultLanguageKey);
         _nativeLanguageKey = GetParameter(parameters, "nativeLanguageKey", DefaultNativeLanguageKey);
         _enabledKey = GetParameter(parameters, "enabledKey", DefaultEnabledKey);
+        _promptStyle = GetParameter(parameters, "promptStyle", string.Empty);
     }
 
     public IEnumerator Execute(PipelineState state, Action<PipelineState> onDone)
@@ -111,7 +113,9 @@ public class SafeTranslateResponseChainLink : IStateChainLink, ICustomLinkStateP
 
         string targetLanguage = state.GetString(_languageKey, targetLocale);
         string nativeLanguage = state.GetString(_nativeLanguageKey, targetLanguage);
-        string prompt = BuildTranslationPrompt(sourceText, targetLanguage, nativeLanguage, targetLocale);
+        string prompt = UsesLabelPrompt(_promptStyle)
+            ? BuildLabelTranslationPrompt(sourceText, targetLanguage, nativeLanguage, targetLocale)
+            : BuildTranslationPrompt(sourceText, targetLanguage, nativeLanguage, targetLocale);
         string rawResponse = null;
         Debug.Log(
             $"[SafeTranslateResponseChainLink] Translating state key '{_sourceKey}' to '{targetLocale}' " +
@@ -195,6 +199,34 @@ public class SafeTranslateResponseChainLink : IStateChainLink, ICustomLinkStateP
         builder.AppendLine("Source text:");
         builder.Append(sourceText);
         return builder.ToString();
+    }
+
+    private static string BuildLabelTranslationPrompt(
+        string sourceText,
+        string targetLanguage,
+        string nativeLanguage,
+        string targetLocale)
+    {
+        string languageLabel = BuildLanguageLabel(targetLanguage, nativeLanguage);
+        var builder = new StringBuilder();
+        builder.Append("Translate this short English UI label to ");
+        builder.Append(languageLabel);
+        builder.Append(" (");
+        builder.Append(string.IsNullOrWhiteSpace(targetLocale) ? "target locale" : targetLocale.Trim());
+        builder.AppendLine(").");
+        builder.AppendLine("Return only JSON: {\"response\":\"...\"}");
+        builder.AppendLine("Keep it short and natural. Do not add explanations.");
+        builder.AppendLine();
+        builder.AppendLine("Label:");
+        builder.Append(sourceText);
+        return builder.ToString();
+    }
+
+    private static bool UsesLabelPrompt(string promptStyle)
+    {
+        return string.Equals(promptStyle, "label", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(promptStyle, "ui_label", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(promptStyle, "short", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string BuildLanguageLabel(string targetLanguage, string nativeLanguage)

@@ -15,44 +15,32 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"object_count":{"type":"number"},"label":{"type":"string","minLength":1}},"required":["object_count","label"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  systemPromptTemplate: 'Classify the completed drawing by visual appearance only.
-
-
-
-    Return
+  systemPromptTemplate: 'Classify the drawing by visual appearance only. Return
     only JSON:
 
-    {"object_count":number,"label":"short lowercase noun phrase"}
-
-
+    {"object_count":number,"label":"short lowercase English label"}
 
     Rules:
 
-    - Count independently depicted subjects, not visual details or subcomponents.
+    - Count separate depicted subjects, not parts or details.
 
-    - First choose the most natural single noun phrase for the whole drawing.
+    - Label must
+    stay English.
 
-    - Return object_count greater than 1 only when the drawing clearly contains
-    multiple independently nameable subjects.
+    - Same kind repeated: use one plural concept label, e.g. "apples",
+    "eyes", "breasts".
 
-    - If one ordinary object name explains
-    the drawing as a whole, return object_count: 1.
+    - Different kinds: join distinct labels with "and",
+    e.g. "apple and banana".
 
-    - If the drawing is primarily letters, numbers, handwriting,
-    or words, return {"object_count":1,"label":"written text"}.
+    - Action, movement, relationship, or scene:
+    {"object_count":0,"label":"action or scene"}.
 
-    - If written
-    text appears with another visual item, count it separately and include "written
-    text" in the label, such as "apple and written text".
+    - Text or handwriting:
+    label "written text"; if with an object, include "and written text".
 
-    - If blank or mostly
-    empty, return {"object_count":0,"label":"blank"}.
-
-    - Do not infer story,
-    intention, psychology, or morality.
-
-    - Do not add fields, markdown, confidence,
-    tags, or explanation.'
+    -
+    Blank or mostly empty: {"object_count":0,"label":"blank"}.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:
@@ -82,11 +70,11 @@ MonoBehaviour:
     temperature: 0
     top_p: 0.9
     top_k: 20
-    num_predict: 220
+    num_predict: 128
     repeat_penalty: 1.05
     seed: 0
-  model: Models/gemma-3-4b-it-q4_0.gguf
-  visionProjectorModel: Models/mmproj-model-f16-4B.gguf
+  model: Models/gemma-3-4b-it-Q4_K_M.gguf
+  visionProjectorModel: Models/mmproj-model-f16.gguf
   visionProjectorRelativeToStreamingAssets: 1
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1

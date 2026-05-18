@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Day1StimulusClassifierPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: Day1StimulusClassifierPipeline
-  description: Day 1 completed drawing VLM classifier. Returns object_count and label
-    only; written text must be labeled as written text.
+  description: 'Stage 1: English VLM classifier. Stage 2: translate label for UI.
+    Returns object_count, label, and localized_label.'
   steps:
   - stepName: Day1StimulusClassifier
     stepKind: 0
@@ -36,15 +36,47 @@ MonoBehaviour:
       value: 
     editorPosition: {x: -168, y: -40}
     guid: 07894473-8e85-40ba-80f0-b481a5c46dcb
+    nextStepGuid: d2e4e5b5-6d3f-4c6d-8cc0-0cf1cf9b9d4c
+  - stepName: TranslateStimulusLabel
+    stepKind: 2
+    llmProfile: {fileID: 11400000, guid: 7d2a1b72f1cc4d5fb13a6e0c4a2d66f1, type: 2}
+    userPromptTemplate: 
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: SafeTranslateResponseChainLink, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: sourceKey
+      value: label
+    - key: outputKey
+      value: localized_label
+    - key: localeKey
+      value: target_locale
+    - key: languageKey
+      value: target_language
+    - key: nativeLanguageKey
+      value: target_language_native
+    - key: enabledKey
+      value: llm_translation_enabled
+    - key: promptStyle
+      value: label
+    editorPosition: {x: 360, y: -40}
+    guid: d2e4e5b5-6d3f-4c6d-8cc0-0cf1cf9b9d4c
     nextStepGuid: 
   layoutSettings:
     inputNodePosition: {x: -420, y: 0}
-    outputNodePosition: {x: 664, y: -46}
+    outputNodePosition: {x: 908, y: -46}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 542, y: -326.66666, z: 0}
+    viewPosition: {x: 719, y: 131, z: 0}
     viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 352.66666, y: -27.333336}
+    - {x: 640, y: -27.333336}
     snapshotPositionsInitialized: 1

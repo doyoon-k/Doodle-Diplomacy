@@ -334,15 +334,25 @@ MonoBehaviour:
     - locale: ko-KR
       text: 분류가 불안정합니다. 반응 데이터가 오염될 수 있습니다. 다시 그려 주십시오.
   - key: day1.written_text_detected
-    sourceText: Written text detected. The apparatus cannot calibrate language input this way. Please draw one picture instead.
+    sourceText: Written text, letters, or symbols detected. The apparatus cannot calibrate language input this way. Please draw one picture instead.
     translations:
     - locale: ko-KR
-      text: 문자가 감지되었습니다. 이 장치는 언어 입력으로 보정할 수 없습니다. 대신 그림 하나를 그려 주십시오.
+      text: 문자, 글자 또는 기호가 감지되었습니다. 이 장치는 언어 입력으로 보정할 수 없습니다. 대신 그림 하나를 그려 주십시오.
+  - key: day1.non_stimulus_detected
+    sourceText: The apparatus cannot calibrate blank marks, simple lines, dots, islands, letters, written symbols, or basic geometric shapes. Please draw one recognizable object.
+    translations:
+    - locale: ko-KR
+      text: 이 장치는 빈 표시, 단순한 선, 점, 섬, 글자, 문자 기호 또는 기본 도형으로는 보정할 수 없습니다. 알아볼 수 있는 사물 하나를 그려 주십시오.
+  - key: day1.action_or_scene_detected
+    sourceText: "Action or scene detected: {label}. Day 1 calibration only accepts still objects or repeated copies of one object."
+    translations:
+    - locale: ko-KR
+      text: "행동 또는 장면이 감지되었습니다: {label}. Day 1 보정은 정적인 사물 또는 같은 사물의 반복만 허용합니다."
   - key: day1.multiple_objects_detected
-    sourceText: "Multiple objects detected: {label}. We cannot calibrate the response this way. Please draw one thing by itself."
+    sourceText: "Multiple object types detected: {label}. Please draw one recognizable concept, or repeated copies of the same thing."
     translations:
     - locale: ko-KR
-      text: "여러 물체가 감지되었습니다: {label}. 이런 방식으로는 반응을 보정할 수 없습니다. 하나의 대상만 그려 주십시오."
+      text: "여러 종류의 물체가 감지되었습니다: {label}. 한 가지 개념만 그리거나 같은 물체를 반복해서 그려 주십시오."
   - key: day1.identifies_drawing
     sourceText: "The apparatus identifies this drawing as: {label}. Confirm the transmission label."
     translations:

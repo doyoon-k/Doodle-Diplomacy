@@ -18,6 +18,20 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsTrue(parsed, result?.error);
             Assert.AreEqual(1, result.objectCount);
             Assert.AreEqual("apple", result.label);
+            Assert.AreEqual(string.Empty, result.localizedLabel);
+        }
+
+        [Test]
+        public void VisualStimulusParsingAcceptsLocalizedLabel()
+        {
+            bool parsed = VisualStimulusClassificationResult.TryFromJson(
+                "{\"object_count\":1,\"label\":\"apple\",\"localized_label\":\"사과\"}",
+                out VisualStimulusClassificationResult result);
+
+            Assert.IsTrue(parsed, result?.error);
+            Assert.AreEqual(1, result.objectCount);
+            Assert.AreEqual("apple", result.label);
+            Assert.AreEqual("사과", result.localizedLabel);
         }
 
         [Test]
@@ -125,9 +139,34 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         [TestCase("geometric shapes")]
         [TestCase("circle")]
         [TestCase("island")]
+        [TestCase("characters")]
+        [TestCase("letters")]
+        [TestCase("written symbols")]
         public void Day1SubmissionPolicyBlocksNonStimuli(string label)
         {
             Assert.IsTrue(Day1StimulusSubmissionPolicy.IsBlockedLabel(label));
+        }
+
+        [TestCase("characters")]
+        [TestCase("letter")]
+        [TestCase("letters")]
+        [TestCase("alphabet characters")]
+        [TestCase("written symbols")]
+        [TestCase("glyphs")]
+        [TestCase("number")]
+        [TestCase("handwriting")]
+        public void Day1SubmissionPolicyDetectsWrittenTextAliases(string label)
+        {
+            Assert.IsTrue(Day1StimulusSubmissionPolicy.IsWrittenTextLabel(label));
+        }
+
+        [TestCase("cartoon character")]
+        [TestCase("abstract symbol")]
+        [TestCase("heart symbol")]
+        [TestCase("textured ball")]
+        public void Day1SubmissionPolicyDoesNotTreatObjectLabelsAsWrittenText(string label)
+        {
+            Assert.IsFalse(Day1StimulusSubmissionPolicy.IsWrittenTextLabel(label));
         }
 
         [TestCase("abstract symbol")]
@@ -137,6 +176,48 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         public void Day1SubmissionPolicyAllowsRecognizableStimuli(string label)
         {
             Assert.IsFalse(Day1StimulusSubmissionPolicy.IsBlockedLabel(label));
+        }
+
+        [TestCase("action")]
+        [TestCase("action or scene")]
+        [TestCase("running")]
+        [TestCase("person running")]
+        [TestCase("running person")]
+        [TestCase("two people interacting")]
+        [TestCase("relationship scene")]
+        public void Day1SubmissionPolicyDetectsActionsAndScenes(string label)
+        {
+            Assert.IsTrue(Day1StimulusSubmissionPolicy.IsActionOrSceneLabel(label));
+        }
+
+        [TestCase("shoe")]
+        [TestCase("running shoe")]
+        [TestCase("dancing shoes")]
+        [TestCase("chair")]
+        public void Day1SubmissionPolicyDoesNotTreatObjectNamesAsActions(string label)
+        {
+            Assert.IsFalse(Day1StimulusSubmissionPolicy.IsActionOrSceneLabel(label));
+        }
+
+        [TestCase(1, "apple", true)]
+        [TestCase(2, "two breasts", true)]
+        [TestCase(2, "breasts", true)]
+        [TestCase(2, "pair of eyes", true)]
+        [TestCase(2, "two apples", true)]
+        [TestCase(3, "three apples", true)]
+        [TestCase(5, "apples", true)]
+        [TestCase(3, "three eyes", true)]
+        [TestCase(2, "apple and banana", false)]
+        [TestCase(2, "apple, banana", false)]
+        [TestCase(2, "apple with banana", false)]
+        [TestCase(2, "different fruits", false)]
+        [TestCase(2, "multiple objects", false)]
+        public void Day1SubmissionPolicyAllowsOnlySingleStimulusObjectCounts(
+            int objectCount,
+            string label,
+            bool expected)
+        {
+            Assert.AreEqual(expected, Day1StimulusSubmissionPolicy.IsAllowedObjectCount(objectCount, label));
         }
 
         [TestCase("handgun", ReactionTier.Strong)]

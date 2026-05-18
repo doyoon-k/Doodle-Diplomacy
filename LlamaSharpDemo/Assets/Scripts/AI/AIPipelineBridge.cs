@@ -120,7 +120,7 @@ namespace DoodleDiplomacy.AI
         [SerializeField] private PromptPipelineAsset telepathyPipeline;
         [Tooltip("Round keyword selection pipeline. Expected output key: words")]
         [SerializeField] private PromptPipelineAsset wordsSelectionPipeline;
-        [Tooltip("Day 1 visual stimulus classifier. Expected output keys: object_count, label")]
+        [Tooltip("Day 1 visual stimulus classifier. Expected output keys: object_count, label, localized_label")]
         [SerializeField] private PromptPipelineAsset day1StimulusClassifierPipeline;
         [Tooltip("Day 1 alien neural response evaluator. Expected output keys: reaction_tier, reason")]
         [SerializeField] private PromptPipelineAsset day1ReactionEvaluatorPipeline;
@@ -2682,6 +2682,20 @@ namespace DoodleDiplomacy.AI
             state.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "English");
         }
 
+        private static void RemoveLocalizationState(PipelineState state)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            state.Remove(PromptPipelineConstants.LlmTranslationEnabledKey);
+            state.Remove(PromptPipelineConstants.SourceLocaleKey);
+            state.Remove(PromptPipelineConstants.TargetLocaleKey);
+            state.Remove(PromptPipelineConstants.TargetLanguageKey);
+            state.Remove(PromptPipelineConstants.TargetLanguageNativeNameKey);
+        }
+
         private IEnumerator PrepareRoundKeywordsRoutine()
         {
             bool oldRoundStartReady = IsRoundStartReady;
@@ -3016,6 +3030,7 @@ namespace DoodleDiplomacy.AI
             }
 
             var state = new PipelineState();
+            ApplyLocalizationState(state);
             state.SetImage(drawingImageKey, drawingTexture);
 
             bool done = false;
@@ -3027,6 +3042,7 @@ namespace DoodleDiplomacy.AI
             });
             yield return new WaitUntil(() => done);
 
+            RemoveLocalizationState(finalState);
             if (VisualStimulusClassificationResult.TryFromPipelineState(finalState, out VisualStimulusClassificationResult classification))
             {
                 onComplete?.Invoke(classification);

@@ -15,47 +15,30 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"reaction_tier":{"type":"string","enum":["none","subtle","moderate","strong"]},"reason":{"type":"string","minLength":1,"maxLength":160}},"required":["reaction_tier","reason"],"additionalProperties":false}'
   stream: 0
   keepAlive: 0
-  systemPromptTemplate: 'You estimate an alien delegation''s Day 1 neural response
-    intensity to one classified drawing stimulus.
-
-
-    Input is a short lowercase
-    noun phrase from a visual classifier. The game already rejects blank marks, simple
-    lines, dots, islands, basic geometric shapes, written text, and multiple objects.
-
-
-    Judge
-    salience, not approval, morality, art quality, or player intent. Aliens may react
-    strongly to biologically or culturally loaded stimuli even if they dislike the
-    stimulus.
-
-
-    Return only JSON:
+  systemPromptTemplate: 'Estimate the alien delegation''s Day 1 neural response
+    to this approved English object label. Return only JSON:
 
     {"reaction_tier":"none|subtle|moderate|strong","reason":"short
-    concrete reason"}
+    English reason"}
+
+
+    Judge salience, not approval or art quality. Do not invent context.
 
 
     Tiers:
 
-    - none: only for an unusable or near-empty
-    non-object that should have been blocked.
+    - none: unusable non-object fallback.
 
-    - subtle: ordinary everyday object,
-    food, furniture, basic tool, vehicle, plant, or low-charge nature object.
+    - subtle: ordinary object, food, furniture, tool, vehicle, plant.
 
-    -
-    moderate: living creature, alien, face, body part, home, shelter, child, family
-    cue, flag, abstract symbol, cultural symbol, or social identity signal.
+    - moderate: living creature, alien, face, body part, home, child,
+    family cue, flag, symbol, identity signal.
 
-    -
-    strong: weapon, direct threat, blood, death, corpse, skull, reproductive anatomy,
-    sacred authority symbol, political authority symbol, or anything likely to trigger
-    immediate cross-delegate attention.
+    - strong: weapon, threat, blood, death, corpse,
+    skull, reproductive anatomy, sacred or political authority symbol.
 
 
-    If uncertain, choose the lower tier.
-    Do not invent context beyond the label.'
+    If uncertain, choose the lower tier.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:
@@ -86,17 +69,17 @@ MonoBehaviour:
     minItems: 
     maxItems: 
   modelParams:
-    temperature: 0.15
+    temperature: 0
     top_p: 0.85
     top_k: 20
-    num_predict: 280
+    num_predict: 128
     repeat_penalty: 1.08
     seed: 0
-  model: Models/Qwen3VL-4B-Instruct-Q4_K_M.gguf
+  model: Models/gemma-3-4b-it-Q4_K_M.gguf
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1
     contextSize: 2048
-    gpuLayerCount: 16
+    gpuLayerCount: 999
     threads: 12

@@ -10,7 +10,6 @@ namespace DoodleDiplomacy.Devices
     public sealed class TabletPhysicalControlsController : MonoBehaviour
     {
         private const int SpectrumSnapCount = 32;
-        private const float DefaultOverlayDepthOffset = -0.0005f;
 
         [Header("References")]
         [SerializeField] private DrawingBoardController drawingBoard;
@@ -70,8 +69,6 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private Renderer clearOverlayRenderer;
         [FormerlySerializedAs("historyOverlayDisabledAlpha")]
         [SerializeField] private float buttonOverlayDisabledAlpha = 1f;
-        [FormerlySerializedAs("historyOverlayLocalOffset")]
-        [SerializeField] private Vector3 buttonOverlayLocalOffset = Vector3.zero;
 
         [Header("Spectrum")]
         [SerializeField] private Collider spectrumBarCollider;
@@ -727,47 +724,8 @@ namespace DoodleDiplomacy.Devices
             }
 
             overlayRenderer.sharedMaterial = buttonOverlayMaterial;
-            overlayRenderer.transform.localPosition = GetOverlayLocalPosition();
-            overlayRenderer.transform.localScale = ComputeOverlayLocalScale(buttonRenderer, iconTexture);
             SetOverlayTexture(overlayRenderer, iconTexture);
             SetOverlayRendererEnabled(overlayRenderer, true);
-        }
-
-        private Vector3 GetOverlayLocalPosition()
-        {
-            Vector3 position = buttonOverlayLocalOffset;
-            if (Mathf.Abs(position.z) < 0.00001f)
-            {
-                position.z = DefaultOverlayDepthOffset;
-            }
-
-            return position;
-        }
-
-        private Vector3 ComputeOverlayLocalScale(Renderer buttonRenderer, Texture2D iconTexture)
-        {
-            float buttonWidth = Mathf.Abs(buttonRenderer.transform.localScale.x);
-            float buttonHeight = Mathf.Abs(buttonRenderer.transform.localScale.y);
-            if (buttonWidth <= 0.0001f || buttonHeight <= 0.0001f || iconTexture == null || iconTexture.height == 0)
-            {
-                return Vector3.one;
-            }
-
-            float buttonAspect = buttonWidth / buttonHeight;
-            float iconAspect = iconTexture.width / (float)iconTexture.height;
-
-            float scaleX = 1f;
-            float scaleY = 1f;
-            if (iconAspect > buttonAspect)
-            {
-                scaleY = buttonAspect / iconAspect;
-            }
-            else
-            {
-                scaleX = iconAspect / buttonAspect;
-            }
-
-            return new Vector3(scaleX, scaleY, 1f);
         }
 
         private void SetOverlayTexture(Renderer overlayRenderer, Texture2D iconTexture)

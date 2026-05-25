@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Character;
 using DoodleDiplomacy.Core;
@@ -33,6 +34,13 @@ namespace DoodleDiplomacy.Gameplay
         [SerializeField] private TerminalDisplay terminalDisplay;
         [SerializeField] private SharedMonitorDisplay sharedMonitorDisplay;
         [SerializeField] private AlienReactionController alienReactionController;
+
+        [Header("Brainwave Terminal")]
+        [SerializeField] private BrainwaveGraphDisplay brainwaveGraph;
+        [SerializeField] private bool autoCreateBrainwaveGraph = true;
+        [SerializeField, Range(0.2f, 0.7f)] private float brainwaveGraphHeightRatio = 0.42f;
+        [Tooltip("When zero, a fresh random seed is generated each Day 1 session.")]
+        [SerializeField] private int brainwaveSessionSeed;
 
         [Header("Dialogue Sequences")]
         [SerializeField] private DialogueSequence openingSequence;
@@ -75,6 +83,7 @@ namespace DoodleDiplomacy.Gameplay
         private string _pendingLabel;
         private string _pendingDisplayLabel;
         private bool _entered;
+        private int _runtimeBrainwaveSessionSeed;
 
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? Day1ModeId : modeId;
         public GameState CurrentState => _currentState;
@@ -96,6 +105,7 @@ namespace DoodleDiplomacy.Gameplay
             StopActiveRoutine();
             _context?.AiGateway?.CancelActiveOperations();
             _context?.DialogueSystem?.StopSequence();
+            brainwaveGraph?.Clear();
             stimulusButtonPanel?.Hide();
             _context?.Drawing?.SetInteractionLocked(true);
             _context = null;
@@ -169,9 +179,14 @@ namespace DoodleDiplomacy.Gameplay
             _pendingLabel = null;
             _pendingDisplayLabel = null;
             _scanVersion = 0;
+            _runtimeBrainwaveSessionSeed = brainwaveSessionSeed != 0
+                ? brainwaveSessionSeed
+                : UnityEngine.Random.Range(1, int.MaxValue);
 
             stimulusLibrary?.BeginSession(clearExisting: true);
             terminalDisplay?.Clear();
+            EnsureBrainwaveGraph();
+            brainwaveGraph?.Clear();
             sharedMonitorDisplay?.SetIdle();
             stimulusButtonPanel?.Hide();
             _context?.AiGateway?.EnsureLlmPreparation();
@@ -399,11 +414,9 @@ namespace DoodleDiplomacy.Gameplay
             ApplyCameraMode(GameState.Submitting);
 
             sharedMonitorDisplay?.ShowSubmission(_pendingTexture);
-            terminalDisplay?.ShowText(L10n.T(
-                    "day1.terminal.transmission_active",
-                    "TRANSMISSION ACTIVE\nDRAWING: {label}\nRESPONSE MONITORING ONLINE",
-                    L10n.Arg("label", displayLabel)),
-                instant: true);
+            EnsureBrainwaveGraph();
+            brainwaveGraph?.Play(ReactionTier.Subtle, label, _slot, _runtimeBrainwaveSessionSeed);
+            terminalDisplay?.ShowText(BuildBrainwaveAcquiringText(label, displayLabel), instant: true);
 
             yield return PlayDialogueSequence(
                 Day1DialogueSequence.TransmissionLabelConfirmed,
@@ -414,13 +427,15 @@ namespace DoodleDiplomacy.Gameplay
             }
 
             ReactionTier reactionTier = ReactionTier.Subtle;
+            string reactionReason = string.Empty;
             bool evaluationSucceeded = false;
             string evaluationError = string.Empty;
             yield return EvaluateReactionTierWithRetries(
                 label,
-                tier =>
+                evaluation =>
                 {
-                    reactionTier = tier;
+                    reactionTier = evaluation.reactionTier;
+                    reactionReason = evaluation.reason;
                     evaluationSucceeded = true;
                 },
                 error => evaluationError = error);
@@ -430,6 +445,8 @@ namespace DoodleDiplomacy.Gameplay
                 Debug.LogWarning(
                     $"[Day1CalibrationMode] Day1 reaction tier evaluation failed for '{label}': {evaluationError}",
                     this);
+                brainwaveGraph?.Play(ReactionTier.None, label, _slot, _runtimeBrainwaveSessionSeed);
+                terminalDisplay?.ShowText(BuildBrainwaveUnstableText(label, displayLabel), instant: true);
                 ChangeState(GameState.Preview);
                 ApplyCameraMode(GameState.Preview);
                 yield return PlayDialogueSequence(Day1DialogueSequence.ReactionEvaluationUnstable);
@@ -437,6 +454,9 @@ namespace DoodleDiplomacy.Gameplay
                 _routine = null;
                 yield break;
             }
+
+            brainwaveGraph?.Play(reactionTier, label, _slot, _runtimeBrainwaveSessionSeed);
+            terminalDisplay?.ShowText(BuildBrainwaveCapturedText(label, displayLabel, reactionTier, reactionReason), instant: true);
 
             ChangeState(GameState.AlienReaction);
             ApplyCameraMode(GameState.AlienReaction);
@@ -461,7 +481,7 @@ namespace DoodleDiplomacy.Gameplay
 
         private IEnumerator EvaluateReactionTierWithRetries(
             string label,
-            Action<ReactionTier> onSuccess,
+            Action<Day1ReactionEvaluationResult> onSuccess,
             Action<string> onFailure)
         {
             IRoundAiGateway aiGateway = _context?.AiGateway;
@@ -487,7 +507,7 @@ namespace DoodleDiplomacy.Gameplay
 
                 if (evaluation != null && evaluation.IsSuccess)
                 {
-                    onSuccess?.Invoke(evaluation.reactionTier);
+                    onSuccess?.Invoke(evaluation);
                     yield break;
                 }
 
@@ -678,6 +698,226 @@ namespace DoodleDiplomacy.Gameplay
             terminalDisplay ??= FindFirstObjectByType<TerminalDisplay>();
             sharedMonitorDisplay ??= FindFirstObjectByType<SharedMonitorDisplay>();
             alienReactionController ??= FindFirstObjectByType<AlienReactionController>();
+            EnsureBrainwaveGraph();
+        }
+
+        private void EnsureBrainwaveGraph()
+        {
+            if (brainwaveGraph != null)
+            {
+                ConfigureBrainwaveGraphLayout(brainwaveGraph.rectTransform);
+                return;
+            }
+
+            if (terminalDisplay == null)
+            {
+                return;
+            }
+
+            brainwaveGraph = terminalDisplay.GetComponentInChildren<BrainwaveGraphDisplay>(true);
+            if (brainwaveGraph != null)
+            {
+                ConfigureBrainwaveGraphLayout(brainwaveGraph.rectTransform);
+                return;
+            }
+
+            if (!autoCreateBrainwaveGraph)
+            {
+                return;
+            }
+
+            RectTransform screenRect = terminalDisplay.ScreenRectTransform;
+            if (screenRect == null)
+            {
+                Debug.LogWarning("[Day1CalibrationMode] Could not create brainwave graph because terminal screen panel is missing.", this);
+                return;
+            }
+
+            var graphObject = new GameObject(
+                "Day1BrainwaveGraph",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(BrainwaveGraphDisplay));
+            graphObject.transform.SetParent(screenRect, false);
+            graphObject.transform.SetAsFirstSibling();
+
+            brainwaveGraph = graphObject.GetComponent<BrainwaveGraphDisplay>();
+            ConfigureBrainwaveGraphLayout(brainwaveGraph.rectTransform);
+            brainwaveGraph.Clear();
+        }
+
+        private void ConfigureBrainwaveGraphLayout(RectTransform graphRect)
+        {
+            if (graphRect == null)
+            {
+                return;
+            }
+
+            float heightRatio = Mathf.Clamp(brainwaveGraphHeightRatio, 0.2f, 0.7f);
+            graphRect.anchorMin = new Vector2(0.03f, 1f - heightRatio);
+            graphRect.anchorMax = new Vector2(0.97f, 0.96f);
+            graphRect.offsetMin = Vector2.zero;
+            graphRect.offsetMax = Vector2.zero;
+            graphRect.pivot = new Vector2(0.5f, 0.5f);
+        }
+
+        private string BuildBrainwaveAcquiringText(string label, string displayLabel)
+        {
+            var builder = new StringBuilder();
+            AppendBrainwaveGraphSpacer(builder);
+            builder.AppendLine("[NEURAL CAPTURE / DAY-01 CALIBRATION]");
+            builder.Append("SLOT ").Append(_slot.ToString("00")).Append("  STIMULUS: ").AppendLine(displayLabel);
+            builder.AppendLine();
+            builder.AppendLine("> PANEL BROADCAST ONLINE");
+            builder.AppendLine("> ALIEN CORTICAL FIELD: ACQUIRING");
+            builder.AppendLine("> SIGNAL LOCK: --%");
+            builder.Append("> TOKEN MAP: ")
+                .Append(Day1ReactionTierEvaluator.NormalizeLabel(label).ToUpperInvariant())
+                .AppendLine(" -> PENDING");
+            builder.Append("> RESPONSE MONITORING ONLINE");
+            return builder.ToString();
+        }
+
+        private string BuildBrainwaveCapturedText(
+            string label,
+            string displayLabel,
+            ReactionTier reactionTier,
+            string reactionReason)
+        {
+            int signalLock = GetBrainwaveSignalLock(label, reactionTier);
+            var builder = new StringBuilder();
+            AppendBrainwaveGraphSpacer(builder);
+            builder.AppendLine("[NEURAL CAPTURE / DAY-01 CALIBRATION]");
+            builder.Append("SLOT ").Append(_slot.ToString("00")).Append("  STIMULUS: ").AppendLine(displayLabel);
+            builder.AppendLine();
+            AppendBrainwaveChannelLine(builder, "ALIEN-A", "THETA", label, reactionTier, 11);
+            AppendBrainwaveChannelLine(builder, "ALIEN-B", "DELTA", label, reactionTier, 23);
+            AppendBrainwaveChannelLine(builder, "ALIEN-C", "GAMMA", label, reactionTier, 37);
+            builder.AppendLine();
+            builder.Append("> SIGNAL LOCK: ").Append(signalLock).AppendLine("%");
+            builder.Append("> RESONANCE CLASS: ").AppendLine(GetBrainwaveResonanceClass(reactionTier));
+            builder.Append("> TOKEN MAP: ")
+                .Append(Day1ReactionTierEvaluator.NormalizeLabel(label).ToUpperInvariant())
+                .Append(" -> ")
+                .AppendLine(GetBrainwaveTokenId(label));
+            builder.Append("> CALIBRATION SAMPLE: ")
+                .Append(string.IsNullOrWhiteSpace(reactionReason) ? "ACCEPTED" : "ACCEPTED / NOTE BUFFERED");
+            return builder.ToString();
+        }
+
+        private string BuildBrainwaveUnstableText(string label, string displayLabel)
+        {
+            var builder = new StringBuilder();
+            AppendBrainwaveGraphSpacer(builder);
+            builder.AppendLine("[NEURAL CAPTURE / DAY-01 CALIBRATION]");
+            builder.Append("SLOT ").Append(_slot.ToString("00")).Append("  STIMULUS: ").AppendLine(displayLabel);
+            builder.AppendLine();
+            builder.AppendLine("> SIGNAL LOCK: LOST");
+            builder.AppendLine("> RESONANCE CLASS: UNSTABLE");
+            builder.Append("> TOKEN MAP: ")
+                .Append(Day1ReactionTierEvaluator.NormalizeLabel(label).ToUpperInvariant())
+                .AppendLine(" -> UNRESOLVED");
+            builder.Append("> CALIBRATION SAMPLE: DISCARDED");
+            return builder.ToString();
+        }
+
+        private void AppendBrainwaveChannelLine(
+            StringBuilder builder,
+            string alienId,
+            string band,
+            string label,
+            ReactionTier reactionTier,
+            int salt)
+        {
+            float amplitude = GetBrainwaveAmplitude(label, reactionTier, salt);
+            int channelLock = GetBrainwaveSignalLock(label, reactionTier, salt + 101);
+            builder
+                .Append(alienId)
+                .Append("  ")
+                .Append(band.PadRight(5))
+                .Append("  ")
+                .Append(amplitude.ToString("00.0"))
+                .Append("uV  LOCK ")
+                .Append(channelLock.ToString("00"))
+                .AppendLine("%");
+        }
+
+        private void AppendBrainwaveGraphSpacer(StringBuilder builder)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                builder.AppendLine();
+            }
+        }
+
+        private float GetBrainwaveAmplitude(string label, ReactionTier reactionTier, int salt)
+        {
+            (float min, float max) = reactionTier switch
+            {
+                ReactionTier.None => (1.4f, 3.8f),
+                ReactionTier.Subtle => (4.6f, 8.8f),
+                ReactionTier.Moderate => (9.5f, 17.5f),
+                ReactionTier.Strong => (18.5f, 32.0f),
+                _ => (4.6f, 8.8f)
+            };
+
+            return Mathf.Lerp(min, max, StableBrainwave01(label, salt));
+        }
+
+        private int GetBrainwaveSignalLock(string label, ReactionTier reactionTier, int salt = 0)
+        {
+            (int min, int max) = reactionTier switch
+            {
+                ReactionTier.None => (18, 34),
+                ReactionTier.Subtle => (42, 61),
+                ReactionTier.Moderate => (65, 82),
+                ReactionTier.Strong => (84, 98),
+                _ => (42, 61)
+            };
+
+            return Mathf.RoundToInt(Mathf.Lerp(min, max, StableBrainwave01(label, salt)));
+        }
+
+        private string GetBrainwaveResonanceClass(ReactionTier reactionTier)
+        {
+            return reactionTier switch
+            {
+                ReactionTier.None => "BASELINE",
+                ReactionTier.Subtle => "TRACE",
+                ReactionTier.Moderate => "LOCKED",
+                ReactionTier.Strong => "SATURATED",
+                _ => "TRACE"
+            };
+        }
+
+        private string GetBrainwaveTokenId(string label)
+        {
+            int hash = StableBrainwaveHash(label, 503) & 0x0FFF;
+            return $"SAMPLE-{_slot:00}-{hash:X3}";
+        }
+
+        private float StableBrainwave01(string label, int salt)
+        {
+            int hash = StableBrainwaveHash(label, salt);
+            return (hash & 0x00FFFFFF) / 16777215f;
+        }
+
+        private int StableBrainwaveHash(string label, int salt)
+        {
+            unchecked
+            {
+                int hash = 23;
+                string normalizedLabel = label ?? string.Empty;
+                for (int i = 0; i < normalizedLabel.Length; i++)
+                {
+                    hash = (hash * 31) + char.ToLowerInvariant(normalizedLabel[i]);
+                }
+
+                hash = (hash * 31) + _slot;
+                hash = (hash * 31) + _runtimeBrainwaveSessionSeed;
+                hash = (hash * 31) + salt;
+                return hash == int.MinValue ? 0 : hash;
+            }
         }
 
         private void ChangeState(GameState state)
@@ -711,7 +951,8 @@ namespace DoodleDiplomacy.Gameplay
             CameraMode mode = state switch
             {
                 GameState.Drawing or GameState.PreviewAnalyzing or GameState.Preview => CameraMode.TabletView,
-                GameState.Submitting or GameState.AlienReaction => CameraMode.AlienReaction,
+                GameState.Submitting => CameraMode.TerminalZoom,
+                GameState.AlienReaction => CameraMode.AlienReaction,
                 GameState.Ending => CameraMode.Default,
                 _ => CameraMode.Default
             };

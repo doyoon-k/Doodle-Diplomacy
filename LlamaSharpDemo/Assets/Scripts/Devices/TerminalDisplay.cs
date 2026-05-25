@@ -54,6 +54,9 @@ namespace DoodleDiplomacy.Devices
         private static readonly char[] NoiseChars =
             "!@#$%^&*<>?/\\|~`0123456789ABCDEFXYZabcxyz".ToCharArray();
 
+        public RectTransform ScreenRectTransform =>
+            screenPanel != null ? screenPanel.GetComponent<RectTransform>() : null;
+
         public bool IsTyping() => _isTyping;
 
         private void Awake()

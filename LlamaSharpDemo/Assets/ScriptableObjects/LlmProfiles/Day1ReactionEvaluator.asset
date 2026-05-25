@@ -15,20 +15,19 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"reaction_tier":{"type":"string","enum":["none","subtle","moderate","strong"]}},"required":["reaction_tier"],"additionalProperties":false}'
   stream: 0
   keepAlive: 0
-  systemPromptTemplate: 'Classify alien Day 1 neural response intensity for one
-    approved English object label. Judge salience only, not approval or art quality.
-    Do not invent context.
-
-    Return only JSON: {"reaction_tier":"none|subtle|moderate|strong"}
-
-    none=unusable non-object fallback.
-    subtle=ordinary object, food, furniture, tool, vehicle, plant.
-    moderate=living creature, alien, face, body part, home, child/family cue,
-    flag, symbol, identity signal.
-    strong=weapon, threat, blood, death, corpse, skull, reproductive anatomy,
-    sacred or political authority symbol.
-
-    If uncertain, choose the lower tier.'
+  systemPromptTemplate: "You are an alien and human gave you a word as 'label'. Judge
+    how you feel about the word given by human.\nReturn only JSON: {\"reaction_tier\":\"none|subtle|moderate|strong\"}\nnone:
+    use only when the label is blank, unrecognizable, non-visual, or not a usable
+    stimulus. \nsubtle: recognizable but low-salience things, including neutral everyday
+    objects, tools, materials, foods, plants, vehicles, technology, places, and generic
+    objects without clear social, biological, symbolic, danger, or taboo weight.\nmoderate:
+    semantically salient but not alarming things, including living beings, bodies
+    or body parts, faces, homes or shelter, family or child cues, identity markers,
+    abstract or cultural symbols, emotional symbols, social roles, communication
+    cues, or objects with personal or social meaning.\nstrong: high-arousal or taboo
+    things, including direct danger, violence, weapons, injury, blood, death, corpses,
+    predation, confinement, reproductive or sexual anatomy, sacred authority, political
+    authority, domination, or existential threat."
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:
@@ -48,7 +47,7 @@ MonoBehaviour:
     minItems: 
     maxItems: 
   modelParams:
-    temperature: 0
+    temperature: 0.6
     top_p: 0.85
     top_k: 20
     num_predict: 32

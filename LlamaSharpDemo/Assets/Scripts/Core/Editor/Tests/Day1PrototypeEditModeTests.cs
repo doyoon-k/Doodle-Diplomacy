@@ -122,6 +122,18 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
+        public void Day1ReactionEvaluationParsingAcceptsTierOnlyJson()
+        {
+            bool parsed = Day1ReactionEvaluationResult.TryFromJson(
+                "{\"reaction_tier\":\"moderate\"}",
+                out Day1ReactionEvaluationResult result);
+
+            Assert.IsTrue(parsed, result?.error);
+            Assert.AreEqual(ReactionTier.Moderate, result.reactionTier);
+            Assert.AreEqual(string.Empty, result.reason);
+        }
+
+        [Test]
         public void Day1ReactionEvaluationParsingRejectsUnknownTier()
         {
             bool parsed = Day1ReactionEvaluationResult.TryFromJson(
@@ -218,20 +230,6 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             bool expected)
         {
             Assert.AreEqual(expected, Day1StimulusSubmissionPolicy.IsAllowedObjectCount(objectCount, label));
-        }
-
-        [TestCase("handgun", ReactionTier.Strong)]
-        [TestCase("reproductive organ icon", ReactionTier.Strong)]
-        [TestCase("abstract symbol", ReactionTier.Moderate)]
-        [TestCase("body part", ReactionTier.Moderate)]
-        [TestCase("apple", ReactionTier.Subtle)]
-        [TestCase("vehicle icon", ReactionTier.Subtle)]
-        [TestCase("simple shape", ReactionTier.None)]
-        [TestCase("unlisted sculpture", ReactionTier.Subtle)]
-        [TestCase("weapon-shaped ritual icon", ReactionTier.Strong)]
-        public void ReactionTierMatchingUsesKeywordPriority(string label, ReactionTier expected)
-        {
-            Assert.AreEqual(expected, Day1ReactionTierEvaluator.Evaluate(label));
         }
 
         [Test]

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: Day1ResponsePatternLogged
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: day1-response-pattern-logged
+  contextNote: 하나의 그림과 외계 반응 저장이 끝났고 아직 5개를 채우지 못했을 때 재생됩니다. 다음 그림 입력으로 넘어갑니다.
+  lines:
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: Response pattern logged. Next drawing, Mr. President.
+    localizationKey: day1.response_pattern_logged
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2

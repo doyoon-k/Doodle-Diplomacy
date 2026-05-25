@@ -13,28 +13,26 @@ MonoBehaviour:
   m_Name: Day1ReactionEvaluatorPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: Day1ReactionEvaluatorPipeline
-  description: Day 1 alien neural response tier evaluator. Returns reaction_tier
-    plus English reason for logs.
+  description: Day 1 alien neural response tier evaluator. Returns reaction_tier.
   steps:
   - stepName: Day1ReactionEvaluator
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: 31fa02e4a9e64963bb4dd277a3ca2bd6, type: 2}
-    userPromptTemplate: 'Classified stimulus label:
-
-      {{stimulus_label}}
-
-
-      Choose
-      the Day 1 alien neural response intensity.'
-    jsonMaxRetries: 2
+    userPromptTemplate: 'Label: {{stimulus_label}}'
+    jsonMaxRetries: 1
     jsonRetryDelaySeconds: 0.1
     useVision: 0
     imageStateKey: reference_image
     requireImage: 0
     resizeLongestSide: 768
-    customLinkTypeName: 
+    customLinkTypeName: SafeTranslateResponseChainLink, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
     customAsset: {fileID: 0}
-    customLinkParameters: []
+    customLinkParameters:
+    - key: parameters
+      value: 
+    - key: service
+      value: 
     editorPosition: {x: -382, y: -56}
     guid: 91f440e3-5fe5-4ba1-99e3-d08e4cb2ed82
     nextStepGuid: 
@@ -43,7 +41,7 @@ MonoBehaviour:
     outputNodePosition: {x: 590, y: -40}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: -67, y: 97, z: 0}
+    viewPosition: {x: 641, y: 112, z: 0}
     viewScale: {x: 1, y: 1, z: 1}
     viewInitialized: 1
     snapshotPositions:

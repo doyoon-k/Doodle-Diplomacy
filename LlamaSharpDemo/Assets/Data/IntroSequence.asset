@@ -13,24 +13,33 @@ MonoBehaviour:
   m_Name: IntroSequence
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
   sequenceID: Intro
+  contextNote: "GameScene RoundManager\uC758 \uAE30\uBCF8 \uC778\uD2B8\uB85C\uC785\uB2C8\uB2E4.
+    \uD611\uC0C1 \uC2DC\uC791 \uC804 \uC678\uACC4 \uB300\uD45C\uB2E8 \uB3C4\uCC29\uACFC
+    \uADF8\uB9BC \uC18C\uD1B5 \uADDC\uCE59\uC744 \uC548\uB0B4\uD560 \uB54C \uC7AC\uC0DD\uB429\uB2C8\uB2E4."
   lines:
   - characterID: Adjutant
+    speakerLocalizationKey: speaker.adjutant
     text: Ambassador, the alien delegation has arrived.
+    localizationKey: intro.adjutant.line1
     displayMode: 1
     portraitID: 
     advanceType: 0
     autoDelay: 2
   - characterID: Adjutant
+    speakerLocalizationKey: speaker.adjutant
     text: 'They cannot understand our language.
 
       We must communicate through
       drawings.'
+    localizationKey: intro.adjutant.line2
     displayMode: 1
     portraitID: 
     advanceType: 0
     autoDelay: 2
   - characterID: Adjutant
+    speakerLocalizationKey: speaker.adjutant
     text: Press the button in front of the alien to begin negotiations.
+    localizationKey: intro.adjutant.line3
     displayMode: 1
     portraitID: 
     advanceType: 1

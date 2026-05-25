@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: Day1IdentifiesDrawing
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: day1-identifies-drawing
+  contextNote: 유효한 그림을 AI가 식별한 뒤 플레이어에게 전송 라벨을 확인시키는 단계에서 재생됩니다. {label}에는 표시용 라벨이 들어갑니다.
+  lines:
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: 'The apparatus identifies this drawing as: {label}. Confirm the transmission label.'
+    localizationKey: day1.identifies_drawing
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2

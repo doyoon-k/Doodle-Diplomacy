@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: Day1WrittenTextDetected
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: day1-written-text-detected
+  contextNote: AI가 글자, 문장, 기호 같은 언어 입력을 감지했을 때 재생됩니다. 다시 그림 하나를 그리게 합니다.
+  lines:
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: Written text, letters, or symbols detected. The apparatus cannot calibrate language input this way. Please draw one picture instead.
+    localizationKey: day1.written_text_detected
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2

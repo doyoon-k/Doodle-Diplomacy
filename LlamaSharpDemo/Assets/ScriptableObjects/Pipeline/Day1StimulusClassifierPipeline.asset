@@ -63,20 +63,18 @@ MonoBehaviour:
       value: target_language_native
     - key: enabledKey
       value: llm_translation_enabled
-    - key: promptStyle
-      value: label
-    editorPosition: {x: 360, y: -40}
+    editorPosition: {x: 673, y: -45}
     guid: d2e4e5b5-6d3f-4c6d-8cc0-0cf1cf9b9d4c
     nextStepGuid: 
   layoutSettings:
     inputNodePosition: {x: -420, y: 0}
-    outputNodePosition: {x: 908, y: -46}
+    outputNodePosition: {x: 1515, y: -59}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 719, y: 131, z: 0}
-    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
+    viewPosition: {x: 273, y: 121, z: 0}
+    viewScale: {x: 0.57175326, y: 0.57175326, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 352.66666, y: -27.333336}
-    - {x: 640, y: -27.333336}
+    - {x: 442, y: 125}
+    - {x: 1282, y: -20}
     snapshotPositionsInitialized: 1

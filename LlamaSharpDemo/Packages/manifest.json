@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.doyoon.shaderglass": "file:../Packages/com.doyoon.shaderglass",
-    "com.ivanmurzak.unity.mcp": "0.72.1",
+    "com.ivanmurzak.unity.mcp": "0.75.1",
     "com.unity.2d.animation": "12.0.2",
     "com.unity.2d.aseprite": "2.0.2",
     "com.unity.2d.psdimporter": "11.0.1",
@@ -9,6 +9,7 @@
     "com.unity.2d.spriteshape": "12.0.1",
     "com.unity.2d.tilemap": "1.0.0",
     "com.unity.2d.tilemap.extras": "5.0.1",
+    "com.unity.cinemachine": "3.1.6",
     "com.unity.collab-proxy": "2.10.0",
     "com.unity.ide.rider": "3.0.38",
     "com.unity.ide.visualstudio": "2.0.25",

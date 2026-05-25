@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: Day1ReactionModerate
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: day1-reaction-moderate
+  contextNote: "\uC678\uACC4 \uBC18\uC751 \uB4F1\uAE09\uC774 Moderate\uC77C \uB54C
+    \uC0AC\uC6A9\uD558\uB294 \uBC18\uC751 \uCF54\uBA58\uD2B8\uC785\uB2C8\uB2E4. \uBC18\uC751
+    \uC560\uB2C8\uBA54\uC774\uC158 \uC790\uB9C9\uC73C\uB85C\uB3C4 \uCCAB \uC904\uC774
+    \uC0AC\uC6A9\uB429\uB2C8\uB2E4."
+  lines:
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: Moderate cross-delegate activity. The drawing registered clearly.
+    localizationKey: day1.reaction.moderate
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2

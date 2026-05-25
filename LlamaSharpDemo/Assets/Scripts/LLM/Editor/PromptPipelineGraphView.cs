@@ -1349,10 +1349,11 @@ internal class PromptPipelineStepNode : Node
         _disconnectExecPort = disconnectExecPort;
 
         title = step.stepName;
-        style.minWidth = 320f;
-        style.maxWidth = 380f;
-        mainContainer.style.minWidth = 320f;
-        extensionContainer.style.minWidth = 320f;
+        float nodeWidth = UsesWideCustomParameterEditor(step) ? 560f : 360f;
+        style.minWidth = nodeWidth;
+        style.maxWidth = nodeWidth;
+        mainContainer.style.minWidth = nodeWidth;
+        extensionContainer.style.minWidth = nodeWidth;
         UpdateDisplayIndex(index);
         titleContainer.RegisterCallback<MouseDownEvent>(evt =>
         {
@@ -1590,7 +1591,7 @@ internal class PromptPipelineStepNode : Node
         _customOptionsContainer.Add(_customTypeDropdown);
 
         _customParamsContainer = new VisualElement { style = { flexDirection = FlexDirection.Column } };
-        _customParamsContainer.Add(new Label("Custom Parameters (auto-detected from constructor; values only)"));
+        _customParamsContainer.Add(new Label("Custom Parameters"));
         _customOptionsContainer.Add(_customParamsContainer);
         extensionContainer.Add(_customOptionsContainer);
 
@@ -1720,6 +1721,8 @@ internal class PromptPipelineStepNode : Node
             Step.customLinkParameters = new List<CustomLinkParameter>();
         }
 
+        RemoveSafeTranslateLegacyPromptParameters();
+
         // Clear existing rows except the header label (first element)
         while (_customParamsContainer.childCount > 1)
         {
@@ -1767,28 +1770,70 @@ internal class PromptPipelineStepNode : Node
         }
     }
 
+    private void RemoveSafeTranslateLegacyPromptParameters()
+    {
+        if (Step == null ||
+            Step.customLinkParameters == null ||
+            CustomLinkTypeProvider.ResolveType(Step.customLinkTypeName) != typeof(SafeTranslateResponseChainLink))
+        {
+            return;
+        }
+
+        int removed = Step.customLinkParameters.RemoveAll(p =>
+            p != null &&
+            (string.Equals(p.key, "promptStyle", StringComparison.Ordinal) ||
+             string.Equals(p.key, "labelInstructions", StringComparison.Ordinal)));
+        if (removed > 0)
+        {
+            _markDirty?.Invoke();
+        }
+    }
+
     private void AddParamRow(int index)
     {
         var param = Step.customLinkParameters[index];
-        var row = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2, alignItems = Align.Center } };
+        bool multiline = IsMultilineCustomParameter(param.key);
+        var row = new VisualElement
+        {
+            style =
+            {
+                flexDirection = multiline ? FlexDirection.Column : FlexDirection.Row,
+                marginTop = multiline ? 8 : 0,
+                marginBottom = multiline ? 10 : 2,
+                alignItems = multiline ? Align.Stretch : Align.Center
+            }
+        };
 
         var keyLabel = new Label(param.key ?? "(unnamed)")
         {
             style =
             {
-                minWidth = 120,
-                maxWidth = 200,
+                minWidth = multiline ? 0 : 120,
+                maxWidth = multiline ? StyleKeyword.None : 200,
                 unityFontStyleAndWeight = FontStyle.Bold,
-                marginRight = 6
+                marginRight = multiline ? 0 : 6,
+                marginBottom = multiline ? 4 : 0
             }
         };
         row.Add(keyLabel);
 
         var valueField = new TextField()
         {
+            multiline = multiline,
             value = param.value,
-            style = { flexGrow = 1f, marginRight = 4 }
+            style =
+            {
+                flexGrow = 1f,
+                marginRight = 4,
+                minHeight = multiline ? 160 : 0,
+                maxHeight = multiline ? 240 : StyleKeyword.None,
+                whiteSpace = multiline ? WhiteSpace.Normal : WhiteSpace.NoWrap
+            }
         };
+        if (multiline)
+        {
+            valueField.style.width = Length.Percent(100);
+        }
         var warningLabel = new Label
         {
             style =
@@ -1813,6 +1858,28 @@ internal class PromptPipelineStepNode : Node
         ValidateParamValue(parameterInfo, param.value, warningLabel);
 
         _customParamsContainer.Add(row);
+    }
+
+    private static bool IsMultilineCustomParameter(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return false;
+        }
+
+        return key.IndexOf("instruction", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               key.IndexOf("prompt", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               key.IndexOf("template", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static bool UsesWideCustomParameterEditor(PromptPipelineStep step)
+    {
+        if (step?.customLinkParameters == null)
+        {
+            return false;
+        }
+
+        return step.customLinkParameters.Any(p => p != null && IsMultilineCustomParameter(p.key));
     }
 
     private void ValidateParamValue(ParameterInfo parameterInfo, string value, Label warningLabel)

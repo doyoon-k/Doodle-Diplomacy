@@ -10,8 +10,12 @@ namespace DoodleDiplomacy.Data
     public class DialogueLineData
     {
         public string characterID;
+        [Tooltip("비어 있으면 characterID를 그대로 표시합니다.")]
+        public string speakerLocalizationKey;
         [TextArea(2, 5)]
         public string text;
+        [Tooltip("비어 있으면 text를 그대로 표시합니다.")]
+        public string localizationKey;
         public DisplayMode displayMode;
         [Tooltip("비어 있으면 표정 변경 없음")]
         public string portraitID;

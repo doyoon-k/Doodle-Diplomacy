@@ -4,15 +4,13 @@ using System.Collections.Generic;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Character;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Devices;
+using DoodleDiplomacy.Dialogue;
 using DoodleDiplomacy.Interaction;
 using DoodleDiplomacy.Localization;
 using DoodleDiplomacy.UI;
 using UnityEngine;
-
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace DoodleDiplomacy.Gameplay
 {
@@ -26,25 +24,6 @@ namespace DoodleDiplomacy.Gameplay
         private const string ScienceOfficer = "Science Officer";
         private const string Adjutant = "Adjutant";
 
-        private static readonly LocalizedLine[] OpeningLines =
-        {
-            new("day1.opening.1", "Mr. President, draw one simple picture on the tablet."),
-            new("day1.opening.2", "The delegation will only see the completed image. Not the drawing process."),
-            new("day1.opening.3", "The apparatus will classify the image before transmission. Once the label is confirmed, we will show it to them and record the response.")
-        };
-
-        private readonly struct LocalizedLine
-        {
-            public LocalizedLine(string key, string fallback)
-            {
-                Key = key;
-                Fallback = fallback;
-            }
-
-            public string Key { get; }
-            public string Fallback { get; }
-        }
-
         [Header("Mode")]
         [SerializeField] private string modeId = Day1ModeId;
 
@@ -55,8 +34,27 @@ namespace DoodleDiplomacy.Gameplay
         [SerializeField] private SharedMonitorDisplay sharedMonitorDisplay;
         [SerializeField] private AlienReactionController alienReactionController;
 
+        [Header("Dialogue Sequences")]
+        [SerializeField] private DialogueSequence openingSequence;
+        [SerializeField] private DialogueSequence tabletBlankSequence;
+        [SerializeField] private DialogueSequence scanningSequence;
+        [SerializeField] private DialogueSequence classificationUnstableSequence;
+        [SerializeField] private DialogueSequence actionOrSceneDetectedSequence;
+        [SerializeField] private DialogueSequence writtenTextDetectedSequence;
+        [SerializeField] private DialogueSequence nonStimulusDetectedSequence;
+        [SerializeField] private DialogueSequence multipleObjectsDetectedSequence;
+        [SerializeField] private DialogueSequence identifiesDrawingSequence;
+        [SerializeField] private DialogueSequence previousImageNotTransmittedSequence;
+        [SerializeField] private DialogueSequence transmissionLabelConfirmedSequence;
+        [SerializeField] private DialogueSequence reactionEvaluationUnstableSequence;
+        [SerializeField] private DialogueSequence responsePatternLoggedSequence;
+        [SerializeField] private DialogueSequence reactionNoneSequence;
+        [SerializeField] private DialogueSequence reactionSubtleSequence;
+        [SerializeField] private DialogueSequence reactionModerateSequence;
+        [SerializeField] private DialogueSequence reactionStrongSequence;
+        [SerializeField] private DialogueSequence completeSequence;
+
         [Header("Timing")]
-        [SerializeField, Min(0f)] private float minimumDialogueAdvanceSeconds = 0.15f;
         [SerializeField, Min(0f)] private float transmissionHoldSeconds = 0.6f;
 
         [Header("Reaction Evaluation")]
@@ -97,6 +95,7 @@ namespace DoodleDiplomacy.Gameplay
         {
             StopActiveRoutine();
             _context?.AiGateway?.CancelActiveOperations();
+            _context?.DialogueSystem?.StopSequence();
             stimulusButtonPanel?.Hide();
             _context?.Drawing?.SetInteractionLocked(true);
             _context = null;
@@ -140,6 +139,7 @@ namespace DoodleDiplomacy.Gameplay
         public void ChangeToTitle()
         {
             StopActiveRoutine();
+            _context?.DialogueSystem?.StopSequence();
             stimulusButtonPanel?.Hide();
             _context?.Drawing?.SetInteractionLocked(true);
             ChangeState(GameState.Title);
@@ -177,10 +177,7 @@ namespace DoodleDiplomacy.Gameplay
             _context?.AiGateway?.EnsureLlmPreparation();
 
             ChangeState(GameState.Intro);
-            foreach (LocalizedLine line in OpeningLines)
-            {
-                yield return Speak(ScienceOfficer, L10n.T(line.Key, line.Fallback));
-            }
+            yield return PlayDialogueSequence(Day1DialogueSequence.Opening);
 
             BeginDrawing(clearCanvas: true);
             _routine = null;
@@ -253,9 +250,7 @@ namespace DoodleDiplomacy.Gameplay
         {
             _context?.Drawing?.SetInteractionLocked(true);
             stimulusButtonPanel?.Hide();
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.tablet_blank",
-                "The tablet is blank, Mr. President. Please draw one picture by itself."));
+            yield return PlayDialogueSequence(Day1DialogueSequence.TabletBlank);
             BeginDrawing(clearCanvas: false);
             _routine = null;
         }
@@ -276,9 +271,7 @@ namespace DoodleDiplomacy.Gameplay
                 result = VisualStimulusClassificationResult.Failed("AI gateway is missing.");
             }
 
-            ShowDialogue(ScienceOfficer, L10n.T(
-                "day1.scanning",
-                "Scanning drawing. Hold transmission."));
+            PlayDialogueSequenceNonBlocking(Day1DialogueSequence.Scanning);
             yield return null;
             yield return new WaitUntil(() => done);
             if (version != _scanVersion)
@@ -288,9 +281,7 @@ namespace DoodleDiplomacy.Gameplay
 
             if (result == null || !result.IsSuccess)
             {
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.classification_unstable",
-                    "Classification unstable. The response data would be contaminated. Please redraw."));
+                yield return PlayDialogueSequence(Day1DialogueSequence.ClassificationUnstable);
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
@@ -299,10 +290,9 @@ namespace DoodleDiplomacy.Gameplay
             string normalizedResultLabel = Day1ReactionTierEvaluator.NormalizeLabel(result.label);
             if (Day1StimulusSubmissionPolicy.IsActionOrSceneLabel(normalizedResultLabel))
             {
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.action_or_scene_detected",
-                    "Action or scene detected: {label}. Day 1 calibration only accepts still objects or repeated copies of one object.",
-                    L10n.Arg("label", GetDisplayLabel(result, normalizedResultLabel))));
+                yield return PlayDialogueSequence(
+                    Day1DialogueSequence.ActionOrSceneDetected,
+                    L10n.Arg("label", GetDisplayLabel(result, normalizedResultLabel)));
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
@@ -310,9 +300,7 @@ namespace DoodleDiplomacy.Gameplay
 
             if (Day1StimulusSubmissionPolicy.IsWrittenTextLabel(normalizedResultLabel))
             {
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.written_text_detected",
-                    "Written text, letters, or symbols detected. The apparatus cannot calibrate language input this way. Please draw one picture instead."));
+                yield return PlayDialogueSequence(Day1DialogueSequence.WrittenTextDetected);
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
@@ -320,9 +308,7 @@ namespace DoodleDiplomacy.Gameplay
 
             if (result.objectCount <= 0 || Day1StimulusSubmissionPolicy.IsBlockedLabel(normalizedResultLabel))
             {
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.non_stimulus_detected",
-                    "The apparatus cannot calibrate blank marks, simple lines, dots, islands, letters, written symbols, or basic geometric shapes. Please draw one recognizable object."));
+                yield return PlayDialogueSequence(Day1DialogueSequence.NonStimulusDetected);
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
@@ -333,10 +319,9 @@ namespace DoodleDiplomacy.Gameplay
                 string detectedSummary = string.IsNullOrWhiteSpace(normalizedResultLabel)
                     ? L10n.Label("multiple objects")
                     : GetDisplayLabel(result, normalizedResultLabel);
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.multiple_objects_detected",
-                    "Multiple object types detected: {label}. Please draw one recognizable concept, or repeated copies of the same thing.",
-                    L10n.Arg("label", detectedSummary)));
+                yield return PlayDialogueSequence(
+                    Day1DialogueSequence.MultipleObjectsDetected,
+                    L10n.Arg("label", detectedSummary));
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
@@ -345,9 +330,7 @@ namespace DoodleDiplomacy.Gameplay
             string label = normalizedResultLabel;
             if (string.IsNullOrWhiteSpace(label))
             {
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.classification_unstable",
-                    "Classification unstable. The response data would be contaminated. Please redraw."));
+                yield return PlayDialogueSequence(Day1DialogueSequence.ClassificationUnstable);
                 BeginDrawing(clearCanvas: true);
                 _routine = null;
                 yield break;
@@ -356,19 +339,16 @@ namespace DoodleDiplomacy.Gameplay
             _pendingLabel = label;
             _pendingDisplayLabel = GetDisplayLabel(result, label);
             ChangeState(GameState.Preview);
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.identifies_drawing",
-                "The apparatus identifies this drawing as: {label}. Confirm the transmission label.",
-                L10n.Arg("label", _pendingDisplayLabel)));
+            yield return PlayDialogueSequence(
+                Day1DialogueSequence.IdentifiesDrawing,
+                L10n.Arg("label", _pendingDisplayLabel));
             stimulusButtonPanel?.ShowConfirmation(ConfirmLabel, RedrawCandidate);
             _routine = null;
         }
 
         private IEnumerator ClassificationFailedRoutine()
         {
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.classification_unstable",
-                "Classification unstable. The response data would be contaminated. Please redraw."));
+            yield return PlayDialogueSequence(Day1DialogueSequence.ClassificationUnstable);
             BeginDrawing(clearCanvas: true);
             _routine = null;
         }
@@ -387,9 +367,7 @@ namespace DoodleDiplomacy.Gameplay
 
         private IEnumerator RedrawRoutine()
         {
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.previous_image_not_transmitted",
-                "Understood. The previous image will not be transmitted."));
+            yield return PlayDialogueSequence(Day1DialogueSequence.PreviousImageNotTransmitted);
             BeginDrawing(clearCanvas: true);
             _routine = null;
         }
@@ -427,10 +405,9 @@ namespace DoodleDiplomacy.Gameplay
                     L10n.Arg("label", displayLabel)),
                 instant: true);
 
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.transmission_label_confirmed",
-                "Transmission label confirmed: {label}. Presenting drawing to the delegation.",
-                L10n.Arg("label", displayLabel)));
+            yield return PlayDialogueSequence(
+                Day1DialogueSequence.TransmissionLabelConfirmed,
+                L10n.Arg("label", displayLabel));
             if (transmissionHoldSeconds > 0f)
             {
                 yield return new WaitForSeconds(transmissionHoldSeconds);
@@ -455,9 +432,7 @@ namespace DoodleDiplomacy.Gameplay
                     this);
                 ChangeState(GameState.Preview);
                 ApplyCameraMode(GameState.Preview);
-                yield return Speak(ScienceOfficer, L10n.T(
-                    "day1.reaction_evaluation_unstable",
-                    "Response monitor unstable. Try the transmission again."));
+                yield return PlayDialogueSequence(Day1DialogueSequence.ReactionEvaluationUnstable);
                 stimulusButtonPanel?.ShowConfirmation(ConfirmLabel, RedrawCandidate);
                 _routine = null;
                 yield break;
@@ -478,9 +453,7 @@ namespace DoodleDiplomacy.Gameplay
                 yield break;
             }
 
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.response_pattern_logged",
-                "Response pattern logged. Next drawing, Mr. President."));
+            yield return PlayDialogueSequence(Day1DialogueSequence.ResponsePatternLogged);
             _slot++;
             BeginDrawing(clearCanvas: true);
             _routine = null;
@@ -534,11 +507,12 @@ namespace DoodleDiplomacy.Gameplay
 
         private IEnumerator PlayReactionRoutine(ReactionTier reactionTier)
         {
-            string reactionComment = GetReactionComment(reactionTier);
+            Day1DialogueSequence reactionSequence = GetReactionSequence(reactionTier);
+            string reactionComment = ResolveFirstDialogueLine(reactionSequence);
 
             if (alienReactionController == null)
             {
-                yield return Speak(ScienceOfficer, reactionComment);
+                yield return PlayDialogueSequence(reactionSequence);
                 yield break;
             }
 
@@ -567,48 +541,8 @@ namespace DoodleDiplomacy.Gameplay
             ChangeState(GameState.Ending);
             ApplyCameraMode(GameState.Ending);
 
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.complete.1",
-                "Calibration set complete. The interpreter now has a preliminary visual-response map."));
-            yield return Speak(ScienceOfficer, L10n.T(
-                "day1.complete.2",
-                "These images will remain in the drawing library. We may need them again tomorrow."));
-            yield return Speak(Adjutant, L10n.T(
-                "day1.complete.3",
-                "We have enough data for the interpreter."));
-            yield return Speak(Adjutant, L10n.T(
-                "day1.complete.4",
-                "I should warn you, Mr. President: they did not simply look at the images. They reacted to your choices."));
+            yield return PlayDialogueSequence(Day1DialogueSequence.Complete);
             _routine = null;
-        }
-
-        private IEnumerator Speak(string speaker, string text)
-        {
-            ShowDialogue(speaker, text);
-
-            yield return null;
-
-            while (IsDialogueAdvancePressed())
-            {
-                yield return null;
-            }
-
-            float elapsed = 0f;
-            while (elapsed < minimumDialogueAdvanceSeconds)
-            {
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-
-            while (!GetDialogueAdvanceThisFrame())
-            {
-                yield return null;
-            }
-        }
-
-        private void ShowDialogue(string speaker, string text)
-        {
-            _context?.Subtitles?.Show(LocalizeSpeaker(speaker), text);
         }
 
         private string GetDisplayLabel(VisualStimulusClassificationResult result, string fallbackLabel)
@@ -628,34 +562,97 @@ namespace DoodleDiplomacy.Gameplay
                 : L10n.Label(label);
         }
 
-        private static bool GetDialogueAdvanceThisFrame()
+        private IEnumerator PlayDialogueSequence(Day1DialogueSequence sequenceId, params L10nArg[] args)
         {
-#if ENABLE_INPUT_SYSTEM
-            bool mousePressed = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
-            bool keyboardPressed = Keyboard.current != null &&
-                                   (Keyboard.current.spaceKey.wasPressedThisFrame ||
-                                    Keyboard.current.enterKey.wasPressedThisFrame);
-            return mousePressed || keyboardPressed;
-#else
-            return Input.GetMouseButtonDown(0) ||
-                   Input.GetKeyDown(KeyCode.Space) ||
-                   Input.GetKeyDown(KeyCode.Return);
-#endif
+            DialogueSequence sequence = GetDialogueSequence(sequenceId);
+            DialogueSystem dialogueSystem = _context?.DialogueSystem;
+            if (sequence == null || dialogueSystem == null)
+            {
+                Debug.LogWarning($"[Day1CalibrationMode] Missing dialogue sequence or DialogueSystem for '{sequenceId}'.", this);
+                yield break;
+            }
+
+            yield return dialogueSystem.PlaySequenceAndWait(sequence, args);
         }
 
-        private static bool IsDialogueAdvancePressed()
+        private void PlayDialogueSequenceNonBlocking(Day1DialogueSequence sequenceId, params L10nArg[] args)
         {
-#if ENABLE_INPUT_SYSTEM
-            bool mousePressed = Mouse.current != null && Mouse.current.leftButton.isPressed;
-            bool keyboardPressed = Keyboard.current != null &&
-                                   (Keyboard.current.spaceKey.isPressed ||
-                                    Keyboard.current.enterKey.isPressed);
-            return mousePressed || keyboardPressed;
-#else
-            return Input.GetMouseButton(0) ||
-                   Input.GetKey(KeyCode.Space) ||
-                   Input.GetKey(KeyCode.Return);
-#endif
+            DialogueSequence sequence = GetDialogueSequence(sequenceId);
+            DialogueSystem dialogueSystem = _context?.DialogueSystem;
+            if (sequence == null || dialogueSystem == null)
+            {
+                Debug.LogWarning($"[Day1CalibrationMode] Missing dialogue sequence or DialogueSystem for '{sequenceId}'.", this);
+                return;
+            }
+
+            dialogueSystem.PlaySequence(sequence, args);
+        }
+
+        private string ResolveFirstDialogueLine(Day1DialogueSequence sequenceId, params L10nArg[] args)
+        {
+            DialogueSequence sequence = GetDialogueSequence(sequenceId);
+            if (sequence == null || sequence.lines == null || sequence.lines.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return DialogueSystem.ResolveLocalizedText(sequence.lines[0], args);
+        }
+
+        private DialogueSequence GetDialogueSequence(Day1DialogueSequence sequenceId)
+        {
+            DialogueSequence assigned = sequenceId switch
+            {
+                Day1DialogueSequence.Opening => openingSequence,
+                Day1DialogueSequence.TabletBlank => tabletBlankSequence,
+                Day1DialogueSequence.Scanning => scanningSequence,
+                Day1DialogueSequence.ClassificationUnstable => classificationUnstableSequence,
+                Day1DialogueSequence.ActionOrSceneDetected => actionOrSceneDetectedSequence,
+                Day1DialogueSequence.WrittenTextDetected => writtenTextDetectedSequence,
+                Day1DialogueSequence.NonStimulusDetected => nonStimulusDetectedSequence,
+                Day1DialogueSequence.MultipleObjectsDetected => multipleObjectsDetectedSequence,
+                Day1DialogueSequence.IdentifiesDrawing => identifiesDrawingSequence,
+                Day1DialogueSequence.PreviousImageNotTransmitted => previousImageNotTransmittedSequence,
+                Day1DialogueSequence.TransmissionLabelConfirmed => transmissionLabelConfirmedSequence,
+                Day1DialogueSequence.ReactionEvaluationUnstable => reactionEvaluationUnstableSequence,
+                Day1DialogueSequence.ResponsePatternLogged => responsePatternLoggedSequence,
+                Day1DialogueSequence.ReactionNone => reactionNoneSequence,
+                Day1DialogueSequence.ReactionSubtle => reactionSubtleSequence,
+                Day1DialogueSequence.ReactionModerate => reactionModerateSequence,
+                Day1DialogueSequence.ReactionStrong => reactionStrongSequence,
+                Day1DialogueSequence.Complete => completeSequence,
+                _ => null
+            };
+
+            return assigned != null
+                ? assigned
+                : Resources.Load<DialogueSequence>($"Dialogue/Day1/{GetDialogueResourceName(sequenceId)}");
+        }
+
+        private static string GetDialogueResourceName(Day1DialogueSequence sequenceId)
+        {
+            return sequenceId switch
+            {
+                Day1DialogueSequence.Opening => "Day1Opening",
+                Day1DialogueSequence.TabletBlank => "Day1TabletBlank",
+                Day1DialogueSequence.Scanning => "Day1Scanning",
+                Day1DialogueSequence.ClassificationUnstable => "Day1ClassificationUnstable",
+                Day1DialogueSequence.ActionOrSceneDetected => "Day1ActionOrSceneDetected",
+                Day1DialogueSequence.WrittenTextDetected => "Day1WrittenTextDetected",
+                Day1DialogueSequence.NonStimulusDetected => "Day1NonStimulusDetected",
+                Day1DialogueSequence.MultipleObjectsDetected => "Day1MultipleObjectsDetected",
+                Day1DialogueSequence.IdentifiesDrawing => "Day1IdentifiesDrawing",
+                Day1DialogueSequence.PreviousImageNotTransmitted => "Day1PreviousImageNotTransmitted",
+                Day1DialogueSequence.TransmissionLabelConfirmed => "Day1TransmissionLabelConfirmed",
+                Day1DialogueSequence.ReactionEvaluationUnstable => "Day1ReactionEvaluationUnstable",
+                Day1DialogueSequence.ResponsePatternLogged => "Day1ResponsePatternLogged",
+                Day1DialogueSequence.ReactionNone => "Day1ReactionNone",
+                Day1DialogueSequence.ReactionSubtle => "Day1ReactionSubtle",
+                Day1DialogueSequence.ReactionModerate => "Day1ReactionModerate",
+                Day1DialogueSequence.ReactionStrong => "Day1ReactionStrong",
+                Day1DialogueSequence.Complete => "Day1Complete",
+                _ => string.Empty
+            };
         }
 
         private void ResolveReferences()
@@ -761,25 +758,15 @@ namespace DoodleDiplomacy.Gameplay
             };
         }
 
-        private static string GetReactionComment(ReactionTier reactionTier)
+        private static Day1DialogueSequence GetReactionSequence(ReactionTier reactionTier)
         {
             return reactionTier switch
             {
-                ReactionTier.None => L10n.T(
-                    "day1.reaction.none",
-                    "Minimal response. Logging baseline pattern."),
-                ReactionTier.Subtle => L10n.T(
-                    "day1.reaction.subtle",
-                    "Subtle response from the delegation. Logging association pattern."),
-                ReactionTier.Moderate => L10n.T(
-                    "day1.reaction.moderate",
-                    "Moderate cross-delegate activity. The drawing registered clearly."),
-                ReactionTier.Strong => L10n.T(
-                    "day1.reaction.strong",
-                    "Strong response. All three delegates reacted to the drawing."),
-                _ => L10n.T(
-                    "day1.reaction.subtle",
-                    "Subtle response from the delegation. Logging association pattern.")
+                ReactionTier.None => Day1DialogueSequence.ReactionNone,
+                ReactionTier.Subtle => Day1DialogueSequence.ReactionSubtle,
+                ReactionTier.Moderate => Day1DialogueSequence.ReactionModerate,
+                ReactionTier.Strong => Day1DialogueSequence.ReactionStrong,
+                _ => Day1DialogueSequence.ReactionSubtle
             };
         }
 
@@ -791,6 +778,28 @@ namespace DoodleDiplomacy.Gameplay
                 Adjutant => L10n.T("speaker.adjutant", Adjutant),
                 _ => speaker
             };
+        }
+
+        private enum Day1DialogueSequence
+        {
+            Opening,
+            TabletBlank,
+            Scanning,
+            ClassificationUnstable,
+            ActionOrSceneDetected,
+            WrittenTextDetected,
+            NonStimulusDetected,
+            MultipleObjectsDetected,
+            IdentifiesDrawing,
+            PreviousImageNotTransmitted,
+            TransmissionLabelConfirmed,
+            ReactionEvaluationUnstable,
+            ResponsePatternLogged,
+            ReactionNone,
+            ReactionSubtle,
+            ReactionModerate,
+            ReactionStrong,
+            Complete
         }
     }
 

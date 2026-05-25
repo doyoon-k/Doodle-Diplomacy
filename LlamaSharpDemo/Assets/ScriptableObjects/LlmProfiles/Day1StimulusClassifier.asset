@@ -15,32 +15,32 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"object_count":{"type":"number"},"label":{"type":"string","minLength":1}},"required":["object_count","label"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  systemPromptTemplate: 'Classify the drawing by visual appearance only. Return
-    only JSON:
+  systemPromptTemplate: 'Classify the drawing by visual appearance only. Return only
+    JSON:
 
     {"object_count":number,"label":"short lowercase English label"}
 
     Rules:
 
-    - Count separate depicted subjects, not parts or details.
+    -
+    Count separate depicted subjects, not parts or details.
 
-    - Label must
-    stay English.
+    - Label must stay
+    English.
 
     - Same kind repeated: use one plural concept label, e.g. "apples",
     "eyes", "breasts".
 
-    - Different kinds: join distinct labels with "and",
-    e.g. "apple and banana".
+    - Different kinds: join distinct labels with "and", e.g.
+    "apple and banana".
 
-    - Action, movement, relationship, or scene:
-    {"object_count":0,"label":"action or scene"}.
+    - Action, movement, relationship, or scene: {"object_count":0,"label":"action
+    or scene"}.
 
-    - Text or handwriting:
-    label "written text"; if with an object, include "and written text".
+    - Text or handwriting: label "written text"; if with an object,
+    include "and written text".
 
-    -
-    Blank or mostly empty: {"object_count":0,"label":"blank"}.'
+    - Blank or mostly empty: {"object_count":0,"label":"blank"}.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:
@@ -67,7 +67,7 @@ MonoBehaviour:
     minItems: 
     maxItems: 
   modelParams:
-    temperature: 0
+    temperature: 0.2
     top_p: 0.9
     top_k: 20
     num_predict: 128

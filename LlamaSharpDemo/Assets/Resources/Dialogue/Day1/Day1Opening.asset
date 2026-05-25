@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: Day1Opening
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: day1-opening
+  contextNote: "Day1 \uCE98\uB9AC\uBE0C\uB808\uC774\uC158 \uC2DC\uC791 \uC9C1\uD6C4
+    \uC7AC\uC0DD\uB429\uB2C8\uB2E4. \uD0DC\uBE14\uB9BF\uC744 \uC5F4\uAE30 \uC804\uC5D0
+    \uB2E8\uC21C\uD55C \uADF8\uB9BC \uD558\uB098\uB97C \uADF8\uB9AC\uB77C\uACE0 \uC548\uB0B4\uD569\uB2C8\uB2E4."
+  lines:
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: Mr. President, draw one simple picture on the tablet.
+    localizationKey: day1.opening.1
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: The delegation will only see the completed image. Not the drawing process.
+    localizationKey: day1.opening.2
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: The apparatus will classify the image before transmission. Once the label
+      is confirmed, we will show it to them and record the response.
+    localizationKey: day1.opening.3
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2
+  - characterID: Adjutant
+    speakerLocalizationKey: speaker.adjutant
+    text: 
+    localizationKey: day1.opening.4
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2

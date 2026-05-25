@@ -68,8 +68,9 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
 
             Assert.AreEqual(1, service.CallCount);
             Assert.AreEqual("Alien1: 위치를 지켜.", state.GetString(PromptPipelineConstants.AnswerKey));
-            StringAssert.Contains("Do not summarize, expand, soften, intensify, censor, or rewrite", service.LastPrompt);
-            StringAssert.DoesNotContain("Keep the tone and brevity suitable for in-game UI", service.LastPrompt);
+            StringAssert.Contains("Target language: Korean / 한국어 (ko-KR).", service.LastPrompt);
+            StringAssert.Contains("Source text:", service.LastPrompt);
+            StringAssert.Contains("Alien1: Hold position.", service.LastPrompt);
         }
         finally
         {
@@ -94,7 +95,6 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
                 ["languageKey"] = PromptPipelineConstants.TargetLanguageKey,
                 ["nativeLanguageKey"] = PromptPipelineConstants.TargetLanguageNativeNameKey,
                 ["enabledKey"] = PromptPipelineConstants.LlmTranslationEnabledKey,
-                ["promptStyle"] = "label",
             };
             var link = new SafeTranslateResponseChainLink(parameters, profile);
             var state = new PipelineState();
@@ -108,9 +108,49 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
             Assert.AreEqual(1, service.CallCount);
             Assert.AreEqual("apple", state.GetString("label"));
             Assert.AreEqual("사과", state.GetString("localized_label"));
-            StringAssert.Contains("short English UI label", service.LastPrompt);
+            StringAssert.Contains("Target language: Korean / 한국어 (ko-KR).", service.LastPrompt);
+            StringAssert.Contains("Source text:", service.LastPrompt);
             StringAssert.Contains("apple", service.LastPrompt);
-            StringAssert.DoesNotContain("speaker labels", service.LastPrompt);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+    }
+
+    [Test]
+    public void Execute_LegacyPromptStyleParameterDoesNotChangeGenericTranslationPrompt()
+    {
+        var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
+        var service = new FakeLlmService("{\"response\":\"휴대폰\"}");
+        LlmServiceLocator.Register(service);
+
+        try
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                ["sourceKey"] = "label",
+                ["outputKey"] = "localized_label",
+                ["localeKey"] = PromptPipelineConstants.TargetLocaleKey,
+                ["languageKey"] = PromptPipelineConstants.TargetLanguageKey,
+                ["nativeLanguageKey"] = PromptPipelineConstants.TargetLanguageNativeNameKey,
+                ["enabledKey"] = PromptPipelineConstants.LlmTranslationEnabledKey,
+                ["promptStyle"] = "label",
+            };
+            var link = new SafeTranslateResponseChainLink(parameters, profile);
+            var state = new PipelineState();
+            state.SetString("label", "phones");
+            state.SetString(PromptPipelineConstants.TargetLocaleKey, "ko-KR");
+            state.SetString(PromptPipelineConstants.TargetLanguageKey, "Korean");
+            state.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "한국어");
+
+            RunEnumerator(link.Execute(state, _ => { }));
+
+            Assert.AreEqual(1, service.CallCount);
+            Assert.AreEqual("휴대폰", state.GetString("localized_label"));
+            StringAssert.Contains("Target language: Korean / 한국어 (ko-KR).", service.LastPrompt);
+            StringAssert.DoesNotContain("drawing label", service.LastPrompt);
+            StringAssert.Contains("phones", service.LastPrompt);
         }
         finally
         {

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: Day1ClassificationUnstable
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: day1-classification-unstable
+  contextNote: "\uC774\uBBF8\uC9C0 \uB0B4\uBCF4\uB0B4\uAE30\uB098 AI \uBD84\uB958\uAC00
+    \uC2E4\uD328\uD588\uAC70\uB098 \uBD84\uB958 \uACB0\uACFC \uB77C\uBCA8\uC774 \uBE44\uC5B4
+    \uC788\uC744 \uB54C \uC7AC\uC0DD\uB429\uB2C8\uB2E4. \uCE94\uBC84\uC2A4\uB97C
+    \uC9C0\uC6B0\uACE0 \uB2E4\uC2DC \uADF8\uB9AC\uAC8C \uD569\uB2C8\uB2E4."
+  lines:
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: Classification unstable. The response data would be contaminated. Please
+      redraw.
+    localizationKey: day1.classification_unstable
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: Classification unstable. The response data would be contaminated. Please
+      redraw.
+    localizationKey: day1.classification_unstable
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2

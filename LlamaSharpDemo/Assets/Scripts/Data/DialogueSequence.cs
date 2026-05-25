@@ -7,6 +7,7 @@ namespace DoodleDiplomacy.Data
     public class DialogueSequence : ScriptableObject
     {
         public string sequenceID;
+        [TextArea(2, 5)] public string contextNote;
         public List<DialogueLineData> lines = new List<DialogueLineData>();
     }
 }

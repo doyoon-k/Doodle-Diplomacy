@@ -1,0 +1,19 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.2/staging' branch; Version is '6000.2.11f1 (7134d7685e5d) revision 7419095'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Doyoon Kim" at "2026-05-24T14:52:50.1524962Z"
+OS: 'Windows 11  (10.0.26200) 64bit Core' Language: 'ko' Physical Memory: 16004 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+Date: 2026-05-24T14:52:50Z
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.2.11f1\Editor\Unity.exe
+-batchmode
+-nographics
+-quit
+-projectPath
+C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\LlamaSharpDemo
+-logFile
+C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\Temp\dialogue_timeline_unity_compile.log
+Successfully changed project path to: C:\Users\Doyoon Kim\Documents\Digipen\Unity_LLM_Integration\LlamaSharpDemo
+C:/Users/Doyoon Kim/Documents/Digipen/Unity_LLM_Integration/LlamaSharpDemo
+Exiting without the bug reporter. Application will terminate with return code 1

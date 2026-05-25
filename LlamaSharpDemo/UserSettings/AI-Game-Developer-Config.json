@@ -169,6 +169,54 @@
       "enabled": false
     },
     {
+      "name": "profiler-capture-frame",
+      "enabled": false
+    },
+    {
+      "name": "profiler-clear-data",
+      "enabled": false
+    },
+    {
+      "name": "profiler-enable-module",
+      "enabled": false
+    },
+    {
+      "name": "profiler-get-memory-stats",
+      "enabled": false
+    },
+    {
+      "name": "profiler-get-rendering-stats",
+      "enabled": false
+    },
+    {
+      "name": "profiler-get-script-stats",
+      "enabled": false
+    },
+    {
+      "name": "profiler-get-status",
+      "enabled": false
+    },
+    {
+      "name": "profiler-list-modules",
+      "enabled": false
+    },
+    {
+      "name": "profiler-load-data",
+      "enabled": false
+    },
+    {
+      "name": "profiler-save-data",
+      "enabled": false
+    },
+    {
+      "name": "profiler-start",
+      "enabled": false
+    },
+    {
+      "name": "profiler-stop",
+      "enabled": false
+    },
+    {
       "name": "reflection-method-call",
       "enabled": false
     },
@@ -213,6 +261,10 @@
       "enabled": false
     },
     {
+      "name": "screenshot-isolated",
+      "enabled": true
+    },
+    {
       "name": "screenshot-scene-view",
       "enabled": false
     },
@@ -237,7 +289,7 @@
       "enabled": true
     },
     {
-      "name": "tool-list",
+      "name": "unity-tool-list",
       "enabled": true
     },
     {
@@ -252,19 +304,19 @@
   "prompts": [
     {
       "name": "setup-animator-controller",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-simple-tweening",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-timeline-sequence",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-animation-events",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-procedural-animation",
@@ -272,7 +324,7 @@
     },
     {
       "name": "setup-sprite-animation",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-ik-system",
@@ -284,7 +336,7 @@
     },
     {
       "name": "organize-project-structure",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "import-setup-sprites",
@@ -316,27 +368,27 @@
     },
     {
       "name": "add-debug-visualization",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-performance-profiling",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-test-scene",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-logging-system",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-unit-tests",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-debug-ui",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-assertion-checks",
@@ -344,23 +396,23 @@
     },
     {
       "name": "create-automated-tests",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-standard-components",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-player-controller",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-ui-canvas",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-physics-interactions",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-interactive-object",
@@ -372,31 +424,31 @@
     },
     {
       "name": "create-particle-effects",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-animator-component",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-basic-scene",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "organize-scene-hierarchy",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-lighting-setup",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-prefab-from-selection",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-scene-camera",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-environment-template",
@@ -408,37 +460,37 @@
     },
     {
       "name": "add-event-system",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-singleton-manager",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-coroutine-framework",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "create-scriptableobject-data",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "implement-object-pooling",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "add-state-machine",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-dependency-injection",
-      "enabled": true
+      "enabled": false
     }
   ],
   "resources": [
     {
       "name": "GameObject from Current Scene by Path",
-      "enabled": true
+      "enabled": false
     }
   ],
   "skillAutoGenerate": {
@@ -449,5 +501,5 @@
   "timeoutMs": 10000,
   "keepConnected": true,
   "generateSkillFiles": false,
-  "skillsPath": "C:\\Dev\\digipen\\cs394\\Unity_LLM_Integration\\Unity_LLM_Integration\\LlamaSharpDemo\\.agent\\skills"
+  "skillsPath": ".agents/skills"
 }

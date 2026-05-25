@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 277c4f6296f99144ebee383cc24c8301, type: 3}
+  m_Name: Day1TransmissionLabelConfirmed
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
+  sequenceID: day1-transmission-label-confirmed
+  contextNote: 플레이어가 라벨을 확정한 직후 재생됩니다. 그림을 외계 대표단에게 보여주기 전에 전송 라벨을 알립니다.
+  lines:
+  - characterID: Science Officer
+    speakerLocalizationKey: speaker.science_officer
+    text: 'Transmission label confirmed: {label}. Presenting drawing to the delegation.'
+    localizationKey: day1.transmission_label_confirmed
+    displayMode: 1
+    portraitID: 
+    advanceType: 0
+    autoDelay: 2

@@ -15,7 +15,16 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"response":{"type":"string"}},"required":["response"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  systemPromptTemplate: 
+  systemPromptTemplate: 'Translate the source text to {{target_language}} / {{target_language_native}}
+    ({{target_locale}}).
+
+    Keep the original meaning as accurate as possible. Do not summarize, expand,
+    censor, explain, or rewrite beyond translation. Preserve line breaks, placeholders,
+    tags, brackets, numbers, speaker labels, and protocol markers.
+
+    Return only valid JSON exactly in this shape:
+
+    {"response":"..."}'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:

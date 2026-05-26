@@ -42,5 +42,5 @@ MonoBehaviour:
     localizationKey: intro.adjutant.line3
     displayMode: 1
     portraitID: 
-    advanceType: 1
+    advanceType: 0
     autoDelay: 2

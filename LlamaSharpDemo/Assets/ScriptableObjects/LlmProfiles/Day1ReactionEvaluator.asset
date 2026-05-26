@@ -54,7 +54,7 @@ MonoBehaviour:
     repeat_penalty: 1.08
     seed: 0
   model: Models/gemma-3-4b-it-Q4_K_M.gguf
-  visionProjectorModel: 
+  visionProjectorModel: Models/mmproj-model-f16-4B.gguf
   visionProjectorRelativeToStreamingAssets: 1
   runtimeParams:
     modelPathRelativeToStreamingAssets: 1

@@ -6,6 +6,10 @@ using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Dialogue;
 using DoodleDiplomacy.Localization;
 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+
 namespace DoodleDiplomacy.Character
 {
     [System.Serializable]
@@ -106,6 +110,8 @@ namespace DoodleDiplomacy.Character
             string mutterOverride,
             string narrationOverride)
         {
+            float reactionStartedAt = Time.time;
+
             if (TryResolveBinding(satisfaction, out ReactionAnimationBinding binding, out bool usedNeutralFallback))
             {
                 if (!TryPlayBinding(binding))
@@ -139,35 +145,35 @@ namespace DoodleDiplomacy.Character
                 ? Mathf.Max(0f, binding.clip.length)
                 : 0f;
 
-            float elapsed = 0f;
-            float lookWait = GetStageDuration(lookAtMonitorDuration, clipDuration, elapsed);
-            if (lookWait > 0f)
+            if (lookAtMonitorDuration > 0f)
             {
-                yield return new WaitForSeconds(lookWait);
-                elapsed += lookWait;
+                yield return new WaitForSeconds(lookAtMonitorDuration);
             }
 
             string speaker = string.IsNullOrWhiteSpace(speakerOverride)
                 ? GetReactionSpeaker()
                 : speakerOverride.Trim();
             string mutterText = mutterOverride ?? GetMutterText(satisfaction);
-            ShowSubtitleIfNotEmpty(speaker, mutterText);
-            float mutterWait = GetStageDuration(mutterDuration, clipDuration, elapsed);
-            if (mutterWait > 0f)
+            if (ShowSubtitleIfNotEmpty(speaker, mutterText))
             {
-                yield return new WaitForSeconds(mutterWait);
-                elapsed += mutterWait;
+                yield return WaitForDialogueAdvance(mutterDuration);
+            }
+            else if (mutterDuration > 0f)
+            {
+                yield return new WaitForSeconds(mutterDuration);
             }
 
             string narrationText = narrationOverride ?? GetNarrationText(satisfaction);
-            ShowSubtitleIfNotEmpty(speaker, narrationText);
-            float narrationWait = GetStageDuration(narratorLingerDuration, clipDuration, elapsed);
-            if (narrationWait > 0f)
+            if (ShowSubtitleIfNotEmpty(speaker, narrationText))
             {
-                yield return new WaitForSeconds(narrationWait);
-                elapsed += narrationWait;
+                yield return WaitForDialogueAdvance(narratorLingerDuration);
+            }
+            else if (narratorLingerDuration > 0f)
+            {
+                yield return new WaitForSeconds(narratorLingerDuration);
             }
 
+            float elapsed = Time.time - reactionStartedAt;
             if (clipDuration > elapsed)
             {
                 yield return new WaitForSeconds(clipDuration - elapsed);
@@ -180,15 +186,55 @@ namespace DoodleDiplomacy.Character
             OnReactionComplete?.Invoke();
         }
 
-        private void ShowSubtitleIfNotEmpty(string speaker, string text)
+        private bool ShowSubtitleIfNotEmpty(string speaker, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 subtitleDisplay?.Hide();
-                return;
+                return false;
             }
 
             subtitleDisplay?.Show(speaker, text);
+            return true;
+        }
+
+        private IEnumerator WaitForDialogueAdvance(float minimumSeconds)
+        {
+            while (IsDialogueAdvancePressed())
+            {
+                yield return null;
+            }
+
+            float elapsed = 0f;
+            float delay = Mathf.Max(0f, minimumSeconds);
+            while (elapsed < delay)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            while (!GetDialogueAdvanceThisFrame())
+            {
+                yield return null;
+            }
+        }
+
+        private static bool GetDialogueAdvanceThisFrame()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+#else
+            return Input.GetMouseButtonDown(0);
+#endif
+        }
+
+        private static bool IsDialogueAdvancePressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Mouse.current != null && Mouse.current.leftButton.isPressed;
+#else
+            return Input.GetMouseButton(0);
+#endif
         }
 
         private bool TryResolveBinding(
@@ -294,23 +340,6 @@ namespace DoodleDiplomacy.Character
             }
 
             return true;
-        }
-
-        private static float GetStageDuration(float configuredDuration, float clipDuration, float elapsed)
-        {
-            float requested = Mathf.Max(0f, configuredDuration);
-            if (clipDuration <= 0f)
-            {
-                return requested;
-            }
-
-            float remaining = clipDuration - elapsed;
-            if (remaining <= 0f)
-            {
-                return 0f;
-            }
-
-            return Mathf.Min(requested, remaining);
         }
 
         private static string GetMappedText(Dictionary<SatisfactionLevel, string> map, SatisfactionLevel level)

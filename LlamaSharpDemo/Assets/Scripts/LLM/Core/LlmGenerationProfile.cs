@@ -22,10 +22,15 @@ public class LlmGenerationProfile : BaseLlmGenerationProfile
     [Serializable]
     public class ModelParams
     {
+        [Tooltip("Sampling temperature. Higher values make responses more varied.")]
         public float temperature = 0.7f;
+        [Tooltip("Nucleus sampling probability mass.")]
         public float top_p = 0.9f;
+        [Tooltip("Top-k sampling candidate count.")]
         public float top_k = 40f;
+        [Tooltip("Maximum predicted tokens. 0 lets the backend default apply.")]
         public int num_predict = 0;
+        [Tooltip("Penalty applied to repeated tokens.")]
         public float repeat_penalty = 1.1f;
         [Min(0)]
         [Tooltip("0 keeps random sampling. Values greater than 0 force a deterministic seed.")]
@@ -39,15 +44,19 @@ public class LlmGenerationProfile : BaseLlmGenerationProfile
         public bool modelPathRelativeToStreamingAssets = true;
 
         [Min(128)]
+        [Tooltip("Context window size used when loading the local model.")]
         public int contextSize = 2048;
 
         [Min(0)]
+        [Tooltip("Number of model layers to offload to GPU. 0 keeps inference on CPU.")]
         public int gpuLayerCount = 0;
 
         [Min(0)]
+        [Tooltip("CPU thread count for local inference. 0 lets the backend choose.")]
         public int threads = 0;
     }
 
+    [Tooltip("Runtime loading parameters for the local GGUF model.")]
     public RuntimeParams runtimeParams = new RuntimeParams();
 
     protected override void OnValidate()
@@ -96,23 +105,34 @@ public enum ThinkingMode
 [Serializable]
 public class JsonFieldDefinition
 {
+    [Tooltip("JSON property name emitted by the model.")]
     public string fieldName = "field";
+    [Tooltip("JSON type expected for this property.")]
     public JsonFieldType fieldType = JsonFieldType.String;
+    [Tooltip("Element type used when Field Type is Array.")]
     public JsonArrayElementType arrayElementType = JsonArrayElementType.String;
+    [Tooltip("Nested JSON fields used when this field is an object or array of objects.")]
     [SerializeField]
     public List<JsonFieldDefinition> children = new();
+    [Tooltip("Allowed string values when this field is constrained to an enum.")]
     [SerializeField]
     public List<string> enumOptions = new();
+    [Tooltip("Minimum numeric value constraint for generated JSON schema.")]
     [SerializeField]
     public string minValue;
+    [Tooltip("Maximum numeric value constraint for generated JSON schema.")]
     [SerializeField]
     public string maxValue;
+    [Tooltip("Minimum string length constraint for generated JSON schema.")]
     [SerializeField]
     public string minLength;
+    [Tooltip("Maximum string length constraint for generated JSON schema.")]
     [SerializeField]
     public string maxLength;
+    [Tooltip("Minimum array item count constraint for generated JSON schema.")]
     [SerializeField]
     public string minItems;
+    [Tooltip("Maximum array item count constraint for generated JSON schema.")]
     [SerializeField]
     public string maxItems;
 

@@ -16,9 +16,13 @@ namespace DoodleDiplomacy.UI
         private const string ObjectPairModeId = "object-pair-drawing";
 
         [Header("References")]
+        [Tooltip("Root panel shown during preview state for object-pair drawing mode.")]
         [SerializeField] private GameObject panel;
+        [Tooltip("Button that submits the current drawing for judging.")]
         [SerializeField] private Button submitButton;
+        [Tooltip("Button that returns from preview to drawing mode for edits.")]
         [SerializeField] private Button modifyButton;
+        [Tooltip("Gameplay mode host used to route preview button actions.")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
 
         private bool _subscribedToHost;

@@ -14,7 +14,9 @@ public class DrawingColorPickerInteractionZone : MonoBehaviour, IPointerDownHand
         SvTriangle
     }
 
+    [Tooltip("Color picker controller that receives pointer updates from this interaction zone.")]
     [SerializeField] private DrawingColorPickerController picker;
+    [Tooltip("Which part of the color picker this RectTransform controls.")]
     [SerializeField] private ZoneKind zoneKind;
 
     public void Configure(DrawingColorPickerController targetPicker, ZoneKind targetZoneKind)

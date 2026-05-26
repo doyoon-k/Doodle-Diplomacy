@@ -10,9 +10,13 @@ namespace DoodleDiplomacy.Gameplay
         public static GameplayModeHost Instance { get; private set; }
 
         [Header("Mode")]
+        [Tooltip("Scene reference hub that supplies shared gameplay dependencies for the active mode.")]
         [SerializeField] private SceneReferenceHub sceneReferences;
+        [Tooltip("MonoBehaviour implementing IGameplayMode that should be entered by default.")]
         [SerializeField] private MonoBehaviour defaultModeBehaviour;
+        [Tooltip("Enter the default gameplay mode automatically on Start.")]
         [SerializeField] private bool enterDefaultModeOnStart = true;
+        [Tooltip("Validate required SceneReferenceHub references during Awake and log missing assignments.")]
         [SerializeField] private bool validateSceneReferencesOnAwake = true;
 
         private GameplayModeContext _context;

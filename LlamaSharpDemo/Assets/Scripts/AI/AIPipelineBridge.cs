@@ -99,16 +99,23 @@ namespace DoodleDiplomacy.AI
         public static AIPipelineBridge Instance { get; private set; }
 
         [Header("SD Object Generation")]
+        [Tooltip("Stable Diffusion runtime settings asset used to generate round object images.")]
         [SerializeField] private StableDiffusionCppSettings sdSettings;
+        [Tooltip("Optional model profile override for generated object images.")]
         [SerializeField] private StableDiffusionCppModelProfile sdModelProfile;
+        [Tooltip("Fallback prompt for the left generated object when keyword selection is unavailable.")]
         [TextArea(1, 3)]
         [SerializeField] private string objectPromptA = "a glowing alien artifact cube, dark background, dramatic lighting, product photo";
+        [Tooltip("Fallback prompt for the right generated object when keyword selection is unavailable.")]
         [TextArea(1, 3)]
         [SerializeField] private string objectPromptB = "an alien crystal sphere, dark background, dramatic lighting, product photo";
+        [Tooltip("Negative prompt appended to Stable Diffusion object generation requests.")]
         [TextArea(1, 2)]
         [SerializeField] private string sdNegativePrompt = "low quality, blurry, text, watermark, cropped, out of frame, partial object, close-up, zoomed in, occluded, cut off";
         [Header("Pre-generated Object Images")]
+        [Tooltip("Use the pre-generated image catalog instead of running Stable Diffusion at round start.")]
         [SerializeField] private bool usePreGeneratedCatalog;
+        [Tooltip("Catalog of curated/pre-generated object image pairs for faster or deterministic rounds.")]
         [SerializeField] private PreGeneratedObjectImageCatalog preGeneratedCatalog;
 
         [Header("LLM Pipelines")]
@@ -127,34 +134,53 @@ namespace DoodleDiplomacy.AI
         [Tooltip("Curated word pair pool. When assigned, pairs are drawn from here first and the LLM pipeline is skipped.")]
         [SerializeField] private DoodleDiplomacy.Data.WordPairPool wordPairPool;
         [Header("Pipeline State Keys")]
+        [Tooltip("PipelineState key used to pass the player's drawing image into vision-capable pipelines.")]
         [SerializeField] private string drawingImageKey = "reference_image";
+        [Tooltip("PipelineState key used to pass the confirmed Day 1 stimulus label into the reaction evaluator.")]
         [SerializeField] private string day1StimulusLabelKey = "stimulus_label";
+        [Tooltip("PipelineState key used to pass the active alien personality prompt context.")]
         [SerializeField] private string alienPersonalityKey = "alien_personality";
+        [Tooltip("PipelineState key used to pass the current round object names/prompts.")]
         [SerializeField] private string targetObjectsKey = "target_objects";
+        [Tooltip("Output key expected from the judgment pipeline for satisfaction level.")]
         [SerializeField] private string judgmentSatisfactionKey = "satisfaction";
+        [Tooltip("Output key expected from the judgment pipeline for scene reading text.")]
         [SerializeField] private string judgmentSceneReadingKey = "scene_reading";
+        [Tooltip("Output key expected from the judgment pipeline for the alien's reasoning text.")]
         [SerializeField] private string judgmentReasonKey = "judgment_reason";
+        [Tooltip("Output key expected from the word-selection pipeline for selected round keywords.")]
         [SerializeField] private string wordsSelectionWordsKey = "words";
+        [Tooltip("Prompt template used to turn a selected keyword into a Stable Diffusion object prompt. {0} is replaced by the keyword.")]
         [SerializeField] private string selectedKeywordPromptTemplate = "best quality, studio product photo of a single {0}, iconic and instantly recognizable shape, centered composition, full object fully visible, isolated on a clean white background, sharp focus, even soft lighting, high-contrast silhouette, realistic texture, no extra objects, no text, no watermark";
 
         [Header("References")]
+        [Tooltip("Monitor display that receives generated object textures and submitted drawing previews.")]
         [SerializeField] private SharedMonitorDisplay monitorDisplay;
+        [Tooltip("Bridge used to export the current drawing texture for AI pipeline input.")]
         [SerializeField] private DrawingExportBridge drawingExportBridge;
+        [Tooltip("Available alien personality profiles. One is selected for prompt context.")]
         [SerializeField] private AlienPersonality[] alienPersonalityProfiles = Array.Empty<AlienPersonality>();
+        [Tooltip("Explicit alien personality override. If empty, one profile may be selected from Alien Personality Profiles.")]
         [SerializeField] private AlienPersonality alienPersonality;
 
         [Header("Localization")]
+        [Tooltip("LLM localization settings used when pipeline output needs localized display text.")]
         [SerializeField] private LlmLocalizationSettings localizationSettings;
 
         [Header("Telepathy Postprocess")]
+        [Tooltip("Fraction of telepathy lines that can receive terminal-style corruption.")]
         [Range(0f, 1f)]
         [SerializeField] private float telepathyCorruptedLineRatio = 0.4f;
+        [Tooltip("How aggressively corruption symbols are injected into selected telepathy lines.")]
         [Range(0f, 1f)]
         [SerializeField] private float telepathyCorruptionStrength = 0.45f;
+        [Tooltip("Minimum number of telepathy lines to corrupt when corruption is applied.")]
         [Range(0, 7)]
         [SerializeField] private int telepathyMinCorruptedLines = 1;
+        [Tooltip("Maximum number of telepathy lines to corrupt when corruption is applied.")]
         [Range(0, 7)]
         [SerializeField] private int telepathyMaxCorruptedLines = 3;
+        [Tooltip("Symbol fragments inserted into telepathy text to create terminal noise.")]
         [SerializeField] private string[] telepathyNoiseBursts =
         {
             "/|/",

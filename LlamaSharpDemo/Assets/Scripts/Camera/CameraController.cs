@@ -18,6 +18,7 @@ namespace DoodleDiplomacy.Camera
         [Tooltip("Camera anchor transform. Camera moves to this position and aligns forward to this transform's world-space +Z.")]
         public Transform target;
         [Range(10f, 120f)]
+        [Tooltip("Field of view applied when this camera preset becomes active.")]
         public float fieldOfView = 60f;
 
         public bool TryGetPose(out Vector3 position, out Quaternion rotation)
@@ -58,26 +59,39 @@ namespace DoodleDiplomacy.Camera
         [SerializeField] private UnityEngine.Camera targetCamera;
 
         [Header("Mode Presets")]
+        [Tooltip("Camera pose used by the default room view.")]
         [SerializeField] private CameraPreset defaultPreset = new() { fieldOfView = 60f };
+        [Tooltip("Camera pose used for normal free-look interaction around the room.")]
         [SerializeField] private CameraPreset freeLookPreset = new() { fieldOfView = 60f };
+        [Tooltip("Camera pose used while the player is drawing on the tablet.")]
         [SerializeField] private CameraPreset tabletViewPreset = new() { fieldOfView = 45f };
+        [Tooltip("Camera pose used when zooming into the terminal screen.")]
         [SerializeField] private CameraPreset terminalZoomPreset = new() { fieldOfView = 35f };
+        [Tooltip("Camera pose used during the alien reaction cutaway.")]
         [SerializeField] private CameraPreset alienReactionPreset = new() { fieldOfView = 42f };
+        [Tooltip("Camera pose used when inspecting the shared monitor.")]
         [SerializeField] private CameraPreset sharedMonitorZoomPreset = new() { fieldOfView = 38f };
 
         [Header("Transition")]
+        [Tooltip("Seconds for camera moves between mode presets.")]
         [SerializeField] private float transitionDuration = 0.5f;
 
         [Header("Hover Look")]
+        [Tooltip("How quickly the free-look camera rotates toward hovered interactable focus points.")]
         [SerializeField] private float hoverLookLerpSpeed = 5f;
+        [Tooltip("Seconds the cursor must hover an interactable before the camera starts focusing it.")]
         [SerializeField] private float focusAcquireDelay = 0.15f;
 
         [Header("Edge Browse")]
+        [Tooltip("Normalized screen-edge band that triggers free-look browsing.")]
         [SerializeField] private float edgeBrowseThresholdNormalized = 0.08f;
+        [Tooltip("Yaw speed, in degrees per second, while browsing from the screen edge.")]
         [SerializeField] private float edgeBrowseYawSpeed = 55f;
+        [Tooltip("Maximum yaw offset, in degrees, allowed from edge browsing.")]
         [SerializeField] private float maxBrowseYaw = 65f;
 
         [Header("Events")]
+        [Tooltip("UnityEvent invoked after a camera mode transition completes.")]
         public CameraModeUnityEvent OnTransitionComplete;
 
         public static CameraController Instance { get; private set; }

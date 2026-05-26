@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Gameplay;
+using TMPro;
 
 public enum DrawingToolMode
 {
@@ -18,43 +19,91 @@ public class DrawingBoardController : MonoBehaviour
     private const HideFlags RuntimeHideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
 
     [Header("Board")]
+    [Tooltip("Renderer that displays the runtime drawing texture on the tablet/board surface.")]
     [SerializeField] private Renderer boardRenderer;
+    [Tooltip("Collider used to raycast pointer input onto the drawable surface.")]
     [SerializeField] private Collider drawingSurfaceCollider;
+    [Tooltip("Camera used to convert pointer screen position into drawing-surface rays.")]
     [SerializeField] private Camera drawingCamera;
+    [Tooltip("Base canvas texture width before optional board-aspect matching.")]
     [SerializeField] private int textureWidth = 512;
+    [Tooltip("Base canvas texture height before optional board-aspect matching.")]
     [SerializeField] private int textureHeight = 512;
+    [Tooltip("Resize the runtime canvas to match the physical drawing board aspect ratio.")]
     [SerializeField] private bool autoMatchCanvasResolutionToBoardAspect = true;
+    [Tooltip("Filter mode applied to runtime drawing textures.")]
     [SerializeField] private FilterMode filterMode = FilterMode.Bilinear;
+    [Tooltip("Material texture property used for the drawing texture. URP usually uses _BaseMap.")]
     [SerializeField] private string texturePropertyName = "_BaseMap";
+    [Tooltip("Optional material template used to create the runtime drawing material.")]
     [SerializeField] private Material boardMaterialTemplate;
+    [Tooltip("Scale applied when mapping the runtime canvas texture onto the board material.")]
     [SerializeField] private Vector2 boardTextureScale = new(-1f, -1f);
+    [Tooltip("Offset applied when mapping the runtime canvas texture onto the board material.")]
     [SerializeField] private Vector2 boardTextureOffset = new(1f, 1f);
 
     [Header("Export")]
+    [Tooltip("Flip exported drawing pixels horizontally before sending to AI or monitors.")]
     [SerializeField] private bool flipExportHorizontally;
+    [Tooltip("Flip exported drawing pixels vertically before sending to AI or monitors.")]
     [SerializeField] private bool flipExportVertically;
 
     [Header("Brush")]
+    [Tooltip("Color used when clearing the canvas and when erasing.")]
     [SerializeField] private Color backgroundColor = Color.white;
+    [Tooltip("Display color for the non-paintable area outside Normalized Paint Area.")]
     [SerializeField] private Color nonPaintAreaDisplayColor = new(0.88f, 0.90f, 0.94f, 1f);
+    [Tooltip("Display color for the divider line around the paintable area.")]
     [SerializeField] private Color paintAreaDividerColor = new(0.73f, 0.77f, 0.84f, 1f);
+    [Tooltip("Divider width around the paintable area, expressed as a fraction of canvas size.")]
     [SerializeField] [Range(0f, 0.02f)] private float paintAreaDividerWidthNormalized = 0.003f;
+    [Tooltip("Current brush color used by the brush and fill tools.")]
     [SerializeField] private Color brushColor = Color.black;
+    [Tooltip("Current brush radius in canvas pixels.")]
     [SerializeField] private int brushRadius = 6;
+    [Tooltip("Minimum brush radius selectable by UI or scripts.")]
     [SerializeField] private int minBrushRadius = 1;
+    [Tooltip("Maximum brush radius selectable by UI or scripts.")]
     [SerializeField] private int maxBrushRadius = 24;
+    [Tooltip("Prevent drawing when the pointer is over Unity UI.")]
     [SerializeField] private bool blockPointerWhenOverUi = true;
+    [Tooltip("Paintable area inside the canvas in normalized coordinates: x, y, width, height.")]
     [SerializeField] private Rect normalizedPaintArea = new(0.40f, 0.02f, 0.58f, 0.96f);
 
     [Header("Preview")]
+    [Tooltip("Show a brush-size preview on the drawing surface while hovering.")]
     [SerializeField] private bool showBrushPreview = true;
+    [Tooltip("Renderer helper used to draw the brush or eraser preview on the board surface.")]
     [SerializeField] private DrawingBrushPreview brushPreview;
+    [Tooltip("World-space offset that lifts the preview slightly off the drawing surface to avoid z-fighting.")]
     [SerializeField] private float previewSurfaceOffset = 0.01f;
+    [Tooltip("Number of segments used for the circular preview mesh.")]
     [SerializeField] private int previewSegments = 48;
+    [Tooltip("Color used for the filled brush preview.")]
     [SerializeField] private Color previewBrushColor = new(0f, 0f, 0f, 0.9f);
+    [Tooltip("Color reserved for eraser preview styling.")]
     [SerializeField] private Color previewEraserColor = new(0.15f, 0.55f, 1f, 0.95f);
 
+    [Header("Recognition Label")]
+    [Tooltip("Show a small recognized-object label on the tablet screen during confirmation.")]
+    [SerializeField] private bool recognitionLabelEnabled = true;
+    [Tooltip("Pre-placed TextMeshPro label on the tablet surface. Assign a prefab or scene object here to tune position, rotation, size, font, and color directly in the Inspector.")]
+    [SerializeField] private TextMeshPro recognitionLabelText;
+    [Tooltip("Create a fallback label at runtime if Recognition Label Text is not assigned.")]
+    [SerializeField] private bool autoCreateRecognitionLabelIfMissing;
+    [Tooltip("Text color used only by the runtime fallback recognition label.")]
+    [SerializeField] private Color recognitionLabelColor = new(0.02f, 0.04f, 0.05f, 0.82f);
+    [Tooltip("Fallback recognition label width as a fraction of the tablet screen width.")]
+    [SerializeField] [Range(0.05f, 0.8f)] private float recognitionLabelWidthNormalized = 0.32f;
+    [Tooltip("Fallback recognition label text height as a fraction of the tablet screen height.")]
+    [SerializeField] [Range(0.01f, 0.15f)] private float recognitionLabelHeightNormalized = 0.045f;
+    [Tooltip("Bottom-right inset for the fallback recognition label, in normalized tablet screen units.")]
+    [SerializeField] private Vector2 recognitionLabelInsetNormalized = new(0.025f, 0.025f);
+    [Tooltip("World-space offset that lifts the fallback recognition label slightly off the tablet screen.")]
+    [SerializeField] private float recognitionLabelSurfaceOffset = 0.012f;
+
     [Header("History")]
+    [Tooltip("Maximum undo history entries retained for drawing edits.")]
     [SerializeField] private int maxHistoryEntries = 24;
 
     private DrawingCanvas _canvas;
@@ -73,6 +122,7 @@ public class DrawingBoardController : MonoBehaviour
     private bool _missingDrawingCameraLogged;
     private Vector2Int _lastPixel;
     private readonly DrawingStrokeHistory _strokeHistory = new();
+    private TextMeshPro _runtimeRecognitionLabelText;
 
     public event Action<int> BrushRadiusChanged;
     public event Action<bool, bool> HistoryStateChanged;
@@ -235,6 +285,39 @@ public class DrawingBoardController : MonoBehaviour
         }
     }
 
+    public void ShowRecognitionLabel(string label)
+    {
+        if (!recognitionLabelEnabled || string.IsNullOrWhiteSpace(label))
+        {
+            ClearRecognitionLabel();
+            return;
+        }
+
+        EnsureRuntimeReady();
+        TextMeshPro labelText = GetRecognitionLabelText(createIfMissing: true);
+        if (labelText == null)
+        {
+            return;
+        }
+
+        labelText.text = label.Trim();
+        labelText.gameObject.SetActive(true);
+        if (labelText == _runtimeRecognitionLabelText)
+        {
+            labelText.color = recognitionLabelColor;
+            PositionRuntimeRecognitionLabel();
+        }
+    }
+
+    public void ClearRecognitionLabel()
+    {
+        TextMeshPro labelText = GetRecognitionLabelText(createIfMissing: false);
+        if (labelText != null)
+        {
+            labelText.gameObject.SetActive(false);
+        }
+    }
+
     public DrawingToolMode GetCurrentToolMode()
     {
         if (_useFillTool)
@@ -319,6 +402,7 @@ public class DrawingBoardController : MonoBehaviour
         _history?.Clear();
         ReleaseRuntimeMaterial();
         CleanupBrushPreview();
+        CleanupRecognitionLabel();
     }
 
     private void InitializeCanvas()
@@ -1174,6 +1258,231 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         SyncBrushPreviewRendererSettings();
+        PositionRuntimeRecognitionLabel();
+    }
+
+    private TextMeshPro GetRecognitionLabelText(bool createIfMissing)
+    {
+        if (recognitionLabelText != null)
+        {
+            return recognitionLabelText;
+        }
+
+        if (_runtimeRecognitionLabelText != null)
+        {
+            return _runtimeRecognitionLabelText;
+        }
+
+        if (createIfMissing && autoCreateRecognitionLabelIfMissing)
+        {
+            EnsureRuntimeRecognitionLabel();
+        }
+
+        return _runtimeRecognitionLabelText;
+    }
+
+    private void EnsureRuntimeRecognitionLabel()
+    {
+        if (_runtimeRecognitionLabelText != null)
+        {
+            return;
+        }
+
+        Transform parent = drawingSurfaceCollider != null ? drawingSurfaceCollider.transform : transform;
+        var labelObject = new GameObject("RecognitionLabel", typeof(RectTransform), typeof(TextMeshPro))
+        {
+            hideFlags = RuntimeHideFlags
+        };
+        labelObject.transform.SetParent(parent, false);
+        labelObject.layer = boardRenderer != null ? boardRenderer.gameObject.layer : gameObject.layer;
+
+        _runtimeRecognitionLabelText = labelObject.GetComponent<TextMeshPro>();
+        _runtimeRecognitionLabelText.alignment = TextAlignmentOptions.BottomRight;
+        _runtimeRecognitionLabelText.enableWordWrapping = false;
+        _runtimeRecognitionLabelText.overflowMode = TextOverflowModes.Ellipsis;
+        _runtimeRecognitionLabelText.fontStyle = FontStyles.Bold;
+        _runtimeRecognitionLabelText.richText = false;
+        _runtimeRecognitionLabelText.color = recognitionLabelColor;
+        _runtimeRecognitionLabelText.gameObject.SetActive(false);
+    }
+
+    private void PositionRuntimeRecognitionLabel()
+    {
+        if (_runtimeRecognitionLabelText == null || !_runtimeRecognitionLabelText.gameObject.activeSelf)
+        {
+            return;
+        }
+
+        if (!TryGetRecognitionLabelPlacement(
+                out Vector3 position,
+                out Quaternion rotation,
+                out Vector2 rectSize,
+                out float fontSize))
+        {
+            return;
+        }
+
+        RectTransform rectTransform = _runtimeRecognitionLabelText.rectTransform;
+        rectTransform.pivot = new Vector2(1f, 0f);
+        rectTransform.sizeDelta = rectSize;
+        rectTransform.SetPositionAndRotation(position, rotation);
+        _runtimeRecognitionLabelText.fontSize = fontSize;
+    }
+
+    private bool TryGetRecognitionLabelPlacement(
+        out Vector3 position,
+        out Quaternion rotation,
+        out Vector2 rectSize,
+        out float fontSize)
+    {
+        position = Vector3.zero;
+        rotation = Quaternion.identity;
+        rectSize = Vector2.zero;
+        fontSize = 0f;
+
+        if (drawingSurfaceCollider is not BoxCollider boxCollider)
+        {
+            return false;
+        }
+
+        Vector3 axisWorldSizes = GetBoxAxisWorldSizes(boxCollider);
+        if (!TryResolveBoxPaintAxes(boxCollider, axisWorldSizes, out int uAxis, out int vAxis))
+        {
+            return false;
+        }
+
+        int normalAxis = GetRemainingAxis(uAxis, vAxis);
+        Vector3 boxSize = boxCollider.size;
+        float halfU = Mathf.Abs(GetAxis(boxSize, uAxis)) * 0.5f;
+        float halfV = Mathf.Abs(GetAxis(boxSize, vAxis)) * 0.5f;
+        float halfNormal = Mathf.Abs(GetAxis(boxSize, normalAxis)) * 0.5f;
+        if (halfU <= 0.0001f || halfV <= 0.0001f)
+        {
+            return false;
+        }
+
+        float insetX = Mathf.Clamp01(recognitionLabelInsetNormalized.x);
+        float insetY = Mathf.Clamp01(recognitionLabelInsetNormalized.y);
+        float canvasU = 1f - insetX;
+        float canvasV = insetY;
+        float surfaceU = CanvasAxisToSurfaceUv(canvasU, boardTextureScale.x, boardTextureOffset.x);
+        float surfaceV = CanvasAxisToSurfaceUv(canvasV, boardTextureScale.y, boardTextureOffset.y);
+
+        Vector3 localPoint = boxCollider.center;
+        SetAxis(ref localPoint, uAxis, Mathf.Lerp(-halfU, halfU, 1f - surfaceU));
+        SetAxis(ref localPoint, vAxis, Mathf.Lerp(-halfV, halfV, 1f - surfaceV));
+
+        Vector3 positiveNormal = GetAxisDirection(boxCollider.transform, normalAxis);
+        Vector3 boxCenterWorld = boxCollider.transform.TransformPoint(boxCollider.center);
+        Vector3 viewDirection = GetRecognitionLabelViewDirection(boxCenterWorld);
+        float normalSign = Vector3.Dot(positiveNormal, viewDirection) >= 0f ? 1f : -1f;
+        SetAxis(ref localPoint, normalAxis, normalSign * halfNormal);
+
+        Vector3 normal = positiveNormal * normalSign;
+        Vector3 canvasUp = GetCanvasAxisWorldDirection(boxCollider.transform, vAxis, boardTextureScale.y);
+        canvasUp = Vector3.ProjectOnPlane(canvasUp, normal);
+        if (canvasUp.sqrMagnitude <= 0.0001f)
+        {
+            canvasUp = Vector3.ProjectOnPlane(transform.up, normal);
+        }
+
+        if (canvasUp.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        canvasUp.Normalize();
+        float worldWidth = Mathf.Abs(GetAxis(axisWorldSizes, uAxis)) / Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
+        float worldHeight = Mathf.Abs(GetAxis(axisWorldSizes, vAxis)) / Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
+        fontSize = Mathf.Max(0.01f, worldHeight * recognitionLabelHeightNormalized);
+        rectSize = new Vector2(
+            Mathf.Max(fontSize * 2f, worldWidth * recognitionLabelWidthNormalized),
+            Mathf.Max(fontSize * 1.4f, fontSize));
+
+        position = boxCollider.transform.TransformPoint(localPoint) +
+                   normal * Mathf.Max(0.0005f, recognitionLabelSurfaceOffset);
+        rotation = Quaternion.LookRotation(-normal, canvasUp);
+        return true;
+    }
+
+    private Vector3 GetRecognitionLabelViewDirection(Vector3 surfaceCenterWorld)
+    {
+        if (drawingCamera != null)
+        {
+            return drawingCamera.transform.position - surfaceCenterWorld;
+        }
+
+        UnityEngine.Camera mainCamera = UnityEngine.Camera.main;
+        if (mainCamera != null)
+        {
+            return mainCamera.transform.position - surfaceCenterWorld;
+        }
+
+        return transform.forward;
+    }
+
+    private static float CanvasAxisToSurfaceUv(float canvasAxis, float textureScale, float textureOffset)
+    {
+        if (Mathf.Abs(textureScale) <= 0.0001f)
+        {
+            return Mathf.Clamp01(canvasAxis);
+        }
+
+        return Mathf.Clamp01((canvasAxis - textureOffset) / textureScale);
+    }
+
+    private static Vector3 GetCanvasAxisWorldDirection(Transform targetTransform, int axis, float textureScale)
+    {
+        float scaleSign = textureScale < 0f ? -1f : 1f;
+        return -GetAxisDirection(targetTransform, axis) * scaleSign;
+    }
+
+    private static int GetRemainingAxis(int firstAxis, int secondAxis)
+    {
+        for (int axis = 0; axis < 3; axis++)
+        {
+            if (axis != firstAxis && axis != secondAxis)
+            {
+                return axis;
+            }
+        }
+
+        return 1;
+    }
+
+    private static void SetAxis(ref Vector3 value, int axis, float axisValue)
+    {
+        switch (axis)
+        {
+            case 0:
+                value.x = axisValue;
+                break;
+            case 1:
+                value.y = axisValue;
+                break;
+            default:
+                value.z = axisValue;
+                break;
+        }
+    }
+
+    private void CleanupRecognitionLabel()
+    {
+        if (_runtimeRecognitionLabelText == null)
+        {
+            return;
+        }
+
+        GameObject labelObject = _runtimeRecognitionLabelText.gameObject;
+        _runtimeRecognitionLabelText = null;
+        if (Application.isPlaying)
+        {
+            Destroy(labelObject);
+        }
+        else
+        {
+            DestroyImmediate(labelObject);
+        }
     }
 
     private void EnsureBoardMaterialBinding()

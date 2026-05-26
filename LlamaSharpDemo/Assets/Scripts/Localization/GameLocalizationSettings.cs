@@ -6,12 +6,19 @@ namespace DoodleDiplomacy.Localization
     [CreateAssetMenu(fileName = "GameLocalizationSettings", menuName = "DoodleDiplomacy/Localization/Game Settings")]
     public sealed class GameLocalizationSettings : ScriptableObject
     {
+        [Tooltip("Enable lookup from the localized string table instead of always using source text.")]
         [SerializeField] private bool enableLocalization = true;
+        [Tooltip("Locale code used by source strings, typically en-US.")]
         [SerializeField] private string sourceLocale = "en-US";
+        [Tooltip("Locale code currently targeted by generated or translated strings.")]
         [SerializeField] private string targetLocale = "en-US";
+        [Tooltip("English display name for the target language.")]
         [SerializeField] private string targetLanguage = "English";
+        [Tooltip("Native display name for the target language.")]
         [SerializeField] private string targetLanguageNativeName = "English";
+        [Tooltip("String table asset containing source and localized UI/dialogue text.")]
         [SerializeField] private LocalizedStringTable stringTable;
+        [Tooltip("Log a warning when a localization key cannot be resolved.")]
         [SerializeField] private bool logMissingTranslations = true;
 
         public bool EnableLocalization => enableLocalization;

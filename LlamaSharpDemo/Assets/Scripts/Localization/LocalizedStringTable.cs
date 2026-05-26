@@ -7,6 +7,7 @@ namespace DoodleDiplomacy.Localization
     [CreateAssetMenu(fileName = "LocalizedStringTable", menuName = "DoodleDiplomacy/Localization/String Table")]
     public sealed class LocalizedStringTable : ScriptableObject
     {
+        [Tooltip("Localized text entries keyed by stable string ids.")]
         [SerializeField] private List<LocalizedStringEntry> entries = new();
 
         private Dictionary<string, LocalizedStringEntry> _entriesByKey;
@@ -75,11 +76,14 @@ namespace DoodleDiplomacy.Localization
     [Serializable]
     public sealed class LocalizedStringEntry
     {
+        [Tooltip("Stable localization key used by UI, dialogue, or systems.")]
         public string key = string.Empty;
 
         [TextArea(1, 5)]
+        [Tooltip("Source-language text returned when no localized value is available.")]
         public string sourceText = string.Empty;
 
+        [Tooltip("Localized text values by locale.")]
         public List<LocalizedLocaleText> translations = new();
 
         public bool TryGetLocalized(string locale, out string text)
@@ -144,9 +148,11 @@ namespace DoodleDiplomacy.Localization
     [Serializable]
     public struct LocalizedLocaleText
     {
+        [Tooltip("Locale code for this translated text, such as ko-KR.")]
         public string locale;
 
         [TextArea(1, 5)]
+        [Tooltip("Translated text for this locale.")]
         public string text;
     }
 }

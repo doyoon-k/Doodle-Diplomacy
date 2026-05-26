@@ -15,19 +15,31 @@ namespace DoodleDiplomacy.UI
         private const string FirstPlayKey = "DD_HasPlayed";
 
         [Header("Scene Flow")]
+        [Tooltip("Scene name loaded when the player starts the game from the main menu.")]
         [SerializeField] private string gameRootSceneName = "GameRoot";
 
         [Header("UI")]
+        [Tooltip("Automatically create a simple menu UI if scene references are not assigned.")]
         [SerializeField] private bool buildUiIfMissing = true;
+        [Tooltip("Root object for the main menu UI.")]
         [SerializeField] private GameObject menuRoot;
+        [Tooltip("Panel containing language/settings controls.")]
         [SerializeField] private GameObject settingsPanel;
+        [Tooltip("Text element displaying the localized game title.")]
         [SerializeField] private TextMeshProUGUI titleText;
+        [Tooltip("Text element displaying the localized settings title.")]
         [SerializeField] private TextMeshProUGUI settingsTitleText;
+        [Tooltip("Text element displaying the localized language label.")]
         [SerializeField] private TextMeshProUGUI languageLabelText;
+        [Tooltip("Button that starts the game scene.")]
         [SerializeField] private Button startButton;
+        [Tooltip("Button that opens the settings panel.")]
         [SerializeField] private Button settingsButton;
+        [Tooltip("Button that selects English localization.")]
         [SerializeField] private Button englishButton;
+        [Tooltip("Button that selects Korean localization.")]
         [SerializeField] private Button koreanButton;
+        [Tooltip("Button that closes the settings panel.")]
         [SerializeField] private Button closeSettingsButton;
 
         private void Awake()

@@ -15,26 +15,38 @@ namespace DoodleDiplomacy.Character
     [System.Serializable]
     public class ReactionAnimationBinding
     {
+        [Tooltip("Satisfaction level that triggers this animation binding.")]
         public SatisfactionLevel level = SatisfactionLevel.Neutral;
+        [Tooltip("Animation clip used to estimate how long the reaction should be held.")]
         public AnimationClip clip;
+        [Tooltip("Animator state name to play for this satisfaction level.")]
         public string stateName;
     }
 
     public class AlienReactionController : MonoBehaviour
     {
         [Header("Animation")]
+        [Tooltip("Animator that owns the alien reaction states. Defaults to the Animator on this GameObject when empty.")]
         [SerializeField] private Animator targetAnimator;
+        [Tooltip("Mapping from satisfaction/reaction level to animator state and clip duration.")]
         [SerializeField] private List<ReactionAnimationBinding> reactionAnimations = new();
+        [Tooltip("Animator layer index used for reaction and idle state playback.")]
         [SerializeField] private int animatorLayerIndex = 0;
+        [Tooltip("Crossfade duration, in seconds, when switching between idle and reaction states.")]
         [SerializeField] private float crossFadeDuration = 0.1f;
+        [Tooltip("Animator state name returned to after a reaction completes.")]
         [SerializeField] private string idleStateName = "Idle";
 
         [Header("Dialogue")]
+        [Tooltip("Subtitle display used for alien murmurs and narrator reaction text.")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
 
         [Header("Timing")]
+        [Tooltip("Seconds to wait after starting the reaction animation before showing alien murmur text.")]
         [SerializeField] private float lookAtMonitorDuration = 1f;
+        [Tooltip("Minimum seconds to hold the alien murmur subtitle before accepting click-to-advance.")]
         [SerializeField] private float mutterDuration = 2f;
+        [Tooltip("Minimum seconds to hold the narrator reaction subtitle before accepting click-to-advance.")]
         [SerializeField] private float narratorLingerDuration = 2.5f;
 
         [Header("Events")]

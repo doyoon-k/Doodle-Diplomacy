@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Day1TransmissionLabelConfirmed
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.DialogueSequence
   sequenceID: day1-transmission-label-confirmed
-  contextNote: 플레이어가 라벨을 확정한 직후 재생됩니다. 그림을 외계 대표단에게 보여주기 전에 전송 라벨을 알립니다.
+  contextNote: "\uD50C\uB808\uC774\uC5B4\uAC00 \uB77C\uBCA8\uC744 \uD655\uC815\uD55C
+    \uC9C1\uD6C4 \uC7AC\uC0DD\uB429\uB2C8\uB2E4. \uADF8\uB9BC\uC744 \uC678\uACC4
+    \uB300\uD45C\uB2E8\uC5D0\uAC8C \uBCF4\uC5EC\uC8FC\uAE30 \uC804\uC5D0 \uC804\uC1A1
+    \uB77C\uBCA8\uC744 \uC54C\uB9BD\uB2C8\uB2E4."
   lines:
   - characterID: Science Officer
     speakerLocalizationKey: speaker.science_officer
@@ -21,5 +24,5 @@ MonoBehaviour:
     localizationKey: day1.transmission_label_confirmed
     displayMode: 1
     portraitID: 
-    advanceType: 0
+    advanceType: 2
     autoDelay: 2

@@ -5,8 +5,11 @@ namespace DoodleDiplomacy.Character
 {
     public class PortraitDisplay : MonoBehaviour
     {
+        [Tooltip("Portrait texture set used to resolve emotion ids into textures.")]
         [SerializeField] private PortraitSet portraitSet;
+        [Tooltip("Renderer whose material texture is swapped for portrait changes.")]
         [SerializeField] private Renderer targetRenderer;
+        [Tooltip("Material slot index on the target renderer that receives portrait textures.")]
         [SerializeField] private int materialIndex = 0;
         [Tooltip("URP: _BaseMap / Legacy Standard: _MainTex")]
         [SerializeField] private string texturePropertyName = "_BaseMap";

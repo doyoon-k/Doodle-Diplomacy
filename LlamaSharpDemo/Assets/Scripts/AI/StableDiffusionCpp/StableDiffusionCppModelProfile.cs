@@ -19,25 +19,34 @@ public class StableDiffusionCppModelProfile : ScriptableObject
 
     [Header("Generation Defaults")]
     [Min(64)]
+    [Tooltip("Default generated image width in pixels.")]
     public int defaultWidth = 512;
 
     [Min(64)]
+    [Tooltip("Default generated image height in pixels.")]
     public int defaultHeight = 512;
 
     [Min(1)]
+    [Tooltip("Default diffusion step count. Higher values are slower but can improve quality.")]
     public int defaultSteps = 20;
 
     [Min(0.1f)]
+    [Tooltip("Default classifier-free guidance scale. Higher values follow the prompt more strongly.")]
     public float defaultCfgScale = 7.0f;
 
+    [Tooltip("Default image generation seed. Use a fixed value for repeatable outputs.")]
     public int defaultSeed = 42;
+    [Tooltip("Default stable-diffusion.cpp sampler name.")]
     public string defaultSampler = "euler_a";
+    [Tooltip("Default stable-diffusion.cpp scheduler name.")]
     public string defaultScheduler = "discrete";
 
     [TextArea(2, 6)]
+    [Tooltip("Default negative prompt appended to generation requests.")]
     public string defaultNegativePrompt = string.Empty;
 
     [Range(0f, 2f)]
+    [Tooltip("Default ControlNet strength for requests that include a control image.")]
     public float defaultControlStrength = 0.9f;
 
     public string DisplayName => string.IsNullOrWhiteSpace(profileName) ? name : profileName.Trim();

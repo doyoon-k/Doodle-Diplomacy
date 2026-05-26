@@ -70,6 +70,8 @@ namespace DoodleDiplomacy.Gameplay
         public void SetToolMode(DrawingToolMode mode) => _board?.SetToolMode(mode);
         public void SetBrushRadius(float radius) => _board?.SetBrushRadius(radius);
         public void SetBrushColor(Color color) => _board?.SetBrushColor(color);
+        public void ShowRecognitionLabel(string label) => _board?.ShowRecognitionLabel(label);
+        public void ClearRecognitionLabel() => _board?.ClearRecognitionLabel();
         public bool Undo() => _board != null && _board.Undo();
         public bool Redo() => _board != null && _board.Redo();
 

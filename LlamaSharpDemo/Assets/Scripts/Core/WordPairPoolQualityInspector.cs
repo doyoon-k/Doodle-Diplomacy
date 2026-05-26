@@ -13,20 +13,31 @@ namespace DoodleDiplomacy.Core
     public class WordPairPoolQualityInspector : MonoBehaviour
     {
         [Header("References")]
+        [Tooltip("AI bridge used to generate or inspect object-pair images.")]
         [SerializeField] private AIPipelineBridge pipelineBridge;
+        [Tooltip("Word pair pool inspected by the debug quality controls.")]
         [SerializeField] private WordPairPool wordPairPool;
 
         [Header("Runtime")]
+        [Tooltip("Start with the quality inspector enabled when the component awakens.")]
         [SerializeField] private bool startEnabled = false;
+        [Tooltip("Generate the first pair immediately when the inspector becomes enabled.")]
         [SerializeField] private bool autoGenerateFirstPairOnEnable = true;
+        [Tooltip("Automatically generate images when navigating to another pair.")]
         [SerializeField] private bool autoGenerateOnPairNavigation = true;
+        [Tooltip("Wrap previous/next navigation around the ends of the word pair pool.")]
         [SerializeField] private bool wrapAround = true;
+        [Tooltip("Allow this debug inspector to run in non-editor development builds.")]
         [SerializeField] private bool enableInBuild = false;
 
         [Header("Key Bindings")]
+        [Tooltip("Key used to toggle the quality inspector on or off.")]
         [SerializeField] private KeyCode toggleInspectorKey = KeyCode.F8;
+        [Tooltip("Key used to move to the previous word pair.")]
         [SerializeField] private KeyCode previousPairKey = KeyCode.F9;
+        [Tooltip("Key used to move to the next word pair.")]
         [SerializeField] private KeyCode nextPairKey = KeyCode.F10;
+        [Tooltip("Key used to regenerate images for the current word pair.")]
         [SerializeField] private KeyCode regeneratePairKey = KeyCode.F11;
 
         private bool _isInspectorEnabled;

@@ -8,9 +8,13 @@ public sealed class DrawingBrushPreview : MonoBehaviour
     private static readonly int ColorId = Shader.PropertyToID("_Color");
 
     [Header("Scene References")]
+    [Tooltip("MeshFilter that receives the generated ring mesh for the brush outline preview.")]
     [SerializeField] private MeshFilter outlineMeshFilter;
+    [Tooltip("MeshRenderer used to display the brush outline preview.")]
     [SerializeField] private MeshRenderer outlineRenderer;
+    [Tooltip("MeshFilter that receives the generated filled disc mesh for fill/brush preview.")]
     [SerializeField] private MeshFilter fillMeshFilter;
+    [Tooltip("MeshRenderer used to display the filled preview disc.")]
     [SerializeField] private MeshRenderer fillRenderer;
 
     private MaterialPropertyBlock _propertyBlock;

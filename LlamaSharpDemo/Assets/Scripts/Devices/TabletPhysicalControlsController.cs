@@ -12,81 +12,141 @@ namespace DoodleDiplomacy.Devices
         private const int SpectrumSnapCount = 32;
 
         [Header("References")]
+        [Tooltip("Drawing board controlled by the tablet's physical buttons and color spectrum.")]
         [SerializeField] private DrawingBoardController drawingBoard;
+        [Tooltip("Camera used to raycast pointer input against tablet control colliders.")]
         [SerializeField] private UnityEngine.Camera inputCamera;
+        [Tooltip("Gameplay mode host used to route tablet control actions in the current mode.")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
+        [Tooltip("Root GameObject that is enabled when tablet controls are available.")]
         [SerializeField] private GameObject controlsRoot;
 
         [Header("Input")]
+        [Tooltip("Physics layers included when raycasting physical tablet controls.")]
         [SerializeField] private LayerMask controlLayerMask = ~0;
+        [Tooltip("Maximum raycast distance for clicking or dragging tablet controls.")]
         [SerializeField] private float controlRaycastDistance = 100f;
 
         [Header("Tool Buttons")]
+        [Tooltip("Collider for selecting the brush tool.")]
         [SerializeField] private Collider brushButtonCollider;
+        [Tooltip("Collider for selecting the fill tool.")]
         [SerializeField] private Collider fillButtonCollider;
+        [Tooltip("Collider for selecting the eraser tool.")]
         [SerializeField] private Collider eraserButtonCollider;
+        [Tooltip("Renderer tinted to show brush tool button state.")]
         [SerializeField] private Renderer brushButtonRenderer;
+        [Tooltip("Renderer tinted to show fill tool button state.")]
         [SerializeField] private Renderer fillButtonRenderer;
+        [Tooltip("Renderer tinted to show eraser tool button state.")]
         [SerializeField] private Renderer eraserButtonRenderer;
 
         [Header("Brush Size Buttons")]
+        [Tooltip("Collider for selecting the small brush radius preset.")]
         [SerializeField] private Collider sizeSmallCollider;
+        [Tooltip("Collider for selecting the medium brush radius preset.")]
         [SerializeField] private Collider sizeMediumCollider;
+        [Tooltip("Collider for selecting the large brush radius preset.")]
         [SerializeField] private Collider sizeLargeCollider;
+        [Tooltip("Renderer tinted to show small brush size button state.")]
         [SerializeField] private Renderer sizeSmallRenderer;
+        [Tooltip("Renderer tinted to show medium brush size button state.")]
         [SerializeField] private Renderer sizeMediumRenderer;
+        [Tooltip("Renderer tinted to show large brush size button state.")]
         [SerializeField] private Renderer sizeLargeRenderer;
 
         [Header("History Buttons")]
+        [Tooltip("Collider for the undo button.")]
         [SerializeField] private Collider undoButtonCollider;
+        [Tooltip("Collider for the redo button.")]
         [SerializeField] private Collider redoButtonCollider;
+        [Tooltip("Collider for the clear-canvas button.")]
         [SerializeField] private Collider clearButtonCollider;
+        [Tooltip("Renderer tinted to show undo button availability.")]
         [SerializeField] private Renderer undoButtonRenderer;
+        [Tooltip("Renderer tinted to show redo button availability.")]
         [SerializeField] private Renderer redoButtonRenderer;
+        [Tooltip("Renderer tinted to show clear button state.")]
         [SerializeField] private Renderer clearButtonRenderer;
 
         [Header("Button Icons")]
+        [Tooltip("Icon texture displayed over the brush button.")]
         [SerializeField] private Texture2D brushButtonIconTexture;
+        [Tooltip("Icon texture displayed over the fill button.")]
         [SerializeField] private Texture2D fillButtonIconTexture;
+        [Tooltip("Icon texture displayed over the eraser button.")]
         [SerializeField] private Texture2D eraserButtonIconTexture;
+        [Tooltip("Icon texture displayed over the small brush size button.")]
         [SerializeField] private Texture2D sizeSmallButtonIconTexture;
+        [Tooltip("Icon texture displayed over the medium brush size button.")]
         [SerializeField] private Texture2D sizeMediumButtonIconTexture;
+        [Tooltip("Icon texture displayed over the large brush size button.")]
         [SerializeField] private Texture2D sizeLargeButtonIconTexture;
+        [Tooltip("Icon texture displayed over the undo button.")]
         [SerializeField] private Texture2D undoButtonIconTexture;
+        [Tooltip("Icon texture displayed over the redo button.")]
         [SerializeField] private Texture2D redoButtonIconTexture;
+        [Tooltip("Icon texture displayed over the clear button.")]
         [SerializeField] private Texture2D clearButtonIconTexture;
+        [Tooltip("Enable icon overlay renderers for tablet tool, size, and history buttons.")]
         [FormerlySerializedAs("useHistoryIconOverlays")]
         [SerializeField] private bool useButtonIconOverlays = true;
+        [Tooltip("Material used by button icon overlay renderers.")]
         [SerializeField] private Material buttonOverlayMaterial;
+        [Tooltip("Overlay renderer that displays the brush button icon.")]
         [SerializeField] private Renderer brushOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the fill button icon.")]
         [SerializeField] private Renderer fillOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the eraser button icon.")]
         [SerializeField] private Renderer eraserOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the small size button icon.")]
         [SerializeField] private Renderer sizeSmallOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the medium size button icon.")]
         [SerializeField] private Renderer sizeMediumOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the large size button icon.")]
         [SerializeField] private Renderer sizeLargeOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the undo button icon.")]
         [SerializeField] private Renderer undoOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the redo button icon.")]
         [SerializeField] private Renderer redoOverlayRenderer;
+        [Tooltip("Overlay renderer that displays the clear button icon.")]
         [SerializeField] private Renderer clearOverlayRenderer;
+        [Tooltip("Alpha used for button overlays when their action is currently disabled.")]
         [FormerlySerializedAs("historyOverlayDisabledAlpha")]
         [SerializeField] private float buttonOverlayDisabledAlpha = 1f;
 
         [Header("Spectrum")]
+        [Tooltip("Collider for dragging/selecting on the color spectrum bar.")]
         [SerializeField] private Collider spectrumBarCollider;
+        [Tooltip("Optional collider for dragging the spectrum knob directly.")]
         [SerializeField] private Collider spectrumKnobCollider;
+        [Tooltip("Transform moved along the spectrum track to show the selected color position.")]
         [SerializeField] private Transform spectrumKnob;
+        [Tooltip("World-space start point of the spectrum knob travel range.")]
         [SerializeField] private Transform spectrumTrackStart;
+        [Tooltip("World-space end point of the spectrum knob travel range.")]
         [SerializeField] private Transform spectrumTrackEnd;
+        [Tooltip("Renderer displaying the generated spectrum color texture.")]
         [SerializeField] private Renderer spectrumRenderer;
+        [Tooltip("Renderer tinted to match the selected spectrum color.")]
         [SerializeField] private Renderer spectrumKnobRenderer;
+        [Tooltip("Material texture property used for the spectrum texture. URP usually uses _BaseMap.")]
         [SerializeField] private string spectrumTextureProperty = "_BaseMap";
+        [Tooltip("Optional texture override for the color spectrum. If empty, a spectrum texture is generated at runtime.")]
         [SerializeField] private Texture2D spectrumColorTexture;
 
         [Header("Visuals")]
+        [Tooltip("Button tint used for inactive but available controls.")]
         [SerializeField] private Color neutralButtonColor = new(0.25f, 0.25f, 0.28f, 1f);
+        [Tooltip("Button tint used by the active brush or fill tool.")]
         [SerializeField] private Color activeToolColor = new(0.15f, 0.59f, 0.49f, 1f);
+        [Tooltip("Button tint used by the active eraser tool.")]
         [SerializeField] private Color activeEraserColor = new(0.80f, 0.36f, 0.18f, 1f);
+        [Tooltip("Button tint used by the active brush size preset.")]
         [SerializeField] private Color activeSizeColor = new(0.18f, 0.46f, 0.78f, 1f);
+        [Tooltip("Button tint used for unavailable actions such as undo with no history.")]
         [SerializeField] private Color disabledButtonColor = new(0.16f, 0.17f, 0.20f, 0.75f);
+        [Tooltip("Button tint used for the clear-canvas control.")]
         [SerializeField] private Color clearButtonColor = new(0.80f, 0.36f, 0.18f, 1f);
 
         private readonly int[] _brushSizePresets = { TabletControlCommands.SmallBrushSize, TabletControlCommands.MediumBrushSize, TabletControlCommands.LargeBrushSize };

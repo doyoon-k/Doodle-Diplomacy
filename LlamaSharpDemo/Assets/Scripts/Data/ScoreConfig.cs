@@ -7,7 +7,9 @@ namespace DoodleDiplomacy.Data
     [CreateAssetMenu(fileName = "ScoreConfig", menuName = "DoodleDiplomacy/Score Config")]
     public class ScoreConfig : ScriptableObject
     {
+        [Tooltip("Number of object-pair drawing rounds before the ending is evaluated.")]
         public int totalRounds = 5;
+        [Tooltip("Multiplier applied to the final round score.")]
         public float lastRoundMultiplier = 1.5f;
 
         [Header("Ending Thresholds")]

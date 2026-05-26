@@ -15,11 +15,14 @@ public class PromptPipelineAsset : ScriptableObject
     public string displayName = "New Prompt Pipeline";
 
     [TextArea(2, 5)]
+    [Tooltip("Editor-facing description of what this prompt pipeline does.")]
     public string description;
 
+    [Tooltip("Ordered prompt or custom steps executed by this pipeline.")]
     [SerializeField]
     public List<PromptPipelineStep> steps = new();
 
+    [Tooltip("Saved GraphView node layout positions for this pipeline asset.")]
     [SerializeField]
     public PromptPipelineLayoutSettings layoutSettings = new();
 
@@ -311,21 +314,27 @@ public class PromptPipelineAsset : ScriptableObject
 [Serializable]
 public class PromptPipelineStep
 {
+    [Tooltip("Editor-facing name for this pipeline step.")]
     public string stepName = "Step";
 
+    [Tooltip("Execution type for this step: JSON LLM, completion LLM, or custom chain link.")]
     public PromptPipelineStepKind stepKind = PromptPipelineStepKind.JsonLlm;
 
     [Header("Shared LLM Settings")]
+    [Tooltip("Generation profile used when this step calls an LLM.")]
     public BaseLlmGenerationProfile llmProfile;
 
     [TextArea(4, 12)]
+    [Tooltip("User prompt template for this step. Supports PipelineState placeholders.")]
     public string userPromptTemplate;
 
     [Header("JSON LLM Options")]
     [Min(1)]
+    [Tooltip("Maximum attempts to retry JSON parsing/validation for this step.")]
     public int jsonMaxRetries = 3;
 
     [Min(0f)]
+    [Tooltip("Delay between JSON retry attempts in seconds.")]
     public float jsonRetryDelaySeconds = 0.1f;
 
     [Header("Vision Options")]
@@ -349,6 +358,7 @@ public class PromptPipelineStep
     [Tooltip("Optional ScriptableObject asset to pass to the custom link constructor.")]
     public ScriptableObject customAsset;
 
+    [Tooltip("Key/value parameters passed into a custom link step.")]
     [SerializeField]
     public List<CustomLinkParameter> customLinkParameters = new();
 
@@ -375,21 +385,32 @@ public enum PromptPipelineStepKind
 [Serializable]
 public class PromptPipelineLayoutSettings
 {
+    [Tooltip("Saved graph position of the pipeline input node.")]
     public Vector2 inputNodePosition = new(-600f, 80f);
+    [Tooltip("Saved graph position of the pipeline output node.")]
     public Vector2 outputNodePosition = Vector2.zero;
+    [Tooltip("Whether the input node position has been initialized by the editor.")]
     public bool inputPositionInitialized;
+    [Tooltip("Whether the output node position has been initialized by the editor.")]
     public bool outputPositionInitialized;
+    [Tooltip("Saved graph view pan position.")]
     public Vector3 viewPosition = Vector3.zero;
+    [Tooltip("Saved graph view zoom scale.")]
     public Vector3 viewScale = Vector3.one;
+    [Tooltip("Whether the graph view pan/zoom state has been initialized.")]
     public bool viewInitialized;
+    [Tooltip("Saved node positions for step snapshots in the graph editor.")]
     public List<Vector2> snapshotPositions = new();
+    [Tooltip("Whether saved step node positions have been initialized.")]
     public bool snapshotPositionsInitialized;
 }
 
 [Serializable]
 public class CustomLinkParameter
 {
+    [Tooltip("Parameter key passed to a custom pipeline link.")]
     public string key;
+    [Tooltip("Parameter value passed to a custom pipeline link.")]
     public string value;
 }
 

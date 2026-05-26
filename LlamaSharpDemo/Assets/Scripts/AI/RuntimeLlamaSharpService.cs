@@ -20,13 +20,19 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     public sealed class PreloadBoolUnityEvent : UnityEvent<bool> { }
 
     [Header("Runtime LLM Settings")]
+    [Tooltip("Default local generation profile to preload and use when no profile is supplied.")]
     [SerializeField] private LlmGenerationProfile defaultProfile;
+    [Tooltip("Register this local runtime as the active LlmServiceLocator service during Awake.")]
     [SerializeField] private bool registerOnAwake = true;
+    [Tooltip("Keep this local runtime object alive when changing scenes.")]
     [SerializeField] private bool persistAcrossScenes = true;
 
     [Header("Preload Events")]
+    [Tooltip("UnityEvent invoked when default profile preload succeeds.")]
     [SerializeField] private UnityEvent onPreloadSucceeded;
+    [Tooltip("UnityEvent invoked when default profile preload fails.")]
     [SerializeField] private UnityEvent onPreloadFailed;
+    [Tooltip("UnityEvent invoked when default profile preload completes. Argument is success state.")]
     [SerializeField] private PreloadBoolUnityEvent onPreloadCompleted;
 
     [Tooltip("Log prompts and responses.")]
@@ -36,8 +42,11 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     [SerializeField] private bool useNativeBootstrap;
 
     [Header("Timeouts")]
+    [Tooltip("Maximum seconds to wait for model loading before timing out.")]
     [SerializeField] private float modelLoadTimeoutSeconds = 120f;
+    [Tooltip("Maximum seconds to wait for a single inference before timing out.")]
     [SerializeField] private float inferenceTimeoutSeconds = 180f;
+    [Tooltip("Seconds allowed for active work to drain while shutting down.")]
     [SerializeField] private float shutdownDrainTimeoutSeconds = 0.75f;
 
     private readonly object _operationLock = new object();

@@ -17,7 +17,9 @@ namespace DoodleDiplomacy.Dialogue
         public static DialogueSystem Instance { get; private set; }
 
         [Header("Display")]
+        [Tooltip("World-space dialogue display used for anchored character speech.")]
         [SerializeField] private WorldSpaceDialogue worldSpaceDialogue;
+        [Tooltip("Screen-space subtitle display used for dialogue and narration.")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
 
         [Header("Typing")]

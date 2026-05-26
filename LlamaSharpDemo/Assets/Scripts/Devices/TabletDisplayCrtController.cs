@@ -20,35 +20,59 @@ namespace DoodleDiplomacy.Devices
         private const string ColorPropertyName = "_Color";
 
         [Header("Targets")]
+        [Tooltip("Drawing board whose runtime material is linked to the tablet CRT paint display.")]
         [SerializeField] private DrawingBoardController drawingBoard;
+        [Tooltip("Renderer that displays the main paint area CRT material.")]
         [SerializeField] private Renderer paintAreaRenderer;
+        [Tooltip("Renderer that displays the color spectrum bar CRT material.")]
         [SerializeField] private Renderer spectrumBarRenderer;
 
         [Header("Source")]
+        [Tooltip("Material template containing the CRT shader properties copied to runtime material instances.")]
         [SerializeField] private Material crtMaterialTemplate;
+        [Tooltip("Apply the CRT material instance and settings to the paint area renderer.")]
         [SerializeField] private bool applyToPaintArea = true;
+        [Tooltip("Apply the CRT material instance and settings to the spectrum bar renderer.")]
         [SerializeField] private bool applyToSpectrumBar = true;
 
         [Header("Paint CRT")]
+        [Tooltip("Virtual pixel resolution used by the paint area CRT shader.")]
         [SerializeField] private Vector2Int paintPixelResolution = new(360, 360);
+        [Tooltip("Strength of pixelation applied to the paint area display.")]
         [SerializeField] [Range(0f, 1f)] private float paintPixelateStrength = 0.35f;
+        [Tooltip("Scanline density applied to the paint area display.")]
         [SerializeField] [Range(100f, 1200f)] private float paintScanlineDensity = 600f;
+        [Tooltip("Visible intensity of scanlines on the paint area display.")]
         [SerializeField] [Range(0f, 1f)] private float paintScanlineStrength = 0.10f;
+        [Tooltip("Procedural noise intensity on the paint area display.")]
         [SerializeField] [Range(0f, 0.3f)] private float paintNoiseStrength = 0.012f;
+        [Tooltip("Darkening toward the paint display edges.")]
         [SerializeField] [Range(0f, 1f)] private float paintVignetteStrength = 0.06f;
+        [Tooltip("Screen curvature amount on the paint area display.")]
         [SerializeField] [Range(0f, 0.2f)] private float paintCurvature = 0.018f;
+        [Tooltip("RGB channel offset applied to the paint area display.")]
         [SerializeField] [Range(0f, 0.01f)] private float paintChromaticAberration = 0.0012f;
+        [Tooltip("Color tint multiplied into the paint area CRT material.")]
         [SerializeField] private Color paintTint = Color.white;
 
         [Header("Spectrum CRT")]
+        [Tooltip("Virtual pixel resolution used by the spectrum bar CRT shader.")]
         [SerializeField] private Vector2Int spectrumPixelResolution = new(320, 24);
+        [Tooltip("Strength of pixelation applied to the spectrum bar.")]
         [SerializeField] [Range(0f, 1f)] private float spectrumPixelateStrength = 0.75f;
+        [Tooltip("Scanline density applied to the spectrum bar.")]
         [SerializeField] [Range(100f, 1200f)] private float spectrumScanlineDensity = 800f;
+        [Tooltip("Visible intensity of scanlines on the spectrum bar.")]
         [SerializeField] [Range(0f, 1f)] private float spectrumScanlineStrength = 0.08f;
+        [Tooltip("Procedural noise intensity on the spectrum bar.")]
         [SerializeField] [Range(0f, 0.3f)] private float spectrumNoiseStrength = 0.01f;
+        [Tooltip("Darkening toward the spectrum bar edges.")]
         [SerializeField] [Range(0f, 1f)] private float spectrumVignetteStrength = 0.04f;
+        [Tooltip("Screen curvature amount on the spectrum bar.")]
         [SerializeField] [Range(0f, 0.2f)] private float spectrumCurvature = 0.012f;
+        [Tooltip("RGB channel offset applied to the spectrum bar.")]
         [SerializeField] [Range(0f, 0.01f)] private float spectrumChromaticAberration = 0.0007f;
+        [Tooltip("Color tint multiplied into the spectrum bar CRT material.")]
         [SerializeField] private Color spectrumTint = Color.white;
 
         private Material _paintMaterialInstance;

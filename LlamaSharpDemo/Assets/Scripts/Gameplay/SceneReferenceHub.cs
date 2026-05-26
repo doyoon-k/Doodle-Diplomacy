@@ -14,33 +14,49 @@ namespace DoodleDiplomacy.Gameplay
     public class SceneReferenceHub : MonoBehaviour, IGameplaySceneInstaller
     {
         [Header("Gameplay Scene")]
+        [Tooltip("Stable id for this gameplay scene/context. Falls back to the scene name when empty.")]
         [SerializeField] private string sceneId = "current-gameplay";
+        [Tooltip("Default gameplay mode entered by GameplayModeHost when this scene is initialized.")]
         [SerializeField] private MonoBehaviour defaultModeBehaviour;
 
         [Header("Core")]
+        [Tooltip("Legacy object-pair round mode and shared round manager for this scene.")]
         [SerializeField] private RoundManager roundManager;
+        [Tooltip("Scene interaction manager used to raycast and route interactable clicks.")]
         [SerializeField] private InteractionManager interactionManager;
+        [Tooltip("Camera controller used by gameplay modes for view transitions.")]
         [SerializeField] private CameraController cameraController;
+        [Tooltip("Dialogue system used to play scripted dialogue sequences.")]
         [SerializeField] private DialogueSystem dialogueSystem;
 
         [Header("AI")]
+        [Tooltip("Bridge that owns prompt pipelines and AI-driven gameplay requests.")]
         [SerializeField] private AIPipelineBridge aiPipelineBridge;
 
         [Header("Drawing")]
+        [Tooltip("Player drawing board used by drawing modes.")]
         [SerializeField] private DrawingBoardController drawingBoard;
+        [Tooltip("Bridge that exports drawing textures into AI pipeline state.")]
         [SerializeField] private DrawingExportBridge drawingExportBridge;
 
         [Header("UI")]
+        [Tooltip("Subtitle presenter used for dialogue and reaction captions.")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
+        [Tooltip("Object-pair preview submit/modify button panel.")]
         [SerializeField] private PreviewButtonPanel previewButtonPanel;
+        [Tooltip("Ending screen controller shown when a gameplay mode finishes.")]
         [SerializeField] private EndingController endingController;
 
         [Header("Characters & Devices")]
+        [Tooltip("Terminal device display used for interpreter text and Day1 brainwave readouts.")]
         [SerializeField] private TerminalDisplay terminalDisplay;
+        [Tooltip("Shared monitor device display used to show drawings and generated objects.")]
         [SerializeField] private SharedMonitorDisplay sharedMonitorDisplay;
+        [Tooltip("Alien reaction controller used for animation and reaction subtitles.")]
         [SerializeField] private AlienReactionController alienReactionController;
 
         [Header("Day 1")]
+        [Tooltip("Runtime library that stores approved Day1 calibration drawings and reaction metadata.")]
         [SerializeField] private Day1StimulusLibrary day1StimulusLibrary;
 
         public RoundManager RoundManager => roundManager;

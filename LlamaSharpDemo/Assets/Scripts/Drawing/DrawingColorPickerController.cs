@@ -33,28 +33,43 @@ public class DrawingColorPickerController : MonoBehaviour
     }
 
     [Header("Wheel + Triangle References")]
+    [Tooltip("RawImage that displays the generated hue wheel texture.")]
     [SerializeField] private RawImage hueWheelImage;
+    [Tooltip("RawImage that displays the generated saturation/value triangle texture.")]
     [SerializeField] private RawImage svTriangleImage;
+    [Tooltip("Cursor RectTransform positioned on the hue wheel.")]
     [SerializeField] private RectTransform hueWheelCursor;
+    [Tooltip("Cursor RectTransform positioned inside the saturation/value triangle.")]
     [SerializeField] private RectTransform svTriangleCursor;
 
     [Header("Legacy References")]
+    [Tooltip("RawImage used by the fallback rectangular hue/saturation color field.")]
     [SerializeField] private RawImage colorFieldImage;
+    [Tooltip("RawImage used by the fallback value slider.")]
     [SerializeField] private RawImage valueSliderImage;
+    [Tooltip("Cursor RectTransform positioned inside the fallback color field.")]
     [SerializeField] private RectTransform colorFieldCursor;
+    [Tooltip("Cursor RectTransform positioned on the fallback value slider.")]
     [SerializeField] private RectTransform valueSliderCursor;
 
     [Header("Common")]
+    [Tooltip("Image that previews the currently selected drawing color.")]
     [SerializeField] private Image previewImage;
 
     [Header("Layout")]
+    [Tooltip("Choose the color picker layout. Auto prefers the hue wheel and triangle when all references are assigned.")]
     [SerializeField] private PickerLayoutMode layoutMode = PickerLayoutMode.Auto;
+    [Tooltip("Thickness of the hue wheel ring as a fraction of the wheel radius.")]
     [SerializeField] [Range(0.08f, 0.45f)] private float hueRingThicknessNormalized = 0.22f;
+    [Tooltip("Size of the saturation/value triangle as a fraction of the hue wheel inner radius.")]
     [SerializeField] [Range(0.50f, 0.98f)] private float triangleRadiusNormalized = 0.90f;
 
     [Header("Texture")]
+    [Tooltip("Pixel resolution used when generating the hue wheel and triangle textures.")]
     [SerializeField] private int wheelResolution = 256;
+    [Tooltip("Pixel resolution used for the fallback rectangular hue/saturation field.")]
     [SerializeField] private Vector2Int colorFieldResolution = new(256, 200);
+    [Tooltip("Pixel resolution used for the fallback value slider texture.")]
     [SerializeField] private int valueSliderResolution = 256;
 
     private Texture2D _hueWheelTexture;

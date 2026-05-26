@@ -7,8 +7,11 @@ namespace DoodleDiplomacy.Gameplay
 {
     public sealed class GameFlowDirector : MonoBehaviour, IGameFlowController
     {
+        [Tooltip("Ordered game flow asset defining scenes and default modes to load.")]
         [SerializeField] private GameFlowAsset gameFlow;
+        [Tooltip("Gameplay mode host that receives loaded scene references and mode transitions.")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
+        [Tooltip("Automatically load the first flow entry when this director starts.")]
         [SerializeField] private bool loadFirstEntryOnStart;
 
         private int _currentEntryIndex = -1;

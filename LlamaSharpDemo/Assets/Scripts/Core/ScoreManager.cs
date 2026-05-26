@@ -16,10 +16,13 @@ namespace DoodleDiplomacy.Core
     {
         public static ScoreManager Instance { get; private set; }
 
+        [Tooltip("Score tuning asset that defines round count, multipliers, and ending thresholds.")]
         [SerializeField] private ScoreConfig config;
 
         [Header("Events")]
+        [Tooltip("UnityEvent invoked with the updated total score after each recorded round.")]
         public IntUnityEvent OnScoreUpdated;
+        [Tooltip("UnityEvent invoked when the final ending type has been determined.")]
         public EndingTypeUnityEvent OnEndingDetermined;
 
         private int _currentRound;

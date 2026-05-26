@@ -16,17 +16,23 @@ namespace DoodleDiplomacy.Ending
     public class EndingController : MonoBehaviour
     {
         [Header("UI References")]
+        [Tooltip("Root canvas or panel displayed during the ending state.")]
         [SerializeField] private GameObject    endingCanvas;
+        [Tooltip("Image component that shows the selected ending background sprite.")]
         [SerializeField] private Image         backgroundImage;
+        [Tooltip("Text element that displays the ending title.")]
         [SerializeField] private TextMeshProUGUI titleText;
+        [Tooltip("Text element that displays the ending description.")]
         [SerializeField] private TextMeshProUGUI descriptionText;
         [Tooltip("클릭 감지용 전면 버튼 (EndingCanvas 전체를 덮는 Button)")]
         [SerializeField] private Button        anyClickButton;
 
         [Header("Ending Data")]
+        [Tooltip("Available ending definitions searched by EndingType when the game finishes.")]
         [SerializeField] private List<EndingData> endingDataList = new();
 
         [Header("State Source")]
+        [Tooltip("Gameplay mode host whose state changes control ending screen visibility.")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
 
         private bool _subscribedToHost;

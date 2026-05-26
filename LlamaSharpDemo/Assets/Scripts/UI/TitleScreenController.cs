@@ -15,19 +15,29 @@ namespace DoodleDiplomacy.UI
         private const string KoreanLocale = "ko-KR";
 
         [Header("UI References")]
+        [Tooltip("Root canvas or panel shown while the game is in the title state.")]
         [SerializeField] private GameObject titleCanvas;
+        [Tooltip("Button that starts or resumes the gameplay flow.")]
         [SerializeField] private Button startButton;
+        [Tooltip("Button that opens the language/settings panel.")]
         [SerializeField] private Button settingsButton;
+        [Tooltip("Panel containing title-screen settings controls.")]
         [SerializeField] private GameObject settingsPanel;
+        [Tooltip("Button that switches the game locale to English.")]
         [SerializeField] private Button englishButton;
+        [Tooltip("Button that switches the game locale to Korean.")]
         [SerializeField] private Button koreanButton;
+        [Tooltip("Button that closes the settings panel.")]
         [SerializeField] private Button closeSettingsButton;
 
         [Header("Startup")]
+        [Tooltip("When enabled, the first gameplay entry is treated as intro every time the title starts.")]
         [SerializeField] private bool alwaysPlayIntroOnStart = true;
+        [Tooltip("Automatically create missing settings UI controls at runtime for lightweight scenes.")]
         [SerializeField] private bool buildSettingsUiIfMissing = true;
 
         [Header("State Source")]
+        [Tooltip("Gameplay mode host whose state changes control title screen visibility.")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
 
         private bool _subscribedToHost;

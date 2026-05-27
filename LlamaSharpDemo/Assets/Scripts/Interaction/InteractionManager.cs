@@ -14,9 +14,13 @@ namespace DoodleDiplomacy.Interaction
     {
         public static InteractionManager Instance { get; private set; }
 
+        [Tooltip("Maximum distance for pointer raycasts against interactable objects.")]
         [SerializeField] private float raycastDistance = 100f;
+        [Tooltip("Physics layers considered interactable by pointer raycasts.")]
         [SerializeField] private LayerMask interactableLayer = Physics.DefaultRaycastLayers;
+        [Tooltip("Camera used to convert pointer screen position into world raycasts.")]
         [SerializeField] private UnityEngine.Camera mainCamera;
+        [Tooltip("Gameplay mode host that receives interactable click events before fallback UnityEvents run.")]
         [SerializeField] private GameplayModeHost gameplayModeHost;
 
         private readonly HashSet<InteractableObject> _registered = new();

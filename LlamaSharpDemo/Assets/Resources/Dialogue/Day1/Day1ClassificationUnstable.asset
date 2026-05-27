@@ -22,7 +22,7 @@ MonoBehaviour:
     speakerLocalizationKey: speaker.science_officer
     text: Classification unstable. The response data would be contaminated. Please
       redraw.
-    localizationKey: day1.classification_unstable
+    localizationKey: day1.classification_unstable_1
     displayMode: 1
     portraitID: 
     advanceType: 0
@@ -31,7 +31,7 @@ MonoBehaviour:
     speakerLocalizationKey: speaker.science_officer
     text: Classification unstable. The response data would be contaminated. Please
       redraw.
-    localizationKey: day1.classification_unstable
+    localizationKey: day1.classification_unstable_2
     displayMode: 1
     portraitID: 
     advanceType: 0

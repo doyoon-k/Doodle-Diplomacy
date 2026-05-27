@@ -384,14 +384,17 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uADF8\uB9BC\uC744 \uC2A4\uCE94 \uC911\uC785\uB2C8\uB2E4. "
-  - key: day1.classification_unstable
+  - key: day1.classification_unstable_1
     sourceText: Classification unstable. The response data would be contaminated.
       Please redraw.
     translations:
     - locale: ko-KR
-      text: "\uC77C\uBC18\uC801\uC778 \uC0AC\uBB3C\uC744 \uC0C9\uC744 \uD65C\uC6A9\uD558\uACE0
-        \uD615\uD0DC\uB97C \uB354 \uBA85\uD655\uD558\uAC8C \uADF8\uB824\uC8FC\uC2DC\uBA74
-        \uCE21\uC815 \uC815\uD655\uB3C4\uAC00 \uB354 \uB192\uC544\uC9D1\uB2C8\uB2E4."
+      text: "\uADF8\uB9BC\uC774 \uBD88\uBD84\uBA85\uD569\uB2C8\uB2E4."
+  - key: day1.classification_unstable_2
+    sourceText: Let's begin
+    translations:
+    - locale: ko-KR
+      text: "\uADF8\uB7FC \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4."
   - key: day1.written_text_detected
     sourceText: Written text, letters, or symbols detected. The apparatus cannot
       calibrate language input this way. Please draw one picture instead.

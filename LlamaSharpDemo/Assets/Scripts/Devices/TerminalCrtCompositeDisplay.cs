@@ -8,26 +8,41 @@ namespace DoodleDiplomacy.Devices
     public class TerminalCrtCompositeDisplay : MonoBehaviour
     {
         [Header("Source")]
+        [Tooltip("Source terminal screen panel that is captured into the CRT render texture.")]
         [SerializeField] private RectTransform sourcePanel;
+        [Tooltip("Source terminal text used to validate that the source canvas is correctly wired.")]
         [SerializeField] private TMP_Text sourceText;
 
         [Header("Output")]
+        [Tooltip("Material applied to the final RawImage to add CRT, scanline, and pixelation effects.")]
         [SerializeField] private Material crtMaterial;
+        [Tooltip("Orthographic camera that captures the source panel into a render texture.")]
         [SerializeField] private UnityEngine.Camera captureCamera;
+        [Tooltip("World-space output canvas that displays the CRT-processed render texture.")]
         [SerializeField] private Canvas displayCanvas;
+        [Tooltip("RawImage that shows the captured terminal render texture.")]
         [SerializeField] private RawImage displayImage;
+        [Tooltip("RenderTexture resolution used for the captured terminal image.")]
         [SerializeField] private Vector2Int outputResolution = new(1024, 512);
+        [Tooltip("When enabled, sends Pixel Resolution to the CRT material for pixelated output.")]
         [SerializeField] private bool overridePixelResolution = true;
+        [Tooltip("Virtual pixel grid size used by the CRT material when Override Pixel Resolution is enabled.")]
         [SerializeField] private Vector2Int pixelResolution = new(320, 180);
+        [Tooltip("Strength of the CRT material pixelation effect, where 0 is clean and 1 is fully pixelated.")]
         [SerializeField, Range(0f, 1f)] private float pixelateStrength = 1f;
 
         [Header("Cameras")]
+        [Tooltip("Main gameplay camera whose culling mask is adjusted so it does not directly render the source canvas.")]
         [SerializeField] private UnityEngine.Camera mainCamera;
+        [Tooltip("Distance from the source panel used when positioning the capture camera.")]
         [SerializeField] private float captureDistance = 0.5f;
+        [Tooltip("Extra framing multiplier around the captured source panel.")]
         [SerializeField] private float fitPadding = 1.01f;
 
         [Header("Layer Routing")]
+        [Tooltip("Temporary Unity layer used for source canvas capture. Keep this separate from visible gameplay layers.")]
         [SerializeField, Range(0, 31)] private int captureLayer = 30;
+        [Tooltip("Continuously realign the capture camera to the source panel in LateUpdate.")]
         [SerializeField] private bool updateCapturePoseEachFrame = true;
 
         private const string PixelResolutionPropertyName = "_PixelResolution";

@@ -7,6 +7,7 @@ namespace DoodleDiplomacy.Data
     [Serializable]
     public class ObjectEntry
     {
+        [Tooltip("Designer-facing object name.")]
         public string objectName;
         [TextArea(2, 4)]
         [Tooltip("Stable Diffusion 생성용 프롬프트")]
@@ -25,6 +26,7 @@ namespace DoodleDiplomacy.Data
     [CreateAssetMenu(fileName = "ObjectPoolData", menuName = "DoodleDiplomacy/Object Pool Data")]
     public class ObjectPoolData : ScriptableObject
     {
+        [Tooltip("Available object prompt entries.")]
         public List<ObjectEntry> entries = new List<ObjectEntry>();
         [Tooltip("선택적 프리셋 조합")]
         public List<ObjectPair> presetPairs = new List<ObjectPair>();

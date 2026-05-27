@@ -5,6 +5,7 @@ using UnityEngine;
 public class CloudGenerationProfile : BaseLlmGenerationProfile
 {
     [Header("Cloud Provider")]
+    [Tooltip("Cloud API provider used by this generation profile.")]
     public CloudProvider provider = CloudProvider.OpenAI;
 
     [Tooltip("Model identifier for the selected provider (for example: gpt-4.1-mini, claude-sonnet-4-20250514, gemini-2.5-flash).")]
@@ -18,6 +19,7 @@ public class CloudGenerationProfile : BaseLlmGenerationProfile
 
     [Header("Request Policy")]
     [Min(5f)]
+    [Tooltip("Maximum seconds to wait for one cloud request before timing out.")]
     public float requestTimeoutSeconds = 120f;
 
     [Range(0, 2)]

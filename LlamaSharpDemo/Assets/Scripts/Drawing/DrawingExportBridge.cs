@@ -7,17 +7,24 @@ using UnityEngine;
 public class DrawingExportBridge : MonoBehaviour
 {
     [Header("References")]
+    [Tooltip("Drawing board whose current composite texture is exported for AI analysis.")]
     [SerializeField] private DrawingBoardController drawingBoard;
+    [Tooltip("Optional prompt pipeline that receives the exported drawing texture.")]
     [SerializeField] private PromptPipelineAsset pipelineAsset;
 
     [Header("Pipeline Keys")]
+    [Tooltip("Pipeline state key used to store the exported drawing image.")]
     [SerializeField] private string imageStateKey = "reference_image";
+    [Tooltip("Pipeline state key used to store the text goal for the analysis request.")]
     [SerializeField] private string analysisGoalKey = "analysis_goal";
+    [Tooltip("Instruction text sent with the drawing when this bridge runs the analysis pipeline.")]
     [TextArea(2, 4)]
     [SerializeField] private string analysisGoal = "Analyze the player's drawing.";
 
     [Header("Debug")]
+    [Tooltip("Log drawing export attempts and validation failures to the Unity console.")]
     [SerializeField] private bool logExports = true;
+    [Tooltip("Log completion details when the configured prompt pipeline finishes.")]
     [SerializeField] private bool logPipelineCompletion = true;
 
     public event Action<PipelineState> PipelineCompleted;

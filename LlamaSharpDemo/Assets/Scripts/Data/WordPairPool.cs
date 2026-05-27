@@ -6,12 +6,16 @@ namespace DoodleDiplomacy.Data
     [System.Serializable]
     public struct WordPair
     {
+        [Tooltip("Specific object prompt for Stable Diffusion image A.")]
         /// <summary>SD 이미지 생성용 구체적 묘사 (예: "white dog bone")</summary>
         public string wordA;
+        [Tooltip("Specific object prompt for Stable Diffusion image B.")]
         /// <summary>SD 이미지 생성용 구체적 묘사 (예: "erupting volcano")</summary>
         public string wordB;
+        [Tooltip("Simple display/LLM label for object A. Falls back to Word A when empty.")]
         /// <summary>LLM/UI 표시용 단순 명사 (예: "bone"). 비어있으면 wordA로 폴백.</summary>
         public string labelA;
+        [Tooltip("Simple display/LLM label for object B. Falls back to Word B when empty.")]
         /// <summary>LLM/UI 표시용 단순 명사 (예: "volcano"). 비어있으면 wordB로 폴백.</summary>
         public string labelB;
     }
@@ -19,6 +23,7 @@ namespace DoodleDiplomacy.Data
     [CreateAssetMenu(fileName = "WordPairPool", menuName = "DoodleDiplomacy/Word Pair Pool")]
     public class WordPairPool : ScriptableObject
     {
+        [Tooltip("Prompt/label pairs available for object-pair drawing rounds.")]
         [SerializeField] private WordPair[] pairs;
 
         private readonly List<int> _remaining = new();

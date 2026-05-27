@@ -7,9 +7,12 @@ namespace DoodleDiplomacy.AI
     [Serializable]
     public class PreGeneratedObjectImageEntry
     {
+        [Tooltip("Source prompt represented by this pre-generated object image.")]
         [TextArea(2, 4)]
         public string prompt;
+        [Tooltip("Stable hash/key computed from the prompt for fast lookup.")]
         public string promptKey;
+        [Tooltip("Texture returned when gameplay requests this prompt key.")]
         public Texture2D texture;
     }
 
@@ -18,6 +21,7 @@ namespace DoodleDiplomacy.AI
         menuName = "DoodleDiplomacy/Pre-generated Object Image Catalog")]
     public class PreGeneratedObjectImageCatalog : ScriptableObject
     {
+        [Tooltip("Pre-generated object images indexed by prompt key for fast/offline gameplay.")]
         [SerializeField] private List<PreGeneratedObjectImageEntry> entries = new();
 
         private readonly Dictionary<string, Texture2D> _lookup = new(StringComparer.Ordinal);

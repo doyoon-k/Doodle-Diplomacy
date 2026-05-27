@@ -8,24 +8,49 @@ namespace DoodleDiplomacy.Devices
     public sealed class BrainwaveGraphDisplay : MaskableGraphic
     {
         [Header("Graph")]
+        [Tooltip("Number of samples used to draw each waveform line. Higher values look smoother but cost more UI mesh vertices.")]
         [SerializeField, Min(32)] private int sampleCount = 180;
+        [Tooltip("Thickness of each waveform line in UI units.")]
         [SerializeField, Min(0.25f)] private float lineThickness = 2f;
+        [Tooltip("Horizontal movement speed of the waveform animation.")]
         [SerializeField, Min(0f)] private float scrollSpeed = 0.18f;
+        [Tooltip("Default convergence duration used when BeginTraceLock is called without an explicit duration.")]
+        [SerializeField, Min(0.05f)] private float defaultLockDuration = 0.9f;
+        [Tooltip("Draw a faint grid behind the waveform lines.")]
         [SerializeField] private bool drawGrid = true;
+        [Tooltip("Color and opacity of the graph grid lines.")]
         [SerializeField] private Color gridColor = new(0.08f, 0.32f, 0.12f, 0.45f);
 
         [Header("Channels")]
+        [Tooltip("Color of the upper composite brainwave trace.")]
         [SerializeField] private Color channelAColor = new(0.35f, 1f, 0.5f, 0.95f);
+        [Tooltip("Color of the middle composite brainwave trace.")]
         [SerializeField] private Color channelBColor = new(0.35f, 0.9f, 1f, 0.9f);
+        [Tooltip("Color of the lower composite brainwave trace.")]
         [SerializeField] private Color channelCColor = new(1f, 0.8f, 0.35f, 0.9f);
+
+        [Header("Lock Alignment")]
+        [Tooltip("Vertical distance from graph center to the upper/lower waveform while the terminal is still searching.")]
+        [SerializeField, Range(0f, 0.45f)] private float searchingChannelSpread = 0.24f;
+        [Tooltip("Vertical distance from graph center to the upper/lower waveform after the reaction trace is locked. Lower values make all waveforms converge more tightly, independent of reaction tier.")]
+        [SerializeField, Range(0f, 0.45f)] private float lockedChannelSpread = 0.1f;
 
         private readonly float[] _channelPhase = new float[3];
         private readonly float[] _channelGain = new float[3];
         private readonly float[] _channelFrequencyOffset = new float[3];
         private readonly float[] _channelSpikeGain = new float[3];
+        private readonly float[] _startChannelPhase = new float[3];
+        private readonly float[] _startChannelGain = new float[3];
+        private readonly float[] _startChannelFrequencyOffset = new float[3];
+        private readonly float[] _startChannelSpikeGain = new float[3];
+        private readonly float[] _targetChannelPhase = new float[3];
+        private readonly float[] _targetChannelGain = new float[3];
+        private readonly float[] _targetChannelFrequencyOffset = new float[3];
+        private readonly float[] _targetChannelSpikeGain = new float[3];
 
         private bool _hasSignal;
         private bool _running;
+        private bool _isLocking;
         private int _seed;
         private float _amplitude = 0.1f;
         private float _noise = 0.04f;
@@ -33,7 +58,24 @@ namespace DoodleDiplomacy.Devices
         private float _spikeChance = 0.02f;
         private float _spikeAmplitude = 0.12f;
         private float _spikeDensity = 8f;
+        private float _channelSpread = 0.24f;
         private float _timeOffset;
+        private float _lockElapsed;
+        private float _lockDuration;
+        private float _startAmplitude;
+        private float _startNoise;
+        private float _startFrequency;
+        private float _startSpikeChance;
+        private float _startSpikeAmplitude;
+        private float _startSpikeDensity;
+        private float _startChannelSpread;
+        private float _targetAmplitude;
+        private float _targetNoise;
+        private float _targetFrequency;
+        private float _targetSpikeChance;
+        private float _targetSpikeAmplitude;
+        private float _targetSpikeDensity;
+        private float _targetChannelSpread;
 
         protected override void Awake()
         {
@@ -47,6 +89,19 @@ namespace DoodleDiplomacy.Devices
             SetVerticesDirty();
         }
 
+        protected override void OnValidate()
+        {
+            base.OnValidate();
+            searchingChannelSpread = Mathf.Clamp(searchingChannelSpread, 0f, 0.45f);
+            lockedChannelSpread = Mathf.Clamp(lockedChannelSpread, 0f, 0.45f);
+            if (!_hasSignal)
+            {
+                _channelSpread = GetSearchingChannelSpread();
+            }
+
+            SetVerticesDirty();
+        }
+
         private void Update()
         {
             if (!_running)
@@ -55,15 +110,63 @@ namespace DoodleDiplomacy.Devices
             }
 
             _timeOffset += Time.deltaTime * scrollSpeed;
+            if (_isLocking)
+            {
+                UpdateTraceLock(Time.deltaTime);
+            }
+
             SetVerticesDirty();
         }
 
         public void Play(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
         {
+            PlayLocked(tier, label, sampleIndex, sessionSeed);
+        }
+
+        public void PlaySearching(string label, int sampleIndex, int sessionSeed)
+        {
+            GenerateSearchingProfile(label, sampleIndex, sessionSeed);
+            _timeOffset = 0f;
+            _hasSignal = true;
+            _running = true;
+            _isLocking = false;
+            SetVerticesDirty();
+        }
+
+        public void BeginTraceLock(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
+        {
+            BeginTraceLock(tier, label, sampleIndex, sessionSeed, defaultLockDuration);
+        }
+
+        public void BeginTraceLock(
+            ReactionTier tier,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            float lockDuration)
+        {
+            if (!_hasSignal)
+            {
+                GenerateSearchingProfile(label, sampleIndex, sessionSeed);
+                _hasSignal = true;
+            }
+
+            CaptureCurrentAsLockStart();
+            GenerateLockedProfile(tier, label, sampleIndex, sessionSeed, writeToTarget: true);
+            _lockElapsed = 0f;
+            _lockDuration = Mathf.Max(0.05f, lockDuration);
+            _running = true;
+            _isLocking = true;
+            SetVerticesDirty();
+        }
+
+        public void PlayLocked(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
+        {
             GenerateProfile(tier, label, sampleIndex, sessionSeed);
             _timeOffset = 0f;
             _hasSignal = true;
             _running = true;
+            _isLocking = false;
             SetVerticesDirty();
         }
 
@@ -72,9 +175,22 @@ namespace DoodleDiplomacy.Devices
             _running = false;
         }
 
+        public void ConfigureChannelSpread(float searchingSpread, float lockedSpread)
+        {
+            searchingChannelSpread = Mathf.Clamp(searchingSpread, 0f, 0.45f);
+            lockedChannelSpread = Mathf.Clamp(lockedSpread, 0f, 0.45f);
+            if (!_hasSignal)
+            {
+                _channelSpread = GetSearchingChannelSpread();
+            }
+
+            SetVerticesDirty();
+        }
+
         public void Clear()
         {
             _running = false;
+            _isLocking = false;
             _hasSignal = false;
             SetVerticesDirty();
         }
@@ -99,67 +215,224 @@ namespace DoodleDiplomacy.Devices
                 DrawGrid(vh, rect);
             }
 
-            DrawChannel(vh, rect, 0.74f, 0, channelAColor);
-            DrawChannel(vh, rect, 0.5f, 1, channelBColor);
-            DrawChannel(vh, rect, 0.26f, 2, channelCColor);
+            DrawChannel(vh, rect, GetChannelCenterYNormalized(0), 0, channelAColor);
+            DrawChannel(vh, rect, GetChannelCenterYNormalized(1), 1, channelBColor);
+            DrawChannel(vh, rect, GetChannelCenterYNormalized(2), 2, channelCColor);
         }
 
         private void GenerateProfile(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
         {
-            _seed = StableHash(label, sampleIndex, sessionSeed);
+            GenerateLockedProfile(tier, label, sampleIndex, sessionSeed, writeToTarget: false);
+        }
+
+        private void GenerateSearchingProfile(string label, int sampleIndex, int sessionSeed)
+        {
+            _seed = StableHash(label, sampleIndex, sessionSeed) ^ 0x2A6B9651;
             var rng = new System.Random(_seed);
 
-            switch (tier)
-            {
-                case ReactionTier.None:
-                    _amplitude = Jitter(rng, 0.025f, 0.055f);
-                    _noise = Jitter(rng, 0.012f, 0.035f);
-                    _frequency = Jitter(rng, 0.8f, 1.35f);
-                    _spikeChance = Jitter(rng, 0.004f, 0.012f);
-                    _spikeAmplitude = Jitter(rng, 0.03f, 0.07f);
-                    _spikeDensity = Jitter(rng, 5f, 8f);
-                    break;
-                case ReactionTier.Subtle:
-                    _amplitude = Jitter(rng, 0.08f, 0.15f);
-                    _noise = Jitter(rng, 0.025f, 0.065f);
-                    _frequency = Jitter(rng, 1.35f, 2.1f);
-                    _spikeChance = Jitter(rng, 0.012f, 0.03f);
-                    _spikeAmplitude = Jitter(rng, 0.07f, 0.14f);
-                    _spikeDensity = Jitter(rng, 6f, 10f);
-                    break;
-                case ReactionTier.Moderate:
-                    _amplitude = Jitter(rng, 0.17f, 0.28f);
-                    _noise = Jitter(rng, 0.045f, 0.095f);
-                    _frequency = Jitter(rng, 2.0f, 3.1f);
-                    _spikeChance = Jitter(rng, 0.025f, 0.055f);
-                    _spikeAmplitude = Jitter(rng, 0.12f, 0.23f);
-                    _spikeDensity = Jitter(rng, 8f, 13f);
-                    break;
-                case ReactionTier.Strong:
-                    _amplitude = Jitter(rng, 0.29f, 0.42f);
-                    _noise = Jitter(rng, 0.09f, 0.16f);
-                    _frequency = Jitter(rng, 2.8f, 4.2f);
-                    _spikeChance = Jitter(rng, 0.045f, 0.09f);
-                    _spikeAmplitude = Jitter(rng, 0.2f, 0.36f);
-                    _spikeDensity = Jitter(rng, 10f, 16f);
-                    break;
-                default:
-                    _amplitude = 0.1f;
-                    _noise = 0.04f;
-                    _frequency = 1.8f;
-                    _spikeChance = 0.02f;
-                    _spikeAmplitude = 0.12f;
-                    _spikeDensity = 8f;
-                    break;
-            }
+            _amplitude = Jitter(rng, 0.025f, 0.065f);
+            _noise = Jitter(rng, 0.035f, 0.085f);
+            _frequency = Jitter(rng, 0.75f, 1.55f);
+            _spikeChance = Jitter(rng, 0.004f, 0.014f);
+            _spikeAmplitude = Jitter(rng, 0.025f, 0.075f);
+            _spikeDensity = Jitter(rng, 4.5f, 8.5f);
+            _channelSpread = GetSearchingChannelSpread();
 
             for (int i = 0; i < 3; i++)
             {
                 _channelPhase[i] = Jitter(rng, 0f, Mathf.PI * 2f);
-                _channelGain[i] = Jitter(rng, 0.76f, 1.22f);
-                _channelFrequencyOffset[i] = Jitter(rng, -0.18f, 0.24f);
-                _channelSpikeGain[i] = Jitter(rng, 0.65f, 1.4f);
+                _channelGain[i] = Jitter(rng, 0.62f, 1.1f);
+                _channelFrequencyOffset[i] = Jitter(rng, -0.55f, 0.8f);
+                _channelSpikeGain[i] = Jitter(rng, 0.35f, 0.9f);
             }
+        }
+
+        private void GenerateLockedProfile(
+            ReactionTier tier,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            bool writeToTarget)
+        {
+            _seed = StableHash(label, sampleIndex, sessionSeed);
+            var rng = new System.Random(_seed);
+            float amplitude;
+            float noise;
+            float frequency;
+            float spikeChance;
+            float spikeAmplitude;
+            float spikeDensity;
+
+            switch (tier)
+            {
+                case ReactionTier.None:
+                    amplitude = Jitter(rng, 0.025f, 0.055f);
+                    noise = Jitter(rng, 0.012f, 0.035f);
+                    frequency = Jitter(rng, 0.8f, 1.35f);
+                    spikeChance = Jitter(rng, 0.004f, 0.012f);
+                    spikeAmplitude = Jitter(rng, 0.03f, 0.07f);
+                    spikeDensity = Jitter(rng, 5f, 8f);
+                    break;
+                case ReactionTier.Subtle:
+                    amplitude = Jitter(rng, 0.08f, 0.15f);
+                    noise = Jitter(rng, 0.025f, 0.065f);
+                    frequency = Jitter(rng, 1.35f, 2.1f);
+                    spikeChance = Jitter(rng, 0.012f, 0.03f);
+                    spikeAmplitude = Jitter(rng, 0.07f, 0.14f);
+                    spikeDensity = Jitter(rng, 6f, 10f);
+                    break;
+                case ReactionTier.Moderate:
+                    amplitude = Jitter(rng, 0.17f, 0.28f);
+                    noise = Jitter(rng, 0.045f, 0.095f);
+                    frequency = Jitter(rng, 2.0f, 3.1f);
+                    spikeChance = Jitter(rng, 0.025f, 0.055f);
+                    spikeAmplitude = Jitter(rng, 0.12f, 0.23f);
+                    spikeDensity = Jitter(rng, 8f, 13f);
+                    break;
+                case ReactionTier.Strong:
+                    amplitude = Jitter(rng, 0.29f, 0.42f);
+                    noise = Jitter(rng, 0.09f, 0.16f);
+                    frequency = Jitter(rng, 2.8f, 4.2f);
+                    spikeChance = Jitter(rng, 0.045f, 0.09f);
+                    spikeAmplitude = Jitter(rng, 0.2f, 0.36f);
+                    spikeDensity = Jitter(rng, 10f, 16f);
+                    break;
+                default:
+                    amplitude = 0.1f;
+                    noise = 0.04f;
+                    frequency = 1.8f;
+                    spikeChance = 0.02f;
+                    spikeAmplitude = 0.12f;
+                    spikeDensity = 8f;
+                    break;
+            }
+
+            float sharedPhase = Jitter(rng, 0f, Mathf.PI * 2f);
+            SetChannelSpreadValue(GetLockedChannelSpread(), writeToTarget);
+            for (int i = 0; i < 3; i++)
+            {
+                SetChannelValue(
+                    i,
+                    sharedPhase + Jitter(rng, -0.05f, 0.05f),
+                    Jitter(rng, 0.9f, 1.12f),
+                    Jitter(rng, -0.035f, 0.035f),
+                    Jitter(rng, 0.9f, 1.18f),
+                    writeToTarget);
+            }
+
+            SetProfileValues(amplitude, noise, frequency, spikeChance, spikeAmplitude, spikeDensity, writeToTarget);
+        }
+
+        private void CaptureCurrentAsLockStart()
+        {
+            _startAmplitude = _amplitude;
+            _startNoise = _noise;
+            _startFrequency = _frequency;
+            _startSpikeChance = _spikeChance;
+            _startSpikeAmplitude = _spikeAmplitude;
+            _startSpikeDensity = _spikeDensity;
+            _startChannelSpread = _channelSpread;
+
+            for (int i = 0; i < 3; i++)
+            {
+                _startChannelPhase[i] = _channelPhase[i];
+                _startChannelGain[i] = _channelGain[i];
+                _startChannelFrequencyOffset[i] = _channelFrequencyOffset[i];
+                _startChannelSpikeGain[i] = _channelSpikeGain[i];
+            }
+        }
+
+        private void UpdateTraceLock(float deltaTime)
+        {
+            _lockElapsed += deltaTime;
+            float t = Mathf.Clamp01(_lockElapsed / _lockDuration);
+            float eased = Mathf.SmoothStep(0f, 1f, t);
+
+            _amplitude = Mathf.Lerp(_startAmplitude, _targetAmplitude, eased);
+            _noise = Mathf.Lerp(_startNoise, _targetNoise, eased);
+            _frequency = Mathf.Lerp(_startFrequency, _targetFrequency, eased);
+            _spikeChance = Mathf.Lerp(_startSpikeChance, _targetSpikeChance, eased);
+            _spikeAmplitude = Mathf.Lerp(_startSpikeAmplitude, _targetSpikeAmplitude, eased);
+            _spikeDensity = Mathf.Lerp(_startSpikeDensity, _targetSpikeDensity, eased);
+            _channelSpread = Mathf.Lerp(_startChannelSpread, _targetChannelSpread, eased);
+
+            for (int i = 0; i < 3; i++)
+            {
+                _channelPhase[i] = LerpRadians(_startChannelPhase[i], _targetChannelPhase[i], eased);
+                _channelGain[i] = Mathf.Lerp(_startChannelGain[i], _targetChannelGain[i], eased);
+                _channelFrequencyOffset[i] = Mathf.Lerp(
+                    _startChannelFrequencyOffset[i],
+                    _targetChannelFrequencyOffset[i],
+                    eased);
+                _channelSpikeGain[i] = Mathf.Lerp(_startChannelSpikeGain[i], _targetChannelSpikeGain[i], eased);
+            }
+
+            if (t >= 1f)
+            {
+                _isLocking = false;
+            }
+        }
+
+        private void SetProfileValues(
+            float amplitude,
+            float noise,
+            float frequency,
+            float spikeChance,
+            float spikeAmplitude,
+            float spikeDensity,
+            bool writeToTarget)
+        {
+            if (writeToTarget)
+            {
+                _targetAmplitude = amplitude;
+                _targetNoise = noise;
+                _targetFrequency = frequency;
+                _targetSpikeChance = spikeChance;
+                _targetSpikeAmplitude = spikeAmplitude;
+                _targetSpikeDensity = spikeDensity;
+                return;
+            }
+
+            _amplitude = amplitude;
+            _noise = noise;
+            _frequency = frequency;
+            _spikeChance = spikeChance;
+            _spikeAmplitude = spikeAmplitude;
+            _spikeDensity = spikeDensity;
+        }
+
+        private void SetChannelSpreadValue(float channelSpread, bool writeToTarget)
+        {
+            if (writeToTarget)
+            {
+                _targetChannelSpread = channelSpread;
+                return;
+            }
+
+            _channelSpread = channelSpread;
+        }
+
+        private void SetChannelValue(
+            int channel,
+            float phase,
+            float gain,
+            float frequencyOffset,
+            float spikeGain,
+            bool writeToTarget)
+        {
+            if (writeToTarget)
+            {
+                _targetChannelPhase[channel] = phase;
+                _targetChannelGain[channel] = gain;
+                _targetChannelFrequencyOffset[channel] = frequencyOffset;
+                _targetChannelSpikeGain[channel] = spikeGain;
+                return;
+            }
+
+            _channelPhase[channel] = phase;
+            _channelGain[channel] = gain;
+            _channelFrequencyOffset[channel] = frequencyOffset;
+            _channelSpikeGain[channel] = spikeGain;
         }
 
         private void DrawGrid(VertexHelper vh, Rect rect)
@@ -213,6 +486,30 @@ namespace DoodleDiplomacy.Devices
             float centerY = Mathf.Lerp(rect.yMin, rect.yMax, centerYNormalized);
             float y = centerY + wave * rect.height;
             return new Vector2(x, y);
+        }
+
+        private float GetChannelCenterYNormalized(int channel)
+        {
+            float spread = Mathf.Clamp(_channelSpread, 0f, 0.45f);
+            switch (channel)
+            {
+                case 0:
+                    return 0.5f + spread;
+                case 2:
+                    return 0.5f - spread;
+                default:
+                    return 0.5f;
+            }
+        }
+
+        private float GetSearchingChannelSpread()
+        {
+            return Mathf.Clamp(searchingChannelSpread, 0f, 0.45f);
+        }
+
+        private float GetLockedChannelSpread()
+        {
+            return Mathf.Clamp(lockedChannelSpread, 0f, 0.45f);
         }
 
         private float SampleNoise(float movingX, int channel)
@@ -269,6 +566,13 @@ namespace DoodleDiplomacy.Devices
         private static float Jitter(System.Random rng, float min, float max)
         {
             return Mathf.Lerp(min, max, (float)rng.NextDouble());
+        }
+
+        private static float LerpRadians(float from, float to, float t)
+        {
+            float fromDegrees = from * Mathf.Rad2Deg;
+            float toDegrees = to * Mathf.Rad2Deg;
+            return Mathf.LerpAngle(fromDegrees, toDegrees, t) * Mathf.Deg2Rad;
         }
 
         private static int StableHash(string label, int sampleIndex, int sessionSeed)

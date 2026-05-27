@@ -17,6 +17,7 @@ namespace DoodleDiplomacy.Gameplay
         private const string StimuliFileName = "day1_stimuli.json";
         private const string ProfilePayloadFileName = "day1_profile_payload.json";
 
+        [Tooltip("Persistent-data subfolder where approved Day1 drawings and calibration manifests are written.")]
         [SerializeField] private string relativeFolder = DefaultRelativeFolder;
 
         private readonly List<Day1StimulusRecord> _approvedRecords = new();

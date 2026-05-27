@@ -5,8 +5,11 @@ namespace DoodleDiplomacy.Dialogue
 {
     public class SubtitleDisplay : MonoBehaviour
     {
+        [Tooltip("Root subtitle panel toggled when subtitles are shown or hidden.")]
         [SerializeField] private GameObject panel;
+        [Tooltip("Text element used for the speaker or narrator name.")]
         [SerializeField] private TextMeshProUGUI nameText;
+        [Tooltip("Text element used for the subtitle body.")]
         [SerializeField] private TextMeshProUGUI bodyText;
 
         private void Awake()

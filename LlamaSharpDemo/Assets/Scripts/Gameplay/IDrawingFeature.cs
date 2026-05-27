@@ -14,6 +14,8 @@ namespace DoodleDiplomacy.Gameplay
         void SetToolMode(DrawingToolMode mode);
         void SetBrushRadius(float radius);
         void SetBrushColor(Color color);
+        void ShowRecognitionLabel(string label);
+        void ClearRecognitionLabel();
         bool Undo();
         bool Redo();
         bool TryExportPngBytes(out byte[] pngBytes, out string error);

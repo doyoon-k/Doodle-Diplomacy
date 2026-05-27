@@ -18,22 +18,31 @@ namespace DoodleDiplomacy.Devices
         private const string PixelateStrengthPropertyName = "_PixelateStrength";
 
         [Header("Renderer")]
+        [Tooltip("Renderer whose material receives idle, generated-object, and submitted-drawing textures.")]
         [SerializeField] private Renderer targetRenderer;
         [Tooltip("URP: _BaseMap / Legacy: _MainTex")]
         [SerializeField] private string texturePropertyName = "_BaseMap";
 
         [Header("Default Textures")]
+        [Tooltip("Texture shown when the monitor is idle or no submitted image is available.")]
         [SerializeField] private Texture2D idleTexture;
 
         [Header("Fade")]
+        [Tooltip("Seconds for monitor fade-out/fade-in when switching display textures.")]
         [SerializeField] private float fadeDuration = 0.3f;
 
         [Header("Display")]
+        [Tooltip("Flip the two generated object slots vertically before showing them on the monitor.")]
         [SerializeField] private bool flipSlotsVertically = true;
+        [Tooltip("Flip the submitted drawing horizontally before showing it on the monitor.")]
         [SerializeField] private bool flipSubmissionHorizontally = true;
+        [Tooltip("Flip the submitted drawing vertically before showing it on the monitor.")]
         [SerializeField] private bool flipSubmissionVertically = true;
+        [Tooltip("When enabled, sends Pixel Resolution to the monitor material for pixelated output.")]
         [SerializeField] private bool overridePixelResolution = true;
+        [Tooltip("Virtual pixel grid size used by the monitor material when Override Pixel Resolution is enabled.")]
         [SerializeField] private Vector2Int pixelResolution = new(320, 180);
+        [Tooltip("Strength of the monitor material pixelation effect, where 0 is clean and 1 is fully pixelated.")]
         [SerializeField, Range(0f, 1f)] private float pixelateStrength = 1f;
 
         private Material _materialInstance;

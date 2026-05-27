@@ -8,8 +8,11 @@ using UnityEngine;
 public abstract class BaseLlmGenerationProfile : ScriptableObject
 {
     [Header("Shared Generation Settings")]
+    [Tooltip("Raw response format or generated JSON schema sent to the model.")]
     public string format;
+    [Tooltip("Enable streaming responses when the backend supports it.")]
     public bool stream;
+    [Tooltip("Backend keep-alive hint for providers that support model residency.")]
     public string keepAlive;
 
     [TextArea(3, 20)]
@@ -22,10 +25,11 @@ public abstract class BaseLlmGenerationProfile : ScriptableObject
     [Tooltip("Thinking mode control for Qwen3-series models.")]
     public ThinkingMode thinkingMode = ThinkingMode.Disabled;
 
-    [SerializeField]
     [Tooltip("Structured definition that drives the JSON format enforced at runtime.")]
+    [SerializeField]
     private List<JsonFieldDefinition> jsonFields = new();
 
+    [Tooltip("Sampling and token-generation parameters shared by local and cloud profiles.")]
     public LlmGenerationProfile.ModelParams modelParams = new LlmGenerationProfile.ModelParams();
 
     [NonSerialized]

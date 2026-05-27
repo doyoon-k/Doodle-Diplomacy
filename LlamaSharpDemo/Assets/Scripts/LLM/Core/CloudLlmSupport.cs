@@ -17,6 +17,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "CloudCredentialOverrides", menuName = "LLM/Cloud Credential Overrides (Editor Local)")]
 public sealed class CloudCredentialOverridesAsset : ScriptableObject
 {
+    [Tooltip("Editor-local API key overrides by cloud provider. Keep this asset out of source control.")]
     [SerializeField] private List<CloudCredentialOverrideEntry> entries = new();
 
     public bool TryGetApiKey(CloudProvider provider, out string apiKey)
@@ -46,7 +47,9 @@ public sealed class CloudCredentialOverridesAsset : ScriptableObject
 [Serializable]
 public sealed class CloudCredentialOverrideEntry
 {
+    [Tooltip("Cloud provider this editor-local API key belongs to.")]
     public CloudProvider provider;
+    [Tooltip("API key used in the Unity editor for this provider. Keep this out of source control.")]
     [TextArea(1, 3)] public string apiKey;
 }
 

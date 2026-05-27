@@ -16,8 +16,11 @@ namespace DoodleDiplomacy.Interaction
         [Tooltip("If false, interaction requests are ignored.")]
         public bool isActive = true;
 
+        [Tooltip("UnityEvent invoked when this object is clicked and interaction is allowed.")]
         public UnityEvent OnInteracted = new();
+        [Tooltip("UnityEvent invoked when pointer hover enters this object.")]
         public UnityEvent OnHoverEntered = new();
+        [Tooltip("UnityEvent invoked when pointer hover exits this object.")]
         public UnityEvent OnHoverExited = new();
 
         private void Awake()

@@ -7,28 +7,45 @@ namespace DoodleDiplomacy.Camera
     public class CameraAnchorGizmo : MonoBehaviour
     {
         [Header("Display")]
+        [Tooltip("Color used for the scene-view forward arrow gizmo.")]
         [SerializeField] private Color arrowColor = new(0.15f, 0.95f, 1f, 0.95f);
 
         [Header("Shape")]
+        [Tooltip("Length of the forward direction arrow in scene-view units.")]
         [SerializeField, Min(0.05f)] private float arrowLength = 0.6f;
+        [Tooltip("Length of each arrowhead line in scene-view units.")]
         [SerializeField, Min(0.02f)] private float arrowHeadLength = 0.16f;
+        [Tooltip("Angle of the arrowhead lines in degrees.")]
         [SerializeField, Range(5f, 75f)] private float arrowHeadAngle = 28f;
+        [Tooltip("Radius of the small sphere drawn at the camera anchor origin.")]
         [SerializeField, Min(0.005f)] private float originSphereRadius = 0.035f;
 
         [Header("Frustum Preview")]
+        [Tooltip("Draw a camera frustum preview from this anchor in the scene view.")]
         [SerializeField] private bool drawFrustum = true;
+        [Tooltip("Only draw the frustum preview while this anchor is selected.")]
         [SerializeField] private bool drawFrustumOnlyWhenSelected = true;
+        [Tooltip("Use Source Camera or main camera projection settings for the frustum preview.")]
         [SerializeField] private bool useMainCameraSettings = true;
+        [Tooltip("Camera whose projection settings are copied when Use Main Camera Settings is enabled.")]
         [SerializeField] private UnityEngine.Camera sourceCamera;
+        [Tooltip("Maximum far-clip distance used when drawing the frustum preview.")]
         [SerializeField, Min(0.2f)] private float previewFarLimit = 8f;
+        [Tooltip("Color used for the scene-view frustum preview lines.")]
         [SerializeField] private Color frustumColor = new(1f, 0.75f, 0.15f, 0.9f);
 
         [Header("Manual Frustum (when Use Main Camera Settings is off)")]
+        [Tooltip("Draw the manual preview as an orthographic frustum instead of perspective.")]
         [SerializeField] private bool manualOrthographic = false;
+        [Tooltip("Manual perspective field of view used when camera settings are not copied.")]
         [SerializeField, Range(1f, 179f)] private float manualFieldOfView = 60f;
+        [Tooltip("Manual aspect ratio used when camera settings are not copied.")]
         [SerializeField, Min(0.1f)] private float manualAspect = 16f / 9f;
+        [Tooltip("Manual near clip distance used when camera settings are not copied.")]
         [SerializeField, Min(0.01f)] private float manualNearClip = 0.03f;
+        [Tooltip("Manual far clip distance used when camera settings are not copied.")]
         [SerializeField, Min(0.2f)] private float manualFarClip = 3f;
+        [Tooltip("Manual orthographic half-height used when Manual Orthographic is enabled.")]
         [SerializeField, Min(0.01f)] private float manualOrthoHalfHeight = 1f;
 
         private void OnDrawGizmos()

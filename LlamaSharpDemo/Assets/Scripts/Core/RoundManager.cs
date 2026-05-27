@@ -32,36 +32,55 @@ namespace DoodleDiplomacy.Core
         public static RoundManager Instance { get; private set; }
 
         [Header("Mode")]
+        [Tooltip("Stable gameplay mode id used when this object-pair drawing mode is active.")]
         [SerializeField] private string modeId = "object-pair-drawing";
 
         [Header("Core Dependencies")]
+        [Tooltip("Score service used to accumulate and resolve round outcomes.")]
         [SerializeField] private ScoreManager scoreManager;
+        [Tooltip("Camera controller used for round camera mode transitions.")]
         [SerializeField] private CameraController cameraController;
+        [Tooltip("Interaction manager that routes clickable scene objects.")]
         [SerializeField] private InteractionManager interactionManager;
+        [Tooltip("Score thresholds used to map accumulated score into endings.")]
         [SerializeField] private ScoreConfig scoreConfig;
+        [Tooltip("Dialogue system used for round intro and scripted dialogue playback.")]
         [SerializeField] private DialogueSystem dialogueSystem;
 
         [Header("AI")]
+        [Tooltip("Bridge that runs object generation, preview, judgment, telepathy, and word-selection AI pipelines.")]
         [SerializeField] private AIPipelineBridge aipipelineBridge;
 
         [Header("Characters & Devices")]
+        [Tooltip("Controller that plays alien reaction animations and subtitles.")]
         [SerializeField] private AlienReactionController alienReactionController;
+        [Tooltip("Terminal display used for telepathy/interpreter text.")]
         [SerializeField] private TerminalDisplay terminalDisplay;
+        [Tooltip("Shared monitor that shows generated objects and submitted drawings.")]
         [SerializeField] private SharedMonitorDisplay sharedMonitorDisplay;
+        [Tooltip("Drawing board controller used by the player to create submissions.")]
         [SerializeField] private DrawingBoardController drawingBoard;
 
         [Header("Interaction Targets (Inspector Wiring)")]
+        [Tooltip("Interactable objects that count as alien clicks when fallback inspector wiring is used.")]
         [SerializeField] private InteractableObject[] alienInteractables = Array.Empty<InteractableObject>();
+        [Tooltip("Interactable objects that open or focus the tablet when fallback inspector wiring is used.")]
         [SerializeField] private InteractableObject[] tabletInteractables = Array.Empty<InteractableObject>();
+        [Tooltip("Interactable object used to inspect the shared monitor.")]
         [SerializeField] private InteractableObject sharedMonitorInteractable;
+        [Tooltip("Interactable objects that open or focus the terminal.")]
         [SerializeField] private InteractableObject[] terminalInteractables = Array.Empty<InteractableObject>();
 
         [Header("UI")]
+        [Tooltip("Subtitle display used for hints and round dialogue.")]
         [SerializeField] private SubtitleDisplay subtitleDisplay;
+        [Tooltip("Ending controller shown when a run reaches its ending state.")]
         [SerializeField] private EndingController endingController;
+        [Tooltip("Title screen controller used when returning to or starting from the title screen.")]
         [SerializeField] private TitleScreenController titleScreenController;
 
         [Header("Sequences")]
+        [Tooltip("Intro dialogue sequence for the object-pair drawing mode.")]
         [SerializeField] private DialogueSequence introSequence;
 
         [Header("Input")]
@@ -74,6 +93,7 @@ namespace DoodleDiplomacy.Core
 
         [Header("Startup")]
         [Min(0f)]
+        [Tooltip("Maximum seconds to wait for first-round AI prefetch before allowing play to continue.")]
         [SerializeField] private float firstRoundPrefetchTimeoutSeconds = DefaultFirstRoundPrefetchTimeoutSeconds;
 
         [Header("Events")]

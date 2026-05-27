@@ -9,9 +9,13 @@ using UnityEngine;
 public class RoutingLlmService : MonoBehaviour, ILlmService
 {
     [Header("Routing")]
+    [Tooltip("Local LLamaSharp runtime service used for local model profiles.")]
     [SerializeField] private RuntimeLlamaSharpService localRuntimeService;
+    [Tooltip("Register this routing service as the active LlmServiceLocator service during Awake.")]
     [SerializeField] private bool registerOnAwake = true;
+    [Tooltip("Keep this service object alive when changing scenes.")]
     [SerializeField] private bool persistAcrossScenes = true;
+    [Tooltip("Log LLM request/response traffic for debugging.")]
     [SerializeField] private bool logTraffic;
 
     private CloudDirectLlmService _cloudService;

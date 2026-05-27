@@ -5,7 +5,9 @@ namespace DoodleDiplomacy.Dialogue
 {
     public class WorldSpaceDialogue : MonoBehaviour
     {
+        [Tooltip("TextMeshPro component that renders the world-space dialogue text.")]
         [SerializeField] private TextMeshPro textMesh;
+        [Tooltip("Vertical offset above the target anchor where world-space dialogue appears.")]
         [SerializeField] private float verticalOffset = 2.5f;
 
         private Transform _anchor;

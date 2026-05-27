@@ -16,6 +16,7 @@ public class GamePipelineRunner : MonoBehaviour
     }
 
     [Header("Dependencies")]
+    [Tooltip("Runtime LLM service used to execute prompt pipeline steps.")]
     [SerializeField] private RoutingLlmService _runtimeService;
 
     private Coroutine _currentRoutine;

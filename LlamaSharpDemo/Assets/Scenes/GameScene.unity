@@ -10335,6 +10335,7 @@ MonoBehaviour:
   exitInterpreterKey: 27
   exitMonitorZoomKey: 27
   firstRoundPrefetchTimeoutSeconds: 180
+  runStandaloneWithoutGameplayHost: 0
   OnStateChanged:
     m_PersistentCalls:
       m_Calls:

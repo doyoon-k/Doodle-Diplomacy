@@ -35,6 +35,11 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             RoundManager roundManager = Object.FindFirstObjectByType<RoundManager>();
             Assert.IsNotNull(roundManager, "Object-pair RoundManager should remain available in GameScene.");
             Assert.AreEqual("object-pair-drawing", roundManager.ModeId);
+
+            var serializedRoundManager = new SerializedObject(roundManager);
+            Assert.IsFalse(
+                serializedRoundManager.FindProperty("runStandaloneWithoutGameplayHost").boolValue,
+                "RoundManager must not auto-run in GameScene; GameFlowDirector/GameplayModeHost owns mode startup.");
         }
 
         [Test]

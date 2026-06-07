@@ -1,0 +1,451 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using DoodleDiplomacy.Devices;
+using UnityEngine;
+
+namespace DoodleDiplomacy.Gameplay.FirstContact
+{
+    public readonly struct FirstContactResolutionResult
+    {
+        public readonly UnknownSlot Slot;
+        public readonly FirstContactTranslationStage PreviousStage;
+        public readonly FirstContactTranslationStage NewStage;
+        public readonly float Score;
+        public readonly bool Changed;
+
+        public FirstContactResolutionResult(
+            UnknownSlot slot,
+            FirstContactTranslationStage previousStage,
+            FirstContactTranslationStage newStage,
+            float score,
+            bool changed)
+        {
+            Slot = slot;
+            PreviousStage = previousStage;
+            NewStage = newStage;
+            Score = score;
+            Changed = changed;
+        }
+    }
+
+    public sealed class FirstContactUnknownResolver
+    {
+        private readonly FirstContactEmbeddingService _embeddingService;
+        private readonly FirstContactSemanticSettings _settings;
+
+        public FirstContactUnknownResolver(
+            FirstContactEmbeddingService embeddingService,
+            FirstContactSemanticSettings settings)
+        {
+            _embeddingService = embeddingService;
+            _settings = settings;
+        }
+
+        public IEnumerator PrepareQuestion(AlienQuestion question)
+        {
+            if (question == null || _embeddingService == null)
+            {
+                yield break;
+            }
+
+            for (int i = 0; i < question.UnknownSlots.Count; i++)
+            {
+                UnknownSlot slot = question.UnknownSlots[i];
+                AnchorEmbeddingSet anchorSet = null;
+                yield return _embeddingService.BuildAnchorSet(
+                    slot.TargetConcept,
+                    slot.Anchors,
+                    result => anchorSet = result);
+                slot.AnchorSet = anchorSet;
+            }
+        }
+
+        public FirstContactResolutionResult EvaluateCard(SemanticCardRecord card, UnknownSlot slot)
+        {
+            if (card == null || slot == null || card.Embedding == null || slot.AnchorSet == null || !slot.AnchorSet.IsValid)
+            {
+                return new FirstContactResolutionResult(
+                    slot,
+                    slot != null ? slot.Stage : FirstContactTranslationStage.Unknown,
+                    slot != null ? slot.Stage : FirstContactTranslationStage.Unknown,
+                    0f,
+                    false);
+            }
+
+            float score = ScoreAgainstAnchorSet(card.Embedding, slot.AnchorSet);
+            FirstContactTranslationStage nextStage = DetermineStage(score);
+            FirstContactTranslationStage previous = slot.Stage;
+            bool changed = slot.TryAdvanceTo(nextStage, score);
+            return new FirstContactResolutionResult(slot, previous, slot.Stage, score, changed);
+        }
+
+        public bool ApplyAutomaticClusterHints(AlienQuestion question, FirstContactSemanticMemory memory)
+        {
+            if (question == null || memory == null)
+            {
+                return false;
+            }
+
+            bool changedAny = false;
+            IReadOnlyList<SemanticClusterRecord> stableClusters = memory.StableClusters;
+            for (int i = 0; i < question.UnknownSlots.Count; i++)
+            {
+                UnknownSlot slot = question.UnknownSlots[i];
+                if (slot == null || slot.Stage >= FirstContactTranslationStage.Partial ||
+                    slot.AnchorSet == null || !slot.AnchorSet.IsValid)
+                {
+                    continue;
+                }
+
+                SemanticClusterRecord bestCluster = null;
+                float bestScore = -1f;
+                for (int c = 0; c < stableClusters.Count; c++)
+                {
+                    SemanticClusterRecord cluster = stableClusters[c];
+                    if (cluster?.Centroid == null)
+                    {
+                        continue;
+                    }
+
+                    float score = ScoreAgainstAnchorSet(cluster.Centroid, slot.AnchorSet);
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestCluster = cluster;
+                    }
+                }
+
+                if (bestCluster != null && bestScore >= GetSettings().clusterAutoPartialThreshold)
+                {
+                    if (slot.TryAdvanceTo(FirstContactTranslationStage.Partial, bestScore))
+                    {
+                        slot.LinkedClusterId = bestCluster.Id;
+                        changedAny = true;
+                    }
+                }
+            }
+
+            return changedAny;
+        }
+
+        private float ScoreAgainstAnchorSet(float[] vector, AnchorEmbeddingSet anchorSet)
+        {
+            if (_embeddingService == null || vector == null || anchorSet == null || !anchorSet.IsValid)
+            {
+                return 0f;
+            }
+
+            float maxAnchorScore = -1f;
+            if (anchorSet.AnchorVectors != null)
+            {
+                for (int i = 0; i < anchorSet.AnchorVectors.Length; i++)
+                {
+                    maxAnchorScore = Mathf.Max(
+                        maxAnchorScore,
+                        _embeddingService.Similarity(vector, anchorSet.AnchorVectors[i]));
+                }
+            }
+
+            float centroidScore = _embeddingService.Similarity(vector, anchorSet.Centroid);
+            return Mathf.Max(maxAnchorScore, centroidScore * GetSettings().centroidWeight);
+        }
+
+        private FirstContactTranslationStage DetermineStage(float score)
+        {
+            FirstContactSemanticSettings settings = GetSettings();
+            if (score >= settings.solvedThreshold)
+            {
+                return FirstContactTranslationStage.Solved;
+            }
+
+            if (score >= settings.partialThreshold)
+            {
+                return FirstContactTranslationStage.Partial;
+            }
+
+            if (score >= settings.hintThreshold)
+            {
+                return FirstContactTranslationStage.Hint;
+            }
+
+            return FirstContactTranslationStage.Unknown;
+        }
+
+        private FirstContactSemanticSettings GetSettings()
+        {
+            return _settings != null ? _settings : ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+        }
+    }
+
+    public sealed class FirstContactSemanticMemory
+    {
+        private readonly FirstContactEmbeddingService _embeddingService;
+        private readonly FirstContactSemanticSettings _settings;
+        private readonly FirstContactDebugSettings _debugSettings;
+        private readonly List<SemanticCardRecord> _cards = new();
+        private readonly List<SemanticClusterRecord> _clusters = new();
+
+        private int _nextCardIndex = 1;
+        private int _nextClusterIndex = 1;
+
+        public FirstContactSemanticMemory(
+            FirstContactEmbeddingService embeddingService,
+            FirstContactSemanticSettings settings,
+            FirstContactDebugSettings debugSettings)
+        {
+            _embeddingService = embeddingService;
+            _settings = settings;
+            _debugSettings = debugSettings;
+        }
+
+        public IReadOnlyList<SemanticCardRecord> Cards => _cards;
+        public IReadOnlyList<SemanticClusterRecord> Clusters => _clusters;
+
+        public IReadOnlyList<SemanticClusterRecord> StableClusters
+        {
+            get
+            {
+                var stable = new List<SemanticClusterRecord>();
+                for (int i = 0; i < _clusters.Count; i++)
+                {
+                    if (_clusters[i].IsStable)
+                    {
+                        stable.Add(_clusters[i]);
+                    }
+                }
+
+                return stable;
+            }
+        }
+
+        public void AddCard(SemanticCardRecord card)
+        {
+            if (card == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(card.Id))
+            {
+                card.Id = $"CARD-{_nextCardIndex:000}";
+            }
+
+            _nextCardIndex++;
+            _cards.Add(card);
+
+            if (card.Embedding == null || card.Embedding.Length == 0 || _embeddingService == null)
+            {
+                return;
+            }
+
+            SemanticClusterRecord cluster = FindNearestCluster(card.Embedding, out float score);
+            if (cluster == null || score < GetSettings().clusterJoinThreshold)
+            {
+                cluster = CreateCluster();
+                _clusters.Add(cluster);
+            }
+
+            cluster.Members.Add(card);
+            card.ClusterId = cluster.Id;
+            RecalculateCluster(cluster);
+            TryStabilizeCluster(cluster);
+
+            if (_debugSettings != null && _debugSettings.logClusterUpdates)
+            {
+                Debug.Log(
+                    $"[FirstContactSemanticMemory] Card '{card.Label}' joined {cluster.Id} " +
+                    $"score={score:0.000} members={cluster.Members.Count} stable={cluster.IsStable}");
+            }
+        }
+
+        public SemanticClusterRecord FindCluster(string clusterId)
+        {
+            if (string.IsNullOrWhiteSpace(clusterId))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _clusters.Count; i++)
+            {
+                if (string.Equals(_clusters[i].Id, clusterId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return _clusters[i];
+                }
+            }
+
+            return null;
+        }
+
+        private SemanticClusterRecord FindNearestCluster(float[] embedding, out float bestScore)
+        {
+            bestScore = -1f;
+            SemanticClusterRecord best = null;
+            for (int i = 0; i < _clusters.Count; i++)
+            {
+                SemanticClusterRecord cluster = _clusters[i];
+                if (cluster.Centroid == null)
+                {
+                    continue;
+                }
+
+                float score = _embeddingService.Similarity(embedding, cluster.Centroid);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = cluster;
+                }
+            }
+
+            return best;
+        }
+
+        private SemanticClusterRecord CreateCluster()
+        {
+            return new SemanticClusterRecord
+            {
+                Id = $"CLUSTER-{_nextClusterIndex++:00}",
+                ProvisionalName = string.Empty,
+                IsStable = false,
+                Cohesion = 0f
+            };
+        }
+
+        private void RecalculateCluster(SemanticClusterRecord cluster)
+        {
+            if (cluster == null || _embeddingService == null)
+            {
+                return;
+            }
+
+            var vectors = new List<float[]>();
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                if (cluster.Members[i].Embedding != null)
+                {
+                    vectors.Add(cluster.Members[i].Embedding);
+                }
+            }
+
+            _embeddingService.TryBuildCentroid(vectors, out cluster.Centroid);
+            cluster.Cohesion = CalculateCohesion(cluster);
+        }
+
+        private float CalculateCohesion(SemanticClusterRecord cluster)
+        {
+            if (cluster == null || cluster.Centroid == null || cluster.Members.Count == 0)
+            {
+                return 0f;
+            }
+
+            float sum = 0f;
+            int count = 0;
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                float[] embedding = cluster.Members[i].Embedding;
+                if (embedding == null)
+                {
+                    continue;
+                }
+
+                sum += _embeddingService.Similarity(embedding, cluster.Centroid);
+                count++;
+            }
+
+            return count > 0 ? sum / count : 0f;
+        }
+
+        private void TryStabilizeCluster(SemanticClusterRecord cluster)
+        {
+            if (cluster == null || cluster.IsStable)
+            {
+                return;
+            }
+
+            FirstContactSemanticSettings settings = GetSettings();
+            if (cluster.Members.Count < settings.minClusterMembers || cluster.Cohesion < settings.minClusterCohesion)
+            {
+                return;
+            }
+
+            cluster.IsStable = true;
+            cluster.ProvisionalName = InferClusterName(cluster);
+        }
+
+        private static string InferClusterName(SemanticClusterRecord cluster)
+        {
+            bool HasAny(params string[] tokens)
+            {
+                for (int i = 0; i < cluster.Members.Count; i++)
+                {
+                    string label = cluster.Members[i].Label ?? string.Empty;
+                    for (int t = 0; t < tokens.Length; t++)
+                    {
+                        if (label.IndexOf(tokens[t], StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            if (HasAny("shield", "wall", "helmet", "bunker", "armor", "lock", "door"))
+            {
+                return "[DEFENSE-RELATED?]";
+            }
+
+            if (HasAny("child", "baby", "family", "home", "house"))
+            {
+                return "[FAMILY-RELATED?]";
+            }
+
+            if (HasAny("tree", "leaf", "flower", "forest", "plant"))
+            {
+                return "[LIFE-RELATED?]";
+            }
+
+            if (HasAny("gun", "weapon", "knife", "sword", "missile"))
+            {
+                return "[WEAPON-RELATED?]";
+            }
+
+            if (HasAny("flag", "crown", "symbol", "badge"))
+            {
+                return "[SYMBOL-RELATED?]";
+            }
+
+            return $"[{cluster.Id}]";
+        }
+
+        public bool TryCreateWaveformProfile(
+            SemanticCardRecord card,
+            int sessionSeed,
+            out BrainwaveSemanticProfile profile)
+        {
+            profile = BrainwaveSemanticProfile.Invalid;
+            if (card?.Embedding == null)
+            {
+                return false;
+            }
+
+            FirstContactSemanticSettings settings = GetSettings();
+            return BrainwaveEmbeddingProfileMapper.TryCreate(
+                card.Embedding,
+                card.Label,
+                Mathf.Max(1, card.TurnIndex + 1),
+                sessionSeed,
+                settings.waveformProjectionSeed,
+                settings.waveformFeatureCount,
+                settings.waveformSemanticInfluence,
+                settings.waveformSessionJitter,
+                out profile);
+        }
+
+        private FirstContactSemanticSettings GetSettings()
+        {
+            return _settings != null ? _settings : ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+        }
+    }
+}

@@ -122,7 +122,10 @@ namespace DoodleDiplomacy.Gameplay
                 yield break;
             }
 
-            MonoBehaviour modeBehaviour = installer.GetDefaultModeBehaviour();
+            MonoBehaviour modeBehaviour = installer is IGameplaySceneModeResolver resolver
+                ? resolver.GetModeBehaviour(definition)
+                : installer.GetDefaultModeBehaviour();
+            modeBehaviour = modeBehaviour != null ? modeBehaviour : installer.GetDefaultModeBehaviour();
             GameplayModeContext context = installer.CreateContext(gameplayModeHost);
             context.Services.Register<IGameFlowController>(this);
             context.Services.Register(definition);

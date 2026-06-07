@@ -10286,6 +10286,7 @@ GameObject:
   - component: {fileID: 1778344091}
   - component: {fileID: 1778344092}
   - component: {fileID: 1778344093}
+  - component: {fileID: 1778344095}
   - component: {fileID: 1778344094}
   m_Layer: 0
   m_Name: GameManager
@@ -10610,6 +10611,21 @@ MonoBehaviour:
   brainwaveResultHoldSeconds: 4
   reactionEvaluationMaxAttempts: 3
   reactionEvaluationRetryDelaySeconds: 0.4
+--- !u!114 &1778344095
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778344079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 454262bbb22d4a039755788a2d60c13e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactTranslationMode
+  modeId: first-contact-translation
+  config: {fileID: 11400000, guid: 181cc61e6490452d96b5d42483bb330f, type: 2}
+  actionButtonPanel: {fileID: 0}
 --- !u!114 &1778344094
 MonoBehaviour:
   m_ObjectHideFlags: 0

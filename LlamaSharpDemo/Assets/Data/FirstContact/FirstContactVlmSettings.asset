@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dd2bf0003fd40ac811e135be7fc1d5b, type: 3}
+  m_Name: FirstContactVlmSettings
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactVlmSettings
+  visualClassifierPipeline: {fileID: 0}
+  imageStateKey: reference_image
+  useLocalizedLabelForDisplay: 1
+  rejectBlank: 1
+  rejectWrittenText: 1
+  rejectActionOrScene: 1
+  rejectMultipleObjects: 1

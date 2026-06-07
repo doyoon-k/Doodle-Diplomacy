@@ -2,6 +2,7 @@ using DoodleDiplomacy.AI;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Character;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Devices;
 using DoodleDiplomacy.Dialogue;
 using DoodleDiplomacy.Ending;
@@ -11,7 +12,7 @@ using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay
 {
-    public class SceneReferenceHub : MonoBehaviour, IGameplaySceneInstaller
+    public class SceneReferenceHub : MonoBehaviour, IGameplaySceneInstaller, IGameplaySceneModeResolver
     {
         [Header("Gameplay Scene")]
         [Tooltip("Stable id for this gameplay scene/context. Falls back to the scene name when empty.")]
@@ -117,6 +118,26 @@ namespace DoodleDiplomacy.Gameplay
             return ResolveDefaultModeBehaviour();
         }
 
+        public MonoBehaviour GetModeBehaviour(FlowEntryDefinition entry)
+        {
+            if (entry != null)
+            {
+                MonoBehaviour taggedMode = ResolveModeById(entry.entryTag);
+                if (taggedMode != null)
+                {
+                    return taggedMode;
+                }
+
+                MonoBehaviour entryMode = ResolveModeById(entry.entryId);
+                if (entryMode != null)
+                {
+                    return entryMode;
+                }
+            }
+
+            return ResolveDefaultModeBehaviour();
+        }
+
         public bool ValidateReferences(bool logErrors = true)
         {
             bool valid = true;
@@ -152,6 +173,25 @@ namespace DoodleDiplomacy.Gameplay
             foreach (MonoBehaviour behaviour in GetComponents<MonoBehaviour>())
             {
                 if (behaviour != this && behaviour is IGameplayMode)
+                {
+                    return behaviour;
+                }
+            }
+
+            return null;
+        }
+
+        private MonoBehaviour ResolveModeById(string modeId)
+        {
+            if (string.IsNullOrWhiteSpace(modeId))
+            {
+                return null;
+            }
+
+            foreach (MonoBehaviour behaviour in GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (behaviour is IGameplayMode mode &&
+                    string.Equals(mode.ModeId, modeId.Trim(), System.StringComparison.Ordinal))
                 {
                     return behaviour;
                 }

@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 859f0b2a797c4653a4522cbaf4837533, type: 3}
+  m_Name: FirstContactQuestionSettings
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactQuestionSettings
+  enablePipelineGeneration: 1
+  questionPipeline: {fileID: 0}
+  maxGenerationRetries: 3
+  outputQuestionJsonKey: question_json
+  previousAnswerLabelKey: previous_answer_label
+  recentCardLabelsKey: recent_card_labels
+  stableClustersKey: stable_clusters
+  turnIndexKey: turn_index
+  rejectReasonKey: reject_reason
+  requireSelectOne: 1
+  minUnknownCount: 1
+  maxUnknownCount: 3
+  bannedTokens:
+  - WHY
+  - HOW
+  - REASON
+  - CAUSE
+  - EXPLAIN
+  fallbackQuestionSet: {fileID: 0}
+  loopFallbackQuestions: 0

@@ -47,11 +47,6 @@ public interface ILlmService
         BaseLlmGenerationProfile settings,
         ChatMessage[] messages,
         Action<string> onResponse);
-
-    IEnumerator Embed(
-        BaseLlmGenerationProfile settings,
-        string[] inputs,
-        Action<float[][]> onEmbeddings);
 }
 
 /// <summary>

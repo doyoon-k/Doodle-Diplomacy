@@ -183,6 +183,16 @@ public class GamePipelineRunner : MonoBehaviour
                     null, // Log callback is null to avoid double logging
                     step.stepName
                 );
+            case PromptPipelineStepKind.Embedding:
+                return new EmbeddingChainLink(
+                    _runtimeService,
+                    step.embeddingProfile,
+                    step.userPromptTemplate,
+                    step.embeddingOutputKey,
+                    step.failOnEmptyEmbeddingInput,
+                    null,
+                    step.stepName
+                );
             case PromptPipelineStepKind.CustomLink:
                 return InstantiateCustomLink(step);
             default:

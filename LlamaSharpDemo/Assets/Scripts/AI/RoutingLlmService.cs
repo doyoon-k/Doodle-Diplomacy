@@ -6,7 +6,7 @@ using UnityEngine;
 /// <summary>
 /// Routes ILlmService calls to local LLamaSharp runtime or cloud direct API service based on profile type.
 /// </summary>
-public class RoutingLlmService : MonoBehaviour, ILlmService
+public class RoutingLlmService : MonoBehaviour, ILlmService, IEmbeddingService
 {
     [Header("Routing")]
     [Tooltip("Local LLamaSharp runtime service used for local model profiles.")]
@@ -122,18 +122,19 @@ public class RoutingLlmService : MonoBehaviour, ILlmService
     }
 
     public IEnumerator Embed(
-        BaseLlmGenerationProfile settings,
+        LlmEmbeddingProfile profile,
         string[] inputs,
         Action<float[][]> onEmbeddings)
     {
-        ILlmService target = ResolveTargetService(settings);
-        if (target == null)
+        EnsureLocalRuntimeService();
+        if (localRuntimeService == null)
         {
+            Debug.LogError("[RoutingLlmService] Local runtime service is missing.");
             onEmbeddings?.Invoke(Array.Empty<float[]>());
             yield break;
         }
 
-        yield return target.Embed(settings, inputs, onEmbeddings);
+        yield return localRuntimeService.Embed(profile, inputs, onEmbeddings);
     }
 
     public void StartPreloadIfRequired(params PromptPipelineAsset[] assets)
@@ -163,7 +164,22 @@ public class RoutingLlmService : MonoBehaviour, ILlmService
             for (int stepIndex = 0; stepIndex < asset.steps.Count; stepIndex++)
             {
                 PromptPipelineStep step = asset.steps[stepIndex];
-                if (step == null || step.llmProfile == null)
+                if (step == null)
+                {
+                    continue;
+                }
+
+                if (step.stepKind == PromptPipelineStepKind.Embedding)
+                {
+                    if (step.embeddingProfile != null)
+                    {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                if (step.llmProfile == null)
                 {
                     continue;
                 }

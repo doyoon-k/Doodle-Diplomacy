@@ -10582,6 +10582,11 @@ MonoBehaviour:
   sharedMonitorDisplay: {fileID: 1651293743}
   alienReactionController: {fileID: 798370299}
   brainwaveSessionSeed: 0
+  brainwaveEmbeddingProfile: {fileID: 11400000, guid: a63a81f2d8764cdcb42e5d4dd32c7bc8, type: 2}
+  brainwaveEmbeddingSemanticInfluence: 0.9
+  brainwaveEmbeddingSessionJitter: 0.04
+  brainwaveEmbeddingFeatureCount: 16
+  brainwaveEmbeddingProjectionSeed: 17331
   openingSequence: {fileID: 0}
   tabletBlankSequence: {fileID: 0}
   scanningSequence: {fileID: 0}

@@ -44,6 +44,16 @@ namespace DoodleDiplomacy.Gameplay
         [Header("Brainwave Signal")]
         [Tooltip("Seed for repeatable Day 1 brainwave waveforms. Use 0 to generate a fresh random seed each session.")]
         [SerializeField] private int brainwaveSessionSeed;
+        [Tooltip("Required embedding runtime profile used to embed the confirmed drawing label as a single word or short label before the terminal trace can lock.")]
+        [SerializeField] private LlmEmbeddingProfile brainwaveEmbeddingProfile;
+        [Tooltip("How strongly the embedding profile shapes waveform frequency, harmonic texture, channel bias, and noise. 0 keeps the old waveform style; 1 uses the embedding profile fully.")]
+        [SerializeField, Range(0f, 1f)] private float brainwaveEmbeddingSemanticInfluence = 0.9f;
+        [Tooltip("Small per-session variation added after embedding projection. Lower values make semantically similar labels look more consistently alike.")]
+        [SerializeField, Range(0f, 0.25f)] private float brainwaveEmbeddingSessionJitter = 0.04f;
+        [Tooltip("Number of random projection features sampled from the embedding vector. Higher values preserve more semantic texture but add minor CPU cost.")]
+        [SerializeField, Min(8)] private int brainwaveEmbeddingFeatureCount = 16;
+        [Tooltip("Seed for the deterministic projection that maps embedding vectors into waveform parameters. Change this to retune the overall visual language.")]
+        [SerializeField] private int brainwaveEmbeddingProjectionSeed = 17331;
 
         [Header("Dialogue Sequences")]
         [Tooltip("Dialogue played when Day 1 begins, before the first drawing prompt.")]
@@ -100,6 +110,7 @@ namespace DoodleDiplomacy.Gameplay
         public event Action<GameState> StateChanged;
 
         private readonly List<Texture2D> _ownedTextures = new();
+        private readonly Dictionary<string, BrainwaveSemanticProfile> _brainwaveSemanticProfileCache = new();
         private GameplayModeContext _context;
         private Day1CalibrationInteractionPolicy _interactionPolicy;
         private Coroutine _routine;
@@ -113,6 +124,7 @@ namespace DoodleDiplomacy.Gameplay
         private bool _entered;
         private int _runtimeBrainwaveSessionSeed;
         private TerminalBrainwaveDisplay _brainwaveTerminal;
+        private Coroutine _brainwaveSemanticProfileRoutine;
 
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? Day1ModeId : modeId;
         public GameState CurrentState => _currentState;
@@ -157,6 +169,13 @@ namespace DoodleDiplomacy.Gameplay
         }
 
         public void Tick(float deltaTime) { }
+
+        private void OnValidate()
+        {
+            brainwaveEmbeddingSemanticInfluence = Mathf.Clamp01(brainwaveEmbeddingSemanticInfluence);
+            brainwaveEmbeddingSessionJitter = Mathf.Clamp(brainwaveEmbeddingSessionJitter, 0f, 0.25f);
+            brainwaveEmbeddingFeatureCount = Mathf.Max(8, brainwaveEmbeddingFeatureCount);
+        }
 
         public void HandleInteraction(InteractionType type, InteractableObject source)
         {
@@ -211,6 +230,7 @@ namespace DoodleDiplomacy.Gameplay
             _pendingLabel = null;
             _pendingDisplayLabel = null;
             _scanVersion = 0;
+            _brainwaveSemanticProfileCache.Clear();
             _runtimeBrainwaveSessionSeed = brainwaveSessionSeed != 0
                 ? brainwaveSessionSeed
                 : UnityEngine.Random.Range(1, int.MaxValue);
@@ -453,6 +473,22 @@ namespace DoodleDiplomacy.Gameplay
             EnsureBrainwaveTerminal();
             _brainwaveTerminal?.PlaySearching(label, _slot, _runtimeBrainwaveSessionSeed);
             terminalDisplay?.ShowText(BuildBrainwaveSearchingText(label, displayLabel), instant: true);
+            BrainwaveSemanticProfile semanticProfile = BrainwaveSemanticProfile.Invalid;
+            bool semanticProfileReady = false;
+            string semanticProfileError = string.Empty;
+            StopBrainwaveSemanticProfileRoutine();
+            _brainwaveSemanticProfileRoutine = StartCoroutine(BuildBrainwaveSemanticProfileRoutine(
+                label,
+                profile =>
+                {
+                    semanticProfile = profile;
+                    semanticProfileReady = true;
+                },
+                error =>
+                {
+                    semanticProfileError = error;
+                    semanticProfileReady = true;
+                }));
 
             yield return PlayDialogueSequence(
                 Day1DialogueSequence.TransmissionLabelConfirmed,
@@ -474,6 +510,19 @@ namespace DoodleDiplomacy.Gameplay
                 },
                 error => evaluationError = error);
 
+            yield return new WaitUntil(() => semanticProfileReady);
+            _brainwaveSemanticProfileRoutine = null;
+
+            if (!semanticProfile.IsValid)
+            {
+                Debug.LogError(
+                    $"[Day1CalibrationMode] Required brainwave embedding failed for '{label}': {semanticProfileError}",
+                    this);
+                terminalDisplay?.ShowText(BuildBrainwaveEmbeddingErrorText(label, displayLabel, semanticProfileError), instant: true);
+                _routine = null;
+                yield break;
+            }
+
             if (!evaluationSucceeded)
             {
                 Debug.LogWarning(
@@ -484,7 +533,8 @@ namespace DoodleDiplomacy.Gameplay
                     label,
                     _slot,
                     _runtimeBrainwaveSessionSeed,
-                    brainwaveLockDuration);
+                    brainwaveLockDuration,
+                    semanticProfile);
                 terminalDisplay?.ShowText(BuildBrainwaveUnstableText(label, displayLabel), instant: true);
                 if (brainwaveLockDuration > 0f)
                 {
@@ -504,7 +554,8 @@ namespace DoodleDiplomacy.Gameplay
                 label,
                 _slot,
                 _runtimeBrainwaveSessionSeed,
-                brainwaveLockDuration);
+                brainwaveLockDuration,
+                semanticProfile);
             terminalDisplay?.ShowText(BuildBrainwaveLockingText(label, displayLabel), instant: true);
             if (brainwaveLockDuration > 0f)
             {
@@ -516,7 +567,7 @@ namespace DoodleDiplomacy.Gameplay
             yield return PlayReactionRoutine(reactionTier);
 
             ApplyCameraMode(GameState.Submitting);
-            _brainwaveTerminal?.PlayLocked(reactionTier, label, _slot, _runtimeBrainwaveSessionSeed);
+            _brainwaveTerminal?.PlayLocked(reactionTier, label, _slot, _runtimeBrainwaveSessionSeed, semanticProfile);
             terminalDisplay?.ShowText(BuildBrainwaveCapturedText(label, displayLabel, reactionTier), instant: true);
             if (brainwaveResultHoldSeconds > 0f)
             {
@@ -584,6 +635,70 @@ namespace DoodleDiplomacy.Gameplay
             }
 
             onFailure?.Invoke(lastError);
+        }
+
+        private IEnumerator BuildBrainwaveSemanticProfileRoutine(
+            string label,
+            Action<BrainwaveSemanticProfile> onSuccess,
+            Action<string> onFailure)
+        {
+            string normalizedLabel = Day1ReactionTierEvaluator.NormalizeLabel(label);
+            if (string.IsNullOrWhiteSpace(normalizedLabel))
+            {
+                onFailure?.Invoke("Confirmed label is empty.");
+                yield break;
+            }
+
+            string cacheKey = BuildBrainwaveSemanticProfileCacheKey(normalizedLabel);
+            if (_brainwaveSemanticProfileCache.TryGetValue(cacheKey, out BrainwaveSemanticProfile cachedProfile))
+            {
+                onSuccess?.Invoke(cachedProfile);
+                yield break;
+            }
+
+            if (brainwaveEmbeddingProfile == null)
+            {
+                onFailure?.Invoke("Brainwave embedding profile is not assigned.");
+                yield break;
+            }
+
+            var embeddingService = LlmServiceLocator.Current as IEmbeddingService;
+            if (embeddingService == null)
+            {
+                onFailure?.Invoke("Registered LLM service does not provide embeddings.");
+                yield break;
+            }
+
+            float[][] embeddings = null;
+            yield return embeddingService.Embed(
+                brainwaveEmbeddingProfile,
+                new[] { normalizedLabel },
+                result => embeddings = result);
+
+            if (embeddings == null
+                || embeddings.Length == 0
+                || !BrainwaveEmbeddingProfileMapper.TryCreate(
+                    embeddings[0],
+                    normalizedLabel,
+                    _slot,
+                    _runtimeBrainwaveSessionSeed,
+                    brainwaveEmbeddingProjectionSeed,
+                    brainwaveEmbeddingFeatureCount,
+                    brainwaveEmbeddingSemanticInfluence,
+                    brainwaveEmbeddingSessionJitter,
+                    out BrainwaveSemanticProfile profile))
+            {
+                onFailure?.Invoke("Embedding service returned no valid vector.");
+                yield break;
+            }
+
+            _brainwaveSemanticProfileCache[cacheKey] = profile;
+            onSuccess?.Invoke(profile);
+        }
+
+        private string BuildBrainwaveSemanticProfileCacheKey(string normalizedLabel)
+        {
+            return $"{normalizedLabel}|{_runtimeBrainwaveSessionSeed}|{brainwaveEmbeddingProjectionSeed}|{brainwaveEmbeddingFeatureCount}|{brainwaveEmbeddingSemanticInfluence:F3}|{brainwaveEmbeddingSessionJitter:F3}";
         }
 
         private IEnumerator PlayReactionRoutine(ReactionTier reactionTier)
@@ -855,6 +970,22 @@ namespace DoodleDiplomacy.Gameplay
             return builder.ToString();
         }
 
+        private string BuildBrainwaveEmbeddingErrorText(string label, string displayLabel, string error)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine("[CONTACT TRACE ARRAY]");
+            builder.Append("DRAWING: ").AppendLine(displayLabel);
+            builder.AppendLine();
+            builder.AppendLine("DRAWING FEED: HELD");
+            builder.AppendLine("SEMANTIC FIELD: MISSING");
+            builder.AppendLine("TRACE LOCK: REFUSED");
+            builder.AppendLine("MEMORY WRITE: BLOCKED");
+            builder.AppendLine();
+            builder.AppendLine("VECTOR LINK: REQUIRED");
+            builder.Append("> ").Append(string.IsNullOrWhiteSpace(error) ? "AWAITING EMBEDDING" : error.ToUpperInvariant());
+            return builder.ToString();
+        }
+
         private void AppendTraceBandLine(
             StringBuilder builder,
             string band,
@@ -997,6 +1128,19 @@ namespace DoodleDiplomacy.Gameplay
                 StopCoroutine(_routine);
                 _routine = null;
             }
+
+            StopBrainwaveSemanticProfileRoutine();
+        }
+
+        private void StopBrainwaveSemanticProfileRoutine()
+        {
+            if (_brainwaveSemanticProfileRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_brainwaveSemanticProfileRoutine);
+            _brainwaveSemanticProfileRoutine = null;
         }
 
         private Texture2D CreateTextureFromPng(byte[] pngBytes)

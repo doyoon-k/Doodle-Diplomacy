@@ -40,7 +40,7 @@ public static class PromptPipelineSimulator
 
         try
         {
-            var executor = BuildExecutor(asset, service, onLog);
+            var executor = BuildExecutor(asset, service, service as IEmbeddingService, onLog);
             var startingState = CloneOrCreate(initialState);
             EditorCoroutineRunner.Start(RunExecutor(
                 executor,
@@ -72,6 +72,7 @@ public static class PromptPipelineSimulator
     private static StateSequentialChainExecutor BuildExecutor(
         PromptPipelineAsset asset,
         ILlmService service,
+        IEmbeddingService embeddingService,
         Action<string> onLog)
     {
         if (service == null)
@@ -92,7 +93,7 @@ public static class PromptPipelineSimulator
                 continue;
             }
 
-            var link = CreateLink(step, service, onLog);
+            var link = CreateLink(step, service, embeddingService, onLog);
             if (link == null)
             {
                 throw new InvalidOperationException($"Step '{step.stepName}' failed to create IStateChainLink.");
@@ -107,6 +108,7 @@ public static class PromptPipelineSimulator
     private static IStateChainLink CreateLink(
         PromptPipelineStep step,
         ILlmService service,
+        IEmbeddingService embeddingService,
         Action<string> onLog)
     {
         switch (step.stepKind)
@@ -136,6 +138,17 @@ public static class PromptPipelineSimulator
                     step.imageStateKey,
                     step.requireImage,
                     step.resizeLongestSide,
+                    onLog,
+                    step.stepName
+                );
+            case PromptPipelineStepKind.Embedding:
+                EnsureEmbeddingSettings(step, embeddingService);
+                return new EmbeddingChainLink(
+                    embeddingService,
+                    step.embeddingProfile,
+                    step.userPromptTemplate,
+                    step.embeddingOutputKey,
+                    step.failOnEmptyEmbeddingInput,
                     onLog,
                     step.stepName
                 );
@@ -235,6 +248,19 @@ public static class PromptPipelineSimulator
         if (step.llmProfile == null)
         {
             throw new InvalidOperationException($"Step '{step.stepName}' requires an LLM profile.");
+        }
+    }
+
+    private static void EnsureEmbeddingSettings(PromptPipelineStep step, IEmbeddingService embeddingService)
+    {
+        if (embeddingService == null)
+        {
+            throw new InvalidOperationException($"Step '{step.stepName}' requires an embedding service.");
+        }
+
+        if (step.embeddingProfile == null)
+        {
+            throw new InvalidOperationException($"Step '{step.stepName}' requires an embedding profile.");
         }
     }
 }

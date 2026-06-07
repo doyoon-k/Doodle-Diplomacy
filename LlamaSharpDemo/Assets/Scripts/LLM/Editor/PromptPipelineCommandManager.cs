@@ -207,10 +207,17 @@ internal sealed class PipelineSnapshot : IEquatable<PipelineSnapshot>
             stepName = step.stepName,
             stepKind = step.stepKind,
             llmProfile = step.llmProfile,
+            embeddingProfile = step.embeddingProfile,
             customAsset = step.customAsset,
             userPromptTemplate = step.userPromptTemplate,
+            embeddingOutputKey = step.embeddingOutputKey,
+            failOnEmptyEmbeddingInput = step.failOnEmptyEmbeddingInput,
             jsonMaxRetries = step.jsonMaxRetries,
             jsonRetryDelaySeconds = step.jsonRetryDelaySeconds,
+            useVision = step.useVision,
+            imageStateKey = step.imageStateKey,
+            requireImage = step.requireImage,
+            resizeLongestSide = step.resizeLongestSide,
             customLinkTypeName = step.customLinkTypeName,
             customLinkParameters = CloneCustomParams(step.customLinkParameters),
             editorPosition = step.editorPosition,
@@ -271,10 +278,17 @@ internal sealed class PipelineSnapshot : IEquatable<PipelineSnapshot>
         if (!string.Equals(a.stepName, b.stepName, StringComparison.Ordinal) ||
             a.stepKind != b.stepKind ||
             !ReferenceEquals(a.llmProfile, b.llmProfile) ||
+            !ReferenceEquals(a.embeddingProfile, b.embeddingProfile) ||
             !ReferenceEquals(a.customAsset, b.customAsset) ||
             !string.Equals(a.userPromptTemplate, b.userPromptTemplate, StringComparison.Ordinal) ||
+            !string.Equals(a.embeddingOutputKey, b.embeddingOutputKey, StringComparison.Ordinal) ||
+            a.failOnEmptyEmbeddingInput != b.failOnEmptyEmbeddingInput ||
             a.jsonMaxRetries != b.jsonMaxRetries ||
             Math.Abs(a.jsonRetryDelaySeconds - b.jsonRetryDelaySeconds) > 0.0001f ||
+            a.useVision != b.useVision ||
+            !string.Equals(a.imageStateKey, b.imageStateKey, StringComparison.Ordinal) ||
+            a.requireImage != b.requireImage ||
+            a.resizeLongestSide != b.resizeLongestSide ||
             !string.Equals(a.customLinkTypeName, b.customLinkTypeName, StringComparison.Ordinal) ||
             !string.Equals(a.guid, b.guid, StringComparison.Ordinal) ||
             !string.Equals(a.nextStepGuid, b.nextStepGuid, StringComparison.Ordinal) ||

@@ -35,7 +35,8 @@ This package addresses those with:
 ## 3) Key Features
 
 1. **Local Runtime (legacy-compatible)**
-- `RuntimeLlamaSharpService` remains available and unchanged in behavior for local profiles.
+- `RuntimeLlamaSharpService` remains available and unchanged in behavior for generation profiles.
+- Local embedding profiles are handled through a separate `LLamaEmbedder` runtime cache, so embedding and generation models do not evict each other.
 
 2. **Cloud Runtime (v1 scope)**
 - `CloudDirectLlmService` supports text/JSON calls for:
@@ -65,6 +66,7 @@ This package addresses those with:
 7. **Scope Boundaries**
 - Cloud v1 supports text/JSON only
 - Cloud vision and embeddings intentionally return not-supported errors
+- Local LLamaSharp supports text generation, vision-enabled generation, and embedding steps.
 
 ## 4) Main Components
 
@@ -73,11 +75,15 @@ This package addresses those with:
 | Profile | `BaseLlmGenerationProfile` | Shared prompt/JSON/sampling settings |
 | Profile | `LlmGenerationProfile` | Local GGUF profile (legacy-compatible) |
 | Profile | `CloudGenerationProfile` | Provider/model/baseUrl/retry/key-env settings |
+| Profile | `LlmEmbeddingProfile` | Local GGUF embedding model/runtime settings |
 | Runtime | `RoutingLlmService` | Routes per-step call to local or cloud |
 | Runtime | `RuntimeLlamaSharpService` | Local LLamaSharp inference |
+| Runtime | `IEmbeddingService` | Provider-neutral embedding service contract |
+| Runtime | `LlamaSharpEmbeddingRuntime` | Local LLamaSharp embedding model/embedder cache entry |
 | Runtime | `CloudDirectLlmService` | Cloud provider HTTP inference |
 | Runtime | `LlamaSharpInterop` | Shared prompt/inference parameter helpers |
 | Pipeline | `PromptPipelineAsset` | Defines pipeline step graph/order |
+| Pipeline | `EmbeddingChainLink` | Renders one input template and stores a vector in `PipelineState` |
 | Pipeline | `JSONLLMStateChainLink` | JSON generation + parse + merge + retry |
 | Pipeline | `CompletionChainLink` | Plain-text completion step |
 | Editor | `RoutingEditorLlmService` | Editor simulation routing |

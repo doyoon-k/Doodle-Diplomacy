@@ -14,7 +14,7 @@ using UnityEngine.Events;
 /// <summary>
 /// Runtime ILlmService implementation backed by LLamaSharp.
 /// </summary>
-public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
+public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService, IEmbeddingService
 {
     [Serializable]
     public sealed class PreloadBoolUnityEvent : UnityEvent<bool> { }
@@ -51,6 +51,8 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
 
     private readonly object _operationLock = new object();
     private readonly object _visionLock = new object();
+    private readonly Dictionary<LlamaSharpEmbeddingRuntimeKey, LlamaSharpEmbeddingRuntime> _embeddingRuntimes =
+        new Dictionary<LlamaSharpEmbeddingRuntimeKey, LlamaSharpEmbeddingRuntime>();
     public bool IsPreloadInProgress { get; private set; }
     public bool IsPreloadComplete { get; private set; }
     public bool IsModelReady => _executor != null;
@@ -73,7 +75,9 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     private bool _shutdownRequested;
     private CancellationTokenSource _serviceLifetimeCts;
     private CancellationTokenSource _activeInferenceCts;
+    private CancellationTokenSource _activeEmbeddingCts;
     private Task<string> _activeInferenceTask;
+    private Task<float[][]> _activeEmbeddingTask;
     private Task<ExecutorLoadResult> _activeLoadTask;
     private string _activeLoadModelPath;
     private int _activeLoadContextSize;
@@ -297,13 +301,36 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     }
 
     public IEnumerator Embed(
-        BaseLlmGenerationProfile settings,
+        LlmEmbeddingProfile profile,
         string[] inputs,
         Action<float[][]> onEmbeddings)
     {
-        Debug.LogWarning("[RuntimeLlamaSharpService] Embedding is not implemented for LLamaSharp in this adapter.");
-        onEmbeddings?.Invoke(Array.Empty<float[]>());
-        yield break;
+        if (_shutdownRequested)
+        {
+            onEmbeddings?.Invoke(Array.Empty<float[]>());
+            yield break;
+        }
+
+        if (!TryPrepareEmbeddingRequest(profile, out string resolvedModelPath, out LlamaSharpEmbeddingRuntimeKey key))
+        {
+            onEmbeddings?.Invoke(Array.Empty<float[]>());
+            yield break;
+        }
+
+        string[] normalizedInputs = NormalizeEmbeddingInputs(inputs);
+        CancellationTokenSource timeoutCts = CreateOperationCancellationSource(inferenceTimeoutSeconds);
+        Task<float[][]> embeddingTask = Task.Run(() =>
+            RunWithOptionalNativeBootstrap(() =>
+                EmbedWithRuntime(profile, resolvedModelPath, key, normalizedInputs, timeoutCts.Token)),
+            timeoutCts.Token);
+        RegisterActiveEmbedding(embeddingTask, timeoutCts);
+
+        yield return WaitForEmbeddingTask(
+            embeddingTask,
+            timeoutCts,
+            inferenceTimeoutSeconds,
+            "embedding inference",
+            onEmbeddings);
     }
 
     public void StartPreload()
@@ -667,22 +694,16 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
     public void CancelActiveOperations()
     {
         CancellationTokenSource inferenceCts = null;
+        CancellationTokenSource embeddingCts = null;
 
         lock (_operationLock)
         {
             inferenceCts = _activeInferenceCts;
+            embeddingCts = _activeEmbeddingCts;
         }
 
-        try
-        {
-            if (inferenceCts != null && !inferenceCts.IsCancellationRequested)
-            {
-                inferenceCts.Cancel();
-            }
-        }
-        catch (ObjectDisposedException)
-        {
-        }
+        TryCancel(inferenceCts);
+        TryCancel(embeddingCts);
     }
 
     private void BeginShutdown()
@@ -704,6 +725,7 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
 
         ClearCompletedOperationReferences();
         DisposeExecutor();
+        DisposeEmbeddingRuntimes();
         DisposeLifetimeCancellationSource();
     }
 
@@ -756,8 +778,9 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
         lock (_operationLock)
         {
             bool inferenceRunning = _activeInferenceTask != null && !_activeInferenceTask.IsCompleted;
+            bool embeddingRunning = _activeEmbeddingTask != null && !_activeEmbeddingTask.IsCompleted;
             bool loadRunning = _activeLoadTask != null && !_activeLoadTask.IsCompleted;
-            return inferenceRunning || loadRunning;
+            return inferenceRunning || embeddingRunning || loadRunning;
         }
     }
 
@@ -874,9 +897,49 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
         }
     }
 
+    private void RegisterActiveEmbedding(Task<float[][]> embeddingTask, CancellationTokenSource cancellationSource)
+    {
+        lock (_operationLock)
+        {
+            _activeEmbeddingTask = embeddingTask;
+            _activeEmbeddingCts = cancellationSource;
+        }
+
+        embeddingTask.ContinueWith(
+            _ => ReleaseActiveEmbedding(embeddingTask, cancellationSource),
+            CancellationToken.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
+    }
+
+    private void ReleaseActiveEmbedding(Task<float[][]> embeddingTask, CancellationTokenSource cancellationSource)
+    {
+        bool shouldDisposeCts = false;
+
+        lock (_operationLock)
+        {
+            if (ReferenceEquals(_activeEmbeddingTask, embeddingTask))
+            {
+                _activeEmbeddingTask = null;
+            }
+
+            if (ReferenceEquals(_activeEmbeddingCts, cancellationSource))
+            {
+                _activeEmbeddingCts = null;
+                shouldDisposeCts = true;
+            }
+        }
+
+        if (shouldDisposeCts)
+        {
+            cancellationSource.Dispose();
+        }
+    }
+
     private void ClearCompletedOperationReferences()
     {
         CancellationTokenSource inferenceCts = null;
+        CancellationTokenSource embeddingCts = null;
 
         lock (_operationLock)
         {
@@ -887,6 +950,13 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
                 _activeInferenceCts = null;
             }
 
+            if (_activeEmbeddingTask == null || _activeEmbeddingTask.IsCompleted)
+            {
+                _activeEmbeddingTask = null;
+                embeddingCts = _activeEmbeddingCts;
+                _activeEmbeddingCts = null;
+            }
+
             if (_activeLoadTask != null && _activeLoadTask.IsCompleted)
             {
                 _activeLoadTask = null;
@@ -895,6 +965,7 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
         }
 
         inferenceCts?.Dispose();
+        embeddingCts?.Dispose();
     }
 
     private void ClearActiveLoadMetadata()
@@ -949,6 +1020,50 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
         onResponse?.Invoke(inferenceTask.Result ?? string.Empty);
     }
 
+    private IEnumerator WaitForEmbeddingTask(
+        Task<float[][]> embeddingTask,
+        CancellationTokenSource timeoutCts,
+        float timeoutSeconds,
+        string operationName,
+        Action<float[][]> onEmbeddings)
+    {
+        float startTime = Time.realtimeSinceStartup;
+        while (!embeddingTask.IsCompleted)
+        {
+            if (_shutdownRequested)
+            {
+                timeoutCts?.Cancel();
+                onEmbeddings?.Invoke(Array.Empty<float[]>());
+                yield break;
+            }
+
+            if (timeoutSeconds > 0f &&
+                Time.realtimeSinceStartup - startTime >= timeoutSeconds)
+            {
+                timeoutCts?.Cancel();
+                Debug.LogError($"[RuntimeLlamaSharpService] {operationName} timed out after {timeoutSeconds:0.#} seconds.");
+                onEmbeddings?.Invoke(Array.Empty<float[]>());
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        Exception failure = GetTaskException(embeddingTask);
+        if (failure != null)
+        {
+            bool wasCancelled = failure is OperationCanceledException || timeoutCts?.IsCancellationRequested == true;
+            string failureMessage = wasCancelled
+                ? $"{operationName} was cancelled."
+                : $"{operationName} failed: {failure}";
+            Debug.LogError($"[RuntimeLlamaSharpService] {failureMessage}");
+            onEmbeddings?.Invoke(Array.Empty<float[]>());
+            yield break;
+        }
+
+        onEmbeddings?.Invoke(embeddingTask.Result ?? Array.Empty<float[]>());
+    }
+
     private CancellationTokenSource CreateOperationCancellationSource(float timeoutSeconds)
     {
         CancellationTokenSource cancellationSource = _serviceLifetimeCts != null
@@ -990,6 +1105,104 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
 
         LlamaNativeBootstrap.EnsureInitialized(logTraffic);
         return LlamaNativeBootstrap.RunWithNativeWorkingDirectory(action);
+    }
+
+    private bool TryPrepareEmbeddingRequest(
+        LlmEmbeddingProfile profile,
+        out string resolvedModelPath,
+        out LlamaSharpEmbeddingRuntimeKey key)
+    {
+        resolvedModelPath = null;
+        key = default;
+
+        if (profile == null)
+        {
+            Debug.LogError("[RuntimeLlamaSharpService] LlmEmbeddingProfile is missing.");
+            return false;
+        }
+
+        resolvedModelPath = profile.ResolveModelPath();
+        if (string.IsNullOrWhiteSpace(resolvedModelPath))
+        {
+            Debug.LogError("[RuntimeLlamaSharpService] Embedding model path is empty.");
+            return false;
+        }
+
+        if (!File.Exists(resolvedModelPath))
+        {
+            Debug.LogError($"[RuntimeLlamaSharpService] Embedding model file not found: {resolvedModelPath}");
+            return false;
+        }
+
+        key = LlamaSharpEmbeddingRuntime.CreateKey(profile, resolvedModelPath);
+        return true;
+    }
+
+    private float[][] EmbedWithRuntime(
+        LlmEmbeddingProfile profile,
+        string resolvedModelPath,
+        LlamaSharpEmbeddingRuntimeKey key,
+        string[] inputs,
+        CancellationToken cancellationToken)
+    {
+        LlamaSharpEmbeddingRuntime runtime = GetOrCreateEmbeddingRuntime(profile, resolvedModelPath, key);
+        return runtime
+            .EmbedAsync(inputs, profile != null && profile.normalizeOutput, cancellationToken)
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    private LlamaSharpEmbeddingRuntime GetOrCreateEmbeddingRuntime(
+        LlmEmbeddingProfile profile,
+        string resolvedModelPath,
+        LlamaSharpEmbeddingRuntimeKey key)
+    {
+        lock (_embeddingRuntimes)
+        {
+            if (_embeddingRuntimes.TryGetValue(key, out LlamaSharpEmbeddingRuntime runtime))
+            {
+                return runtime;
+            }
+
+            runtime = LlamaSharpEmbeddingRuntime.Create(profile, resolvedModelPath);
+            _embeddingRuntimes[key] = runtime;
+            if (logTraffic)
+            {
+                Debug.Log($"[RuntimeLlamaSharpService] Loaded embedding model: {resolvedModelPath}");
+            }
+
+            return runtime;
+        }
+    }
+
+    private static string[] NormalizeEmbeddingInputs(string[] inputs)
+    {
+        if (inputs == null || inputs.Length == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        var normalized = new string[inputs.Length];
+        for (int i = 0; i < inputs.Length; i++)
+        {
+            normalized[i] = inputs[i] ?? string.Empty;
+        }
+
+        return normalized;
+    }
+
+    private static void TryCancel(CancellationTokenSource cancellationSource)
+    {
+        try
+        {
+            if (cancellationSource != null && !cancellationSource.IsCancellationRequested)
+            {
+                cancellationSource.Cancel();
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private bool TryGetLocalProfile(BaseLlmGenerationProfile profile, out LlmGenerationProfile localProfile)
@@ -1038,6 +1251,19 @@ public class RuntimeLlamaSharpService : MonoBehaviour, ILlmService
         _loadedContextSize = 0;
         _loadedGpuLayerCount = 0;
         _loadedThreads = 0;
+    }
+
+    private void DisposeEmbeddingRuntimes()
+    {
+        lock (_embeddingRuntimes)
+        {
+            foreach (LlamaSharpEmbeddingRuntime runtime in _embeddingRuntimes.Values)
+            {
+                runtime?.Dispose();
+            }
+
+            _embeddingRuntimes.Clear();
+        }
     }
 
     private static Exception GetTaskException(Task task)

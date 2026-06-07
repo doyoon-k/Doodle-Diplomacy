@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// Editor ILlmService router that dispatches to local LLamaSharp or cloud direct adapters.
 /// </summary>
-public sealed class RoutingEditorLlmService : ILlmService, IDisposable
+public sealed class RoutingEditorLlmService : ILlmService, IEmbeddingService, IDisposable
 {
     private readonly LlamaSharpEditorService _localService;
     private readonly CloudDirectLlmService _cloudService;
@@ -59,11 +59,11 @@ public sealed class RoutingEditorLlmService : ILlmService, IDisposable
     }
 
     public IEnumerator Embed(
-        BaseLlmGenerationProfile settings,
+        LlmEmbeddingProfile profile,
         string[] inputs,
         Action<float[][]> onEmbeddings)
     {
-        yield return ResolveTarget(settings).Embed(settings, inputs, onEmbeddings);
+        yield return _localService.Embed(profile, inputs, onEmbeddings);
     }
 
     public void Dispose()

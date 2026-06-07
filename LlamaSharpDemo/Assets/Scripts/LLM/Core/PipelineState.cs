@@ -125,6 +125,16 @@ public sealed class PipelineState
         return false;
     }
 
+    public void SetFloatArray(string key, float[] value)
+    {
+        SetObject(key, value);
+    }
+
+    public bool TryGetFloatArray(string key, out float[] value)
+    {
+        return TryGetObject(key, out value);
+    }
+
     public bool TryGetImageSource(string key, out UnityEngine.Object imageSource)
     {
         imageSource = null;
@@ -210,6 +220,8 @@ public sealed class PipelineState
             case Sprite sprite:
                 Rect rect = sprite.rect;
                 return $"[Sprite {rect.width.ToString(CultureInfo.InvariantCulture)}x{rect.height.ToString(CultureInfo.InvariantCulture)}: {sprite.name}]";
+            case float[] vector:
+                return $"[Embedding {vector.Length.ToString(CultureInfo.InvariantCulture)} dims]";
             case UnityEngine.Object unityObject:
                 return $"[{unityObject.GetType().Name}: {unityObject.name}]";
             default:

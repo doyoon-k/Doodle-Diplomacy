@@ -55,6 +55,9 @@ namespace DoodleDiplomacy.Devices
         private float _amplitude = 0.1f;
         private float _noise = 0.04f;
         private float _frequency = 1.8f;
+        private float _harmonicRatio = 2.73f;
+        private float _harmonicWeight = 0.32f;
+        private float _noiseScale = 1f;
         private float _spikeChance = 0.02f;
         private float _spikeAmplitude = 0.12f;
         private float _spikeDensity = 8f;
@@ -65,6 +68,9 @@ namespace DoodleDiplomacy.Devices
         private float _startAmplitude;
         private float _startNoise;
         private float _startFrequency;
+        private float _startHarmonicRatio;
+        private float _startHarmonicWeight;
+        private float _startNoiseScale;
         private float _startSpikeChance;
         private float _startSpikeAmplitude;
         private float _startSpikeDensity;
@@ -72,6 +78,9 @@ namespace DoodleDiplomacy.Devices
         private float _targetAmplitude;
         private float _targetNoise;
         private float _targetFrequency;
+        private float _targetHarmonicRatio;
+        private float _targetHarmonicWeight;
+        private float _targetNoiseScale;
         private float _targetSpikeChance;
         private float _targetSpikeAmplitude;
         private float _targetSpikeDensity;
@@ -145,6 +154,17 @@ namespace DoodleDiplomacy.Devices
             int sessionSeed,
             float lockDuration)
         {
+            BeginTraceLock(tier, label, sampleIndex, sessionSeed, lockDuration, BrainwaveSemanticProfile.Invalid);
+        }
+
+        public void BeginTraceLock(
+            ReactionTier tier,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            float lockDuration,
+            BrainwaveSemanticProfile semanticProfile)
+        {
             if (!_hasSignal)
             {
                 GenerateSearchingProfile(label, sampleIndex, sessionSeed);
@@ -152,7 +172,7 @@ namespace DoodleDiplomacy.Devices
             }
 
             CaptureCurrentAsLockStart();
-            GenerateLockedProfile(tier, label, sampleIndex, sessionSeed, writeToTarget: true);
+            GenerateLockedProfile(tier, label, sampleIndex, sessionSeed, writeToTarget: true, semanticProfile);
             _lockElapsed = 0f;
             _lockDuration = Mathf.Max(0.05f, lockDuration);
             _running = true;
@@ -162,7 +182,17 @@ namespace DoodleDiplomacy.Devices
 
         public void PlayLocked(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
         {
-            GenerateProfile(tier, label, sampleIndex, sessionSeed);
+            PlayLocked(tier, label, sampleIndex, sessionSeed, BrainwaveSemanticProfile.Invalid);
+        }
+
+        public void PlayLocked(
+            ReactionTier tier,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            BrainwaveSemanticProfile semanticProfile)
+        {
+            GenerateProfile(tier, label, sampleIndex, sessionSeed, semanticProfile);
             _timeOffset = 0f;
             _hasSignal = true;
             _running = true;
@@ -220,9 +250,14 @@ namespace DoodleDiplomacy.Devices
             DrawChannel(vh, rect, GetChannelCenterYNormalized(2), 2, channelCColor);
         }
 
-        private void GenerateProfile(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
+        private void GenerateProfile(
+            ReactionTier tier,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            BrainwaveSemanticProfile semanticProfile)
         {
-            GenerateLockedProfile(tier, label, sampleIndex, sessionSeed, writeToTarget: false);
+            GenerateLockedProfile(tier, label, sampleIndex, sessionSeed, writeToTarget: false, semanticProfile);
         }
 
         private void GenerateSearchingProfile(string label, int sampleIndex, int sessionSeed)
@@ -233,6 +268,9 @@ namespace DoodleDiplomacy.Devices
             _amplitude = Jitter(rng, 0.025f, 0.065f);
             _noise = Jitter(rng, 0.035f, 0.085f);
             _frequency = Jitter(rng, 0.75f, 1.55f);
+            _harmonicRatio = Jitter(rng, 2f, 3.2f);
+            _harmonicWeight = Jitter(rng, 0.18f, 0.38f);
+            _noiseScale = Jitter(rng, 0.85f, 1.35f);
             _spikeChance = Jitter(rng, 0.004f, 0.014f);
             _spikeAmplitude = Jitter(rng, 0.025f, 0.075f);
             _spikeDensity = Jitter(rng, 4.5f, 8.5f);
@@ -252,13 +290,17 @@ namespace DoodleDiplomacy.Devices
             string label,
             int sampleIndex,
             int sessionSeed,
-            bool writeToTarget)
+            bool writeToTarget,
+            BrainwaveSemanticProfile semanticProfile)
         {
             _seed = StableHash(label, sampleIndex, sessionSeed);
             var rng = new System.Random(_seed);
             float amplitude;
             float noise;
             float frequency;
+            float harmonicRatio = 2.73f;
+            float harmonicWeight = 0.32f;
+            float noiseScale = 1f;
             float spikeChance;
             float spikeAmplitude;
             float spikeDensity;
@@ -307,20 +349,55 @@ namespace DoodleDiplomacy.Devices
                     break;
             }
 
+            if (semanticProfile.IsValid)
+            {
+                _seed = semanticProfile.TextureSeed;
+                rng = new System.Random(_seed);
+                frequency = Mathf.Lerp(frequency, semanticProfile.BaseFrequency, 0.82f);
+                harmonicRatio = semanticProfile.HarmonicRatio;
+                harmonicWeight = semanticProfile.HarmonicWeight;
+                noiseScale = semanticProfile.NoiseScale;
+                noise *= semanticProfile.NoiseScale;
+                spikeDensity *= semanticProfile.SpikeDensityScale;
+            }
+
             float sharedPhase = Jitter(rng, 0f, Mathf.PI * 2f);
             SetChannelSpreadValue(GetLockedChannelSpread(), writeToTarget);
             for (int i = 0; i < 3; i++)
             {
-                SetChannelValue(
-                    i,
-                    sharedPhase + Jitter(rng, -0.05f, 0.05f),
-                    Jitter(rng, 0.9f, 1.12f),
-                    Jitter(rng, -0.035f, 0.035f),
-                    Jitter(rng, 0.9f, 1.18f),
-                    writeToTarget);
+                if (semanticProfile.IsValid)
+                {
+                    SetChannelValue(
+                        i,
+                        sharedPhase + GetVectorComponent(semanticProfile.ChannelPhaseOffsets, i) + Jitter(rng, -0.012f, 0.012f),
+                        GetVectorComponent(semanticProfile.ChannelGainScales, i) * Jitter(rng, 0.97f, 1.03f),
+                        GetVectorComponent(semanticProfile.ChannelFrequencyOffsets, i) + Jitter(rng, -0.015f, 0.015f),
+                        GetVectorComponent(semanticProfile.ChannelSpikeScales, i) * Jitter(rng, 0.97f, 1.03f),
+                        writeToTarget);
+                }
+                else
+                {
+                    SetChannelValue(
+                        i,
+                        sharedPhase + Jitter(rng, -0.05f, 0.05f),
+                        Jitter(rng, 0.9f, 1.12f),
+                        Jitter(rng, -0.035f, 0.035f),
+                        Jitter(rng, 0.9f, 1.18f),
+                        writeToTarget);
+                }
             }
 
-            SetProfileValues(amplitude, noise, frequency, spikeChance, spikeAmplitude, spikeDensity, writeToTarget);
+            SetProfileValues(
+                amplitude,
+                noise,
+                frequency,
+                harmonicRatio,
+                harmonicWeight,
+                noiseScale,
+                spikeChance,
+                spikeAmplitude,
+                spikeDensity,
+                writeToTarget);
         }
 
         private void CaptureCurrentAsLockStart()
@@ -328,6 +405,9 @@ namespace DoodleDiplomacy.Devices
             _startAmplitude = _amplitude;
             _startNoise = _noise;
             _startFrequency = _frequency;
+            _startHarmonicRatio = _harmonicRatio;
+            _startHarmonicWeight = _harmonicWeight;
+            _startNoiseScale = _noiseScale;
             _startSpikeChance = _spikeChance;
             _startSpikeAmplitude = _spikeAmplitude;
             _startSpikeDensity = _spikeDensity;
@@ -351,6 +431,9 @@ namespace DoodleDiplomacy.Devices
             _amplitude = Mathf.Lerp(_startAmplitude, _targetAmplitude, eased);
             _noise = Mathf.Lerp(_startNoise, _targetNoise, eased);
             _frequency = Mathf.Lerp(_startFrequency, _targetFrequency, eased);
+            _harmonicRatio = Mathf.Lerp(_startHarmonicRatio, _targetHarmonicRatio, eased);
+            _harmonicWeight = Mathf.Lerp(_startHarmonicWeight, _targetHarmonicWeight, eased);
+            _noiseScale = Mathf.Lerp(_startNoiseScale, _targetNoiseScale, eased);
             _spikeChance = Mathf.Lerp(_startSpikeChance, _targetSpikeChance, eased);
             _spikeAmplitude = Mathf.Lerp(_startSpikeAmplitude, _targetSpikeAmplitude, eased);
             _spikeDensity = Mathf.Lerp(_startSpikeDensity, _targetSpikeDensity, eased);
@@ -377,6 +460,9 @@ namespace DoodleDiplomacy.Devices
             float amplitude,
             float noise,
             float frequency,
+            float harmonicRatio,
+            float harmonicWeight,
+            float noiseScale,
             float spikeChance,
             float spikeAmplitude,
             float spikeDensity,
@@ -387,6 +473,9 @@ namespace DoodleDiplomacy.Devices
                 _targetAmplitude = amplitude;
                 _targetNoise = noise;
                 _targetFrequency = frequency;
+                _targetHarmonicRatio = harmonicRatio;
+                _targetHarmonicWeight = harmonicWeight;
+                _targetNoiseScale = noiseScale;
                 _targetSpikeChance = spikeChance;
                 _targetSpikeAmplitude = spikeAmplitude;
                 _targetSpikeDensity = spikeDensity;
@@ -396,6 +485,9 @@ namespace DoodleDiplomacy.Devices
             _amplitude = amplitude;
             _noise = noise;
             _frequency = frequency;
+            _harmonicRatio = harmonicRatio;
+            _harmonicWeight = harmonicWeight;
+            _noiseScale = noiseScale;
             _spikeChance = spikeChance;
             _spikeAmplitude = spikeAmplitude;
             _spikeDensity = spikeDensity;
@@ -477,7 +569,7 @@ namespace DoodleDiplomacy.Devices
 
             float wave =
                 Mathf.Sin((movingX * frequency * Mathf.PI * 2f) + phase) * _amplitude +
-                Mathf.Sin((movingX * frequency * 2.73f * Mathf.PI * 2f) + phase * 0.57f) * _amplitude * 0.32f +
+                Mathf.Sin((movingX * frequency * _harmonicRatio * Mathf.PI * 2f) + phase * 0.57f) * _amplitude * _harmonicWeight +
                 SampleNoise(movingX, channel) * _noise +
                 SampleSpike(movingX, channel);
 
@@ -512,11 +604,25 @@ namespace DoodleDiplomacy.Devices
             return Mathf.Clamp(lockedChannelSpread, 0f, 0.45f);
         }
 
+        private static float GetVectorComponent(Vector3 value, int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return value.x;
+                case 1:
+                    return value.y;
+                default:
+                    return value.z;
+            }
+        }
+
         private float SampleNoise(float movingX, int channel)
         {
             float seedOffset = Mathf.Abs(_seed % 10000) * 0.013f;
+            float scale = Mathf.Max(0.1f, _noiseScale);
             float noise = Mathf.PerlinNoise(
-                movingX * 18.7f + seedOffset,
+                movingX * 18.7f * scale + seedOffset,
                 channel * 11.31f + seedOffset * 0.37f);
             return noise * 2f - 1f;
         }

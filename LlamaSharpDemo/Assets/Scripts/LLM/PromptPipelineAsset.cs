@@ -95,7 +95,7 @@ public class PromptPipelineAsset : ScriptableObject
                 break;
             }
 
-            executor.AddLink(CreateLink(currentStep, service));
+            executor.AddLink(CreateLink(currentStep, service, service as IEmbeddingService));
 
             if (string.IsNullOrEmpty(currentStep.nextStepGuid))
             {
@@ -109,7 +109,10 @@ public class PromptPipelineAsset : ScriptableObject
         return executor;
     }
 
-    private static IStateChainLink CreateLink(PromptPipelineStep step, ILlmService service)
+    private static IStateChainLink CreateLink(
+        PromptPipelineStep step,
+        ILlmService service,
+        IEmbeddingService embeddingService)
     {
         switch (step.stepKind)
         {
@@ -141,6 +144,17 @@ public class PromptPipelineAsset : ScriptableObject
                     null,
                     step.stepName
                 );
+            case PromptPipelineStepKind.Embedding:
+                EnsureEmbeddingSettings(step, embeddingService);
+                return new EmbeddingChainLink(
+                    embeddingService,
+                    step.embeddingProfile,
+                    step.userPromptTemplate,
+                    step.embeddingOutputKey,
+                    step.failOnEmptyEmbeddingInput,
+                    null,
+                    step.stepName
+                );
             case PromptPipelineStepKind.CustomLink:
                 return InstantiateCustomLink(step);
             default:
@@ -153,6 +167,24 @@ public class PromptPipelineAsset : ScriptableObject
         if (step.llmProfile == null)
         {
             throw new InvalidOperationException($"Step '{step.stepName}' requires an LLM profile.");
+        }
+    }
+
+    private static void EnsureEmbeddingSettings(PromptPipelineStep step, IEmbeddingService embeddingService)
+    {
+        if (embeddingService == null)
+        {
+            throw new InvalidOperationException($"Step '{step.stepName}' requires an embedding service.");
+        }
+
+        if (step.embeddingProfile == null)
+        {
+            throw new InvalidOperationException($"Step '{step.stepName}' requires an embedding profile.");
+        }
+
+        if (string.IsNullOrWhiteSpace(step.embeddingOutputKey))
+        {
+            throw new InvalidOperationException($"Step '{step.stepName}' requires an embedding output key.");
         }
     }
 
@@ -324,9 +356,19 @@ public class PromptPipelineStep
     [Tooltip("Generation profile used when this step calls an LLM.")]
     public BaseLlmGenerationProfile llmProfile;
 
+    [Tooltip("Embedding profile used when this step calculates text embeddings.")]
+    public LlmEmbeddingProfile embeddingProfile;
+
     [TextArea(4, 12)]
-    [Tooltip("User prompt template for this step. Supports PipelineState placeholders.")]
+    [Tooltip("User prompt or embedding input template for this step. Supports PipelineState placeholders.")]
     public string userPromptTemplate;
+
+    [Header("Embedding Options")]
+    [Tooltip("PipelineState key that receives the generated float[] embedding vector.")]
+    public string embeddingOutputKey = "embedding";
+
+    [Tooltip("If true, empty embedding input fails the pipeline.")]
+    public bool failOnEmptyEmbeddingInput = true;
 
     [Header("JSON LLM Options")]
     [Min(1)]
@@ -379,7 +421,8 @@ public enum PromptPipelineStepKind
 {
     JsonLlm = 0,
     CompletionLlm = 1,
-    CustomLink = 2
+    CustomLink = 2,
+    Embedding = 3
 }
 
 [Serializable]

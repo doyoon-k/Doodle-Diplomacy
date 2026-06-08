@@ -81,12 +81,13 @@ Fix:
 2. Reduce schema complexity in JSON fields.
 3. Increase step-level `jsonMaxRetries`.
 
-## H) Vision/Embedding Not Supported in Cloud v1
+## H) Vision/Embedding Scope
 
 Behavior:
 - Cloud service returns explicit not-supported errors for:
   - `GenerateCompletionWithImage`
   - `Embed`
+- Local LLamaSharp supports vision generation and embedding steps when the referenced local profile/model files are available.
 
 Use local profile steps for these features until cloud scope expands.
 

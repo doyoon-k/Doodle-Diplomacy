@@ -78,17 +78,22 @@ namespace DoodleDiplomacy.Devices
             int sessionSeed,
             float lockDuration)
         {
-            BrainwaveGraphDisplay graph = EnsureGraph();
-            if (graph == null)
-            {
-                return;
-            }
-
-            ApplyActiveLayout();
-            graph.BeginTraceLock(tier, label, sampleIndex, sessionSeed, lockDuration);
+            BeginTraceLock(
+                tier,
+                label,
+                sampleIndex,
+                sessionSeed,
+                lockDuration,
+                BrainwaveSemanticProfile.Invalid);
         }
 
-        public void PlayLocked(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
+        public void BeginTraceLock(
+            ReactionTier tier,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            float lockDuration,
+            BrainwaveSemanticProfile semanticProfile)
         {
             BrainwaveGraphDisplay graph = EnsureGraph();
             if (graph == null)
@@ -97,7 +102,29 @@ namespace DoodleDiplomacy.Devices
             }
 
             ApplyActiveLayout();
-            graph.PlayLocked(tier, label, sampleIndex, sessionSeed);
+            graph.BeginTraceLock(tier, label, sampleIndex, sessionSeed, lockDuration, semanticProfile);
+        }
+
+        public void PlayLocked(ReactionTier tier, string label, int sampleIndex, int sessionSeed)
+        {
+            PlayLocked(tier, label, sampleIndex, sessionSeed, BrainwaveSemanticProfile.Invalid);
+        }
+
+        public void PlayLocked(
+            ReactionTier tier,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            BrainwaveSemanticProfile semanticProfile)
+        {
+            BrainwaveGraphDisplay graph = EnsureGraph();
+            if (graph == null)
+            {
+                return;
+            }
+
+            ApplyActiveLayout();
+            graph.PlayLocked(tier, label, sampleIndex, sessionSeed, semanticProfile);
         }
 
         public void Clear()

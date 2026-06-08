@@ -1,3 +1,4 @@
+using DoodleDiplomacy.Data;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay
@@ -8,5 +9,10 @@ namespace DoodleDiplomacy.Gameplay
 
         GameplayModeContext CreateContext(GameplayModeHost host);
         MonoBehaviour GetDefaultModeBehaviour();
+    }
+
+    public interface IGameplaySceneModeResolver
+    {
+        MonoBehaviour GetModeBehaviour(FlowEntryDefinition entry);
     }
 }

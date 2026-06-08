@@ -1299,6 +1299,7 @@ internal class PromptPipelineStepNode : Node
     private readonly TextField _nameField;
     private readonly TextField _titleEditField;
     private readonly ObjectField _settingsField;
+    private readonly ObjectField _embeddingProfileField;
     private readonly Foldout _settingsFoldout;
     private readonly IMGUIContainer _settingsInspector;
     private UnityEditor.Editor _settingsEditor;
@@ -1317,6 +1318,9 @@ internal class PromptPipelineStepNode : Node
     private readonly Toggle _requireImageField;
     private readonly IntegerField _resizeLongestSideField;
     private readonly VisualElement _jsonOptionsContainer;
+    private readonly VisualElement _embeddingOptionsContainer;
+    private readonly TextField _embeddingOutputKeyField;
+    private readonly Toggle _failOnEmptyEmbeddingInputField;
     private readonly VisualElement _visionOptionsContainer;
     private readonly VisualElement _customOptionsContainer;
 
@@ -1428,16 +1432,29 @@ internal class PromptPipelineStepNode : Node
 
         _settingsField = new ObjectField("LLM Profile")
         {
-                    objectType = typeof(BaseLlmGenerationProfile),
+            objectType = typeof(BaseLlmGenerationProfile),
             value = step.llmProfile
         };
         _settingsField.RegisterValueChangedCallback(evt =>
         {
-                ApplyChange("Assign LLM Profile", () => step.llmProfile = evt.newValue as BaseLlmGenerationProfile);
+            ApplyChange("Assign LLM Profile", () => step.llmProfile = evt.newValue as BaseLlmGenerationProfile);
             UpdateSettingsInspector();
             UpdatePromptInputsEnabled();
         });
         extensionContainer.Add(_settingsField);
+
+        _embeddingProfileField = new ObjectField("Embedding Profile")
+        {
+            objectType = typeof(LlmEmbeddingProfile),
+            value = step.embeddingProfile
+        };
+        _embeddingProfileField.RegisterValueChangedCallback(evt =>
+        {
+            ApplyChange("Assign Embedding Profile", () => step.embeddingProfile = evt.newValue as LlmEmbeddingProfile);
+            UpdateSettingsInspector();
+            UpdatePromptInputsEnabled();
+        });
+        extensionContainer.Add(_embeddingProfileField);
 
         _settingsFoldout = new Foldout
         {
@@ -1555,6 +1572,30 @@ internal class PromptPipelineStepNode : Node
         _jsonOptionsContainer.Add(_retryDelayField);
         extensionContainer.Add(_jsonOptionsContainer);
 
+        _embeddingOptionsContainer = new VisualElement { style = { flexDirection = FlexDirection.Column } };
+        _embeddingOptionsContainer.Add(new Label("Embedding Options"));
+
+        _embeddingOutputKeyField = new TextField("Output Key")
+        {
+            value = step.embeddingOutputKey ?? string.Empty
+        };
+        _embeddingOutputKeyField.RegisterValueChangedCallback(evt =>
+        {
+            ApplyChange("Edit Embedding Output Key", () => step.embeddingOutputKey = evt.newValue?.Trim());
+        });
+        _embeddingOptionsContainer.Add(_embeddingOutputKeyField);
+
+        _failOnEmptyEmbeddingInputField = new Toggle("Fail On Empty Input")
+        {
+            value = step.failOnEmptyEmbeddingInput
+        };
+        _failOnEmptyEmbeddingInputField.RegisterValueChangedCallback(evt =>
+        {
+            ApplyChange("Toggle Empty Embedding Input Failure", () => step.failOnEmptyEmbeddingInput = evt.newValue);
+        });
+        _embeddingOptionsContainer.Add(_failOnEmptyEmbeddingInputField);
+        extensionContainer.Add(_embeddingOptionsContainer);
+
         _customOptionsContainer = new VisualElement { style = { flexDirection = FlexDirection.Column } };
         _customOptionsContainer.Add(new Label("Custom Link Options"));
 
@@ -1654,24 +1695,33 @@ internal class PromptPipelineStepNode : Node
 
     private void UpdatePromptInputsEnabled()
     {
-        bool isLlmStep = Step != null &&
+        bool isGenerationStep = Step != null &&
             (Step.stepKind == PromptPipelineStepKind.JsonLlm || Step.stepKind == PromptPipelineStepKind.CompletionLlm);
-        bool hasSettings = isLlmStep && Step.llmProfile != null;
-        _userPromptField?.SetEnabled(hasSettings);
-        _insertStateKeyButton?.SetEnabled(hasSettings && _availableKeys != null && _availableKeys.Count > 0);
-        _useVisionField?.SetEnabled(isLlmStep);
+        bool isEmbeddingStep = Step != null && Step.stepKind == PromptPipelineStepKind.Embedding;
+        bool hasInputTemplateTarget = (isGenerationStep && Step.llmProfile != null) ||
+                                      (isEmbeddingStep && Step.embeddingProfile != null);
+        _userPromptField?.SetEnabled(hasInputTemplateTarget);
+        _insertStateKeyButton?.SetEnabled(hasInputTemplateTarget && _availableKeys != null && _availableKeys.Count > 0);
+        _useVisionField?.SetEnabled(isGenerationStep);
         UpdateVisionInputsEnabled();
     }
 
     private void RefreshSections()
     {
         bool isJson = Step.stepKind == PromptPipelineStepKind.JsonLlm;
-        bool isLlm = isJson || Step.stepKind == PromptPipelineStepKind.CompletionLlm;
+        bool isGeneration = isJson || Step.stepKind == PromptPipelineStepKind.CompletionLlm;
+        bool isEmbedding = Step.stepKind == PromptPipelineStepKind.Embedding;
         bool isCustom = Step.stepKind == PromptPipelineStepKind.CustomLink;
 
+        _settingsField.style.display = isGeneration ? DisplayStyle.Flex : DisplayStyle.None;
+        _embeddingProfileField.style.display = isEmbedding ? DisplayStyle.Flex : DisplayStyle.None;
+        _userPromptField.label = isEmbedding ? "Embedding Input Template" : "User Prompt Template";
         _jsonOptionsContainer.style.display = isJson ? DisplayStyle.Flex : DisplayStyle.None;
-        _visionOptionsContainer.style.display = isLlm ? DisplayStyle.Flex : DisplayStyle.None;
+        _embeddingOptionsContainer.style.display = isEmbedding ? DisplayStyle.Flex : DisplayStyle.None;
+        _visionOptionsContainer.style.display = isGeneration ? DisplayStyle.Flex : DisplayStyle.None;
         _customOptionsContainer.style.display = isCustom ? DisplayStyle.Flex : DisplayStyle.None;
+        UpdateSettingsInspector();
+        UpdatePromptInputsEnabled();
         UpdateVisionInputsEnabled();
         UpdateHeaderStyle();
     }
@@ -1971,7 +2021,13 @@ internal class PromptPipelineStepNode : Node
             return;
         }
 
-        var target = Step.llmProfile;
+        UnityEngine.Object target = Step.stepKind switch
+        {
+            PromptPipelineStepKind.JsonLlm => Step.llmProfile,
+            PromptPipelineStepKind.CompletionLlm => Step.llmProfile,
+            PromptPipelineStepKind.Embedding => Step.embeddingProfile,
+            _ => null
+        };
         if (target == null)
         {
             _settingsFoldout.style.display = DisplayStyle.None;
@@ -1979,6 +2035,9 @@ internal class PromptPipelineStepNode : Node
             return;
         }
 
+        _settingsFoldout.text = Step.stepKind == PromptPipelineStepKind.Embedding
+            ? "Inline Embedding Profile"
+            : "Inline LLM Profile";
         _settingsFoldout.style.display = DisplayStyle.Flex;
         UnityEditor.Editor.CreateCachedEditor(target, null, ref _settingsEditor);
         _settingsInspector.MarkDirtyRepaint();
@@ -1992,9 +2051,10 @@ internal class PromptPipelineStepNode : Node
             return;
         }
 
+        bool isEmbeddingStep = Step.stepKind == PromptPipelineStepKind.Embedding;
         bool isJsonStep = Step.stepKind == PromptPipelineStepKind.JsonLlm;
         LlmGenerationProfileEditor.JsonFieldsEnabled = isJsonStep;
-        LlmGenerationProfileEditor.JsonFieldsDisabledMessage = isJsonStep
+        LlmGenerationProfileEditor.JsonFieldsDisabledMessage = isJsonStep || isEmbeddingStep
             ? null
             : "Completion steps always produce 'response'. JSON Output Fields are ignored for this step kind.";
 
@@ -2004,12 +2064,17 @@ internal class PromptPipelineStepNode : Node
             _settingsEditor.OnInspectorGUI();
             if (EditorGUI.EndChangeCheck())
             {
-                var settings = Step.llmProfile;
+                UnityEngine.Object settings = isEmbeddingStep
+                    ? Step.embeddingProfile
+                    : Step.llmProfile;
                 if (settings != null)
                 {
                     Undo.RecordObject(settings, "Edit LLM Profile");
                     EditorUtility.SetDirty(settings);
-                    LlmSettingsChangeNotifier.RaiseChanged(settings);
+                    if (settings is BaseLlmGenerationProfile generationProfile)
+                    {
+                        LlmSettingsChangeNotifier.RaiseChanged(generationProfile);
+                    }
                 }
             }
         }
@@ -2068,6 +2133,7 @@ internal class PromptPipelineStepNode : Node
         {
             PromptPipelineStepKind.JsonLlm => new Color(0.18f, 0.5f, 0.82f),
             PromptPipelineStepKind.CompletionLlm => new Color(0.25f, 0.7f, 0.45f),
+            PromptPipelineStepKind.Embedding => new Color(0.42f, 0.55f, 0.9f),
             PromptPipelineStepKind.CustomLink => new Color(0.8f, 0.55f, 0.2f),
             _ => new Color(0.3f, 0.3f, 0.3f)
         };
@@ -2164,9 +2230,12 @@ internal class PipelineInputNode : Node
             foreach (var key in model.keys.Where(k => k.kind == AnalyzedStateKeyKind.Input))
             {
                 var port = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(string));
-                port.portName = key.valueKind == AnalyzedStateValueKind.Image
-                    ? $"{key.keyName} (Image)"
-                    : key.keyName;
+                port.portName = key.valueKind switch
+                {
+                    AnalyzedStateValueKind.Image => $"{key.keyName} (Image)",
+                    AnalyzedStateValueKind.Embedding => $"{key.keyName} (Embedding)",
+                    _ => key.keyName
+                };
                 port.pickingMode = PickingMode.Ignore;
                 outputContainer.Add(port);
                 _ports[key.keyName] = port;

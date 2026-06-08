@@ -1,4 +1,5 @@
 using DoodleDiplomacy.Gameplay;
+using DoodleDiplomacy.Gameplay.FirstContact;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Build;
@@ -34,6 +35,11 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             RoundManager roundManager = Object.FindFirstObjectByType<RoundManager>();
             Assert.IsNotNull(roundManager, "Object-pair RoundManager should remain available in GameScene.");
             Assert.AreEqual("object-pair-drawing", roundManager.ModeId);
+
+            var serializedRoundManager = new SerializedObject(roundManager);
+            Assert.IsFalse(
+                serializedRoundManager.FindProperty("runStandaloneWithoutGameplayHost").boolValue,
+                "RoundManager must not auto-run in GameScene; GameFlowDirector/GameplayModeHost owns mode startup.");
         }
 
         [Test]
@@ -47,16 +53,23 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsNotNull(hub.GetDefaultModeBehaviour(), "SceneReferenceHub must resolve a default gameplay mode.");
             Assert.IsInstanceOf<IGameplayMode>(hub.GetDefaultModeBehaviour());
             Assert.IsInstanceOf<Day1CalibrationMode>(hub.GetDefaultModeBehaviour());
+
+            var flow = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.GameFlowAsset>(GameFlowPath);
+            Assert.IsInstanceOf<IGameplaySceneModeResolver>(hub);
+            var resolver = (IGameplaySceneModeResolver)hub;
+            Assert.IsInstanceOf<FirstContactTranslationMode>(resolver.GetModeBehaviour(flow.entries[0]));
+            Assert.IsInstanceOf<RoundManager>(resolver.GetModeBehaviour(flow.entries[2]));
         }
 
         [Test]
-        public void FirstContactFlowStartsWithDay1AndKeepsObjectPairEntry()
+        public void FirstContactFlowStartsWithFirstContactAndKeepsLegacyEntries()
         {
             var flow = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.GameFlowAsset>(GameFlowPath);
             Assert.IsNotNull(flow, "FirstContactGameFlow asset must exist.");
-            Assert.GreaterOrEqual(flow.entries.Length, 2, "Flow should keep Day1 and object-pair entries.");
-            Assert.AreEqual("day1-calibration", flow.entries[0].entryTag);
-            Assert.AreEqual("object-pair-drawing", flow.entries[1].entryTag);
+            Assert.GreaterOrEqual(flow.entries.Length, 3, "Flow should keep Day1/object-pair entries and include First Contact translation.");
+            Assert.AreEqual("first-contact-translation", flow.entries[0].entryTag);
+            Assert.AreEqual("day1-calibration", flow.entries[1].entryTag);
+            Assert.AreEqual("object-pair-drawing", flow.entries[2].entryTag);
         }
 
         [Test]

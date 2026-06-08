@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29efd328f9c04d2fa3f3aefc8f039add, type: 3}
+  m_Name: FirstContactModeConfig
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactModeConfig
+  presentationSettings: {fileID: 11400000, guid: e71a036b357047c3b8aeed5ce6f04512, type: 2}
+  semanticSettings: {fileID: 11400000, guid: a40cbbaa6b2545a08aa1c9386c3e8d5c, type: 2}
+  vlmSettings: {fileID: 11400000, guid: fee400980e5644f7a2b2b317d09ea54e, type: 2}
+  questionSettings: {fileID: 11400000, guid: 629dcab2a6e84b4893868a54848ec1f6, type: 2}
+  debugSettings: {fileID: 11400000, guid: cf140cc69780409f99b23a454a1b3b27, type: 2}

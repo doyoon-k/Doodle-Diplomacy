@@ -95,6 +95,8 @@ namespace DoodleDiplomacy.Core
         [Min(0f)]
         [Tooltip("Maximum seconds to wait for first-round AI prefetch before allowing play to continue.")]
         [SerializeField] private float firstRoundPrefetchTimeoutSeconds = DefaultFirstRoundPrefetchTimeoutSeconds;
+        [Tooltip("Legacy compatibility only. When enabled, this RoundManager runs by itself in scenes without a GameplayModeHost.")]
+        [SerializeField] private bool runStandaloneWithoutGameplayHost;
 
         [Header("Events")]
         public GameStateUnityEvent OnStateChanged;
@@ -240,7 +242,8 @@ namespace DoodleDiplomacy.Core
 
         private void Start()
         {
-            InitializeRuntime();
+            if (runStandaloneWithoutGameplayHost && GameplayModeHost.Instance == null)
+                InitializeRuntime();
         }
 
         private void OnDestroy()
@@ -258,10 +261,8 @@ namespace DoodleDiplomacy.Core
 
         private void Update()
         {
-            if (!_enteredByGameplayHost)
-            {
+            if (runStandaloneWithoutGameplayHost && !_enteredByGameplayHost && GameplayModeHost.Instance == null)
                 Tick(Time.deltaTime);
-            }
         }
 
         public void Enter(GameplayModeContext context)

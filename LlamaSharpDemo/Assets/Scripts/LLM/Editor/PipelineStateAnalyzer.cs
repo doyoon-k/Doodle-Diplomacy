@@ -38,8 +38,12 @@ public static class PipelineStateAnalyzer
             {
                 case PromptPipelineStepKind.JsonLlm:
                 case PromptPipelineStepKind.CompletionLlm:
+                case PromptPipelineStepKind.Embedding:
                     CollectPromptKeys(step, keyMap, i);
-                    CollectVisionKeys(step, keyMap, i);
+                    if (step.stepKind != PromptPipelineStepKind.Embedding)
+                    {
+                        CollectVisionKeys(step, keyMap, i);
+                    }
                     break;
                 case PromptPipelineStepKind.CustomLink:
                     CollectCustomLinkKeys(step, keyMap, i);
@@ -56,6 +60,9 @@ public static class PipelineStateAnalyzer
                     RegisterKey(keyMap, PromptPipelineConstants.AnswerKey)
                         .producedByStepIndices
                         .AddUnique(i);
+                    break;
+                case PromptPipelineStepKind.Embedding:
+                    CollectEmbeddingProducedKey(step, keyMap, i);
                     break;
             }
         }
@@ -168,6 +175,22 @@ public static class PipelineStateAnalyzer
         RegisterKey(keyMap, step.imageStateKey)
             .MarkValueKind(AnalyzedStateValueKind.Image)
             .consumedByStepIndices
+            .AddUnique(stepIndex);
+    }
+
+    private static void CollectEmbeddingProducedKey(
+        PromptPipelineStep step,
+        Dictionary<string, AnalyzedStateKey> keyMap,
+        int stepIndex)
+    {
+        if (step == null || string.IsNullOrWhiteSpace(step.embeddingOutputKey))
+        {
+            return;
+        }
+
+        RegisterKey(keyMap, step.embeddingOutputKey)
+            .MarkValueKind(AnalyzedStateValueKind.Embedding)
+            .producedByStepIndices
             .AddUnique(stepIndex);
     }
 
@@ -346,9 +369,10 @@ public class AnalyzedStateKey
 
     public AnalyzedStateKey MarkValueKind(AnalyzedStateValueKind kindToApply)
     {
-        if (kindToApply == AnalyzedStateValueKind.Image)
+        if (kindToApply == AnalyzedStateValueKind.Image ||
+            kindToApply == AnalyzedStateValueKind.Embedding)
         {
-            valueKind = AnalyzedStateValueKind.Image;
+            valueKind = kindToApply;
         }
 
         return this;
@@ -373,7 +397,8 @@ public enum AnalyzedStateKeyKind
 public enum AnalyzedStateValueKind
 {
     Text = 0,
-    Image = 1
+    Image = 1,
+    Embedding = 2
 }
 
 internal static class ListExtensions

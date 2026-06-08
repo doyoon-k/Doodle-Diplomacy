@@ -102,6 +102,16 @@ public class DrawingBoardController : MonoBehaviour
     [Tooltip("World-space offset that lifts the fallback recognition label slightly off the tablet screen.")]
     [SerializeField] private float recognitionLabelSurfaceOffset = 0.012f;
 
+    [Header("Instruction Label")]
+    [Tooltip("Show a small control hint on the tablet surface while drawing.")]
+    [SerializeField] private bool instructionLabelEnabled = true;
+    [Tooltip("Instruction label width as a fraction of the tablet screen width.")]
+    [SerializeField] [Range(0.05f, 0.8f)] private float instructionLabelWidthNormalized = 0.34f;
+    [Tooltip("Instruction label text height as a fraction of the tablet screen height.")]
+    [SerializeField] [Range(0.01f, 0.15f)] private float instructionLabelHeightNormalized = 0.038f;
+    [Tooltip("Instruction label position in normalized tablet screen coordinates.")]
+    [SerializeField] private Vector2 instructionLabelAnchorNormalized = new(0.5f, 0.035f);
+
     [Header("History")]
     [Tooltip("Maximum undo history entries retained for drawing edits.")]
     [SerializeField] private int maxHistoryEntries = 24;
@@ -123,6 +133,11 @@ public class DrawingBoardController : MonoBehaviour
     private Vector2Int _lastPixel;
     private readonly DrawingStrokeHistory _strokeHistory = new();
     private TextMeshPro _runtimeRecognitionLabelText;
+    private bool _instructionOverlayVisible;
+    private string _instructionOverlayText = string.Empty;
+
+    private DrawingBoardCoordinateMapper CoordinateMapper =>
+        new(boardTextureScale, boardTextureOffset, flipExportHorizontally, flipExportVertically);
 
     public event Action<int> BrushRadiusChanged;
     public event Action<bool, bool> HistoryStateChanged;
@@ -213,7 +228,7 @@ public class DrawingBoardController : MonoBehaviour
         }
 
         Color32[] compositePixels = _canvas.CopyPixels();
-        OrientPixelsForSurfaceExport(compositePixels, _canvas.Width, _canvas.Height);
+        CoordinateMapper.ApplyExportOrientation(compositePixels, _canvas.Width, _canvas.Height);
 
         _exportCanvas.ApplyRegion(
             new RectInt(0, 0, _canvas.Width, _canvas.Height),
@@ -316,6 +331,26 @@ public class DrawingBoardController : MonoBehaviour
         {
             labelText.gameObject.SetActive(false);
         }
+    }
+
+    public void ShowInstructionLabel(string label)
+    {
+        if (!instructionLabelEnabled || string.IsNullOrWhiteSpace(label))
+        {
+            ClearInstructionLabel();
+            return;
+        }
+
+        _instructionOverlayText = label.Trim();
+        _instructionOverlayVisible = true;
+        RefreshDisplayFullCanvas();
+    }
+
+    public void ClearInstructionLabel()
+    {
+        _instructionOverlayVisible = false;
+        _instructionOverlayText = string.Empty;
+        RefreshDisplayFullCanvas();
     }
 
     public DrawingToolMode GetCurrentToolMode()
@@ -547,9 +582,7 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        int x = Mathf.Clamp(Mathf.FloorToInt(canvasUv.x * _canvas.Width), 0, _canvas.Width - 1);
-        int y = Mathf.Clamp(Mathf.FloorToInt(canvasUv.y * _canvas.Height), 0, _canvas.Height - 1);
-        pixel = new Vector2Int(x, y);
+        pixel = CoordinateMapper.CanvasUvToPixel(canvasUv, _canvas.Width, _canvas.Height);
         return true;
     }
 
@@ -562,12 +595,11 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        if (!TryGetSurfaceUvFromHit(hit, out Vector2 surfaceUv))
+        if (!CoordinateMapper.TryGetCanvasUvFromHit(hit, drawingSurfaceCollider, out canvasUv))
         {
             return false;
         }
 
-        canvasUv = SurfaceUvToCanvasUv(surfaceUv);
         if (!IsCanvasUvInPaintArea(canvasUv))
         {
             return false;
@@ -604,14 +636,6 @@ public class DrawingBoardController : MonoBehaviour
         return DrawingSurfaceMapper.TryGetSurfaceUvFromHit(hit, drawingSurfaceCollider, out surfaceUv);
     }
 
-    private static bool TryGetSurfaceUvFromBoxColliderHit(
-        Vector3 worldPoint,
-        BoxCollider boxCollider,
-        out Vector2 surfaceUv)
-    {
-        return DrawingSurfaceMapper.TryGetSurfaceUvFromBoxColliderHit(worldPoint, boxCollider, out surfaceUv);
-    }
-
     private static bool TryResolveBoxPaintAxes(
         BoxCollider boxCollider,
         Vector3 axisWorldSizes,
@@ -629,11 +653,6 @@ public class DrawingBoardController : MonoBehaviour
     private static float GetAxis(Vector3 value, int axis)
     {
         return DrawingSurfaceMapper.GetAxis(value, axis);
-    }
-
-    private static Vector3 GetAxisDirection(Transform targetTransform, int axis)
-    {
-        return DrawingSurfaceMapper.GetAxisDirection(targetTransform, axis);
     }
 
     private bool IsCanvasUvInPaintArea(Vector2 canvasUv)
@@ -716,15 +735,14 @@ public class DrawingBoardController : MonoBehaviour
 
     private float ResolveCanvasWorldAspect()
     {
-        float scaleX = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
-        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
         if (!TryGetBoardWorldSurfaceSize(out float boardWorldWidth, out float boardWorldHeight))
         {
             return 1f;
         }
 
-        float worldWidth = boardWorldWidth / scaleX;
-        float worldHeight = boardWorldHeight / scaleY;
+        DrawingBoardCoordinateMapper mapper = CoordinateMapper;
+        float worldWidth = boardWorldWidth / mapper.TextureScaleX;
+        float worldHeight = boardWorldHeight / mapper.TextureScaleY;
         if (worldHeight <= 0.0001f)
         {
             return 1f;
@@ -853,62 +871,19 @@ public class DrawingBoardController : MonoBehaviour
         HistoryStateChanged?.Invoke(CanUndo, CanRedo);
     }
 
-    private void OrientPixelsForSurfaceExport(Color32[] pixels, int width, int height)
-    {
-        if (flipExportHorizontally)
-        {
-            FlipPixelsHorizontally(pixels, width, height);
-        }
-
-        if (flipExportVertically)
-        {
-            FlipPixelsVertically(pixels, width, height);
-        }
-    }
-
-    private static void FlipPixelsHorizontally(Color32[] pixels, int width, int height)
-    {
-        if (pixels == null || width <= 1 || height <= 0)
-        {
-            return;
-        }
-
-        int halfColumns = width / 2;
-        for (int y = 0; y < height; y++)
-        {
-            int rowOffset = y * width;
-            for (int x = 0; x < halfColumns; x++)
-            {
-                int leftIndex = rowOffset + x;
-                int rightIndex = rowOffset + (width - 1 - x);
-                (pixels[leftIndex], pixels[rightIndex]) = (pixels[rightIndex], pixels[leftIndex]);
-            }
-        }
-    }
-
-    private static void FlipPixelsVertically(Color32[] pixels, int width, int height)
-    {
-        if (pixels == null || width <= 0 || height <= 1)
-        {
-            return;
-        }
-
-        int halfRows = height / 2;
-        for (int y = 0; y < halfRows; y++)
-        {
-            int oppositeY = height - 1 - y;
-            int topOffset = y * width;
-            int bottomOffset = oppositeY * width;
-            for (int x = 0; x < width; x++)
-            {
-                int topIndex = topOffset + x;
-                int bottomIndex = bottomOffset + x;
-                (pixels[topIndex], pixels[bottomIndex]) = (pixels[bottomIndex], pixels[topIndex]);
-            }
-        }
-    }
-
     private void RefreshDisplayFullCanvas()
+    {
+        RefreshDisplayFullCanvasBase();
+        DrawInstructionOverlayIfVisible();
+    }
+
+    private void RefreshDisplayRegion(RectInt region)
+    {
+        RefreshDisplayRegionBase(region);
+        DrawInstructionOverlayIfVisible();
+    }
+
+    private void RefreshDisplayFullCanvasBase()
     {
         DrawingDisplayComposer.RefreshFullCanvas(
             _canvas,
@@ -920,7 +895,7 @@ public class DrawingBoardController : MonoBehaviour
             _surfaceTextureSampler);
     }
 
-    private void RefreshDisplayRegion(RectInt region)
+    private void RefreshDisplayRegionBase(RectInt region)
     {
         DrawingDisplayComposer.RefreshRegion(
             _canvas,
@@ -931,6 +906,209 @@ public class DrawingBoardController : MonoBehaviour
             nonPaintAreaDisplayColor,
             paintAreaDividerColor,
             _surfaceTextureSampler);
+    }
+
+    private void DrawInstructionOverlayIfVisible()
+    {
+        if (!_instructionOverlayVisible || _displayCanvas == null)
+        {
+            return;
+        }
+
+        string text = NormalizeInstructionOverlayText(_instructionOverlayText);
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        int textColumns = GetBitmapTextColumnCount(text);
+        if (textColumns <= 0)
+        {
+            return;
+        }
+
+        const int glyphRows = 7;
+        float widthFraction = Mathf.Clamp(instructionLabelWidthNormalized, 0.05f, 0.8f);
+        float heightFraction = Mathf.Clamp(instructionLabelHeightNormalized, 0.01f, 0.15f);
+        int scaleFromWidth = Mathf.FloorToInt((_displayCanvas.Width * widthFraction) / textColumns);
+        int scaleFromHeight = Mathf.FloorToInt((_displayCanvas.Height * heightFraction) / glyphRows);
+        int pixelScale = Mathf.Clamp(Mathf.Min(scaleFromWidth, scaleFromHeight), 2, 6);
+        int paddingX = pixelScale * 3;
+        int paddingY = pixelScale * 2;
+        int overlayWidth = Mathf.Min(_displayCanvas.Width, (textColumns * pixelScale) + (paddingX * 2));
+        int overlayHeight = Mathf.Min(_displayCanvas.Height, (glyphRows * pixelScale) + (paddingY * 2));
+        if (overlayWidth <= 0 || overlayHeight <= 0)
+        {
+            return;
+        }
+
+        Vector2 anchor = new(
+            Mathf.Clamp01(instructionLabelAnchorNormalized.x),
+            Mathf.Clamp01(instructionLabelAnchorNormalized.y));
+        int overlayX = Mathf.Clamp(
+            Mathf.RoundToInt((_displayCanvas.Width * anchor.x) - (overlayWidth * 0.5f)),
+            0,
+            Mathf.Max(0, _displayCanvas.Width - overlayWidth));
+        int overlayY = Mathf.Clamp(
+            Mathf.RoundToInt(_displayCanvas.Height * anchor.y),
+            0,
+            Mathf.Max(0, _displayCanvas.Height - overlayHeight));
+        var region = new RectInt(overlayX, overlayY, overlayWidth, overlayHeight);
+
+        RefreshDisplayRegionBase(region);
+        Color32[] pixels = _displayCanvas.CopyRegion(region);
+        if (pixels.Length != region.width * region.height)
+        {
+            return;
+        }
+
+        Color32 background = new(0, 0, 0, 205);
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = BlendOver(pixels[i], background);
+        }
+
+        Color32 textColor = new(245, 248, 235, 255);
+        int textWidth = textColumns * pixelScale;
+        int textX = Mathf.Max(0, (overlayWidth - textWidth) / 2);
+        int textY = Mathf.Max(0, (overlayHeight - (glyphRows * pixelScale)) / 2);
+        DrawBitmapText(
+            pixels,
+            overlayWidth,
+            overlayHeight,
+            text,
+            textX,
+            textY,
+            pixelScale,
+            textColor);
+        _displayCanvas.ApplyRegion(region, pixels);
+    }
+
+    private static string NormalizeInstructionOverlayText(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return value.Trim().ToUpperInvariant();
+    }
+
+    private static int GetBitmapTextColumnCount(string text)
+    {
+        int columns = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            columns += text[i] == ' ' ? 3 : 6;
+        }
+
+        return Mathf.Max(0, columns - 1);
+    }
+
+    private static void DrawBitmapText(
+        Color32[] pixels,
+        int width,
+        int height,
+        string text,
+        int originX,
+        int originY,
+        int scale,
+        Color32 color)
+    {
+        int cursorX = originX;
+        for (int charIndex = 0; charIndex < text.Length; charIndex++)
+        {
+            char character = text[charIndex];
+            if (character == ' ')
+            {
+                cursorX += 3 * scale;
+                continue;
+            }
+
+            string[] glyph = GetInstructionGlyph(character);
+            if (glyph == null)
+            {
+                cursorX += 6 * scale;
+                continue;
+            }
+
+            for (int row = 0; row < glyph.Length; row++)
+            {
+                string rowBits = glyph[row];
+                for (int col = 0; col < rowBits.Length; col++)
+                {
+                    if (rowBits[col] != '1')
+                    {
+                        continue;
+                    }
+
+                    int pixelX = cursorX + (col * scale);
+                    int pixelY = originY + ((glyph.Length - 1 - row) * scale);
+                    DrawScaledPixelBlock(pixels, width, height, pixelX, pixelY, scale, color);
+                }
+            }
+
+            cursorX += 6 * scale;
+        }
+    }
+
+    private static void DrawScaledPixelBlock(
+        Color32[] pixels,
+        int width,
+        int height,
+        int x,
+        int y,
+        int scale,
+        Color32 color)
+    {
+        for (int offsetY = 0; offsetY < scale; offsetY++)
+        {
+            int targetY = y + offsetY;
+            if (targetY < 0 || targetY >= height)
+            {
+                continue;
+            }
+
+            int rowOffset = targetY * width;
+            for (int offsetX = 0; offsetX < scale; offsetX++)
+            {
+                int targetX = x + offsetX;
+                if (targetX < 0 || targetX >= width)
+                {
+                    continue;
+                }
+
+                pixels[rowOffset + targetX] = color;
+            }
+        }
+    }
+
+    private static Color32 BlendOver(Color32 baseColor, Color32 overlayColor)
+    {
+        float alpha = overlayColor.a / 255f;
+        float inverse = 1f - alpha;
+        return new Color32(
+            (byte)Mathf.Clamp(Mathf.RoundToInt((overlayColor.r * alpha) + (baseColor.r * inverse)), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt((overlayColor.g * alpha) + (baseColor.g * inverse)), 0, 255),
+            (byte)Mathf.Clamp(Mathf.RoundToInt((overlayColor.b * alpha) + (baseColor.b * inverse)), 0, 255),
+            255);
+    }
+
+    private static string[] GetInstructionGlyph(char character)
+    {
+        return character switch
+        {
+            'A' => new[] { "01110", "10001", "10001", "11111", "10001", "10001", "10001" },
+            'D' => new[] { "11110", "10001", "10001", "10001", "10001", "10001", "11110" },
+            'E' => new[] { "11111", "10000", "10000", "11110", "10000", "10000", "11111" },
+            'N' => new[] { "10001", "11001", "10101", "10011", "10001", "10001", "10001" },
+            'O' => new[] { "01110", "10001", "10001", "10001", "10001", "10001", "01110" },
+            'P' => new[] { "11110", "10001", "10001", "11110", "10000", "10000", "10000" },
+            'R' => new[] { "11110", "10001", "10001", "11110", "10100", "10010", "10001" },
+            'S' => new[] { "01111", "10000", "10000", "01110", "00001", "00001", "11110" },
+            'T' => new[] { "11111", "00100", "00100", "00100", "00100", "00100", "00100" },
+            _ => null
+        };
     }
 
     private void InitializeBrushPreview()
@@ -985,7 +1163,7 @@ public class DrawingBoardController : MonoBehaviour
             return;
         }
 
-        Vector2 previewCanvasUv = SurfaceUvToCanvasUv(previewSurfaceUv);
+        Vector2 previewCanvasUv = CoordinateMapper.SurfaceUvToCanvasUv(previewSurfaceUv);
 
         if (!IsCanvasUvInPaintArea(previewCanvasUv))
         {
@@ -1094,16 +1272,14 @@ public class DrawingBoardController : MonoBehaviour
             return false;
         }
 
-        float scaleX = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
-        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
-        radiusU = brushRadius * (worldUSize / (_canvas.Width * scaleX));
-        radiusV = brushRadius * (worldVSize / (_canvas.Height * scaleY));
+        DrawingBoardCoordinateMapper mapper = CoordinateMapper;
+        radiusU = brushRadius * (worldUSize / (_canvas.Width * mapper.TextureScaleX));
+        radiusV = brushRadius * (worldVSize / (_canvas.Height * mapper.TextureScaleY));
         radiusU = Mathf.Max(0.0005f, radiusU);
         radiusV = Mathf.Max(0.0005f, radiusV);
 
-        // UV mapping in TryGetSurfaceUvFromBoxColliderHit flips both axes (u = 1-u, v = 1-v).
-        axisU = -GetAxisDirection(boxCollider.transform, uAxis);
-        axisV = -GetAxisDirection(boxCollider.transform, vAxis);
+        axisU = mapper.GetCanvasUAxisWorldDirection(boxCollider.transform, uAxis);
+        axisV = mapper.GetCanvasVAxisWorldDirection(boxCollider.transform, vAxis);
 
         axisU = Vector3.ProjectOnPlane(axisU, surfaceNormal);
         axisV = Vector3.ProjectOnPlane(axisV, surfaceNormal);
@@ -1140,13 +1316,12 @@ public class DrawingBoardController : MonoBehaviour
             return 0.01f;
         }
 
-        float scaleX = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
-        float scaleY = Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
+        DrawingBoardCoordinateMapper mapper = CoordinateMapper;
         if (drawingSurfaceCollider is BoxCollider boxCollider &&
             TryGetBoxColliderWorldSurfaceSize(boxCollider, out float worldWidth, out float worldHeight))
         {
-            float radiusU = brushRadius * (worldWidth / (_canvas.Width * scaleX));
-            float radiusV = brushRadius * (worldHeight / (_canvas.Height * scaleY));
+            float radiusU = brushRadius * (worldWidth / (_canvas.Width * mapper.TextureScaleX));
+            float radiusV = brushRadius * (worldHeight / (_canvas.Height * mapper.TextureScaleY));
             return Mathf.Max(0.001f, (radiusU + radiusV) * 0.5f);
         }
 
@@ -1298,7 +1473,7 @@ public class DrawingBoardController : MonoBehaviour
 
         _runtimeRecognitionLabelText = labelObject.GetComponent<TextMeshPro>();
         _runtimeRecognitionLabelText.alignment = TextAlignmentOptions.BottomRight;
-        _runtimeRecognitionLabelText.enableWordWrapping = false;
+        _runtimeRecognitionLabelText.textWrappingMode = TextWrappingModes.NoWrap;
         _runtimeRecognitionLabelText.overflowMode = TextOverflowModes.Ellipsis;
         _runtimeRecognitionLabelText.fontStyle = FontStyles.Bold;
         _runtimeRecognitionLabelText.richText = false;
@@ -1335,135 +1510,30 @@ public class DrawingBoardController : MonoBehaviour
         out Vector2 rectSize,
         out float fontSize)
     {
-        position = Vector3.zero;
-        rotation = Quaternion.identity;
-        rectSize = Vector2.zero;
-        fontSize = 0f;
-
         if (drawingSurfaceCollider is not BoxCollider boxCollider)
         {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            rectSize = Vector2.zero;
+            fontSize = 0f;
             return false;
         }
 
-        Vector3 axisWorldSizes = GetBoxAxisWorldSizes(boxCollider);
-        if (!TryResolveBoxPaintAxes(boxCollider, axisWorldSizes, out int uAxis, out int vAxis))
-        {
-            return false;
-        }
-
-        int normalAxis = GetRemainingAxis(uAxis, vAxis);
-        Vector3 boxSize = boxCollider.size;
-        float halfU = Mathf.Abs(GetAxis(boxSize, uAxis)) * 0.5f;
-        float halfV = Mathf.Abs(GetAxis(boxSize, vAxis)) * 0.5f;
-        float halfNormal = Mathf.Abs(GetAxis(boxSize, normalAxis)) * 0.5f;
-        if (halfU <= 0.0001f || halfV <= 0.0001f)
-        {
-            return false;
-        }
-
-        float insetX = Mathf.Clamp01(recognitionLabelInsetNormalized.x);
-        float insetY = Mathf.Clamp01(recognitionLabelInsetNormalized.y);
-        float canvasU = 1f - insetX;
-        float canvasV = insetY;
-        float surfaceU = CanvasAxisToSurfaceUv(canvasU, boardTextureScale.x, boardTextureOffset.x);
-        float surfaceV = CanvasAxisToSurfaceUv(canvasV, boardTextureScale.y, boardTextureOffset.y);
-
-        Vector3 localPoint = boxCollider.center;
-        SetAxis(ref localPoint, uAxis, Mathf.Lerp(-halfU, halfU, 1f - surfaceU));
-        SetAxis(ref localPoint, vAxis, Mathf.Lerp(-halfV, halfV, 1f - surfaceV));
-
-        Vector3 positiveNormal = GetAxisDirection(boxCollider.transform, normalAxis);
-        Vector3 boxCenterWorld = boxCollider.transform.TransformPoint(boxCollider.center);
-        Vector3 viewDirection = GetRecognitionLabelViewDirection(boxCenterWorld);
-        float normalSign = Vector3.Dot(positiveNormal, viewDirection) >= 0f ? 1f : -1f;
-        SetAxis(ref localPoint, normalAxis, normalSign * halfNormal);
-
-        Vector3 normal = positiveNormal * normalSign;
-        Vector3 canvasUp = GetCanvasAxisWorldDirection(boxCollider.transform, vAxis, boardTextureScale.y);
-        canvasUp = Vector3.ProjectOnPlane(canvasUp, normal);
-        if (canvasUp.sqrMagnitude <= 0.0001f)
-        {
-            canvasUp = Vector3.ProjectOnPlane(transform.up, normal);
-        }
-
-        if (canvasUp.sqrMagnitude <= 0.0001f)
-        {
-            return false;
-        }
-
-        canvasUp.Normalize();
-        float worldWidth = Mathf.Abs(GetAxis(axisWorldSizes, uAxis)) / Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.x));
-        float worldHeight = Mathf.Abs(GetAxis(axisWorldSizes, vAxis)) / Mathf.Max(0.0001f, Mathf.Abs(boardTextureScale.y));
-        fontSize = Mathf.Max(0.01f, worldHeight * recognitionLabelHeightNormalized);
-        rectSize = new Vector2(
-            Mathf.Max(fontSize * 2f, worldWidth * recognitionLabelWidthNormalized),
-            Mathf.Max(fontSize * 1.4f, fontSize));
-
-        position = boxCollider.transform.TransformPoint(localPoint) +
-                   normal * Mathf.Max(0.0005f, recognitionLabelSurfaceOffset);
-        rotation = Quaternion.LookRotation(-normal, canvasUp);
-        return true;
-    }
-
-    private Vector3 GetRecognitionLabelViewDirection(Vector3 surfaceCenterWorld)
-    {
-        if (drawingCamera != null)
-        {
-            return drawingCamera.transform.position - surfaceCenterWorld;
-        }
-
-        UnityEngine.Camera mainCamera = UnityEngine.Camera.main;
-        if (mainCamera != null)
-        {
-            return mainCamera.transform.position - surfaceCenterWorld;
-        }
-
-        return transform.forward;
-    }
-
-    private static float CanvasAxisToSurfaceUv(float canvasAxis, float textureScale, float textureOffset)
-    {
-        if (Mathf.Abs(textureScale) <= 0.0001f)
-        {
-            return Mathf.Clamp01(canvasAxis);
-        }
-
-        return Mathf.Clamp01((canvasAxis - textureOffset) / textureScale);
-    }
-
-    private static Vector3 GetCanvasAxisWorldDirection(Transform targetTransform, int axis, float textureScale)
-    {
-        float scaleSign = textureScale < 0f ? -1f : 1f;
-        return -GetAxisDirection(targetTransform, axis) * scaleSign;
-    }
-
-    private static int GetRemainingAxis(int firstAxis, int secondAxis)
-    {
-        for (int axis = 0; axis < 3; axis++)
-        {
-            if (axis != firstAxis && axis != secondAxis)
-            {
-                return axis;
-            }
-        }
-
-        return 1;
-    }
-
-    private static void SetAxis(ref Vector3 value, int axis, float axisValue)
-    {
-        switch (axis)
-        {
-            case 0:
-                value.x = axisValue;
-                break;
-            case 1:
-                value.y = axisValue;
-                break;
-            default:
-                value.z = axisValue;
-                break;
-        }
+        Vector2 anchor = new(
+            1f - Mathf.Clamp01(recognitionLabelInsetNormalized.x),
+            Mathf.Clamp01(recognitionLabelInsetNormalized.y));
+        return CoordinateMapper.TryGetSurfaceLabelPlacement(
+            boxCollider,
+            drawingCamera,
+            transform,
+            anchor,
+            recognitionLabelWidthNormalized,
+            recognitionLabelHeightNormalized,
+            recognitionLabelSurfaceOffset,
+            out position,
+            out rotation,
+            out rectSize,
+            out fontSize);
     }
 
     private void CleanupRecognitionLabel()
@@ -1499,13 +1569,6 @@ public class DrawingBoardController : MonoBehaviour
             texturePropertyName,
             boardTextureScale,
             boardTextureOffset);
-    }
-
-    private Vector2 SurfaceUvToCanvasUv(Vector2 surfaceUv)
-    {
-        return new Vector2(
-            (surfaceUv.x * boardTextureScale.x) + boardTextureOffset.x,
-            (surfaceUv.y * boardTextureScale.y) + boardTextureOffset.y);
     }
 
     private static bool IsDrawingPhaseActive()

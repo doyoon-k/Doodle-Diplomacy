@@ -16,6 +16,8 @@ namespace DoodleDiplomacy.Gameplay
         void SetBrushColor(Color color);
         void ShowRecognitionLabel(string label);
         void ClearRecognitionLabel();
+        void ShowInstructionLabel(string label);
+        void ClearInstructionLabel();
         bool Undo();
         bool Redo();
         bool TryExportPngBytes(out byte[] pngBytes, out string error);

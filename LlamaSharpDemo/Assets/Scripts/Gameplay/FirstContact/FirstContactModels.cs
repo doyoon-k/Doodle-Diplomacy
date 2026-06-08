@@ -25,14 +25,34 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         RuntimeDefault
     }
 
+    public readonly struct FirstContactSlotScore
+    {
+        public readonly UnknownSlot Slot;
+        public readonly float Score;
+        public readonly FirstContactTranslationStage ImpliedStage;
+        public readonly bool IsActive;
+
+        public FirstContactSlotScore(
+            UnknownSlot slot,
+            float score,
+            FirstContactTranslationStage impliedStage,
+            bool isActive)
+        {
+            Slot = slot;
+            Score = score;
+            ImpliedStage = impliedStage;
+            IsActive = isActive;
+        }
+    }
+
     [Serializable]
     public sealed class FirstContactStageTexts
     {
-        [Tooltip("Displayed when the hidden concept reaches the first hint level, e.g. [OBJECT?].")]
+        [Tooltip("숨겨진 단어가 첫 힌트 단계에 도달했을 때 터미널에 표시할 토큰입니다. 예: [OBJECT?]")]
         public string hint = "[HINT?]";
-        [Tooltip("Displayed when the hidden concept is partially translated, e.g. [DEFENSE-RELATED?].")]
+        [Tooltip("숨겨진 단어가 부분 해석 단계에 도달했을 때 터미널에 표시할 토큰입니다. 예: [DEFENSE-RELATED?]")]
         public string partial = "[PARTIAL?]";
-        [Tooltip("Displayed when the hidden concept is solved, e.g. PROTECT.")]
+        [Tooltip("숨겨진 단어가 완전히 해석되었을 때 터미널에 표시할 최종 토큰입니다. 예: PROTECT")]
         public string solved = "SOLVED";
 
         public string GetDisplayText(FirstContactTranslationStage stage, string unknownId)
@@ -55,12 +75,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     [Serializable]
     public sealed class FirstContactUnknownSlotDefinition
     {
-        [Tooltip("Stable id without brackets, e.g. UNKNOWN-01.")]
+        [Tooltip("대괄호 없이 쓰는 안정적인 UNKNOWN 슬롯 ID입니다. 예: UNKNOWN-01")]
         public string id = "UNKNOWN-01";
-        [Tooltip("Hidden concept used for debugging and fallback anchor generation.")]
+        [Tooltip("플레이어에게 직접 보여주지 않는 내부 정답 개념입니다. 디버그와 앵커 생성에 사용합니다.")]
         public string targetConcept = "IMPORTANT";
-        [Tooltip("Internal semantic anchors. These are not shown as answer examples.")]
+        [Tooltip("미해석 단어와 그림 라벨의 의미 유사도를 계산할 내부 앵커 목록입니다. 플레이어에게 답 예시로 보여주지 않습니다.")]
         public string[] targetAnchors = Array.Empty<string>();
+        [Tooltip("UNKNOWN이 HINT, PARTIAL, SOLVED 단계로 열릴 때 터미널에 표시할 토큰 설정입니다.")]
         public FirstContactStageTexts stageTexts = new();
 
         public string NormalizedId => NormalizeUnknownId(id);
@@ -87,20 +108,26 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     [Serializable]
     public sealed class FirstContactOfficerDialogueKeys
     {
+        [Tooltip("질문이 처음 표시될 때 출력할 과학장교 대사의 localization key입니다.")]
         public string initial;
+        [Tooltip("질문이 충분히 해석되어 답변 가능 상태일 때 출력할 과학장교 대사의 localization key입니다.")]
         public string readyToAnswer;
+        [Tooltip("플레이어 답변을 송신한 뒤 출력할 과학장교 대사의 localization key입니다.")]
         public string answerSent;
     }
 
     [Serializable]
     public sealed class FirstContactQuestionDefinition
     {
+        [Tooltip("질문을 구분하는 안정적인 ID입니다.")]
         public string questionId = "fc-q001";
-        [Tooltip("Internal-only natural-language intent. Never shown directly to the player.")]
+        [Tooltip("내부 확인용 자연어 의도입니다. 플레이어에게 직접 보여주면 안 됩니다.")]
         [TextArea(1, 3)] public string internalIntent;
-        [Tooltip("Primitive alien token stream shown in the terminal.")]
+        [Tooltip("터미널에 표시할 외계인의 원시 토큰 배열입니다.")]
         public string[] primitiveTokens = Array.Empty<string>();
+        [Tooltip("이 질문에 포함된 UNKNOWN 슬롯 정의 목록입니다.")]
         public FirstContactUnknownSlotDefinition[] unknownSlots = Array.Empty<FirstContactUnknownSlotDefinition>();
+        [Tooltip("이 질문의 각 타이밍에 출력할 과학장교 대사 localization key 목록입니다.")]
         public FirstContactOfficerDialogueKeys dialogueKeys = new();
     }
 
@@ -109,6 +136,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         menuName = "DoodleDiplomacy/First Contact/Question Set")]
     public sealed class FirstContactQuestionSet : ScriptableObject
     {
+        [Tooltip("파이프라인 질문 생성이 실패했을 때 순서대로 사용할 authored 질문 목록입니다.")]
         public FirstContactQuestionDefinition[] questions = Array.Empty<FirstContactQuestionDefinition>();
 
         public bool TryGetQuestion(int index, out FirstContactQuestionDefinition question)

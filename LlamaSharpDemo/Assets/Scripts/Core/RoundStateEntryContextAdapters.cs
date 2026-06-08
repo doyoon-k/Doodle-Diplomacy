@@ -24,6 +24,7 @@ namespace DoodleDiplomacy.Core
         public TitleScreenController TitleScreenController => _context.TitleScreenController;
         public RoundHintPresenter HintPresenter => _context.HintPresenter;
         public void RebuildRuntimeIntroSequence() => _context.RebuildRuntimeIntroSequence();
+        public void OnIntroComplete() => _context.OnIntroComplete();
     }
 
     internal sealed class RoundPreparationStateEntryContextAdapter : IRoundPreparationStateEntryContext

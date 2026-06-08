@@ -64,9 +64,14 @@ namespace DoodleDiplomacy.Dialogue
 
         public void PlaySequence(DialogueSequence sequence, params L10nArg[] args)
         {
+            PlaySequence(sequence, null, args);
+        }
+
+        public void PlaySequence(DialogueSequence sequence, Action onComplete, params L10nArg[] args)
+        {
             if (sequence == null) return;
             if (_playbackCoroutine != null) StopCoroutine(_playbackCoroutine);
-            _playbackCoroutine = StartCoroutine(PlaySequenceRoutine(sequence, args));
+            _playbackCoroutine = StartCoroutine(PlaySequenceRoutine(sequence, args, onComplete));
         }
 
         public IEnumerator PlaySequenceAndWait(DialogueSequence sequence, params L10nArg[] args)
@@ -89,13 +94,17 @@ namespace DoodleDiplomacy.Dialogue
             HideAll();
         }
 
-        private IEnumerator PlaySequenceRoutine(DialogueSequence sequence, IReadOnlyList<L10nArg> args)
+        private IEnumerator PlaySequenceRoutine(
+            DialogueSequence sequence,
+            IReadOnlyList<L10nArg> args,
+            Action onComplete)
         {
             foreach (var line in sequence.lines)
                 yield return StartCoroutine(PlayLine(line, args));
 
             HideAll();
             _playbackCoroutine = null;
+            onComplete?.Invoke();
             OnSequenceComplete?.Invoke();
         }
 

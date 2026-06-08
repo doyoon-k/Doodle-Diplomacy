@@ -95,8 +95,6 @@ namespace DoodleDiplomacy.Core
         [Min(0f)]
         [Tooltip("Maximum seconds to wait for first-round AI prefetch before allowing play to continue.")]
         [SerializeField] private float firstRoundPrefetchTimeoutSeconds = DefaultFirstRoundPrefetchTimeoutSeconds;
-        [Tooltip("Legacy compatibility only. When enabled, this RoundManager runs by itself in scenes without a GameplayModeHost.")]
-        [SerializeField] private bool runStandaloneWithoutGameplayHost;
 
         [Header("Events")]
         public GameStateUnityEvent OnStateChanged;
@@ -117,7 +115,6 @@ namespace DoodleDiplomacy.Core
         private bool _reportedMissingInteractionStateService;
         private bool _hasBoundInspectorFallbackInteractions;
         private bool _runtimeInitialized;
-        private bool _enteredByGameplayHost;
 
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? "object-pair-drawing" : modeId;
         public GameState CurrentState => _services.FlowController?.CurrentState ?? GameState.Title;
@@ -240,12 +237,6 @@ namespace DoodleDiplomacy.Core
             ResolveAiGateway();
         }
 
-        private void Start()
-        {
-            if (runStandaloneWithoutGameplayHost && GameplayModeHost.Instance == null)
-                InitializeRuntime();
-        }
-
         private void OnDestroy()
         {
             _services.StartupFlow?.Stop();
@@ -259,16 +250,8 @@ namespace DoodleDiplomacy.Core
             }
         }
 
-        private void Update()
-        {
-            if (runStandaloneWithoutGameplayHost && !_enteredByGameplayHost && GameplayModeHost.Instance == null)
-                Tick(Time.deltaTime);
-        }
-
         public void Enter(GameplayModeContext context)
         {
-            _enteredByGameplayHost = true;
-
             if (context != null)
             {
                 ConfigureDrawingFeature(context.Drawing);
@@ -290,7 +273,6 @@ namespace DoodleDiplomacy.Core
 
         public void Exit()
         {
-            _enteredByGameplayHost = false;
             _services.StartupFlow?.Stop();
             UnsubscribeFromBridgeEvents();
         }

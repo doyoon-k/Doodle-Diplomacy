@@ -72,6 +72,8 @@ namespace DoodleDiplomacy.Gameplay
         public void SetBrushColor(Color color) => _board?.SetBrushColor(color);
         public void ShowRecognitionLabel(string label) => _board?.ShowRecognitionLabel(label);
         public void ClearRecognitionLabel() => _board?.ClearRecognitionLabel();
+        public void ShowInstructionLabel(string label) => _board?.ShowInstructionLabel(label);
+        public void ClearInstructionLabel() => _board?.ClearInstructionLabel();
         public bool Undo() => _board != null && _board.Undo();
         public bool Redo() => _board != null && _board.Redo();
 

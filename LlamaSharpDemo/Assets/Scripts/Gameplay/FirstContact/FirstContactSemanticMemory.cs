@@ -73,11 +73,26 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     false);
             }
 
-            float score = ScoreAgainstAnchorSet(card.Embedding, slot.AnchorSet);
+            float score = ScoreCardAgainstSlot(card, slot);
             FirstContactTranslationStage nextStage = DetermineStage(score);
             FirstContactTranslationStage previous = slot.Stage;
             bool changed = slot.TryAdvanceTo(nextStage, score);
             return new FirstContactResolutionResult(slot, previous, slot.Stage, score, changed);
+        }
+
+        public float ScoreCardAgainstSlot(SemanticCardRecord card, UnknownSlot slot)
+        {
+            if (card == null || slot == null || card.Embedding == null || slot.AnchorSet == null || !slot.AnchorSet.IsValid)
+            {
+                return 0f;
+            }
+
+            return ScoreAgainstAnchorSet(card.Embedding, slot.AnchorSet);
+        }
+
+        public FirstContactTranslationStage DetermineStageForScore(float score)
+        {
+            return DetermineStage(score);
         }
 
         public bool ApplyAutomaticClusterHints(AlienQuestion question, FirstContactSemanticMemory memory)

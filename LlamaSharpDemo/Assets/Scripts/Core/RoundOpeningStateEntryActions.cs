@@ -28,7 +28,8 @@ namespace DoodleDiplomacy.Core
 
             _context.RebuildRuntimeIntroSequence();
             _context.DialogueSystem?.PlaySequence(
-                _context.RuntimeIntroSequence != null ? _context.RuntimeIntroSequence : _context.IntroSequence);
+                _context.RuntimeIntroSequence != null ? _context.RuntimeIntroSequence : _context.IntroSequence,
+                _context.OnIntroComplete);
         }
 
         public void EnterEnding()

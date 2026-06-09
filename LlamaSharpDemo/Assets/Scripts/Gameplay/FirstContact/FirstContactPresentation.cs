@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Devices;
 using DoodleDiplomacy.Localization;
@@ -12,6 +13,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         private readonly TerminalDisplay _terminalDisplay;
         private readonly TerminalBrainwaveDisplay _brainwaveDisplay;
+        private readonly FirstContactSemanticMapDisplay _semanticMapDisplay;
         private readonly FirstContactDebugSettings _debugSettings;
         private bool _hasShownQuestionOnce;
 
@@ -24,32 +26,164 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 ? terminalDisplay.GetComponent<TerminalBrainwaveDisplay>() ??
                   terminalDisplay.GetComponentInChildren<TerminalBrainwaveDisplay>(true)
                 : null;
+            _semanticMapDisplay = ResolveSemanticMapDisplay(terminalDisplay);
             _debugSettings = debugSettings;
         }
 
         public void Clear()
         {
-            _brainwaveDisplay?.Clear();
+            ClearVisualOverlays();
             _terminalDisplay?.Clear();
             _hasShownQuestionOnce = false;
         }
 
         public void ShowQuestion(AlienQuestion question, bool instant = false, string fallbackReason = null)
         {
+            ClearVisualOverlays();
+            _terminalDisplay?.ShowText(
+                BuildQuestionText(question, fallbackReason),
+                instant || _hasShownQuestionOnce);
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowQuestionChoices(
+            AlienQuestion question,
+            int selectedIndex,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            bool instant = true,
+            string fallbackReason = null)
+        {
             _brainwaveDisplay?.Clear();
-            string text = $"[ALIEN REQUEST]\n\n{question?.BuildDisplayLine() ?? string.Empty}";
-            if (_debugSettings != null && _debugSettings.showQuestionFallbackReason && !string.IsNullOrWhiteSpace(fallbackReason))
+            ShowMiniMap(mapSnapshot, semanticSettings);
+            string text = BuildQuestionText(question, fallbackReason);
+            text += "\n\n[RESPONSE CHANNEL READY]\n\n";
+
+            int choiceIndex = 0;
+            if (question != null)
             {
-                text += $"\n\n[FALLBACK]\n{fallbackReason}";
+                for (int i = 0; i < question.UnknownSlots.Count; i++)
+                {
+                    string id = question.UnknownSlots[i].Id;
+                    text += BuildChoiceLine(choiceIndex, selectedIndex, $"DECODE {id}");
+                    choiceIndex++;
+                }
             }
 
-            _terminalDisplay?.ShowText(text, instant || _hasShownQuestionOnce);
+            text += BuildChoiceLine(choiceIndex, selectedIndex, "VIEW SEMANTIC MAP");
+            choiceIndex++;
+            text += BuildChoiceLine(choiceIndex, selectedIndex, "TRANSMIT ANSWER");
+            text += "\nINPUT: 1-" + Mathf.Max(1, choiceIndex + 1) + " / ENTER";
+
+            _terminalDisplay?.ShowText(text, instant);
             _hasShownQuestionOnce = true;
+        }
+
+        public void ShowSemanticMapChoices(
+            AlienQuestion question,
+            int selectedIndex,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            bool instant = true)
+        {
+            _brainwaveDisplay?.Clear();
+            ShowFullMap(mapSnapshot, semanticSettings);
+
+            string text =
+                "[SEMANTIC MAP]\n\n" +
+                "SESSION MEMORY\n\n";
+
+            int choiceIndex = 0;
+            text += BuildChoiceLine(choiceIndex, selectedIndex, "BACK TO REQUEST");
+            choiceIndex++;
+
+            if (question != null)
+            {
+                for (int i = 0; i < question.UnknownSlots.Count; i++)
+                {
+                    string id = question.UnknownSlots[i].Id;
+                    text += BuildChoiceLine(choiceIndex, selectedIndex, $"DECODE {id}");
+                    choiceIndex++;
+                }
+            }
+
+            text += BuildChoiceLine(choiceIndex, selectedIndex, "TRANSMIT ANSWER");
+            text += "\nINPUT: 1-" + Mathf.Max(1, choiceIndex + 1) + " / ENTER";
+            _terminalDisplay?.ShowText(text, instant);
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowQuestionChoiceEcho(AlienQuestion question, string choiceLabel, bool instant = true)
+        {
+            ClearVisualOverlays();
+            string text = BuildQuestionText(question);
+            text += "\n\n[INPUT ACCEPTED]\n\n";
+            text += $"> {choiceLabel ?? string.Empty}";
+            _terminalDisplay?.ShowText(text, instant);
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowTabletLinkOpen(
+            AlienQuestion question,
+            FirstContactCardSource source,
+            string unknownId,
+            bool instant = true)
+        {
+            ClearVisualOverlays();
+            string text = BuildQuestionText(question);
+            text += "\n\n[TABLET LINK OPEN]\n\n";
+            text += $"CHANNEL: {BuildChannelLabel(source, unknownId)}\n";
+            text += "DRAW ONE OBJECT\n\n";
+            text += "SUBMIT: ENTER";
+            _terminalDisplay?.ShowText(text, instant);
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowTabletImageReceived(
+            FirstContactCardSource source,
+            string unknownId,
+            bool instant = true)
+        {
+            ClearVisualOverlays();
+            string text =
+                "[TABLET IMAGE RECEIVED]\n\n" +
+                $"CHANNEL: {BuildChannelLabel(source, unknownId)}\n\n" +
+                "ANALYZING VISUAL SIGNAL...";
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowInputRejected(string reason, int selectedIndex, bool instant = true)
+        {
+            ClearVisualOverlays();
+            string text =
+                "[INPUT REJECTED]\n\n" +
+                $"{NormalizeTerminalLine(reason, "DRAW ONE OBJECT")}\n\n" +
+                BuildChoiceLine(0, selectedIndex, "REDRAW") +
+                "\nINPUT: 1 / ENTER";
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowLabelReview(
+            FirstContactCardSource source,
+            string unknownId,
+            string label,
+            int selectedIndex,
+            bool instant = true)
+        {
+            ClearVisualOverlays();
+            string text =
+                "[VISUAL LABEL]\n\n" +
+                $"{NormalizeTerminalLine(label, "UNKNOWN").ToUpperInvariant()}\n\n" +
+                $"CHANNEL: {BuildChannelLabel(source, unknownId)}\n\n" +
+                BuildChoiceLine(0, selectedIndex, "ACCEPT") +
+                BuildChoiceLine(1, selectedIndex, "REDRAW") +
+                "\nINPUT: 1-2 / ENTER";
+            _terminalDisplay?.ShowText(text, instant);
         }
 
         public void ShowDecodeTarget(AlienQuestion question, string unknownId)
         {
-            _brainwaveDisplay?.Clear();
+            ClearVisualOverlays();
             string line = question?.BuildDisplayLine() ?? string.Empty;
             string id = FirstContactUnknownSlotDefinition.NormalizeUnknownId(unknownId);
             string text = $"[DECODE SAMPLE]\n\n{line}\n\n<{id}>";
@@ -63,6 +197,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
+            _semanticMapDisplay?.Clear();
             string clusterLine = cluster != null ? $"[{cluster.Id}]" : "[NO CLUSTER]";
             string text =
                 $"[SEMANTIC CARD]\n\n" +
@@ -93,7 +228,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
-            _brainwaveDisplay?.Clear();
+            ClearVisualOverlays();
             string members = BuildMemberLine(cluster);
             string text =
                 $"[{cluster.Id}]\n" +
@@ -102,11 +237,86 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _terminalDisplay?.ShowText(text);
         }
 
-        public void ShowAnswerTransmitted(SemanticCardRecord card)
+        public void ShowSemanticAnalysis(
+            SemanticCardRecord card,
+            SemanticClusterRecord cluster,
+            IReadOnlyList<FirstContactSlotScore> slotScores,
+            FirstContactResolutionResult? activeResolution,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            bool instant = true)
         {
             _brainwaveDisplay?.Clear();
+            ShowFullMap(mapSnapshot, semanticSettings);
+            string label = card != null ? GetDisplayLabel(card) : string.Empty;
+            string text =
+                "[SEMANTIC RESONANCE]\n\n" +
+                $"LABEL: {NormalizeTerminalLine(label, "UNKNOWN").ToUpperInvariant()}\n";
+
+            if (activeResolution.HasValue && activeResolution.Value.Slot != null)
+            {
+                FirstContactResolutionResult result = activeResolution.Value;
+                text += $"TARGET SLOT: {result.Slot.Id}\n";
+                text += $"RESONANCE: {BuildResonanceLabel(result.Score, semanticSettings)}\n";
+                text += $"DISTANCE: {BuildDistanceLabel(result.Score, semanticSettings)}\n";
+                text += BuildTokenShiftLine(result);
+            }
+            else
+            {
+                text += "TARGET SLOT: NONE\n";
+                text += "RESONANCE: STORED\n";
+                text += "DISTANCE: SESSION RELATIVE\n";
+            }
+
+            if (cluster != null)
+            {
+                string stability = cluster.IsStable ? "STABLE" : "FORMING";
+                text += $"CLUSTER: {cluster.Id} / {stability}\n";
+            }
+
+            text += BuildSlotScoreBlock(slotScores, semanticSettings);
+
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowAnswerTransmitted(SemanticCardRecord card)
+        {
+            ClearVisualOverlays();
             string label = card != null ? GetDisplayLabel(card) : string.Empty;
             _terminalDisplay?.ShowText($"[ANSWER TRANSMITTED]\n\n{label}");
+        }
+
+        private string BuildQuestionText(AlienQuestion question, string fallbackReason = null)
+        {
+            string text = $"[ALIEN REQUEST]\n\n{question?.BuildDisplayLine() ?? string.Empty}";
+            if (_debugSettings != null && _debugSettings.showQuestionFallbackReason && !string.IsNullOrWhiteSpace(fallbackReason))
+            {
+                text += $"\n\n[FALLBACK]\n{fallbackReason}";
+            }
+
+            return text;
+        }
+
+        private static string BuildChoiceLine(int choiceIndex, int selectedIndex, string label)
+        {
+            string marker = choiceIndex == selectedIndex ? ">" : " ";
+            return $"{marker} {choiceIndex + 1}. {label}\n";
+        }
+
+        private static string BuildChannelLabel(FirstContactCardSource source, string unknownId)
+        {
+            if (source == FirstContactCardSource.Answer)
+            {
+                return "TRANSMIT ANSWER";
+            }
+
+            string id = FirstContactUnknownSlotDefinition.NormalizeUnknownId(unknownId);
+            return string.IsNullOrWhiteSpace(id) ? "DECODE UNKNOWN" : $"DECODE {id}";
+        }
+
+        private static string NormalizeTerminalLine(string value, string fallback)
+        {
+            return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
         }
 
         private static string GetDisplayLabel(SemanticCardRecord card)
@@ -148,11 +358,170 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             return line;
         }
+
+        private static string BuildTokenShiftLine(FirstContactResolutionResult result)
+        {
+            if (result.Slot == null)
+            {
+                return string.Empty;
+            }
+
+            if (!result.Changed)
+            {
+                return "TOKEN SHIFT: NO CHANGE\n";
+            }
+
+            FirstContactStageTexts stageTexts = result.Slot.Definition?.stageTexts ?? new FirstContactStageTexts();
+            string before = stageTexts.GetDisplayText(result.PreviousStage, result.Slot.Id);
+            string after = stageTexts.GetDisplayText(result.NewStage, result.Slot.Id);
+            return $"TOKEN SHIFT: {before} -> {after}\n";
+        }
+
+        private string BuildSlotScoreBlock(
+            IReadOnlyList<FirstContactSlotScore> slotScores,
+            FirstContactSemanticSettings settings)
+        {
+            if (slotScores == null || slotScores.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            string text = "\n[SLOT READINGS]\n";
+            for (int i = 0; i < slotScores.Count; i++)
+            {
+                FirstContactSlotScore score = slotScores[i];
+                if (score.Slot == null)
+                {
+                    continue;
+                }
+
+                string marker = score.IsActive ? ">" : " ";
+                text += $"{marker} {score.Slot.Id}: {BuildResonanceLabel(score.Score, settings)}";
+                if (_debugSettings != null && _debugSettings.showScoresOnTerminal)
+                {
+                    text += $" ({score.Score:0.000})";
+                }
+
+                text += "\n";
+            }
+
+            return text;
+        }
+
+        private static string BuildResonanceLabel(float score, FirstContactSemanticSettings settings)
+        {
+            settings ??= ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            if (score >= settings.solvedThreshold)
+            {
+                return "LOCK";
+            }
+
+            if (score >= settings.partialThreshold)
+            {
+                return "STRONG";
+            }
+
+            if (score >= settings.hintThreshold)
+            {
+                return "FAINT";
+            }
+
+            if (score >= Mathf.Min(0.28f, settings.hintThreshold))
+            {
+                return "WEAK";
+            }
+
+            return "NONE";
+        }
+
+        private static string BuildDistanceLabel(float score, FirstContactSemanticSettings settings)
+        {
+            settings ??= ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            if (score >= settings.solvedThreshold)
+            {
+                return "NEAR";
+            }
+
+            if (score >= settings.partialThreshold)
+            {
+                return "CLOSE";
+            }
+
+            if (score >= settings.hintThreshold)
+            {
+                return "ADJACENT";
+            }
+
+            if (score >= Mathf.Min(0.28f, settings.hintThreshold))
+            {
+                return "REMOTE";
+            }
+
+            return "FAR";
+        }
+
+        private void ShowMiniMap(
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings)
+        {
+            if (semanticSettings != null && !semanticSettings.showSemanticMapFeedback)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            if (mapSnapshot == null || mapSnapshot.Nodes.Count == 0)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            _semanticMapDisplay?.ShowMiniMap(mapSnapshot);
+        }
+
+        private void ShowFullMap(
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings)
+        {
+            if (semanticSettings != null && !semanticSettings.showSemanticMapFeedback)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            if (mapSnapshot == null || mapSnapshot.Nodes.Count == 0)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            _semanticMapDisplay?.ShowFullMap(mapSnapshot);
+        }
+
+        private void ClearVisualOverlays()
+        {
+            _brainwaveDisplay?.Clear();
+            _semanticMapDisplay?.Clear();
+        }
+
+        private static FirstContactSemanticMapDisplay ResolveSemanticMapDisplay(TerminalDisplay terminalDisplay)
+        {
+            if (terminalDisplay == null)
+            {
+                return null;
+            }
+
+            FirstContactSemanticMapDisplay display =
+                terminalDisplay.GetComponent<FirstContactSemanticMapDisplay>() ??
+                terminalDisplay.GetComponentInChildren<FirstContactSemanticMapDisplay>(true);
+            return display != null
+                ? display
+                : terminalDisplay.gameObject.AddComponent<FirstContactSemanticMapDisplay>();
+        }
     }
 
     public interface IFirstContactActionPresenter
     {
-        void ShowQuestionActions(AlienQuestion question, Action<string> onDecode, Action onAnswer);
         void ShowSubmit(string prompt, Action onSubmit);
         void ShowConfirmation(string prompt, string label, Action onConfirm, Action onRedraw);
         void Hide();
@@ -165,25 +534,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private GameObject _panel;
         private TextMeshProUGUI _promptText;
         private RectTransform _buttonRoot;
-
-        public void ShowQuestionActions(AlienQuestion question, Action<string> onDecode, Action onAnswer)
-        {
-            EnsureBuilt();
-            ClearButtons();
-            _promptText.text = string.Empty;
-
-            if (question != null)
-            {
-                for (int i = 0; i < question.UnknownSlots.Count; i++)
-                {
-                    string id = question.UnknownSlots[i].Id;
-                    AddButton($"DECODE {id}", () => onDecode?.Invoke(id), 220f);
-                }
-            }
-
-            AddButton(L10n.T("ui.first_contact.transmit_answer", "TRANSMIT ANSWER"), () => onAnswer?.Invoke(), 260f);
-            SetVisible(true);
-        }
 
         public void ShowSubmit(string prompt, Action onSubmit)
         {

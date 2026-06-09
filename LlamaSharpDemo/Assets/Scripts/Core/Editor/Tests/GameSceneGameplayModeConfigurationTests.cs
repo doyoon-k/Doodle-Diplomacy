@@ -1,10 +1,13 @@
 using DoodleDiplomacy.Gameplay;
 using DoodleDiplomacy.Gameplay.FirstContact;
+using DoodleDiplomacy.Dialogue;
+using DoodleDiplomacy.Interaction;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace DoodleDiplomacy.Core.Editor.Tests
 {
@@ -35,11 +38,6 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             RoundManager roundManager = Object.FindFirstObjectByType<RoundManager>();
             Assert.IsNotNull(roundManager, "Object-pair RoundManager should remain available in GameScene.");
             Assert.AreEqual("object-pair-drawing", roundManager.ModeId);
-
-            var serializedRoundManager = new SerializedObject(roundManager);
-            Assert.IsFalse(
-                serializedRoundManager.FindProperty("runStandaloneWithoutGameplayHost").boolValue,
-                "RoundManager must not auto-run in GameScene; GameFlowDirector/GameplayModeHost owns mode startup.");
         }
 
         [Test]
@@ -96,6 +94,32 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
+        public void GameSceneDoesNotRouteSharedSceneEventsDirectlyToRoundManager()
+        {
+            EditorSceneManager.OpenScene(GameScenePath);
+
+            RoundManager roundManager = Object.FindFirstObjectByType<RoundManager>();
+            Assert.IsNotNull(roundManager, "GameScene should still contain the object-pair RoundManager mode.");
+
+            DialogueSystem dialogueSystem = Object.FindFirstObjectByType<DialogueSystem>();
+            Assert.IsNotNull(dialogueSystem, "GameScene must contain a DialogueSystem.");
+            AssertNoPersistentTarget(
+                dialogueSystem.OnSequenceComplete,
+                roundManager,
+                "DialogueSystem.OnSequenceComplete");
+
+            foreach (InteractableObject interactable in Object.FindObjectsByType<InteractableObject>(
+                         FindObjectsInactive.Include,
+                         FindObjectsSortMode.None))
+            {
+                AssertNoPersistentTarget(
+                    interactable.OnInteracted,
+                    roundManager,
+                    $"{interactable.name}.OnInteracted");
+            }
+        }
+
+        [Test]
         public void GameplayFlowScenesAreEnabledInBuildSettings()
         {
             AssertSceneEnabled(MainMenuScenePath);
@@ -123,6 +147,18 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             }
 
             Assert.Fail($"{scenePath} is missing from Build Settings.");
+        }
+
+        private static void AssertNoPersistentTarget(UnityEventBase unityEvent, Object disallowedTarget, string owner)
+        {
+            Assert.IsNotNull(unityEvent, $"{owner} must not be null.");
+            for (int i = 0; i < unityEvent.GetPersistentEventCount(); i++)
+            {
+                Assert.AreNotEqual(
+                    disallowedTarget,
+                    unityEvent.GetPersistentTarget(i),
+                    $"{owner} must not call RoundManager directly; route through GameplayModeHost/active mode ownership instead.");
+            }
         }
     }
 }

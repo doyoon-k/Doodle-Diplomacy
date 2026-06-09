@@ -36,6 +36,7 @@ namespace DoodleDiplomacy.Core
         void ReturnToWaitingForRoundAfterPresentingFailure();
         void CachePreviewResult(string analysis);
         void ChangeStateFromEntryAction(GameState state);
+        void OnIntroComplete();
         void OnPresentingComplete();
         void OnSubmitComplete();
         void OnReactionComplete();
@@ -55,6 +56,7 @@ namespace DoodleDiplomacy.Core
         RoundHintPresenter HintPresenter { get; }
 
         void RebuildRuntimeIntroSequence();
+        void OnIntroComplete();
     }
 
     internal interface IRoundPreparationStateEntryContext

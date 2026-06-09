@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactVlmSettings
   visualClassifierPipeline: {fileID: 0}
   imageStateKey: reference_image
+  captureRetryCount: 2
+  classifierRetryCount: 2
+  technicalRetryDelaySeconds: 0.15
   useLocalizedLabelForDisplay: 1
   rejectBlank: 1
   rejectWrittenText: 1

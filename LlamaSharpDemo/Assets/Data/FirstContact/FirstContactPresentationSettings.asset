@@ -20,8 +20,6 @@ MonoBehaviour:
   choiceConfirmEchoSeconds: 1
   tabletLinkOpenHoldSeconds: 1.1
   cardRevealDelay: 0
-  waveformLockSeconds: 3
-  semanticMapHoldSeconds: 1.25
   scanMinimumSeconds: 0.65
   labelRevealDelay: 0.15
   answerTransmitHoldSeconds: 0.85

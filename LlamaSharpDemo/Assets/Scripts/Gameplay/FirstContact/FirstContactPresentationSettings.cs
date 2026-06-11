@@ -24,10 +24,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Min(0f)] public float tabletLinkOpenHoldSeconds = 1.1f;
         [Tooltip("그림을 확정한 뒤, 의미 카드가 터미널에 나타나기 전까지 기다리는 시간입니다.")]
         [Min(0f)] public float cardRevealDelay = 0.35f;
-        [Tooltip("의미 카드의 파형을 터미널에 고정해서 보여주는 시간입니다.")]
-        [Min(0.05f)] public float waveformLockSeconds = 0.75f;
-        [Tooltip("그림과 외계어 슬롯 사이의 의미공간 분석 화면을 유지하는 시간입니다.")]
-        [Min(0f)] public float semanticMapHoldSeconds = 1.25f;
 
         [Header("Drawing")]
         [Tooltip("VLM 라벨링이 빨리 끝나도 최소한 분석 중 상태로 유지하는 시간입니다.")]

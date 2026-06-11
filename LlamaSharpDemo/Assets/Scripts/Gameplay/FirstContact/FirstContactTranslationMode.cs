@@ -56,6 +56,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private int _selectedTerminalChoiceIndex;
         private string _currentFallbackReason = string.Empty;
         private string _currentRejectedInputReason = string.Empty;
+        private bool _terminalContinueRequested;
 
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? DefaultModeId : modeId.Trim();
         public GameState CurrentState => _currentGameState;
@@ -583,10 +584,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _terminalPresenter?.ShowCard(card, cluster);
-            if (presentation.waveformLockSeconds > 0f)
-            {
-                yield return new WaitForSeconds(presentation.waveformLockSeconds);
-            }
+            yield return WaitForTerminalContinueRoutine();
 
             if (_pendingCardSource == FirstContactCardSource.DecodeSample)
             {
@@ -622,11 +620,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     result,
                     mapSnapshot,
                     GetSemanticSettings());
-                float semanticMapHoldSeconds = GetPresentationSettings().semanticMapHoldSeconds;
-                if (semanticMapHoldSeconds > 0f)
-                {
-                    yield return new WaitForSeconds(semanticMapHoldSeconds);
-                }
+                yield return WaitForTerminalContinueRoutine();
             }
 
             if (cluster != null && cluster.IsStable)
@@ -662,11 +656,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     null,
                     mapSnapshot,
                     GetSemanticSettings());
-                float semanticMapHoldSeconds = GetPresentationSettings().semanticMapHoldSeconds;
-                if (semanticMapHoldSeconds > 0f)
-                {
-                    yield return new WaitForSeconds(semanticMapHoldSeconds);
-                }
+                yield return WaitForTerminalContinueRoutine();
             }
 
             _context?.SharedMonitorDisplay?.ShowSubmission(card.Texture);
@@ -740,7 +730,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 BuildSemanticMapSnapshot(GetMostRecentCard(), string.Empty),
                 GetSemanticSettings(),
                 instant: true,
-                _currentFallbackReason);
+                fallbackReason: _currentFallbackReason,
+                initialProbeUnknownId: GetInitialProbeUnknownId(question));
         }
 
         private void EnableSemanticMapChoices()
@@ -773,6 +764,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _terminalChoiceInputEnabled = true;
             _terminalChoiceMode = FirstContactTerminalChoiceMode.RejectedInput;
             _terminalPresenter?.ShowInputRejected(reason, _selectedTerminalChoiceIndex);
+        }
+
+        private void EnableContinueChoice()
+        {
+            _terminalContinueRequested = false;
+            _selectedTerminalChoiceIndex = 0;
+            _terminalChoiceInputEnabled = true;
+            _terminalChoiceMode = FirstContactTerminalChoiceMode.Continue;
         }
 
         private void DisableTerminalChoices()
@@ -907,12 +906,45 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             return _terminalChoiceMode switch
             {
-                FirstContactTerminalChoiceMode.QuestionActions => (_session?.CurrentQuestion?.UnknownSlots.Count ?? 0) + 2,
+                FirstContactTerminalChoiceMode.QuestionActions => GetQuestionActionChoiceCount(),
                 FirstContactTerminalChoiceMode.SemanticMap => (_session?.CurrentQuestion?.UnknownSlots.Count ?? 0) + 2,
                 FirstContactTerminalChoiceMode.LabelReview => 2,
                 FirstContactTerminalChoiceMode.RejectedInput => 1,
+                FirstContactTerminalChoiceMode.Continue => 1,
                 _ => 0
             };
+        }
+
+        private int GetQuestionActionChoiceCount()
+        {
+            AlienQuestion question = _session?.CurrentQuestion;
+            if (!string.IsNullOrWhiteSpace(GetInitialProbeUnknownId(question)))
+            {
+                return 1;
+            }
+
+            return (question?.UnknownSlots.Count ?? 0) + 2;
+        }
+
+        private string GetInitialProbeUnknownId(AlienQuestion question)
+        {
+            if (question == null ||
+                _session?.RecentCards == null ||
+                _session.RecentCards.Count > 0)
+            {
+                return string.Empty;
+            }
+
+            for (int i = 0; i < question.UnknownSlots.Count; i++)
+            {
+                UnknownSlot slot = question.UnknownSlots[i];
+                if (slot != null && slot.Stage != FirstContactTranslationStage.Solved)
+                {
+                    return slot.Id;
+                }
+            }
+
+            return string.Empty;
         }
 
         private void SelectTerminalChoice(int choiceIndex)
@@ -931,6 +963,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 case FirstContactTerminalChoiceMode.RejectedInput:
                     SelectRejectedInputChoice(choiceIndex);
                     break;
+                case FirstContactTerminalChoiceMode.Continue:
+                    SelectContinueChoice(choiceIndex);
+                    break;
             }
         }
 
@@ -940,6 +975,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             int choiceCount = GetTerminalChoiceCount();
             if (question == null || choiceIndex < 0 || choiceIndex >= choiceCount)
             {
+                return;
+            }
+
+            string initialProbeUnknownId = GetInitialProbeUnknownId(question);
+            if (!string.IsNullOrWhiteSpace(initialProbeUnknownId))
+            {
+                DisableTerminalChoices();
+                StopActiveRoutine();
+                _routine = StartCoroutine(ConfirmTerminalChoiceRoutine(
+                    FirstContactCardSource.DecodeSample,
+                    initialProbeUnknownId));
                 return;
             }
 
@@ -1017,6 +1063,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             RedrawPending();
         }
 
+        private void SelectContinueChoice(int choiceIndex)
+        {
+            if (choiceIndex != 0)
+            {
+                return;
+            }
+
+            _terminalContinueRequested = true;
+            DisableTerminalChoices();
+        }
+
         private void RefreshActiveTerminalChoices()
         {
             switch (_terminalChoiceMode)
@@ -1028,7 +1085,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                         BuildSemanticMapSnapshot(GetMostRecentCard(), string.Empty),
                         GetSemanticSettings(),
                         instant: true,
-                        _currentFallbackReason);
+                        fallbackReason: _currentFallbackReason,
+                        initialProbeUnknownId: GetInitialProbeUnknownId(_session?.CurrentQuestion));
                     break;
                 case FirstContactTerminalChoiceMode.SemanticMap:
                     _terminalPresenter?.ShowSemanticMapChoices(
@@ -1049,6 +1107,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                         _currentRejectedInputReason,
                         _selectedTerminalChoiceIndex);
                     break;
+                case FirstContactTerminalChoiceMode.Continue:
+                    break;
             }
         }
 
@@ -1058,8 +1118,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             actionButtonPanel?.Hide();
             string choiceLabel = source == FirstContactCardSource.Answer
-                ? "TRANSMIT ANSWER"
-                : $"DECODE {FirstContactUnknownSlotDefinition.NormalizeUnknownId(unknownId)}";
+                ? FirstContactTerminalPresenter.AnswerActionLabel
+                : FirstContactTerminalPresenter.BuildProbeActionLabel(unknownId);
             _terminalPresenter?.ShowQuestionChoiceEcho(_session?.CurrentQuestion, choiceLabel);
 
             float echoSeconds = GetPresentationSettings().choiceConfirmEchoSeconds;
@@ -1322,6 +1382,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
+        private IEnumerator WaitForTerminalContinueRoutine()
+        {
+            EnableContinueChoice();
+            while (!_terminalContinueRequested)
+            {
+                yield return null;
+            }
+        }
+
         private void ChangeState(FirstContactModeState state)
         {
             _modeState = state;
@@ -1442,7 +1511,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             QuestionActions,
             SemanticMap,
             LabelReview,
-            RejectedInput
+            RejectedInput,
+            Continue
         }
     }
 

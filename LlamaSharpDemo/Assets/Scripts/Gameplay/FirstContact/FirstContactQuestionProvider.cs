@@ -294,8 +294,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 var slot = new FirstContactUnknownSlotDefinition
                 {
                     id = ReadString(item, "id", "unknownId", "unknown_id"),
-                    targetConcept = ReadString(item, "targetConcept", "target_concept"),
-                    targetAnchors = ReadStringArray(item, "targetAnchors", "target_anchors", "anchors")
+                    targetConcept = ReadString(item, "targetConcept", "target_concept")
                 };
 
                 if (TryGetProperty(item, out JsonElement stages, "stages", "stageTexts", "stage_texts") &&
@@ -546,10 +545,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     return false;
                 }
 
-                if (string.IsNullOrWhiteSpace(slot.targetConcept) &&
-                    (slot.targetAnchors == null || slot.targetAnchors.Length == 0))
+                if (string.IsNullOrWhiteSpace(slot.targetConcept))
                 {
-                    error = $"unknown slot '{slot.id}' is missing target concept/anchors";
+                    error = $"unknown slot '{slot.id}' is missing target concept";
                     return false;
                 }
             }
@@ -573,7 +571,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     {
                         id = "UNKNOWN-01",
                         targetConcept = "important",
-                        targetAnchors = new[] { "important", "valuable", "precious", "value", "treasure", "life" },
                         stageTexts = new FirstContactStageTexts
                         {
                             hint = "[QUALITY?]",
@@ -594,7 +591,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     {
                         id = "UNKNOWN-01",
                         targetConcept = "humanity",
-                        targetAnchors = new[] { "human", "humanity", "people", "person", "your kind", "family" },
                         stageTexts = new FirstContactStageTexts
                         {
                             hint = "[WHO?]",
@@ -615,7 +611,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     {
                         id = "UNKNOWN-01",
                         targetConcept = "response object",
-                        targetAnchors = new[] { "tool", "weapon", "shield", "defense", "protective object", "phone", "door" },
                         stageTexts = new FirstContactStageTexts
                         {
                             hint = "[OBJECT?]",
@@ -636,7 +631,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     {
                         id = "UNKNOWN-01",
                         targetConcept = "fear",
-                        targetAnchors = new[] { "fear", "danger", "death", "fire", "weapon", "monster", "threat" },
                         stageTexts = new FirstContactStageTexts
                         {
                             hint = "[FEELING?]",
@@ -657,7 +651,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     {
                         id = "UNKNOWN-01",
                         targetConcept = "defense",
-                        targetAnchors = new[] { "defense", "protection", "shield", "wall", "helmet", "bunker", "lock", "door", "guard" },
                         stageTexts = new FirstContactStageTexts
                         {
                             hint = "[OBJECT?]",

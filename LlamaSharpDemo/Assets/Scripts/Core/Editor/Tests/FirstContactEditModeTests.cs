@@ -189,12 +189,10 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 };
                 AlienQuestion question = AlienQuestion.FromDefinition(definition, FirstContactQuestionSource.Fallback);
                 UnknownSlot slot = question.FindUnknown("UNKNOWN-01");
-                slot.AnchorSet = new AnchorEmbeddingSet
+                slot.TargetEmbedding = new TargetConceptEmbedding
                 {
                     TargetConcept = "defense",
-                    Anchors = new[] { "defense", "shield" },
-                    AnchorVectors = new[] { Unit(1f, 0f, 0f) },
-                    Centroid = Unit(1f, 0f, 0f)
+                    Vector = Unit(1f, 0f, 0f)
                 };
 
                 var resolver = new FirstContactUnknownResolver(embedding, settings);

@@ -16,7 +16,9 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         private const string MainMenuScenePath = "Assets/Scenes/MainMenuScene.unity";
         private const string GameRootScenePath = "Assets/Scenes/GameRoot.unity";
         private const string GameScenePath = "Assets/Scenes/GameScene.unity";
-        private const string GameFlowPath = "Assets/Data/FirstContactGameFlow.asset";
+        private const string GameFlowPath = "Assets/Data/FirstContact/FirstContactGameFlow.asset";
+        private const string LegacyDay1FlowEntryPath = "Assets/Data/Legacy/Day1Calibration/FlowEntry_Day1Calibration.asset";
+        private const string LegacyObjectPairFlowEntryPath = "Assets/Data/Legacy/ObjectPairDrawing/FlowEntry_CurrentObjectPairDrawing.asset";
 
         [Test]
         public void GameSceneHostUsesDirectGameplayMode()
@@ -32,8 +34,8 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsInstanceOf<MonoBehaviour>(defaultModeObject);
             Assert.IsInstanceOf<IGameplayMode>(defaultModeObject);
             Assert.IsInstanceOf<IGameplaySessionController>(defaultModeObject);
-            Assert.IsInstanceOf<Day1CalibrationMode>(defaultModeObject);
-            Assert.AreEqual("day1-calibration", ((IGameplayMode)defaultModeObject).ModeId);
+            Assert.IsInstanceOf<FirstContactTranslationMode>(defaultModeObject);
+            Assert.AreEqual("first-contact-translation", ((IGameplayMode)defaultModeObject).ModeId);
 
             RoundManager roundManager = Object.FindFirstObjectByType<RoundManager>();
             Assert.IsNotNull(roundManager, "Object-pair RoundManager should remain available in GameScene.");
@@ -50,24 +52,26 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsInstanceOf<IGameplaySceneInstaller>(hub);
             Assert.IsNotNull(hub.GetDefaultModeBehaviour(), "SceneReferenceHub must resolve a default gameplay mode.");
             Assert.IsInstanceOf<IGameplayMode>(hub.GetDefaultModeBehaviour());
-            Assert.IsInstanceOf<Day1CalibrationMode>(hub.GetDefaultModeBehaviour());
+            Assert.IsInstanceOf<FirstContactTranslationMode>(hub.GetDefaultModeBehaviour());
 
             var flow = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.GameFlowAsset>(GameFlowPath);
             Assert.IsInstanceOf<IGameplaySceneModeResolver>(hub);
             var resolver = (IGameplaySceneModeResolver)hub;
             Assert.IsInstanceOf<FirstContactTranslationMode>(resolver.GetModeBehaviour(flow.entries[0]));
-            Assert.IsInstanceOf<RoundManager>(resolver.GetModeBehaviour(flow.entries[2]));
+
+            var legacyDay1 = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.FlowEntryDefinition>(LegacyDay1FlowEntryPath);
+            var legacyObjectPair = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.FlowEntryDefinition>(LegacyObjectPairFlowEntryPath);
+            Assert.IsInstanceOf<Day1CalibrationMode>(resolver.GetModeBehaviour(legacyDay1));
+            Assert.IsInstanceOf<RoundManager>(resolver.GetModeBehaviour(legacyObjectPair));
         }
 
         [Test]
-        public void FirstContactFlowStartsWithFirstContactAndKeepsLegacyEntries()
+        public void FirstContactFlowContainsOnlyActiveFirstContactEntry()
         {
             var flow = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.GameFlowAsset>(GameFlowPath);
             Assert.IsNotNull(flow, "FirstContactGameFlow asset must exist.");
-            Assert.GreaterOrEqual(flow.entries.Length, 3, "Flow should keep Day1/object-pair entries and include First Contact translation.");
+            Assert.AreEqual(1, flow.entries.Length, "Active flow should exclude legacy Day1/object-pair prototype entries.");
             Assert.AreEqual("first-contact-translation", flow.entries[0].entryTag);
-            Assert.AreEqual("day1-calibration", flow.entries[1].entryTag);
-            Assert.AreEqual("object-pair-drawing", flow.entries[2].entryTag);
         }
 
         [Test]

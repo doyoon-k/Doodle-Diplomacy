@@ -52,18 +52,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int i = 0; i < question.UnknownSlots.Count; i++)
             {
                 UnknownSlot slot = question.UnknownSlots[i];
-                AnchorEmbeddingSet anchorSet = null;
-                yield return _embeddingService.BuildAnchorSet(
+                TargetConceptEmbedding targetEmbedding = null;
+                yield return _embeddingService.EmbedTargetConcept(
                     slot.TargetConcept,
-                    slot.Anchors,
-                    result => anchorSet = result);
-                slot.AnchorSet = anchorSet;
+                    result => targetEmbedding = result);
+                slot.TargetEmbedding = targetEmbedding;
             }
         }
 
         public FirstContactResolutionResult EvaluateCard(SemanticCardRecord card, UnknownSlot slot)
         {
-            if (card == null || slot == null || card.Embedding == null || slot.AnchorSet == null || !slot.AnchorSet.IsValid)
+            if (card == null || slot == null || card.Embedding == null || slot.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
             {
                 return new FirstContactResolutionResult(
                     slot,
@@ -82,12 +81,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public float ScoreCardAgainstSlot(SemanticCardRecord card, UnknownSlot slot)
         {
-            if (card == null || slot == null || card.Embedding == null || slot.AnchorSet == null || !slot.AnchorSet.IsValid)
+            if (card == null || slot == null || card.Embedding == null || slot.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
             {
                 return 0f;
             }
 
-            return ScoreAgainstAnchorSet(card.Embedding, slot.AnchorSet);
+            return _embeddingService != null
+                ? _embeddingService.Similarity(card.Embedding, slot.TargetEmbedding.Vector)
+                : 0f;
         }
 
         public FirstContactTranslationStage DetermineStageForScore(float score)
@@ -108,7 +109,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 UnknownSlot slot = question.UnknownSlots[i];
                 if (slot == null || slot.Stage >= FirstContactTranslationStage.Partial ||
-                    slot.AnchorSet == null || !slot.AnchorSet.IsValid)
+                    slot.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
                 {
                     continue;
                 }
@@ -123,7 +124,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                         continue;
                     }
 
-                    float score = ScoreAgainstAnchorSet(cluster.Centroid, slot.AnchorSet);
+                    float score = _embeddingService != null
+                        ? _embeddingService.Similarity(cluster.Centroid, slot.TargetEmbedding.Vector)
+                        : 0f;
                     if (score > bestScore)
                     {
                         bestScore = score;
@@ -142,28 +145,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return changedAny;
-        }
-
-        private float ScoreAgainstAnchorSet(float[] vector, AnchorEmbeddingSet anchorSet)
-        {
-            if (_embeddingService == null || vector == null || anchorSet == null || !anchorSet.IsValid)
-            {
-                return 0f;
-            }
-
-            float maxAnchorScore = -1f;
-            if (anchorSet.AnchorVectors != null)
-            {
-                for (int i = 0; i < anchorSet.AnchorVectors.Length; i++)
-                {
-                    maxAnchorScore = Mathf.Max(
-                        maxAnchorScore,
-                        _embeddingService.Similarity(vector, anchorSet.AnchorVectors[i]));
-                }
-            }
-
-            float centroidScore = _embeddingService.Similarity(vector, anchorSet.Centroid);
-            return Mathf.Max(maxAnchorScore, centroidScore * GetSettings().centroidWeight);
         }
 
         private FirstContactTranslationStage DetermineStage(float score)

@@ -128,34 +128,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             onComplete?.Invoke(results);
         }
 
-        public IEnumerator BuildAnchorSet(
+        public IEnumerator EmbedTargetConcept(
             string targetConcept,
-            IReadOnlyList<string> anchors,
-            Action<AnchorEmbeddingSet> onComplete)
+            Action<TargetConceptEmbedding> onComplete)
         {
-            string[] normalizedAnchors = BuildAnchorList(targetConcept, anchors);
-            IReadOnlyList<EmbeddingResult> results = null;
-            yield return EmbedLabels(normalizedAnchors, value => results = value);
-
-            var vectors = new List<float[]>();
-            if (results != null)
+            EmbeddingResult result = default;
+            yield return EmbedLabel(targetConcept, value => result = value);
+            onComplete?.Invoke(new TargetConceptEmbedding
             {
-                for (int i = 0; i < results.Count; i++)
-                {
-                    if (results[i].IsValid)
-                    {
-                        vectors.Add(results[i].Vector);
-                    }
-                }
-            }
-
-            TryBuildCentroid(vectors, out float[] centroid);
-            onComplete?.Invoke(new AnchorEmbeddingSet
-            {
-                TargetConcept = targetConcept ?? string.Empty,
-                Anchors = normalizedAnchors,
-                AnchorVectors = vectors.ToArray(),
-                Centroid = centroid
+                TargetConcept = result.Text,
+                Vector = result.Vector
             });
         }
 
@@ -261,32 +243,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return new string(chars, 0, count).Trim();
-        }
-
-        private static string[] BuildAnchorList(string targetConcept, IReadOnlyList<string> anchors)
-        {
-            var values = new List<string>();
-            AddUnique(values, targetConcept);
-            if (anchors != null)
-            {
-                for (int i = 0; i < anchors.Count; i++)
-                {
-                    AddUnique(values, anchors[i]);
-                }
-            }
-
-            return values.ToArray();
-        }
-
-        private static void AddUnique(List<string> values, string text)
-        {
-            string normalized = NormalizeText(text);
-            if (string.IsNullOrWhiteSpace(normalized) || values.Contains(normalized))
-            {
-                return;
-            }
-
-            values.Add(normalized);
         }
 
         private static void FillError(EmbeddingResult[] results, IReadOnlyList<string> labels, string error)

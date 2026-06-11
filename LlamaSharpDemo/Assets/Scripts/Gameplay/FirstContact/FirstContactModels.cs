@@ -77,10 +77,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         [Tooltip("대괄호 없이 쓰는 안정적인 UNKNOWN 슬롯 ID입니다. 예: UNKNOWN-01")]
         public string id = "UNKNOWN-01";
-        [Tooltip("플레이어에게 직접 보여주지 않는 내부 정답 개념입니다. 디버그와 앵커 생성에 사용합니다.")]
+        [Tooltip("플레이어에게 직접 보여주지 않는 내부 정답 개념입니다. 그림 라벨과의 의미 유사도 비교에 사용합니다.")]
         public string targetConcept = "IMPORTANT";
-        [Tooltip("미해석 단어와 그림 라벨의 의미 유사도를 계산할 내부 앵커 목록입니다. 플레이어에게 답 예시로 보여주지 않습니다.")]
-        public string[] targetAnchors = Array.Empty<string>();
         [Tooltip("UNKNOWN이 HINT, PARTIAL, SOLVED 단계로 열릴 때 터미널에 표시할 토큰 설정입니다.")]
         public FirstContactStageTexts stageTexts = new();
 
@@ -240,7 +238,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         public readonly FirstContactUnknownSlotDefinition Definition;
         public FirstContactTranslationStage Stage;
-        public AnchorEmbeddingSet AnchorSet;
+        public TargetConceptEmbedding TargetEmbedding;
         public float BestScore;
         public string LinkedClusterId;
 
@@ -253,7 +251,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public string Id => Definition != null ? Definition.NormalizedId : "UNKNOWN";
         public string TargetConcept => Definition?.targetConcept ?? string.Empty;
-        public string[] Anchors => Definition?.targetAnchors ?? Array.Empty<string>();
 
         public string GetDisplayToken()
         {
@@ -328,12 +325,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         }
     }
 
-    public sealed class AnchorEmbeddingSet
+    public sealed class TargetConceptEmbedding
     {
         public string TargetConcept;
-        public string[] Anchors = Array.Empty<string>();
-        public float[][] AnchorVectors = Array.Empty<float[]>();
-        public float[] Centroid;
-        public bool IsValid => Centroid != null && Centroid.Length > 0;
+        public float[] Vector;
+        public bool IsValid => Vector != null && Vector.Length > 0;
     }
 }

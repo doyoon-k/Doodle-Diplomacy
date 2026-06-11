@@ -131,7 +131,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int i = 0; i < question.UnknownSlots.Count; i++)
             {
                 UnknownSlot slot = question.UnknownSlots[i];
-                if (slot?.AnchorSet == null || !slot.AnchorSet.IsValid)
+                if (slot?.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
                 {
                     continue;
                 }
@@ -143,7 +143,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     Label = slot.Id,
                     SecondaryLabel = slot.GetDisplayToken(),
                     Kind = FirstContactSemanticMapNodeKind.UnknownSlot,
-                    Embedding = slot.AnchorSet.Centroid,
+                    Embedding = slot.TargetEmbedding.Vector,
                     IsActive = string.Equals(id, activeUnknownNodeId, StringComparison.Ordinal),
                     Marker = GetUnknownMarker(i)
                 });

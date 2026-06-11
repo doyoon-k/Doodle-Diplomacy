@@ -269,7 +269,7 @@ namespace DoodleDiplomacy.Editor
             if (IsGameSceneIntroSequence(_activeSequence))
             {
                 EditorGUILayout.HelpBox(
-                    "This is the sequence wired to GameScene's RoundManager.introSequence. Day1CalibrationMode uses separate Day1 dialogue assets.",
+                    "This is the sequence wired to the legacy object-pair RoundManager.introSequence. Day1CalibrationMode uses separate legacy Day1 dialogue assets.",
                     MessageType.Info);
 
                 if (GUILayout.Button("Bind Day1 Intro Localization Keys"))
@@ -1257,7 +1257,7 @@ namespace DoodleDiplomacy.Editor
 
             if (IsGameSceneIntroSequence(_activeSequence))
             {
-                _validationMessages.Add(new ValidationMessage("GameScene RoundManager.introSequence uses this sequence. Day1CalibrationMode uses separate Day1 dialogue assets."));
+                _validationMessages.Add(new ValidationMessage("The legacy object-pair RoundManager.introSequence uses this sequence. Day1CalibrationMode uses separate legacy Day1 dialogue assets."));
             }
 
             for (int i = 0; i < _linesProperty.arraySize; i++)

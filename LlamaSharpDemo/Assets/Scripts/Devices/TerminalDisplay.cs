@@ -70,6 +70,8 @@ namespace DoodleDiplomacy.Devices
         private RectTransform _textViewportRect;
         private bool _scrollInitialized;
         private float _contentTopInsetNormalized;
+        private Vector4 _baseTextMargin;
+        private bool _hasBaseTextMargin;
 
         private static readonly char[] NoiseChars =
             "!@#$%^&*<>?/\\|~`0123456789ABCDEFXYZabcxyz".ToCharArray();
@@ -86,6 +88,8 @@ namespace DoodleDiplomacy.Devices
             if (enableScroll)
                 EnsureScrollViewConfigured();
 
+            ApplyTextTopInsetMargin();
+
             if (!_scrollInitialized)
                 return;
 
@@ -95,6 +99,7 @@ namespace DoodleDiplomacy.Devices
 
         private void Awake()
         {
+            CaptureBaseTextMargin();
             EnsureScrollViewConfigured();
             Clear();
         }
@@ -147,16 +152,41 @@ namespace DoodleDiplomacy.Devices
                 _typingRoutine = null;
                 _currentText = resolvedText;
                 if (textMesh != null)
-                    ApplyRenderedText(_currentText + (showCursor ? "_" : string.Empty), true);
-
-                if (showCursor)
-                    _cursorRoutine = StartCoroutine(CursorBlink());
+                    ApplyRenderedText(_currentText, true);
 
                 OnTypingComplete?.Invoke();
                 return;
             }
 
             _typingRoutine = StartCoroutine(TypingRoutine(resolvedText));
+        }
+
+        public void ShowTextWithTypedSuffix(string text, int visibleCharacterCount, bool instant = false)
+        {
+            if (_typingRoutine != null)
+                StopCoroutine(_typingRoutine);
+
+            if (_cursorRoutine != null)
+            {
+                StopCoroutine(_cursorRoutine);
+                _cursorRoutine = null;
+            }
+
+            string resolvedText = text ?? string.Empty;
+            int clampedVisibleCount = Mathf.Clamp(visibleCharacterCount, 0, resolvedText.Length);
+            if (instant || clampedVisibleCount >= resolvedText.Length)
+            {
+                _isTyping = false;
+                _typingRoutine = null;
+                _currentText = resolvedText;
+                if (textMesh != null)
+                    ApplyRenderedText(_currentText, true);
+
+                OnTypingComplete?.Invoke();
+                return;
+            }
+
+            _typingRoutine = StartCoroutine(TypingRoutine(resolvedText, clampedVisibleCount));
         }
 
         public void Clear()
@@ -190,28 +220,33 @@ namespace DoodleDiplomacy.Devices
             }
         }
 
-        private IEnumerator TypingRoutine(string fullText)
+        private IEnumerator TypingRoutine(string fullText, int visibleCharacterCount = 0)
         {
             _isTyping = true;
-            _currentText = string.Empty;
+            int startIndex = Mathf.Clamp(visibleCharacterCount, 0, fullText.Length);
+            _currentText = startIndex > 0 ? fullText.Substring(0, startIndex) : string.Empty;
 
-            if (showCursor)
-                _cursorRoutine = StartCoroutine(CursorBlink());
+            if (textMesh != null)
+                ApplyRenderedText(_currentText + (showCursor ? "_" : string.Empty), forceFollowBottom: true);
 
-            for (int i = 0; i < fullText.Length; i++)
+            for (int i = startIndex; i < fullText.Length; i++)
             {
                 if (useNoise && fullText[i] != '\n' && fullText[i] != ' ' && Random.value < 0.25f)
                 {
                     char noise = NoiseChars[Random.Range(0, NoiseChars.Length)];
                     if (textMesh != null)
-                        ApplyRenderedText(_currentText + noise + (showCursor ? "_" : string.Empty));
+                        ApplyRenderedText(
+                            _currentText + noise + (showCursor ? "_" : string.Empty),
+                            forceFollowBottom: true);
 
                     yield return new WaitForSeconds(noiseDisplayTime);
                 }
 
                 _currentText += fullText[i];
                 if (textMesh != null)
-                    ApplyRenderedText(_currentText + (showCursor ? "_" : string.Empty));
+                    ApplyRenderedText(
+                        _currentText + (showCursor ? "_" : string.Empty),
+                        forceFollowBottom: true);
 
                 float delay = fullText[i] is '\n' or ' ' ? typingSpeed * 0.3f : typingSpeed;
                 yield return new WaitForSeconds(delay);
@@ -219,6 +254,9 @@ namespace DoodleDiplomacy.Devices
 
             _isTyping = false;
             _typingRoutine = null;
+            if (textMesh != null)
+                ApplyRenderedText(_currentText, forceFollowBottom: true);
+
             OnTypingComplete?.Invoke();
         }
 
@@ -241,6 +279,7 @@ namespace DoodleDiplomacy.Devices
             if (_scrollInitialized || !enableScroll || textMesh == null || screenPanel == null)
                 return;
 
+            CaptureBaseTextMargin();
             _panelRect = screenPanel.GetComponent<RectTransform>();
             _textRect = textMesh.rectTransform;
             if (_panelRect == null || _textRect == null)
@@ -262,13 +301,8 @@ namespace DoodleDiplomacy.Devices
             if (_textRect.parent != _textViewportRect)
                 _textRect.SetParent(_textViewportRect, false);
 
-            ApplyTextViewportLayout();
-            ApplyTextContentLayout();
-
             textSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             textSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            textLayoutElement.minHeight = GetTextVisibleHeight();
             textLayoutElement.flexibleHeight = 0f;
 
             scrollRect.viewport = _textViewportRect;
@@ -331,12 +365,11 @@ namespace DoodleDiplomacy.Devices
             if (_textViewportRect == null)
                 return;
 
-            float topInset = GetContentTopInsetPixels();
             _textViewportRect.anchorMin = Vector2.zero;
             _textViewportRect.anchorMax = Vector2.one;
             _textViewportRect.pivot = new Vector2(0.5f, 0.5f);
             _textViewportRect.offsetMin = Vector2.zero;
-            _textViewportRect.offsetMax = new Vector2(0f, -topInset);
+            _textViewportRect.offsetMax = new Vector2(0f, -GetContentTopInsetPixels());
         }
 
         private void ApplyTextContentLayout()
@@ -370,9 +403,39 @@ namespace DoodleDiplomacy.Devices
             if (textLayoutElement != null && _panelRect != null)
                 textLayoutElement.minHeight = GetTextVisibleHeight();
 
+            ApplyTextTopInsetMargin();
             Canvas.ForceUpdateCanvases();
             if (forceToBottom)
                 scrollRect.verticalNormalizedPosition = 0f;
+        }
+
+        private void CaptureBaseTextMargin()
+        {
+            if (_hasBaseTextMargin || textMesh == null)
+                return;
+
+            _baseTextMargin = textMesh.margin;
+            _hasBaseTextMargin = true;
+        }
+
+        private void ApplyTextTopInsetMargin()
+        {
+            if (textMesh == null)
+                return;
+
+            CaptureBaseTextMargin();
+            float topInset = UsesInsetViewport() ? 0f : GetContentTopInsetPixels();
+            Vector4 margin = _baseTextMargin;
+            margin.y += topInset;
+            textMesh.margin = margin;
+        }
+
+        private bool UsesInsetViewport()
+        {
+            return _scrollInitialized &&
+                   _textViewportRect != null &&
+                   _textRect != null &&
+                   _textRect.parent == _textViewportRect;
         }
 
         private bool ValidateScrollReferences()
@@ -392,8 +455,7 @@ namespace DoodleDiplomacy.Devices
 
             if (sourceCanvas != null && sourceCanvas.renderMode == RenderMode.WorldSpace && eventCamera == null)
             {
-                Debug.LogError("[TerminalDisplay] Event camera must be assigned for world-space terminal UI.", this);
-                valid = false;
+                Debug.LogWarning("[TerminalDisplay] Event camera is missing for world-space terminal UI. Drag scroll may not receive pointer input.", this);
             }
 
             if (screenMask == null)
@@ -431,6 +493,7 @@ namespace DoodleDiplomacy.Devices
             if (enableScroll)
                 EnsureScrollViewConfigured();
 
+            ApplyTextTopInsetMargin();
             bool followBottom = forceFollowBottom || ShouldFollowBottom();
             textMesh.text = renderedText;
 

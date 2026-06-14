@@ -387,29 +387,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
-            if (HasAny("shield", "wall", "helmet", "bunker", "armor", "lock", "door"))
+            if (HasAny("shield", "wall", "helmet", "bunker", "armor", "lock", "door", "fence"))
             {
-                return "[DEFENSE-RELATED?]";
+                return "[PROTECTION?]";
             }
 
-            if (HasAny("child", "baby", "family", "home", "house"))
+            if (HasAny("apple", "bread", "rice", "meat", "fish", "fruit", "banana", "egg", "cake"))
             {
-                return "[FAMILY-RELATED?]";
+                return "[FOOD?]";
             }
 
-            if (HasAny("tree", "leaf", "flower", "forest", "plant"))
+            if (HasAny("hammer", "wrench", "saw", "shovel", "needle", "key", "scissors", "tool"))
             {
-                return "[LIFE-RELATED?]";
+                return "[TOOL?]";
             }
 
-            if (HasAny("gun", "weapon", "knife", "sword", "missile"))
+            if (HasAny("gun", "weapon", "knife", "sword", "missile", "fire", "monster", "bomb"))
             {
-                return "[WEAPON-RELATED?]";
-            }
-
-            if (HasAny("flag", "crown", "symbol", "badge"))
-            {
-                return "[SYMBOL-RELATED?]";
+                return "[DANGER?]";
             }
 
             return $"[{cluster.Id}]";
@@ -426,11 +421,32 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
-            FirstContactSemanticSettings settings = GetSettings();
-            return BrainwaveEmbeddingProfileMapper.TryCreate(
+            return TryCreateWaveformProfile(
                 card.Embedding,
                 card.Label,
                 Mathf.Max(1, card.TurnIndex + 1),
+                sessionSeed,
+                out profile);
+        }
+
+        public bool TryCreateWaveformProfile(
+            float[] embedding,
+            string label,
+            int sampleIndex,
+            int sessionSeed,
+            out BrainwaveSemanticProfile profile)
+        {
+            profile = BrainwaveSemanticProfile.Invalid;
+            if (embedding == null)
+            {
+                return false;
+            }
+
+            FirstContactSemanticSettings settings = GetSettings();
+            return BrainwaveEmbeddingProfileMapper.TryCreate(
+                embedding,
+                label,
+                Mathf.Max(1, sampleIndex),
                 sessionSeed,
                 settings.waveformProjectionSeed,
                 settings.waveformFeatureCount,
@@ -439,9 +455,77 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 out profile);
         }
 
+        public bool TryCreateTokenWaveformProfile(
+            string token,
+            int sampleIndex,
+            int sessionSeed,
+            out BrainwaveSemanticProfile profile)
+        {
+            profile = BrainwaveSemanticProfile.Invalid;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            float[] tokenVector = BuildSyntheticTokenVector(token.Trim(), 24);
+            return TryCreateWaveformProfile(
+                tokenVector,
+                token,
+                sampleIndex,
+                sessionSeed,
+                out profile);
+        }
+
         private FirstContactSemanticSettings GetSettings()
         {
             return _settings != null ? _settings : ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+        }
+
+        private static float[] BuildSyntheticTokenVector(string token, int dimensions)
+        {
+            int count = Mathf.Max(8, dimensions);
+            var vector = new float[count];
+            double sum = 0d;
+            for (int i = 0; i < count; i++)
+            {
+                float value = StableSignedUnit(token, i);
+                vector[i] = value;
+                sum += value * value;
+            }
+
+            if (sum <= double.Epsilon)
+            {
+                vector[0] = 1f;
+                return vector;
+            }
+
+            float inv = (float)(1d / Math.Sqrt(sum));
+            for (int i = 0; i < vector.Length; i++)
+            {
+                vector[i] *= inv;
+            }
+
+            return vector;
+        }
+
+        private static float StableSignedUnit(string token, int salt)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u ^ (uint)salt;
+                for (int i = 0; i < token.Length; i++)
+                {
+                    hash ^= char.ToLowerInvariant(token[i]);
+                    hash *= 16777619u;
+                }
+
+                hash ^= hash >> 16;
+                hash *= 0x7FEB352Du;
+                hash ^= hash >> 15;
+                hash *= 0x846CA68Bu;
+                hash ^= hash >> 16;
+                return ((hash & 0x00FFFFFFu) / 8388607.5f) - 1f;
+            }
         }
     }
 }

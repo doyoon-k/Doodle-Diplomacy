@@ -24,6 +24,8 @@ MonoBehaviour:
   clusterAutoPartialThreshold: 0.58
   minClusterMembers: 3
   minClusterCohesion: 0.55
+  bootstrapMinTraceCount: 3
+  bootstrapMinCategoryDescriptorFit: 0.6
   waveformSemanticInfluence: 0.9
   waveformSessionJitter: 0.04
   waveformFeatureCount: 16

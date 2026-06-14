@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using DoodleDiplomacy.Devices;
 using TMPro;
@@ -49,7 +50,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private readonly List<TextMeshProUGUI> _labels = new();
         private RectTransform _mapRect;
         private RectTransform _labelRoot;
+        private FirstContactSemanticMapSnapshot _currentSnapshot;
         private bool _fullMode;
+        private Coroutine _transitionRoutine;
+        private string _persistentPulseNodeId;
+        private float _persistentPulseStartTime;
 
         private void Reset()
         {
@@ -79,25 +84,132 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ConfigureCurrentLayout();
         }
 
+        private void Update()
+        {
+            if (string.IsNullOrWhiteSpace(_persistentPulseNodeId) ||
+                _currentSnapshot == null ||
+                mapGraphic == null ||
+                !mapGraphic.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            FirstContactSemanticMapNode node = _currentSnapshot.FindNode(_persistentPulseNodeId);
+            if (node == null)
+            {
+                ClearPersistentPulse();
+                return;
+            }
+
+            node.Pulse = BuildPersistentNodePulse(Time.time - _persistentPulseStartTime);
+            mapGraphic.Show(_currentSnapshot, _fullMode);
+        }
+
         public void ShowMiniMap(FirstContactSemanticMapSnapshot snapshot)
         {
+            StopTransition();
+            ClearPersistentPulse();
             Show(snapshot, fullMode: false);
         }
 
         public void ShowFullMap(FirstContactSemanticMapSnapshot snapshot)
         {
+            StopTransition();
+            ClearPersistentPulse();
             Show(snapshot, fullMode: true);
         }
 
-        public void Clear()
+        public void ShowBootstrapResultTransition(
+            FirstContactSemanticMapSnapshot beforeSnapshot,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            string activeCardNodeId,
+            string categoryNodeId,
+            bool accepted,
+            bool becameStable)
         {
+            StopTransition();
+            ClearPersistentPulse();
+            if (afterSnapshot == null || afterSnapshot.Nodes.Count == 0)
+            {
+                Clear();
+                return;
+            }
+
+            _transitionRoutine = StartCoroutine(BootstrapResultTransitionRoutine(
+                beforeSnapshot,
+                afterSnapshot,
+                activeCardNodeId,
+                categoryNodeId,
+                accepted,
+                becameStable));
+        }
+
+        public void Clear(bool resetTerminalInset = true)
+        {
+            StopTransition();
+            ClearPersistentPulse();
+            _currentSnapshot = null;
             mapGraphic?.Clear();
             ClearLabels();
             SetVisible(false);
-            terminalDisplay?.SetContentTopInsetNormalized(0f);
+            if (resetTerminalInset)
+            {
+                terminalDisplay?.SetContentTopInsetNormalized(0f);
+            }
+        }
+
+        private IEnumerator BootstrapResultTransitionRoutine(
+            FirstContactSemanticMapSnapshot beforeSnapshot,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            string activeCardNodeId,
+            string categoryNodeId,
+            bool accepted,
+            bool becameStable)
+        {
+            ClearLabels();
+            const float duration = 1.35f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                float progress = duration <= 0.0001f ? 1f : Mathf.Clamp01(elapsed / duration);
+                FirstContactSemanticMapSnapshot frame = BuildTransitionSnapshot(
+                    beforeSnapshot,
+                    afterSnapshot,
+                    activeCardNodeId,
+                    categoryNodeId,
+                    accepted,
+                    becameStable,
+                    progress);
+                Show(frame, fullMode: true, rebuildLabels: false);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            Show(afterSnapshot, fullMode: true, rebuildLabels: true);
+            StartPersistentPulse(activeCardNodeId);
+            _transitionRoutine = null;
+        }
+
+        private void StopTransition()
+        {
+            if (_transitionRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_transitionRoutine);
+            _transitionRoutine = null;
         }
 
         private void Show(FirstContactSemanticMapSnapshot snapshot, bool fullMode)
+        {
+            Show(snapshot, fullMode, rebuildLabels: true);
+        }
+
+        private void Show(
+            FirstContactSemanticMapSnapshot snapshot,
+            bool fullMode,
+            bool rebuildLabels)
         {
             if (snapshot == null || snapshot.Nodes.Count == 0)
             {
@@ -112,11 +224,232 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _fullMode = fullMode;
+            _currentSnapshot = snapshot;
             ConfigureCurrentLayout();
             graphic.Show(snapshot, fullMode);
             SetVisible(true);
             terminalDisplay?.SetContentTopInsetNormalized(fullMode ? fullTextTopInsetRatio : miniTextTopInsetRatio);
-            RebuildLabels(snapshot, fullMode);
+            if (rebuildLabels)
+            {
+                RebuildLabels(snapshot, fullMode);
+            }
+        }
+
+        private static FirstContactSemanticMapSnapshot BuildTransitionSnapshot(
+            FirstContactSemanticMapSnapshot beforeSnapshot,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            string activeCardNodeId,
+            string categoryNodeId,
+            bool accepted,
+            bool becameStable,
+            float progress)
+        {
+            var frame = new FirstContactSemanticMapSnapshot();
+            if (afterSnapshot == null)
+            {
+                return frame;
+            }
+
+            float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress));
+            FirstContactSemanticMapNode afterCategory = afterSnapshot.FindNode(categoryNodeId);
+            for (int i = 0; i < afterSnapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode after = afterSnapshot.Nodes[i];
+                if (after == null)
+                {
+                    continue;
+                }
+
+                FirstContactSemanticMapNode before = beforeSnapshot?.FindNode(after.Id);
+                FirstContactSemanticMapNode node = CloneNode(after);
+                Vector2 start = ResolveTransitionStartPosition(before, after, afterCategory, activeCardNodeId, accepted);
+                node.Position = ResolveTransitionPosition(
+                    after,
+                    afterCategory,
+                    start,
+                    activeCardNodeId,
+                    accepted,
+                    eased);
+                if (string.Equals(after.Id, categoryNodeId, StringComparison.Ordinal) && accepted)
+                {
+                    node.Pulse = Mathf.Sin(Mathf.Clamp01(progress) * Mathf.PI) * (becameStable ? 1.35f : 1f);
+                }
+                else if (string.Equals(after.Id, activeCardNodeId, StringComparison.Ordinal))
+                {
+                    node.Pulse = BuildNewNodePulse(progress);
+                }
+
+                frame.Nodes.Add(node);
+            }
+
+            for (int i = 0; i < afterSnapshot.Links.Count; i++)
+            {
+                FirstContactSemanticMapLink afterLink = afterSnapshot.Links[i];
+                float startStrength = FindLinkStrength(beforeSnapshot, afterLink.FromId, afterLink.ToId);
+                float strength = Mathf.Lerp(startStrength, afterLink.Strength, eased);
+                frame.Links.Add(new FirstContactSemanticMapLink(afterLink.FromId, afterLink.ToId, strength));
+            }
+
+            if (accepted &&
+                !string.IsNullOrWhiteSpace(activeCardNodeId) &&
+                !string.IsNullOrWhiteSpace(categoryNodeId) &&
+                frame.FindNode(activeCardNodeId) != null &&
+                frame.FindNode(categoryNodeId) != null)
+            {
+                float signalStrength = Mathf.Sin(Mathf.Clamp01(progress) * Mathf.PI);
+                if (signalStrength > 0.01f)
+                {
+                    frame.Links.Add(new FirstContactSemanticMapLink(
+                        activeCardNodeId,
+                        categoryNodeId,
+                        signalStrength));
+                }
+            }
+
+            return frame;
+        }
+
+        private static float BuildNewNodePulse(float progress)
+        {
+            float normalized = Mathf.Clamp01(progress);
+            float envelope = Mathf.SmoothStep(1f, 0f, normalized);
+            float flashes = Mathf.Sin(normalized * Mathf.PI * 5.5f);
+            return Mathf.Clamp01(flashes * flashes * envelope);
+        }
+
+        private static float BuildPersistentNodePulse(float elapsed)
+        {
+            float wave = (Mathf.Sin(Mathf.Max(0f, elapsed) * Mathf.PI * 2f / 1.35f) + 1f) * 0.5f;
+            return Mathf.Lerp(0.38f, 0.92f, wave);
+        }
+
+        private void StartPersistentPulse(string nodeId)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId) || _currentSnapshot?.FindNode(nodeId) == null)
+            {
+                ClearPersistentPulse();
+                return;
+            }
+
+            _persistentPulseNodeId = nodeId;
+            _persistentPulseStartTime = Time.time;
+        }
+
+        private void ClearPersistentPulse()
+        {
+            if (!string.IsNullOrWhiteSpace(_persistentPulseNodeId) && _currentSnapshot != null)
+            {
+                FirstContactSemanticMapNode node = _currentSnapshot.FindNode(_persistentPulseNodeId);
+                if (node != null)
+                {
+                    node.Pulse = 0f;
+                }
+            }
+
+            _persistentPulseNodeId = string.Empty;
+            _persistentPulseStartTime = 0f;
+        }
+
+        private static Vector2 ResolveTransitionStartPosition(
+            FirstContactSemanticMapNode before,
+            FirstContactSemanticMapNode after,
+            FirstContactSemanticMapNode afterCategory,
+            string activeCardNodeId,
+            bool accepted)
+        {
+            if (before != null)
+            {
+                return before.Position;
+            }
+
+            if (after != null && string.Equals(after.Id, activeCardNodeId, StringComparison.Ordinal))
+            {
+                float x = afterCategory != null
+                    ? Mathf.Lerp(afterCategory.Position.x, after.Position.x, accepted ? 0.25f : 0.5f)
+                    : after.Position.x;
+                return new Vector2(Mathf.Clamp(x, -0.78f, 0.78f), 0.92f);
+            }
+
+            return after?.Position ?? Vector2.zero;
+        }
+
+        private static Vector2 ResolveTransitionPosition(
+            FirstContactSemanticMapNode after,
+            FirstContactSemanticMapNode afterCategory,
+            Vector2 start,
+            string activeCardNodeId,
+            bool accepted,
+            float eased)
+        {
+            if (after == null)
+            {
+                return start;
+            }
+
+            if (!string.Equals(after.Id, activeCardNodeId, StringComparison.Ordinal) ||
+                accepted ||
+                afterCategory == null)
+            {
+                return Vector2.Lerp(start, after.Position, eased);
+            }
+
+            Vector2 nearCategory = Vector2.Lerp(start, afterCategory.Position, 0.58f);
+            if (eased < 0.58f)
+            {
+                return Vector2.Lerp(start, nearCategory, Mathf.SmoothStep(0f, 1f, eased / 0.58f));
+            }
+
+            return Vector2.Lerp(
+                nearCategory,
+                after.Position,
+                Mathf.SmoothStep(0f, 1f, (eased - 0.58f) / 0.42f));
+        }
+
+        private static float FindLinkStrength(
+            FirstContactSemanticMapSnapshot snapshot,
+            string fromId,
+            string toId)
+        {
+            if (snapshot == null)
+            {
+                return 0f;
+            }
+
+            for (int i = 0; i < snapshot.Links.Count; i++)
+            {
+                FirstContactSemanticMapLink link = snapshot.Links[i];
+                bool same = string.Equals(link.FromId, fromId, StringComparison.Ordinal) &&
+                            string.Equals(link.ToId, toId, StringComparison.Ordinal);
+                bool reverse = string.Equals(link.FromId, toId, StringComparison.Ordinal) &&
+                               string.Equals(link.ToId, fromId, StringComparison.Ordinal);
+                if (same || reverse)
+                {
+                    return link.Strength;
+                }
+            }
+
+            return 0f;
+        }
+
+        private static FirstContactSemanticMapNode CloneNode(FirstContactSemanticMapNode node)
+        {
+            return new FirstContactSemanticMapNode
+            {
+                Id = node.Id,
+                Label = node.Label,
+                SecondaryLabel = node.SecondaryLabel,
+                Kind = node.Kind,
+                Position = node.Position,
+                Embedding = node.Embedding,
+                IsActive = node.IsActive,
+                Marker = node.Marker,
+                BootstrapCategoryId = node.BootstrapCategoryId,
+                IsBootstrapDetached = node.IsBootstrapDetached,
+                TraceCount = node.TraceCount,
+                RequiredTraceCount = node.RequiredTraceCount,
+                IsBootstrapCategoryStable = node.IsBootstrapCategoryStable,
+                Pulse = node.Pulse
+            };
         }
 
         private FirstContactSemanticMapGraphic EnsureMapGraphic()
@@ -264,6 +597,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
+            if (node.Kind == FirstContactSemanticMapNodeKind.Card &&
+                !string.IsNullOrWhiteSpace(node.BootstrapCategoryId))
+            {
+                return node.IsActive;
+            }
+
             if (fullMode)
             {
                 return true;
@@ -271,7 +610,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             return node.IsActive ||
                    node.Kind == FirstContactSemanticMapNodeKind.UnknownSlot ||
-                   node.Kind == FirstContactSemanticMapNodeKind.StableCluster;
+                   node.Kind == FirstContactSemanticMapNodeKind.StableCluster ||
+                   node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory;
         }
 
         private TextMeshProUGUI CreateLabel(FirstContactSemanticMapNode node, bool fullMode)
@@ -316,9 +656,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 FirstContactSemanticMapNodeKind.StableCluster => string.IsNullOrWhiteSpace(node.SecondaryLabel)
                     ? $"[{node.Label}]"
                     : node.SecondaryLabel,
+                FirstContactSemanticMapNodeKind.BootstrapCategory => BuildBootstrapCategoryLabel(node),
                 FirstContactSemanticMapNodeKind.Card => fullMode || node.IsActive ? node.Label : string.Empty,
                 _ => node.Label
             };
+        }
+
+        private static string BuildBootstrapCategoryLabel(FirstContactSemanticMapNode node)
+        {
+            string label = string.IsNullOrWhiteSpace(node.Label) ? "CATEGORY" : node.Label;
+            if (node.RequiredTraceCount <= 0)
+            {
+                return label;
+            }
+
+            return $"{label} {Mathf.Max(0, node.TraceCount):00}/{Mathf.Max(1, node.RequiredTraceCount):00}";
         }
 
         private static Color ResolveLabelColor(FirstContactSemanticMapNode node)
@@ -337,6 +689,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 FirstContactSemanticMapNodeKind.UnknownSlot => new Color(0.42f, 1f, 0.54f, 0.95f),
                 FirstContactSemanticMapNodeKind.StableCluster => new Color(0.85f, 0.7f, 1f, 0.9f),
+                FirstContactSemanticMapNodeKind.BootstrapCategory => node.IsBootstrapCategoryStable
+                    ? new Color(0.98f, 0.9f, 0.48f, 0.96f)
+                    : new Color(0.72f, 0.95f, 0.52f, 0.86f),
                 FirstContactSemanticMapNodeKind.Card => new Color(0.45f, 0.92f, 1f, 0.82f),
                 _ => Color.white
             };
@@ -345,10 +700,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Vector2 ResolveLabelOffset(FirstContactSemanticMapNode node, bool fullMode)
         {
             float distance = labelOffset * (fullMode ? 1.2f : 0.85f);
+            if (node.Kind == FirstContactSemanticMapNodeKind.Card &&
+                !string.IsNullOrWhiteSpace(node.BootstrapCategoryId))
+            {
+                if (node.IsBootstrapDetached)
+                {
+                    return new Vector2(-distance * 4.2f, -distance * 0.25f);
+                }
+
+                return node.IsActive
+                    ? new Vector2(-distance * 2.8f, distance * 1.05f)
+                    : new Vector2(-distance * 2.4f, distance * 0.75f);
+            }
+
             return node.Kind switch
             {
                 FirstContactSemanticMapNodeKind.UnknownSlot => new Vector2(distance, distance * 0.35f),
                 FirstContactSemanticMapNodeKind.StableCluster => new Vector2(distance, -distance * 0.45f),
+                FirstContactSemanticMapNodeKind.BootstrapCategory => new Vector2(distance * 1.35f, -distance * 0.85f),
                 _ => new Vector2(distance, 0f)
             };
         }
@@ -392,6 +761,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField] private Color activeCardColor = new(1f, 0.95f, 0.45f, 1f);
         [SerializeField] private Color unknownColor = new(0.28f, 1f, 0.43f, 1f);
         [SerializeField] private Color clusterColor = new(0.72f, 0.5f, 1f, 0.78f);
+        [SerializeField] private Color bootstrapCategoryColor = new(0.78f, 1f, 0.42f, 0.82f);
+        [SerializeField] private Color stableBootstrapCategoryColor = new(1f, 0.86f, 0.28f, 0.94f);
         [SerializeField] private Color weakLinkColor = new(0.22f, 0.8f, 0.42f, 0.36f);
         [SerializeField] private Color strongLinkColor = new(0.8f, 1f, 0.55f, 0.88f);
 
@@ -445,6 +816,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
+            DrawBootstrapCategoryFields(vh, rect);
             DrawLinks(vh, rect);
             DrawClusters(vh, rect);
             DrawNodes(vh, rect);
@@ -481,16 +853,150 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     continue;
                 }
 
+                if (TryResolveBootstrapCategoryLink(from, to, out FirstContactSemanticMapNode categoryNode))
+                {
+                    float normalizedSignal = Mathf.Clamp01(link.Strength);
+                    Color categoryColor = ResolveBootstrapFieldColor(categoryNode);
+                    Color signalColor = new(
+                        categoryColor.r,
+                        categoryColor.g,
+                        categoryColor.b,
+                        Mathf.Lerp(0.08f, 0.58f, normalizedSignal));
+                    float signalThickness = Mathf.Lerp(_fullMode ? 1.2f : 0.8f, _fullMode ? 4.2f : 2.8f, normalizedSignal);
+                    DrawLine(vh, MapToLocal(from.Position, rect), MapToLocal(to.Position, rect), signalThickness, signalColor);
+                    continue;
+                }
+
                 float normalized = Mathf.Clamp01((link.Strength + 1f) * 0.5f);
                 Color color = Color.Lerp(weakLinkColor, strongLinkColor, normalized);
                 if (from.IsActive || to.IsActive)
                 {
-                    color.a = Mathf.Max(color.a, 0.82f);
+                    color.a = Mathf.Max(color.a, 0.95f);
                 }
 
                 float thickness = Mathf.Lerp(_fullMode ? 1.4f : 1f, _fullMode ? 4.5f : 2.6f, normalized);
+                if (from.IsActive || to.IsActive)
+                {
+                    thickness += _fullMode ? 1.5f : 0.8f;
+                }
+
                 DrawLine(vh, MapToLocal(from.Position, rect), MapToLocal(to.Position, rect), thickness, color);
             }
+        }
+
+        private void DrawBootstrapCategoryFields(VertexHelper vh, Rect rect)
+        {
+            for (int i = 0; i < _snapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode categoryNode = _snapshot.Nodes[i];
+                if (categoryNode == null ||
+                    categoryNode.Kind != FirstContactSemanticMapNodeKind.BootstrapCategory ||
+                    string.IsNullOrWhiteSpace(categoryNode.BootstrapCategoryId))
+                {
+                    continue;
+                }
+
+                if (!TryResolveBootstrapFieldBounds(
+                        categoryNode,
+                        rect,
+                        out Vector2 center,
+                        out Vector2 radii,
+                        out int acceptedCount))
+                {
+                    continue;
+                }
+
+                Color fieldColor = ResolveBootstrapFieldColor(categoryNode);
+                float traceRatio = categoryNode.RequiredTraceCount > 0
+                    ? Mathf.Clamp01(categoryNode.TraceCount / (float)categoryNode.RequiredTraceCount)
+                    : 1f;
+                float fillAlpha = Mathf.Lerp(0.055f, categoryNode.IsBootstrapCategoryStable ? 0.18f : 0.13f, traceRatio);
+                DrawFilledEllipse(vh, center, radii, new Color(fieldColor.r, fieldColor.g, fieldColor.b, fillAlpha), 48);
+
+                float ringAlpha = Mathf.Lerp(0.32f, categoryNode.IsBootstrapCategoryStable ? 0.82f : 0.62f, traceRatio);
+                float ringThickness = _fullMode ? 2.8f : 1.8f;
+                DrawEllipseRing(vh, center, radii, ringThickness, new Color(fieldColor.r, fieldColor.g, fieldColor.b, ringAlpha), 54);
+
+                if (acceptedCount > 1)
+                {
+                    Vector2 innerRadii = radii * 0.86f;
+                    DrawEllipseRing(
+                        vh,
+                        center,
+                        innerRadii,
+                        _fullMode ? 1.2f : 0.8f,
+                        new Color(fieldColor.r, fieldColor.g, fieldColor.b, Mathf.Min(0.36f, ringAlpha * 0.55f)),
+                        54);
+                }
+            }
+        }
+
+        private bool TryResolveBootstrapFieldBounds(
+            FirstContactSemanticMapNode categoryNode,
+            Rect rect,
+            out Vector2 center,
+            out Vector2 radii,
+            out int acceptedCount)
+        {
+            Vector2 categoryCenter = MapToLocal(categoryNode.Position, rect);
+            Vector2 min = categoryCenter;
+            Vector2 max = categoryCenter;
+            acceptedCount = 0;
+
+            for (int i = 0; i < _snapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode node = _snapshot.Nodes[i];
+                if (node == null ||
+                    node.Kind != FirstContactSemanticMapNodeKind.Card ||
+                    node.IsBootstrapDetached ||
+                    !string.Equals(node.BootstrapCategoryId, categoryNode.BootstrapCategoryId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Vector2 point = MapToLocal(node.Position, rect);
+                min = Vector2.Min(min, point);
+                max = Vector2.Max(max, point);
+                acceptedCount++;
+            }
+
+            center = (min + max) * 0.5f;
+            float baseSize = Mathf.Min(rect.width, rect.height);
+            float padding = baseSize * (_fullMode ? 0.09f : 0.065f);
+            float minRadius = baseSize * (_fullMode ? 0.18f : 0.12f);
+            radii = new Vector2(
+                Mathf.Max(minRadius, (max.x - min.x) * 0.5f + padding),
+                Mathf.Max(minRadius * 0.72f, (max.y - min.y) * 0.5f + padding));
+
+            return true;
+        }
+
+        private static bool TryResolveBootstrapCategoryLink(
+            FirstContactSemanticMapNode first,
+            FirstContactSemanticMapNode second,
+            out FirstContactSemanticMapNode categoryNode)
+        {
+            categoryNode = null;
+            if (first == null || second == null)
+            {
+                return false;
+            }
+
+            if (first.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory &&
+                second.Kind == FirstContactSemanticMapNodeKind.Card)
+            {
+                categoryNode = first;
+                return true;
+            }
+
+            if (second.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory &&
+                first.Kind == FirstContactSemanticMapNodeKind.Card)
+            {
+                categoryNode = second;
+                return true;
+            }
+
+            return false;
         }
 
         private void DrawClusters(VertexHelper vh, Rect rect)
@@ -498,15 +1004,28 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int i = 0; i < _snapshot.Nodes.Count; i++)
             {
                 FirstContactSemanticMapNode node = _snapshot.Nodes[i];
-                if (node.Kind != FirstContactSemanticMapNodeKind.StableCluster)
+                if (node.Kind != FirstContactSemanticMapNodeKind.StableCluster &&
+                    node.Kind != FirstContactSemanticMapNodeKind.BootstrapCategory)
                 {
                     continue;
                 }
 
                 Vector2 center = MapToLocal(node.Position, rect);
                 float radius = Mathf.Min(rect.width, rect.height) * (_fullMode ? 0.075f : 0.055f);
-                DrawFilledCircle(vh, center, radius, new Color(clusterColor.r, clusterColor.g, clusterColor.b, 0.16f), 32);
-                DrawRing(vh, center, radius, _fullMode ? 2.4f : 1.6f, clusterColor, 32);
+                Color cluster = ResolveNodeColor(node);
+                float traceRatio = node.RequiredTraceCount > 0
+                    ? Mathf.Clamp01(node.TraceCount / (float)node.RequiredTraceCount)
+                    : 1f;
+                float fillAlpha = node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory
+                    ? Mathf.Lerp(0.08f, 0.2f, traceRatio)
+                    : 0.16f;
+                DrawFilledCircle(vh, center, radius, new Color(cluster.r, cluster.g, cluster.b, fillAlpha), 32);
+                DrawRing(vh, center, radius, _fullMode ? 2.4f : 1.6f, cluster, 32);
+                if (node.Pulse > 0.001f)
+                {
+                    Color pulseColor = new(cluster.r, cluster.g, cluster.b, Mathf.Clamp01(0.55f * node.Pulse));
+                    DrawRing(vh, center, radius * (1.08f + 0.22f * node.Pulse), _fullMode ? 3.4f : 2.2f, pulseColor, 36);
+                }
             }
         }
 
@@ -529,7 +1048,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static int GetNodePass(FirstContactSemanticMapNode node)
         {
-            if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster)
+            if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster ||
+                node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory)
             {
                 return 0;
             }
@@ -545,12 +1065,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 FirstContactSemanticMapNodeKind.UnknownSlot => baseRadius * (_fullMode ? 0.025f : 0.023f),
                 FirstContactSemanticMapNodeKind.StableCluster => baseRadius * (_fullMode ? 0.022f : 0.018f),
+                FirstContactSemanticMapNodeKind.BootstrapCategory => baseRadius * (_fullMode ? 0.024f : 0.02f),
                 _ => baseRadius * (_fullMode ? 0.021f : 0.018f)
             };
 
             if (node.IsActive)
             {
-                radius *= 1.45f;
+                radius *= 1.6f + node.Pulse * 0.35f;
             }
 
             Color nodeColor = ResolveNodeColor(node);
@@ -561,16 +1082,30 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
-            if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster)
+            if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster ||
+                node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory)
             {
                 DrawFilledCircle(vh, center, radius, nodeColor, 20);
+                if (node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory && node.TraceCount > 0)
+                {
+                    DrawRing(vh, center, radius * 1.75f, Mathf.Max(1.4f, radius * 0.14f), nodeColor, 28);
+                }
                 return;
             }
 
             DrawFilledCircle(vh, center, radius, nodeColor, 20);
+            if (node.Pulse > 0.001f)
+            {
+                Color glowColor = new(nodeColor.r, nodeColor.g, nodeColor.b, Mathf.Clamp01(0.28f * node.Pulse));
+                Color pulseColor = new(nodeColor.r, nodeColor.g, nodeColor.b, Mathf.Clamp01(0.98f * node.Pulse));
+                DrawFilledCircle(vh, center, radius * (1.28f + 0.16f * node.Pulse), glowColor, 24);
+                DrawRing(vh, center, radius * (1.55f + 0.42f * node.Pulse), Mathf.Max(2.8f, radius * 0.28f), pulseColor, 32);
+                DrawRing(vh, center, radius * (2.25f + 0.78f * node.Pulse), Mathf.Max(1.9f, radius * 0.17f), new Color(pulseColor.r, pulseColor.g, pulseColor.b, pulseColor.a * 0.58f), 36);
+            }
+
             if (node.IsActive)
             {
-                DrawRing(vh, center, radius * 1.65f, Mathf.Max(1.6f, radius * 0.18f), activeCardColor, 28);
+                DrawRing(vh, center, radius * 1.65f, Mathf.Max(2.4f, radius * 0.22f), activeCardColor, 28);
             }
         }
 
@@ -578,16 +1113,41 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             if (node.IsActive)
             {
+                if (node.IsBootstrapDetached)
+                {
+                    return new Color(0.52f, 0.84f, 1f, 0.96f);
+                }
+
                 return activeCardColor;
+            }
+
+            if (node.IsBootstrapDetached)
+            {
+                return new Color(0.3f, 0.66f, 0.92f, 0.66f);
             }
 
             return node.Kind switch
             {
                 FirstContactSemanticMapNodeKind.UnknownSlot => unknownColor,
                 FirstContactSemanticMapNodeKind.StableCluster => clusterColor,
+                FirstContactSemanticMapNodeKind.BootstrapCategory => node.IsBootstrapCategoryStable
+                    ? stableBootstrapCategoryColor
+                    : bootstrapCategoryColor,
                 FirstContactSemanticMapNodeKind.Card => cardColor,
                 _ => color
             };
+        }
+
+        private Color ResolveBootstrapFieldColor(FirstContactSemanticMapNode node)
+        {
+            if (node == null)
+            {
+                return bootstrapCategoryColor;
+            }
+
+            return node.IsBootstrapCategoryStable
+                ? stableBootstrapCategoryColor
+                : bootstrapCategoryColor;
         }
 
         private static void DrawRect(VertexHelper vh, Vector2 min, Vector2 max, Color drawColor)
@@ -641,6 +1201,30 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
+        private static void DrawFilledEllipse(
+            VertexHelper vh,
+            Vector2 center,
+            Vector2 radii,
+            Color drawColor,
+            int segments)
+        {
+            int safeSegments = Mathf.Max(12, segments);
+            Vector2 safeRadii = new(Mathf.Max(1f, radii.x), Mathf.Max(1f, radii.y));
+            int centerIndex = vh.currentVertCount;
+            AddVert(vh, center, drawColor);
+            for (int i = 0; i <= safeSegments; i++)
+            {
+                float angle = (i / (float)safeSegments) * Mathf.PI * 2f;
+                Vector2 point = center + new Vector2(Mathf.Cos(angle) * safeRadii.x, Mathf.Sin(angle) * safeRadii.y);
+                AddVert(vh, point, drawColor);
+            }
+
+            for (int i = 1; i <= safeSegments; i++)
+            {
+                vh.AddTriangle(centerIndex, centerIndex + i, centerIndex + i + 1);
+            }
+        }
+
         private static void DrawRing(
             VertexHelper vh,
             Vector2 center,
@@ -655,6 +1239,26 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 float angle = (i / (float)safeSegments) * Mathf.PI * 2f;
                 Vector2 next = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                DrawLine(vh, previous, next, thickness, drawColor);
+                previous = next;
+            }
+        }
+
+        private static void DrawEllipseRing(
+            VertexHelper vh,
+            Vector2 center,
+            Vector2 radii,
+            float thickness,
+            Color drawColor,
+            int segments)
+        {
+            int safeSegments = Mathf.Max(12, segments);
+            Vector2 safeRadii = new(Mathf.Max(1f, radii.x), Mathf.Max(1f, radii.y));
+            Vector2 previous = center + new Vector2(safeRadii.x, 0f);
+            for (int i = 1; i <= safeSegments; i++)
+            {
+                float angle = (i / (float)safeSegments) * Mathf.PI * 2f;
+                Vector2 next = center + new Vector2(Mathf.Cos(angle) * safeRadii.x, Mathf.Sin(angle) * safeRadii.y);
                 DrawLine(vh, previous, next, thickness, drawColor);
                 previous = next;
             }

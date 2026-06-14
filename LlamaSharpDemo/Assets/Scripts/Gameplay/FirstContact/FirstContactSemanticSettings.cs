@@ -38,6 +38,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Tooltip("군집이 안정화되기 위해 필요한 최소 응집도입니다.")]
         [Range(-1f, 1f)] public float minClusterCohesion = 0.55f;
 
+        [Header("Bootstrap Category Training")]
+        [Tooltip("튜토리얼 카테고리 하나가 안정화되기 위해 필요한 최소 그림 수입니다.")]
+        [Min(2)] public int bootstrapMinTraceCount = 3;
+        [Tooltip("튜토리얼 카테고리 진행 중 새 그림이 현재 카테고리 설명 임베딩과 이 값 이상 가까워야 합니다.")]
+        [Range(-1f, 1f)] public float bootstrapMinCategoryDescriptorFit = 0.6f;
+
         [Header("Semantic Map")]
         [Tooltip("켜면 그림 제출 후 터미널에 세션 기반 의미공간 맵과 공명 피드백을 표시합니다.")]
         public bool showSemanticMapFeedback = true;
@@ -70,6 +76,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             maxBatchSize = Math.Max(1, maxBatchSize);
             minClusterMembers = Math.Max(2, minClusterMembers);
+            bootstrapMinTraceCount = Math.Max(2, bootstrapMinTraceCount);
             semanticMapMaxCards = Math.Max(1, semanticMapMaxCards);
             semanticMapLayoutIterations = Math.Max(1, semanticMapLayoutIterations);
             semanticMapAttractionStrength = Mathf.Clamp01(semanticMapAttractionStrength);

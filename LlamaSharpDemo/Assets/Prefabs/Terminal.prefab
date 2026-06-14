@@ -549,7 +549,7 @@ MonoBehaviour:
   sourceCanvas: {fileID: 1465213704233530280}
   sourceGraphicRaycaster: {fileID: 9107042525717123420}
   eventCamera: {fileID: 0}
-  typingSpeed: 0.05
+  typingSpeed: 0.025
   useNoise: 1
   noiseDisplayTime: 0.02
   showCursor: 1
@@ -580,8 +580,8 @@ MonoBehaviour:
   terminalDisplay: {fileID: 3845552468368687222}
   brainwaveGraph: {fileID: 0}
   autoCreateGraph: 1
-  graphHeightRatio: 0.42
-  textTopInsetRatio: 0.46
+  graphHeightRatio: 0.22
+  textTopInsetRatio: 0.34
   horizontalInsetRatio: 0.03
   topInsetRatio: 0.04
 --- !u!114 &2309450981234567890

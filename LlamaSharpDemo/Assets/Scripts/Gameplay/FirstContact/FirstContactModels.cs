@@ -14,6 +14,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
     public enum FirstContactCardSource
     {
+        LocalReference,
+        BootstrapProbe,
         DecodeSample,
         Answer
     }
@@ -283,6 +285,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public DoodleDiplomacy.Devices.BrainwaveSemanticProfile WaveformProfile;
         public FirstContactCardSource Source;
         public string TargetUnknownId;
+        public string BootstrapCategoryId;
+        public string BootstrapCategoryDisplayName;
+        public bool BootstrapCategoryEvaluated;
+        public bool BootstrapCategoryAccepted;
         public string QuestionId;
         public string ClusterId;
         public int TurnIndex;

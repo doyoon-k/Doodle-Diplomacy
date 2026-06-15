@@ -105,12 +105,20 @@ public class DrawingBoardController : MonoBehaviour
     [Header("Instruction Label")]
     [Tooltip("Show a small control hint on the tablet surface while drawing.")]
     [SerializeField] private bool instructionLabelEnabled = true;
+    [Tooltip("Optional TextMeshPro label on the tablet surface. If unset, a runtime world-space label is created.")]
+    [SerializeField] private TextMeshPro instructionLabelText;
+    [Tooltip("Create a fallback TextMeshPro instruction label at runtime if Instruction Label Text is not assigned.")]
+    [SerializeField] private bool autoCreateInstructionLabelIfMissing = true;
+    [Tooltip("Text color used only by the runtime fallback instruction label.")]
+    [SerializeField] private Color instructionLabelColor = new(0.02f, 0.04f, 0.05f, 0.92f);
     [Tooltip("Instruction label width as a fraction of the tablet screen width.")]
     [SerializeField] [Range(0.05f, 0.8f)] private float instructionLabelWidthNormalized = 0.34f;
     [Tooltip("Instruction label text height as a fraction of the tablet screen height.")]
     [SerializeField] [Range(0.01f, 0.15f)] private float instructionLabelHeightNormalized = 0.038f;
     [Tooltip("Instruction label position in normalized tablet screen coordinates.")]
     [SerializeField] private Vector2 instructionLabelAnchorNormalized = new(0.5f, 0.035f);
+    [Tooltip("World-space offset that lifts the fallback instruction label slightly off the tablet screen.")]
+    [SerializeField] private float instructionLabelSurfaceOffset = 0.014f;
 
     [Header("History")]
     [Tooltip("Maximum undo history entries retained for drawing edits.")]
@@ -133,8 +141,7 @@ public class DrawingBoardController : MonoBehaviour
     private Vector2Int _lastPixel;
     private readonly DrawingStrokeHistory _strokeHistory = new();
     private TextMeshPro _runtimeRecognitionLabelText;
-    private bool _instructionOverlayVisible;
-    private string _instructionOverlayText = string.Empty;
+    private TextMeshPro _runtimeInstructionLabelText;
 
     private DrawingBoardCoordinateMapper CoordinateMapper =>
         new(boardTextureScale, boardTextureOffset, flipExportHorizontally, flipExportVertically);
@@ -335,22 +342,42 @@ public class DrawingBoardController : MonoBehaviour
 
     public void ShowInstructionLabel(string label)
     {
-        if (!instructionLabelEnabled || string.IsNullOrWhiteSpace(label))
+        if (string.IsNullOrWhiteSpace(label))
         {
             ClearInstructionLabel();
             return;
         }
 
-        _instructionOverlayText = label.Trim();
-        _instructionOverlayVisible = true;
-        RefreshDisplayFullCanvas();
+        if (!instructionLabelEnabled && instructionLabelText != null)
+        {
+            ClearInstructionLabel();
+            return;
+        }
+
+        EnsureRuntimeReady();
+        TextMeshPro labelText = GetInstructionLabelText(createIfMissing: true);
+        if (labelText == null)
+        {
+            return;
+        }
+
+        labelText.text = label.Trim();
+        labelText.gameObject.SetActive(true);
+        if (labelText == _runtimeInstructionLabelText)
+        {
+            ApplyRuntimeInstructionLabelStyle(labelText);
+            PositionRuntimeInstructionLabel();
+        }
     }
 
     public void ClearInstructionLabel()
     {
-        _instructionOverlayVisible = false;
-        _instructionOverlayText = string.Empty;
-        RefreshDisplayFullCanvas();
+        TextMeshPro labelText = GetInstructionLabelText(createIfMissing: false);
+        if (labelText != null)
+        {
+            labelText.text = string.Empty;
+            labelText.gameObject.SetActive(false);
+        }
     }
 
     public DrawingToolMode GetCurrentToolMode()
@@ -438,6 +465,7 @@ public class DrawingBoardController : MonoBehaviour
         ReleaseRuntimeMaterial();
         CleanupBrushPreview();
         CleanupRecognitionLabel();
+        CleanupInstructionLabel();
     }
 
     private void InitializeCanvas()
@@ -874,13 +902,11 @@ public class DrawingBoardController : MonoBehaviour
     private void RefreshDisplayFullCanvas()
     {
         RefreshDisplayFullCanvasBase();
-        DrawInstructionOverlayIfVisible();
     }
 
     private void RefreshDisplayRegion(RectInt region)
     {
         RefreshDisplayRegionBase(region);
-        DrawInstructionOverlayIfVisible();
     }
 
     private void RefreshDisplayFullCanvasBase()
@@ -906,209 +932,6 @@ public class DrawingBoardController : MonoBehaviour
             nonPaintAreaDisplayColor,
             paintAreaDividerColor,
             _surfaceTextureSampler);
-    }
-
-    private void DrawInstructionOverlayIfVisible()
-    {
-        if (!_instructionOverlayVisible || _displayCanvas == null)
-        {
-            return;
-        }
-
-        string text = NormalizeInstructionOverlayText(_instructionOverlayText);
-        if (string.IsNullOrEmpty(text))
-        {
-            return;
-        }
-
-        int textColumns = GetBitmapTextColumnCount(text);
-        if (textColumns <= 0)
-        {
-            return;
-        }
-
-        const int glyphRows = 7;
-        float widthFraction = Mathf.Clamp(instructionLabelWidthNormalized, 0.05f, 0.8f);
-        float heightFraction = Mathf.Clamp(instructionLabelHeightNormalized, 0.01f, 0.15f);
-        int scaleFromWidth = Mathf.FloorToInt((_displayCanvas.Width * widthFraction) / textColumns);
-        int scaleFromHeight = Mathf.FloorToInt((_displayCanvas.Height * heightFraction) / glyphRows);
-        int pixelScale = Mathf.Clamp(Mathf.Min(scaleFromWidth, scaleFromHeight), 2, 6);
-        int paddingX = pixelScale * 3;
-        int paddingY = pixelScale * 2;
-        int overlayWidth = Mathf.Min(_displayCanvas.Width, (textColumns * pixelScale) + (paddingX * 2));
-        int overlayHeight = Mathf.Min(_displayCanvas.Height, (glyphRows * pixelScale) + (paddingY * 2));
-        if (overlayWidth <= 0 || overlayHeight <= 0)
-        {
-            return;
-        }
-
-        Vector2 anchor = new(
-            Mathf.Clamp01(instructionLabelAnchorNormalized.x),
-            Mathf.Clamp01(instructionLabelAnchorNormalized.y));
-        int overlayX = Mathf.Clamp(
-            Mathf.RoundToInt((_displayCanvas.Width * anchor.x) - (overlayWidth * 0.5f)),
-            0,
-            Mathf.Max(0, _displayCanvas.Width - overlayWidth));
-        int overlayY = Mathf.Clamp(
-            Mathf.RoundToInt(_displayCanvas.Height * anchor.y),
-            0,
-            Mathf.Max(0, _displayCanvas.Height - overlayHeight));
-        var region = new RectInt(overlayX, overlayY, overlayWidth, overlayHeight);
-
-        RefreshDisplayRegionBase(region);
-        Color32[] pixels = _displayCanvas.CopyRegion(region);
-        if (pixels.Length != region.width * region.height)
-        {
-            return;
-        }
-
-        Color32 background = new(0, 0, 0, 205);
-        for (int i = 0; i < pixels.Length; i++)
-        {
-            pixels[i] = BlendOver(pixels[i], background);
-        }
-
-        Color32 textColor = new(245, 248, 235, 255);
-        int textWidth = textColumns * pixelScale;
-        int textX = Mathf.Max(0, (overlayWidth - textWidth) / 2);
-        int textY = Mathf.Max(0, (overlayHeight - (glyphRows * pixelScale)) / 2);
-        DrawBitmapText(
-            pixels,
-            overlayWidth,
-            overlayHeight,
-            text,
-            textX,
-            textY,
-            pixelScale,
-            textColor);
-        _displayCanvas.ApplyRegion(region, pixels);
-    }
-
-    private static string NormalizeInstructionOverlayText(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        return value.Trim().ToUpperInvariant();
-    }
-
-    private static int GetBitmapTextColumnCount(string text)
-    {
-        int columns = 0;
-        for (int i = 0; i < text.Length; i++)
-        {
-            columns += text[i] == ' ' ? 3 : 6;
-        }
-
-        return Mathf.Max(0, columns - 1);
-    }
-
-    private static void DrawBitmapText(
-        Color32[] pixels,
-        int width,
-        int height,
-        string text,
-        int originX,
-        int originY,
-        int scale,
-        Color32 color)
-    {
-        int cursorX = originX;
-        for (int charIndex = 0; charIndex < text.Length; charIndex++)
-        {
-            char character = text[charIndex];
-            if (character == ' ')
-            {
-                cursorX += 3 * scale;
-                continue;
-            }
-
-            string[] glyph = GetInstructionGlyph(character);
-            if (glyph == null)
-            {
-                cursorX += 6 * scale;
-                continue;
-            }
-
-            for (int row = 0; row < glyph.Length; row++)
-            {
-                string rowBits = glyph[row];
-                for (int col = 0; col < rowBits.Length; col++)
-                {
-                    if (rowBits[col] != '1')
-                    {
-                        continue;
-                    }
-
-                    int pixelX = cursorX + (col * scale);
-                    int pixelY = originY + ((glyph.Length - 1 - row) * scale);
-                    DrawScaledPixelBlock(pixels, width, height, pixelX, pixelY, scale, color);
-                }
-            }
-
-            cursorX += 6 * scale;
-        }
-    }
-
-    private static void DrawScaledPixelBlock(
-        Color32[] pixels,
-        int width,
-        int height,
-        int x,
-        int y,
-        int scale,
-        Color32 color)
-    {
-        for (int offsetY = 0; offsetY < scale; offsetY++)
-        {
-            int targetY = y + offsetY;
-            if (targetY < 0 || targetY >= height)
-            {
-                continue;
-            }
-
-            int rowOffset = targetY * width;
-            for (int offsetX = 0; offsetX < scale; offsetX++)
-            {
-                int targetX = x + offsetX;
-                if (targetX < 0 || targetX >= width)
-                {
-                    continue;
-                }
-
-                pixels[rowOffset + targetX] = color;
-            }
-        }
-    }
-
-    private static Color32 BlendOver(Color32 baseColor, Color32 overlayColor)
-    {
-        float alpha = overlayColor.a / 255f;
-        float inverse = 1f - alpha;
-        return new Color32(
-            (byte)Mathf.Clamp(Mathf.RoundToInt((overlayColor.r * alpha) + (baseColor.r * inverse)), 0, 255),
-            (byte)Mathf.Clamp(Mathf.RoundToInt((overlayColor.g * alpha) + (baseColor.g * inverse)), 0, 255),
-            (byte)Mathf.Clamp(Mathf.RoundToInt((overlayColor.b * alpha) + (baseColor.b * inverse)), 0, 255),
-            255);
-    }
-
-    private static string[] GetInstructionGlyph(char character)
-    {
-        return character switch
-        {
-            'A' => new[] { "01110", "10001", "10001", "11111", "10001", "10001", "10001" },
-            'D' => new[] { "11110", "10001", "10001", "10001", "10001", "10001", "11110" },
-            'E' => new[] { "11111", "10000", "10000", "11110", "10000", "10000", "11111" },
-            'N' => new[] { "10001", "11001", "10101", "10011", "10001", "10001", "10001" },
-            'O' => new[] { "01110", "10001", "10001", "10001", "10001", "10001", "01110" },
-            'P' => new[] { "11110", "10001", "10001", "11110", "10000", "10000", "10000" },
-            'R' => new[] { "11110", "10001", "10001", "11110", "10100", "10010", "10001" },
-            'S' => new[] { "01111", "10000", "10000", "01110", "00001", "00001", "11110" },
-            'T' => new[] { "11111", "00100", "00100", "00100", "00100", "00100", "00100" },
-            _ => null
-        };
     }
 
     private void InitializeBrushPreview()
@@ -1434,6 +1257,7 @@ public class DrawingBoardController : MonoBehaviour
 
         SyncBrushPreviewRendererSettings();
         PositionRuntimeRecognitionLabel();
+        PositionRuntimeInstructionLabel();
     }
 
     private TextMeshPro GetRecognitionLabelText(bool createIfMissing)
@@ -1481,6 +1305,74 @@ public class DrawingBoardController : MonoBehaviour
         _runtimeRecognitionLabelText.gameObject.SetActive(false);
     }
 
+    private TextMeshPro GetInstructionLabelText(bool createIfMissing)
+    {
+        if (instructionLabelText != null)
+        {
+            return instructionLabelText;
+        }
+
+        if (_runtimeInstructionLabelText != null)
+        {
+            return _runtimeInstructionLabelText;
+        }
+
+        if (createIfMissing && (autoCreateInstructionLabelIfMissing || instructionLabelText == null))
+        {
+            EnsureRuntimeInstructionLabel();
+        }
+
+        return _runtimeInstructionLabelText;
+    }
+
+    private void EnsureRuntimeInstructionLabel()
+    {
+        if (_runtimeInstructionLabelText != null)
+        {
+            return;
+        }
+
+        Transform parent = drawingSurfaceCollider != null ? drawingSurfaceCollider.transform : transform;
+        var labelObject = new GameObject("InstructionLabel", typeof(RectTransform), typeof(TextMeshPro))
+        {
+            hideFlags = RuntimeHideFlags
+        };
+        labelObject.transform.SetParent(parent, false);
+        labelObject.layer = boardRenderer != null ? boardRenderer.gameObject.layer : gameObject.layer;
+
+        _runtimeInstructionLabelText = labelObject.GetComponent<TextMeshPro>();
+        ApplyRuntimeInstructionLabelStyle(_runtimeInstructionLabelText);
+        _runtimeInstructionLabelText.gameObject.SetActive(false);
+    }
+
+    private void ApplyRuntimeInstructionLabelStyle(TextMeshPro labelText)
+    {
+        if (labelText == null)
+        {
+            return;
+        }
+
+        TextMeshPro styleSource = recognitionLabelText != null ? recognitionLabelText : _runtimeRecognitionLabelText;
+        if (styleSource != null && styleSource.font != null)
+        {
+            labelText.font = styleSource.font;
+            if (styleSource.fontSharedMaterial != null)
+            {
+                labelText.fontSharedMaterial = styleSource.fontSharedMaterial;
+            }
+        }
+
+        labelText.alignment = TextAlignmentOptions.Bottom;
+        labelText.textWrappingMode = TextWrappingModes.NoWrap;
+        labelText.overflowMode = TextOverflowModes.Ellipsis;
+        labelText.enableAutoSizing = true;
+        labelText.fontSizeMin = 0.08f;
+        labelText.fontSizeMax = ResolveInstructionLabelFontSize(labelText.fontSize);
+        labelText.fontStyle = FontStyles.Bold;
+        labelText.richText = false;
+        labelText.color = instructionLabelColor;
+    }
+
     private void PositionRuntimeRecognitionLabel()
     {
         if (_runtimeRecognitionLabelText == null || !_runtimeRecognitionLabelText.gameObject.activeSelf)
@@ -1502,6 +1394,35 @@ public class DrawingBoardController : MonoBehaviour
         rectTransform.sizeDelta = rectSize;
         rectTransform.SetPositionAndRotation(position, rotation);
         _runtimeRecognitionLabelText.fontSize = fontSize;
+    }
+
+    private void PositionRuntimeInstructionLabel()
+    {
+        if (_runtimeInstructionLabelText == null || !_runtimeInstructionLabelText.gameObject.activeSelf)
+        {
+            return;
+        }
+
+        if (!TryGetInstructionLabelPlacement(
+                out Vector3 position,
+                out Quaternion rotation,
+                out Vector2 rectSize,
+                out float fontSize))
+        {
+            return;
+        }
+
+        RectTransform rectTransform = _runtimeInstructionLabelText.rectTransform;
+        float resolvedFontSize = ResolveInstructionLabelFontSize(fontSize);
+        rectSize = new Vector2(
+            Mathf.Max(rectSize.x, 0.72f),
+            Mathf.Max(rectSize.y, resolvedFontSize * 1.4f));
+        rectTransform.pivot = new Vector2(0.5f, 0f);
+        rectTransform.sizeDelta = rectSize;
+        rectTransform.SetPositionAndRotation(position, rotation);
+        _runtimeInstructionLabelText.fontSizeMin = Mathf.Min(0.08f, resolvedFontSize * 0.5f);
+        _runtimeInstructionLabelText.fontSizeMax = resolvedFontSize;
+        _runtimeInstructionLabelText.fontSize = resolvedFontSize;
     }
 
     private bool TryGetRecognitionLabelPlacement(
@@ -1536,6 +1457,49 @@ public class DrawingBoardController : MonoBehaviour
             out fontSize);
     }
 
+    private bool TryGetInstructionLabelPlacement(
+        out Vector3 position,
+        out Quaternion rotation,
+        out Vector2 rectSize,
+        out float fontSize)
+    {
+        if (drawingSurfaceCollider is not BoxCollider boxCollider)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            rectSize = Vector2.zero;
+            fontSize = 0f;
+            return false;
+        }
+
+        Vector2 anchor = new(
+            Mathf.Clamp01(instructionLabelAnchorNormalized.x),
+            Mathf.Clamp01(instructionLabelAnchorNormalized.y));
+        float widthNormalized = Mathf.Clamp(Mathf.Max(instructionLabelWidthNormalized, 0.58f), 0.05f, 0.9f);
+        float heightNormalized = Mathf.Clamp(Mathf.Max(instructionLabelHeightNormalized, 0.06f), 0.01f, 0.15f);
+        return CoordinateMapper.TryGetSurfaceLabelPlacement(
+            boxCollider,
+            drawingCamera,
+            transform,
+            anchor,
+            widthNormalized,
+            heightNormalized,
+            instructionLabelSurfaceOffset,
+            out position,
+            out rotation,
+            out rectSize,
+            out fontSize);
+    }
+
+    private float ResolveInstructionLabelFontSize(float calculatedFontSize)
+    {
+        TextMeshPro styleSource = recognitionLabelText != null ? recognitionLabelText : _runtimeRecognitionLabelText;
+        float sourceFontSize = styleSource != null && styleSource.fontSize > 0f
+            ? styleSource.fontSize * 0.65f
+            : 0.32f;
+        return Mathf.Clamp(Mathf.Max(calculatedFontSize, sourceFontSize), 0.18f, 0.55f);
+    }
+
     private void CleanupRecognitionLabel()
     {
         if (_runtimeRecognitionLabelText == null)
@@ -1545,6 +1509,25 @@ public class DrawingBoardController : MonoBehaviour
 
         GameObject labelObject = _runtimeRecognitionLabelText.gameObject;
         _runtimeRecognitionLabelText = null;
+        if (Application.isPlaying)
+        {
+            Destroy(labelObject);
+        }
+        else
+        {
+            DestroyImmediate(labelObject);
+        }
+    }
+
+    private void CleanupInstructionLabel()
+    {
+        if (_runtimeInstructionLabelText == null)
+        {
+            return;
+        }
+
+        GameObject labelObject = _runtimeInstructionLabelText.gameObject;
+        _runtimeInstructionLabelText = null;
         if (Application.isPlaying)
         {
             Destroy(labelObject);

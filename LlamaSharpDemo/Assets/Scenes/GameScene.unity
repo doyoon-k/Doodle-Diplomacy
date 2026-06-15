@@ -10508,7 +10508,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.SceneReferenceHub
   sceneId: current-gameplay
-  defaultModeBehaviour: {fileID: 1778344093}
+  defaultModeBehaviour: {fileID: 1778344095}
   roundManager: {fileID: 1778344080}
   interactionManager: {fileID: 1865518810}
   cameraController: {fileID: 403058226}
@@ -10536,7 +10536,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.GameplayModeHost
   sceneReferences: {fileID: 1778344089}
-  defaultModeBehaviour: {fileID: 1778344093}
+  defaultModeBehaviour: {fileID: 1778344095}
   enterDefaultModeOnStart: 1
   validateSceneReferencesOnAwake: 1
 --- !u!114 &1778344092

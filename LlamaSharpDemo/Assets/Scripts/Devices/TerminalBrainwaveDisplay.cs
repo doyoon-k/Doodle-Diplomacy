@@ -19,9 +19,9 @@ namespace DoodleDiplomacy.Devices
         [Tooltip("Create the brainwave graph object automatically when no graph reference is assigned.")]
         [SerializeField] private bool autoCreateGraph = true;
         [Tooltip("Fraction of the terminal screen height reserved for the waveform area.")]
-        [SerializeField, Range(0.2f, 0.7f)] private float graphHeightRatio = 0.42f;
+        [SerializeField, Range(0.2f, 0.7f)] private float graphHeightRatio = 0.22f;
         [Tooltip("Fraction of the terminal screen height used as the top inset for terminal text while brainwaves are active.")]
-        [SerializeField, Range(0f, 0.85f)] private float textTopInsetRatio = 0.46f;
+        [SerializeField, Range(0f, 0.85f)] private float textTopInsetRatio = 0.34f;
         [Tooltip("Normalized left and right padding applied to the waveform area.")]
         [SerializeField, Range(0f, 0.1f)] private float horizontalInsetRatio = 0.03f;
         [Tooltip("Normalized top padding applied above the waveform area.")]
@@ -125,6 +125,91 @@ namespace DoodleDiplomacy.Devices
 
             ApplyActiveLayout();
             graph.PlayLocked(tier, label, sampleIndex, sessionSeed, semanticProfile);
+        }
+
+        public void PlaySignal(BrainwaveSemanticProfile signalProfile)
+        {
+            PlaySignal(signalProfile, BrainwaveSignalRole.Drawing);
+        }
+
+        public void PlaySignal(BrainwaveSemanticProfile signalProfile, BrainwaveSignalRole role)
+        {
+            BrainwaveGraphDisplay graph = EnsureGraph();
+            if (graph == null)
+            {
+                return;
+            }
+
+            ApplyActiveLayout();
+            graph.PlaySignal(signalProfile, role);
+        }
+
+        public void PlayComparison(
+            BrainwaveSemanticProfile unknownSignalProfile,
+            BrainwaveSemanticProfile drawingSignalProfile)
+        {
+            BrainwaveGraphDisplay graph = EnsureGraph();
+            if (graph == null)
+            {
+                return;
+            }
+
+            ApplyActiveLayout();
+            graph.PlayComparison(unknownSignalProfile, drawingSignalProfile);
+        }
+
+        public void PlayComparisonCapture(
+            BrainwaveSemanticProfile unknownSignalProfile,
+            BrainwaveSemanticProfile drawingSignalProfile)
+        {
+            BrainwaveGraphDisplay graph = EnsureGraph();
+            if (graph == null)
+            {
+                return;
+            }
+
+            ApplyActiveLayout();
+            graph.PlayComparisonCapture(unknownSignalProfile, drawingSignalProfile);
+        }
+
+        public void BeginReceiverStream(int streamSeed)
+        {
+            BrainwaveGraphDisplay graph = EnsureGraph();
+            if (graph == null)
+            {
+                return;
+            }
+
+            ApplyActiveLayout();
+            graph.BeginReceiverStream(streamSeed);
+        }
+
+        public void InjectReceiverSignal(
+            BrainwaveSemanticProfile signalProfile,
+            BrainwaveSignalRole role,
+            float duration,
+            float intensity)
+        {
+            BrainwaveGraphDisplay graph = EnsureGraph();
+            if (graph == null)
+            {
+                return;
+            }
+
+            ApplyActiveLayout();
+            graph.InjectReceiverSignal(signalProfile, role, duration, intensity);
+        }
+
+        public void CompleteReceiverSequenceLoop()
+        {
+            BrainwaveGraphDisplay graph = EnsureGraph();
+            if (graph == null)
+            {
+                return;
+            }
+
+            ApplyActiveLayout();
+            graph.CompleteReceiverSequenceLoop();
         }
 
         public void Clear()

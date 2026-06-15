@@ -9,9 +9,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     public sealed class FirstContactSemanticSettings : ScriptableObject
     {
         [Header("Embedding")]
-        [Tooltip("First Contact 번역기에서 라벨과 앵커 문장을 임베딩할 때 사용할 프로필입니다.")]
+        [Tooltip("First Contact 번역기에서 그림 라벨과 숨겨진 정답 개념을 임베딩할 때 사용할 프로필입니다.")]
         public LlmEmbeddingProfile embeddingProfile;
-        [Tooltip("켜면 같은 라벨/앵커의 임베딩 결과를 세션 중 재사용합니다.")]
+        [Tooltip("켜면 같은 라벨/정답 개념의 임베딩 결과를 세션 중 재사용합니다.")]
         public bool cacheEmbeddings = true;
         [Tooltip("켜면 메모리에 저장하기 전에 임베딩 벡터를 정규화합니다.")]
         public bool normalizeVectorsInMemory = true;
@@ -27,8 +27,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Range(-1f, 1f)] public float partialThreshold = 0.58f;
         [Tooltip("그림과 미해석 단어의 의미 유사도가 이 값 이상이면 SOLVED 단계로 확정합니다.")]
         [Range(-1f, 1f)] public float solvedThreshold = 0.73f;
-        [Tooltip("개별 앵커와의 점수 대신 앵커 중심점 점수를 사용할 때 적용하는 가중치입니다.")]
-        [Range(0f, 1f)] public float centroidWeight = 0.92f;
 
         [Header("Clusters")]
         [Tooltip("새 그림 카드가 기존 군집에 합류하려면 기존 군집 중심과 이 값 이상의 유사도가 필요합니다.")]
@@ -39,6 +37,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Min(2)] public int minClusterMembers = 3;
         [Tooltip("군집이 안정화되기 위해 필요한 최소 응집도입니다.")]
         [Range(-1f, 1f)] public float minClusterCohesion = 0.55f;
+
+        [Header("Bootstrap Category Training")]
+        [Tooltip("튜토리얼 카테고리 하나가 안정화되기 위해 필요한 최소 그림 수입니다.")]
+        [Min(2)] public int bootstrapMinTraceCount = 3;
+        [Tooltip("튜토리얼 카테고리 진행 중 새 그림이 현재 카테고리 설명 임베딩과 이 값 이상 가까워야 합니다.")]
+        [Range(-1f, 1f)] public float bootstrapMinCategoryDescriptorFit = 0.6f;
 
         [Header("Semantic Map")]
         [Tooltip("켜면 그림 제출 후 터미널에 세션 기반 의미공간 맵과 공명 피드백을 표시합니다.")]
@@ -72,6 +76,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             maxBatchSize = Math.Max(1, maxBatchSize);
             minClusterMembers = Math.Max(2, minClusterMembers);
+            bootstrapMinTraceCount = Math.Max(2, bootstrapMinTraceCount);
             semanticMapMaxCards = Math.Max(1, semanticMapMaxCards);
             semanticMapLayoutIterations = Math.Max(1, semanticMapLayoutIterations);
             semanticMapAttractionStrength = Mathf.Clamp01(semanticMapAttractionStrength);
@@ -79,7 +84,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             semanticMapDamping = Mathf.Clamp01(semanticMapDamping);
             semanticMapMaxStep = Mathf.Clamp(semanticMapMaxStep, 0.005f, 0.25f);
             waveformFeatureCount = Math.Max(8, waveformFeatureCount);
-            centroidWeight = Mathf.Clamp01(centroidWeight);
         }
     }
 }

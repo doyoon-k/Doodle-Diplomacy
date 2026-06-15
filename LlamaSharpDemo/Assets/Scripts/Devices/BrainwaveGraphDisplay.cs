@@ -1,9 +1,17 @@
+using System.Collections.Generic;
 using DoodleDiplomacy.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace DoodleDiplomacy.Devices
 {
+    public enum BrainwaveSignalRole
+    {
+        Drawing,
+        AlienToken,
+        UnknownToken
+    }
+
     [DisallowMultipleComponent]
     public sealed class BrainwaveGraphDisplay : MaskableGraphic
     {
@@ -11,7 +19,7 @@ namespace DoodleDiplomacy.Devices
         [Tooltip("Number of samples used to draw each waveform line. Higher values look smoother but cost more UI mesh vertices.")]
         [SerializeField, Min(32)] private int sampleCount = 180;
         [Tooltip("Thickness of each waveform line in UI units.")]
-        [SerializeField, Min(0.25f)] private float lineThickness = 2f;
+        [SerializeField, Min(0.25f)] private float lineThickness = 4.6f;
         [Tooltip("Horizontal movement speed of the waveform animation.")]
         [SerializeField, Min(0f)] private float scrollSpeed = 0.18f;
         [Tooltip("Default convergence duration used when BeginTraceLock is called without an explicit duration.")]
@@ -28,12 +36,42 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private Color channelBColor = new(0.35f, 0.9f, 1f, 0.9f);
         [Tooltip("Color of the lower composite brainwave trace.")]
         [SerializeField] private Color channelCColor = new(1f, 0.8f, 0.35f, 0.9f);
+        [Tooltip("Color of parsed alien token signals in single-signal mode.")]
+        [SerializeField] private Color alienSignalColor = new(1f, 0.68f, 0.22f, 0.95f);
+        [Tooltip("Color of hidden unresolved token signals in single-signal and semantic comparison modes.")]
+        [SerializeField] private Color unknownSignalColor = new(1f, 0.28f, 0.08f, 1f);
+        [Tooltip("Color of the player's drawing signal in single-signal and semantic comparison modes.")]
+        [SerializeField] private Color drawingSignalColor = new(0.35f, 0.9f, 1f, 0.95f);
+
+        [Header("Comparison Capture")]
+        [Tooltip("Seconds used to record the player's visual probe trace over the pre-existing unknown trace.")]
+        [SerializeField, Min(0.1f)] private float comparisonCaptureDuration = 1.25f;
 
         [Header("Lock Alignment")]
         [Tooltip("Vertical distance from graph center to the upper/lower waveform while the terminal is still searching.")]
         [SerializeField, Range(0f, 0.45f)] private float searchingChannelSpread = 0.24f;
         [Tooltip("Vertical distance from graph center to the upper/lower waveform after the reaction trace is locked. Lower values make all waveforms converge more tightly, independent of reaction tier.")]
         [SerializeField, Range(0f, 0.45f)] private float lockedChannelSpread = 0.1f;
+
+        [Header("Receiver Stream")]
+        [Tooltip("How many receiver samples are pushed into the ring buffer each second.")]
+        [SerializeField, Min(8f)] private float receiverSamplesPerSecond = 72f;
+        [Tooltip("Amplitude of the always-on idle receiver noise.")]
+        [SerializeField, Range(0f, 0.2f)] private float receiverIdleAmplitude = 0.026f;
+        [Tooltip("Amplitude of injected token bursts in the receiver stream.")]
+        [SerializeField, Range(0f, 0.4f)] private float receiverSignalAmplitude = 0.17f;
+        [Tooltip("How strongly the last received token signal keeps looping after its first burst.")]
+        [SerializeField, Range(0f, 1f)] private float receiverLoopSignalScale = 0.42f;
+        [Tooltip("Minimum duration in seconds before the looped receiver signal wraps back to its start.")]
+        [SerializeField, Min(0.1f)] private float receiverMinimumLoopSeconds = 0.8f;
+        [Tooltip("Color of the low-level receiver noise between token bursts.")]
+        [SerializeField] private Color receiverIdleColor = new(0.08f, 0.42f, 0.14f, 0.55f);
+        [Tooltip("Color of the live write head at the newest receiver sample.")]
+        [SerializeField] private Color receiverWriteHeadColor = new(0.55f, 1f, 0.42f, 0.88f);
+        [Tooltip("Width of the live receiver write head.")]
+        [SerializeField, Min(0.5f)] private float receiverWriteHeadThickness = 4.2f;
+        [Tooltip("Extra line thickness added while a token burst is being captured.")]
+        [SerializeField, Range(0f, 4f)] private float receiverBurstThicknessBoost = 1.5f;
 
         private readonly float[] _channelPhase = new float[3];
         private readonly float[] _channelGain = new float[3];
@@ -51,6 +89,33 @@ namespace DoodleDiplomacy.Devices
         private bool _hasSignal;
         private bool _running;
         private bool _isLocking;
+        private bool _isComparisonMode;
+        private bool _isComparisonCaptureMode;
+        private bool _isReceiverStreamMode;
+        private bool _receiverLoopPlaybackMode;
+        private BrainwaveSemanticProfile _comparisonUnknownProfile;
+        private BrainwaveSemanticProfile _comparisonDrawingProfile;
+        private float _comparisonCaptureElapsed;
+        private float _comparisonCaptureDuration;
+        private Color _singleSignalColor;
+        private float[] _receiverSamples;
+        private Color[] _receiverSampleColors;
+        private int _receiverWriteIndex;
+        private int _receiverStreamSeed;
+        private float _receiverSampleAccumulator;
+        private float _receiverSignalTime;
+        private BrainwaveSemanticProfile _receiverBurstProfile;
+        private Color _receiverBurstColor;
+        private float _receiverBurstElapsed;
+        private float _receiverBurstDuration;
+        private float _receiverBurstIntensity;
+        private float _receiverVisualPulseElapsed;
+        private float _receiverVisualPulseDuration;
+        private float _receiverVisualPulseIntensity;
+        private Color _receiverVisualPulseColor;
+        private readonly List<ReceiverLoopSegment> _receiverLoopSegments = new();
+        private int _receiverLoopSegmentIndex;
+        private float _receiverLoopSegmentElapsed;
         private int _seed;
         private float _amplitude = 0.1f;
         private float _noise = 0.04f;
@@ -86,10 +151,31 @@ namespace DoodleDiplomacy.Devices
         private float _targetSpikeDensity;
         private float _targetChannelSpread;
 
+        private readonly struct ReceiverLoopSegment
+        {
+            public ReceiverLoopSegment(
+                BrainwaveSemanticProfile profile,
+                Color color,
+                float duration,
+                float intensity)
+            {
+                Profile = profile;
+                Color = color;
+                Duration = duration;
+                Intensity = intensity;
+            }
+
+            public BrainwaveSemanticProfile Profile { get; }
+            public Color Color { get; }
+            public float Duration { get; }
+            public float Intensity { get; }
+        }
+
         protected override void Awake()
         {
             base.Awake();
             raycastTarget = false;
+            _singleSignalColor = drawingSignalColor;
         }
 
         protected override void OnEnable()
@@ -118,7 +204,24 @@ namespace DoodleDiplomacy.Devices
                 return;
             }
 
+            if (_isReceiverStreamMode)
+            {
+                UpdateReceiverStream(Time.deltaTime);
+                SetVerticesDirty();
+                return;
+            }
+
             _timeOffset += Time.deltaTime * scrollSpeed;
+            if (_isComparisonCaptureMode)
+            {
+                _comparisonCaptureElapsed += Time.deltaTime;
+                if (_comparisonCaptureElapsed >= _comparisonCaptureDuration)
+                {
+                    _isComparisonCaptureMode = false;
+                    _comparisonCaptureElapsed = _comparisonCaptureDuration;
+                }
+            }
+
             if (_isLocking)
             {
                 UpdateTraceLock(Time.deltaTime);
@@ -134,6 +237,8 @@ namespace DoodleDiplomacy.Devices
 
         public void PlaySearching(string label, int sampleIndex, int sessionSeed)
         {
+            _isComparisonMode = false;
+            _isReceiverStreamMode = false;
             GenerateSearchingProfile(label, sampleIndex, sessionSeed);
             _timeOffset = 0f;
             _hasSignal = true;
@@ -171,6 +276,8 @@ namespace DoodleDiplomacy.Devices
                 _hasSignal = true;
             }
 
+            _isComparisonMode = false;
+            _isReceiverStreamMode = false;
             CaptureCurrentAsLockStart();
             GenerateLockedProfile(tier, label, sampleIndex, sessionSeed, writeToTarget: true, semanticProfile);
             _lockElapsed = 0f;
@@ -192,12 +299,152 @@ namespace DoodleDiplomacy.Devices
             int sessionSeed,
             BrainwaveSemanticProfile semanticProfile)
         {
+            _isComparisonMode = false;
+            _isReceiverStreamMode = false;
             GenerateProfile(tier, label, sampleIndex, sessionSeed, semanticProfile);
             _timeOffset = 0f;
             _hasSignal = true;
             _running = true;
             _isLocking = false;
             SetVerticesDirty();
+        }
+
+        public void PlaySignal(BrainwaveSemanticProfile signalProfile)
+        {
+            PlaySignal(signalProfile, BrainwaveSignalRole.Drawing);
+        }
+
+        public void PlaySignal(BrainwaveSemanticProfile signalProfile, BrainwaveSignalRole role)
+        {
+            _singleSignalColor = GetSignalColor(role);
+            PlayComparison(BrainwaveSemanticProfile.Invalid, signalProfile);
+        }
+
+        public void PlayComparison(
+            BrainwaveSemanticProfile unknownSignalProfile,
+            BrainwaveSemanticProfile drawingSignalProfile)
+        {
+            if (_singleSignalColor.a <= 0f)
+            {
+                _singleSignalColor = drawingSignalColor;
+            }
+
+            _comparisonUnknownProfile = unknownSignalProfile;
+            _comparisonDrawingProfile = drawingSignalProfile;
+            _isComparisonMode = true;
+            _isComparisonCaptureMode = false;
+            _isReceiverStreamMode = false;
+            _timeOffset = 0f;
+            _hasSignal = unknownSignalProfile.IsValid || drawingSignalProfile.IsValid;
+            _running = _hasSignal;
+            _isLocking = false;
+            SetVerticesDirty();
+        }
+
+        public void PlayComparisonCapture(
+            BrainwaveSemanticProfile unknownSignalProfile,
+            BrainwaveSemanticProfile drawingSignalProfile)
+        {
+            if (_singleSignalColor.a <= 0f)
+            {
+                _singleSignalColor = drawingSignalColor;
+            }
+
+            _comparisonUnknownProfile = unknownSignalProfile;
+            _comparisonDrawingProfile = drawingSignalProfile;
+            _isComparisonMode = true;
+            _isComparisonCaptureMode = drawingSignalProfile.IsValid;
+            _isReceiverStreamMode = false;
+            _receiverLoopPlaybackMode = false;
+            _comparisonCaptureElapsed = 0f;
+            _comparisonCaptureDuration = Mathf.Max(0.1f, comparisonCaptureDuration);
+            _timeOffset = 0f;
+            _hasSignal = unknownSignalProfile.IsValid || drawingSignalProfile.IsValid;
+            _running = _hasSignal;
+            _isLocking = false;
+            SetVerticesDirty();
+        }
+
+        public void BeginReceiverStream(int streamSeed)
+        {
+            _isComparisonMode = false;
+            _isReceiverStreamMode = true;
+            _receiverLoopPlaybackMode = false;
+            _isLocking = false;
+            _receiverStreamSeed = streamSeed == 0 ? 1 : streamSeed;
+            _receiverSampleAccumulator = 0f;
+            _receiverSignalTime = 0f;
+            _receiverBurstProfile = BrainwaveSemanticProfile.Invalid;
+            _receiverBurstDuration = 0f;
+            _receiverBurstElapsed = 0f;
+            _receiverBurstIntensity = 0f;
+            _receiverVisualPulseElapsed = 0f;
+            _receiverVisualPulseDuration = 0f;
+            _receiverVisualPulseIntensity = 0f;
+            _receiverVisualPulseColor = receiverWriteHeadColor;
+            _receiverLoopSegments.Clear();
+            _receiverLoopSegmentIndex = 0;
+            _receiverLoopSegmentElapsed = 0f;
+            EnsureReceiverBuffers();
+            FillReceiverIdleSamples();
+            _hasSignal = true;
+            _running = true;
+            SetVerticesDirty();
+        }
+
+        public void InjectReceiverSignal(
+            BrainwaveSemanticProfile signalProfile,
+            BrainwaveSignalRole role,
+            float duration,
+            float intensity)
+        {
+            if (!_isReceiverStreamMode)
+            {
+                BeginReceiverStream(signalProfile.IsValid ? signalProfile.TextureSeed : _seed);
+            }
+
+            if (!signalProfile.IsValid)
+            {
+                return;
+            }
+
+            _receiverBurstProfile = signalProfile;
+            _receiverLoopPlaybackMode = false;
+            _receiverBurstColor = GetSignalColor(role);
+            _receiverBurstElapsed = 0f;
+            _receiverBurstDuration = Mathf.Max(0.08f, duration);
+            _receiverBurstIntensity = Mathf.Max(0.05f, intensity);
+            _receiverVisualPulseElapsed = 0f;
+            _receiverVisualPulseDuration = Mathf.Clamp(_receiverBurstDuration * 0.45f, 0.18f, 0.65f);
+            _receiverVisualPulseIntensity = Mathf.Max(0.05f, intensity);
+            _receiverVisualPulseColor = _receiverBurstColor;
+            _receiverLoopSegments.Add(new ReceiverLoopSegment(
+                signalProfile,
+                _receiverBurstColor,
+                Mathf.Max(receiverMinimumLoopSeconds, duration),
+                Mathf.Max(0.05f, intensity) * Mathf.Clamp01(receiverLoopSignalScale)));
+            _hasSignal = true;
+            _running = true;
+        }
+
+        public void CompleteReceiverSequenceLoop()
+        {
+            if (!_isReceiverStreamMode || _receiverLoopSegments.Count == 0)
+            {
+                return;
+            }
+
+            _receiverBurstProfile = BrainwaveSemanticProfile.Invalid;
+            _receiverBurstElapsed = 0f;
+            _receiverBurstDuration = 0f;
+            _receiverBurstIntensity = 0f;
+            _receiverVisualPulseElapsed = _receiverVisualPulseDuration;
+            _receiverVisualPulseIntensity = 0f;
+            _receiverLoopPlaybackMode = true;
+            _receiverLoopSegmentIndex = 0;
+            _receiverLoopSegmentElapsed = 0f;
+            _hasSignal = true;
+            _running = true;
         }
 
         public void Stop()
@@ -221,7 +468,17 @@ namespace DoodleDiplomacy.Devices
         {
             _running = false;
             _isLocking = false;
+            _isComparisonMode = false;
+            _isComparisonCaptureMode = false;
+            _isReceiverStreamMode = false;
+            _receiverLoopPlaybackMode = false;
             _hasSignal = false;
+            _receiverLoopSegments.Clear();
+            _receiverLoopSegmentIndex = 0;
+            _receiverLoopSegmentElapsed = 0f;
+            _receiverVisualPulseElapsed = 0f;
+            _receiverVisualPulseDuration = 0f;
+            _receiverVisualPulseIntensity = 0f;
             SetVerticesDirty();
         }
 
@@ -243,6 +500,36 @@ namespace DoodleDiplomacy.Devices
             if (drawGrid)
             {
                 DrawGrid(vh, rect);
+            }
+
+            if (_isComparisonMode)
+            {
+                if (_comparisonUnknownProfile.IsValid)
+                {
+                    DrawComparisonTrace(vh, rect, _comparisonUnknownProfile, unknownSignalColor, lineThickness * 1.25f);
+                }
+
+                if (_comparisonDrawingProfile.IsValid)
+                {
+                    Color drawingColor = _comparisonUnknownProfile.IsValid ? drawingSignalColor : _singleSignalColor;
+                    if (_isComparisonCaptureMode)
+                    {
+                        float captureProgress = Mathf.Clamp01(_comparisonCaptureElapsed / _comparisonCaptureDuration);
+                        DrawComparisonCaptureTrace(vh, rect, _comparisonDrawingProfile, drawingColor, captureProgress);
+                    }
+                    else
+                    {
+                        DrawComparisonTrace(vh, rect, _comparisonDrawingProfile, drawingColor, lineThickness);
+                    }
+                }
+
+                return;
+            }
+
+            if (_isReceiverStreamMode)
+            {
+                DrawReceiverStream(vh, rect);
+                return;
             }
 
             DrawChannel(vh, rect, GetChannelCenterYNormalized(0), 0, channelAColor);
@@ -559,6 +846,214 @@ namespace DoodleDiplomacy.Devices
             }
         }
 
+        private void DrawComparisonTrace(
+            VertexHelper vh,
+            Rect rect,
+            BrainwaveSemanticProfile profile,
+            Color traceColor,
+            float thickness)
+        {
+            if (!profile.IsValid)
+            {
+                return;
+            }
+
+            int count = Mathf.Max(2, sampleCount);
+            Vector2 previous = SampleComparisonPoint(rect, profile, 0, count);
+            for (int i = 1; i < count; i++)
+            {
+                Vector2 next = SampleComparisonPoint(rect, profile, i, count);
+                AddLine(vh, previous, next, thickness, traceColor);
+                previous = next;
+            }
+        }
+
+        private void DrawComparisonCaptureTrace(
+            VertexHelper vh,
+            Rect rect,
+            BrainwaveSemanticProfile profile,
+            Color traceColor,
+            float progress)
+        {
+            if (!profile.IsValid || progress <= 0f)
+            {
+                return;
+            }
+
+            int count = Mathf.Max(2, sampleCount);
+            int visibleCount = Mathf.Clamp(Mathf.CeilToInt((count - 1) * progress) + 1, 2, count);
+            Vector2 previous = SampleComparisonPoint(rect, profile, 0, count);
+            for (int i = 1; i < visibleCount; i++)
+            {
+                Vector2 next = SampleComparisonPoint(rect, profile, i, count);
+                float recency = visibleCount <= 2 ? 1f : i / (float)(visibleCount - 1);
+                float afterimage = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.68f, 1f, recency));
+                float thickness = lineThickness * Mathf.Lerp(0.95f, 1.22f, recency);
+
+                if (afterimage > 0.001f)
+                {
+                    Color glowColor = traceColor;
+                    glowColor.a *= 0.45f * afterimage;
+                    AddLine(vh, previous, next, thickness + lineThickness * 1.15f, glowColor);
+                }
+
+                AddLine(vh, previous, next, thickness, traceColor);
+                previous = next;
+            }
+
+            DrawComparisonCaptureHead(vh, rect, profile, traceColor, visibleCount - 1, count);
+        }
+
+        private void DrawComparisonCaptureHead(
+            VertexHelper vh,
+            Rect rect,
+            BrainwaveSemanticProfile profile,
+            Color traceColor,
+            int index,
+            int count)
+        {
+            Vector2 head = SampleComparisonPoint(rect, profile, Mathf.Clamp(index, 0, count - 1), count);
+            Color haloColor = traceColor;
+            haloColor.a *= 0.32f;
+            float pointSize = Mathf.Max(lineThickness * 2.2f, 5.5f);
+            AddFilledRect(vh, head, pointSize * 1.8f, haloColor);
+            AddFilledRect(vh, head, pointSize, traceColor);
+
+            Color scanColor = traceColor;
+            scanColor.a *= 0.5f;
+            AddLine(
+                vh,
+                new Vector2(head.x, rect.yMin),
+                new Vector2(head.x, rect.yMax),
+                Mathf.Max(receiverWriteHeadThickness, lineThickness * 0.9f),
+                scanColor);
+        }
+
+        private void DrawReceiverStream(VertexHelper vh, Rect rect)
+        {
+            EnsureReceiverBuffers();
+            int count = _receiverSamples?.Length ?? 0;
+            if (count < 2)
+            {
+                return;
+            }
+
+            bool liveCapture = !_receiverLoopPlaybackMode;
+            Vector2 previous = ReceiverPoint(rect, 0, count);
+            Color previousColor = ReceiverColor(0, count);
+            for (int i = 1; i < count; i++)
+            {
+                Vector2 next = ReceiverPoint(rect, i, count);
+                Color nextColor = ReceiverColor(i, count);
+                Color segmentColor = Color.Lerp(previousColor, nextColor, 0.5f);
+                float pulse = liveCapture ? GetReceiverVisualPulse() : 0f;
+                float thickness = lineThickness * (1.08f + (receiverBurstThicknessBoost * 0.12f * pulse));
+
+                AddLine(vh, previous, next, thickness, segmentColor);
+                previous = next;
+                previousColor = nextColor;
+            }
+
+            if (liveCapture)
+            {
+                DrawReceiverWriteHead(vh, rect, count);
+            }
+        }
+
+        private void DrawReceiverWriteHead(VertexHelper vh, Rect rect, int count)
+        {
+            float pulse = GetReceiverVisualPulse();
+            Color headColor = GetReceiverPulseColor();
+            headColor.a = Mathf.Clamp01(Mathf.Lerp(0.52f, 0.96f, pulse));
+
+            float x = rect.xMax;
+            float headThickness = receiverWriteHeadThickness + (lineThickness * receiverBurstThicknessBoost * pulse);
+            AddLine(vh, new Vector2(x, rect.yMin), new Vector2(x, rect.yMax), headThickness, headColor);
+
+            Vector2 latest = ReceiverPoint(rect, count - 1, count);
+            float pointSize = Mathf.Max(lineThickness * 2.2f, 5.5f) + (lineThickness * pulse * 1.6f);
+            AddFilledRect(vh, latest, pointSize, headColor);
+        }
+
+        private float GetReceiverVisualPulse()
+        {
+            float pulse = 0f;
+            if (_receiverVisualPulseDuration > 0.001f && _receiverVisualPulseElapsed < _receiverVisualPulseDuration)
+            {
+                float normalized = Mathf.Clamp01(_receiverVisualPulseElapsed / _receiverVisualPulseDuration);
+                pulse = Mathf.Pow(1f - normalized, 0.62f) * Mathf.Clamp01(_receiverVisualPulseIntensity);
+            }
+
+            if (_receiverBurstProfile.IsValid && _receiverBurstDuration > 0.001f && _receiverBurstElapsed < _receiverBurstDuration)
+            {
+                float normalized = Mathf.Clamp01(_receiverBurstElapsed / _receiverBurstDuration);
+                float attack = Mathf.Clamp01(normalized * 8f);
+                float decay = Mathf.Pow(1f - normalized, 0.52f);
+                pulse = Mathf.Max(pulse, attack * decay * Mathf.Clamp01(_receiverBurstIntensity));
+            }
+
+            return Mathf.Clamp01(pulse);
+        }
+
+        private Color GetReceiverPulseColor()
+        {
+            float pulse = GetReceiverVisualPulse();
+            return Color.Lerp(receiverWriteHeadColor, _receiverVisualPulseColor, pulse * 0.85f);
+        }
+
+        private Vector2 SampleComparisonPoint(
+            Rect rect,
+            BrainwaveSemanticProfile profile,
+            int index,
+            int count)
+        {
+            float normalizedX = index / (float)(count - 1);
+            float x = Mathf.Lerp(rect.xMin, rect.xMax, normalizedX);
+            float movingX = normalizedX + _timeOffset;
+            const int profileChannel = 1;
+            float frequency = Mathf.Max(
+                0.05f,
+                profile.BaseFrequency + GetVectorComponent(profile.ChannelFrequencyOffsets, profileChannel));
+            float phase = GetVectorComponent(profile.ChannelPhaseOffsets, profileChannel);
+            float amplitude = 0.14f * GetVectorComponent(profile.ChannelGainScales, profileChannel);
+            float spikeDensity = 8.5f * profile.SpikeDensityScale;
+            float spikeGain = GetVectorComponent(profile.ChannelSpikeScales, profileChannel);
+
+            float wave =
+                Mathf.Sin((movingX * frequency * Mathf.PI * 2f) + phase) * amplitude +
+                Mathf.Sin((movingX * frequency * profile.HarmonicRatio * Mathf.PI * 2f) + phase * 0.57f) *
+                amplitude * profile.HarmonicWeight +
+                SampleComparisonNoise(movingX, profile.TextureSeed, profile.NoiseScale) * 0.035f +
+                SampleComparisonSpike(movingX, profile.TextureSeed, spikeDensity, spikeGain);
+
+            float centerY = Mathf.Lerp(rect.yMin, rect.yMax, 0.5f);
+            float y = centerY + wave * rect.height;
+            return new Vector2(x, y);
+        }
+
+        private Vector2 ReceiverPoint(Rect rect, int index, int count)
+        {
+            int bufferIndex = ReceiverBufferIndex(index, count);
+            float normalizedX = index / (float)(count - 1);
+            float x = Mathf.Lerp(rect.xMin, rect.xMax, normalizedX);
+            float centerY = Mathf.Lerp(rect.yMin, rect.yMax, 0.5f);
+            float y = centerY + _receiverSamples[bufferIndex] * rect.height;
+            return new Vector2(x, y);
+        }
+
+        private Color ReceiverColor(int index, int count)
+        {
+            int bufferIndex = ReceiverBufferIndex(index, count);
+            Color sampleColor = _receiverSampleColors[bufferIndex];
+            sampleColor.a = Mathf.Clamp01(sampleColor.a);
+            return sampleColor;
+        }
+
+        private int ReceiverBufferIndex(int index, int count)
+        {
+            return (_receiverWriteIndex + index) % count;
+        }
+
         private Vector2 SamplePoint(Rect rect, int index, int count, float centerYNormalized, int channel)
         {
             float normalizedX = index / (float)(count - 1);
@@ -578,6 +1073,181 @@ namespace DoodleDiplomacy.Devices
             float centerY = Mathf.Lerp(rect.yMin, rect.yMax, centerYNormalized);
             float y = centerY + wave * rect.height;
             return new Vector2(x, y);
+        }
+
+        private void UpdateReceiverStream(float deltaTime)
+        {
+            EnsureReceiverBuffers();
+            float interval = 1f / Mathf.Max(8f, receiverSamplesPerSecond);
+            _receiverSampleAccumulator += Mathf.Max(0f, deltaTime);
+            int pushed = 0;
+            while (_receiverSampleAccumulator >= interval && pushed < 16)
+            {
+                PushReceiverSample(interval);
+                _receiverSampleAccumulator -= interval;
+                pushed++;
+            }
+
+            if (_receiverVisualPulseDuration > 0.001f && _receiverVisualPulseElapsed < _receiverVisualPulseDuration)
+            {
+                _receiverVisualPulseElapsed += Mathf.Max(0f, deltaTime);
+            }
+        }
+
+        private void PushReceiverSample(float interval)
+        {
+            float sample = SampleReceiverIdle(_receiverSignalTime);
+            Color sampleColor = receiverIdleColor;
+            bool burstActive = _receiverBurstProfile.IsValid && _receiverBurstElapsed < _receiverBurstDuration;
+
+            if (burstActive)
+            {
+                float normalizedElapsed = Mathf.Clamp01(_receiverBurstElapsed / _receiverBurstDuration);
+                float attack = Mathf.Clamp01(normalizedElapsed * 8f);
+                float decay = Mathf.Pow(1f - normalizedElapsed, 0.52f);
+                float envelope = attack * decay;
+                float burstTime = WrapReceiverSignalTime(_receiverBurstElapsed, _receiverBurstDuration);
+                float signal = SampleReceiverSignal(_receiverBurstProfile, burstTime) *
+                               receiverSignalAmplitude *
+                               _receiverBurstIntensity *
+                               envelope;
+                sample += signal;
+                float colorStrength = Mathf.Clamp01(envelope * 1.25f);
+                sampleColor = Color.Lerp(receiverIdleColor, _receiverBurstColor, colorStrength);
+                sampleColor.a = Mathf.Lerp(receiverIdleColor.a, _receiverBurstColor.a, colorStrength);
+                _receiverBurstElapsed += interval;
+            }
+            else if (_receiverLoopSegments.Count > 0)
+            {
+                ReceiverLoopSegment segment = _receiverLoopSegments[
+                    Mathf.Clamp(_receiverLoopSegmentIndex, 0, _receiverLoopSegments.Count - 1)];
+                if (segment.Profile.IsValid && segment.Intensity > 0f)
+                {
+                    float loopTime = WrapReceiverSignalTime(_receiverLoopSegmentElapsed, segment.Duration);
+                    float signal = SampleReceiverSignal(segment.Profile, loopTime) *
+                                   receiverSignalAmplitude *
+                                   segment.Intensity;
+                    sample += signal;
+                    sampleColor = Color.Lerp(receiverIdleColor, segment.Color, 0.82f);
+                    sampleColor.a = Mathf.Lerp(receiverIdleColor.a, segment.Color.a, 0.78f);
+                }
+
+                AdvanceReceiverLoop(interval);
+            }
+
+            _receiverSamples[_receiverWriteIndex] = Mathf.Clamp(sample, -0.44f, 0.44f);
+            _receiverSampleColors[_receiverWriteIndex] = sampleColor;
+            _receiverWriteIndex = (_receiverWriteIndex + 1) % _receiverSamples.Length;
+            _receiverSignalTime += interval;
+        }
+
+        private void AdvanceReceiverLoop(float interval)
+        {
+            if (_receiverLoopSegments.Count == 0)
+            {
+                return;
+            }
+
+            ReceiverLoopSegment segment = _receiverLoopSegments[
+                Mathf.Clamp(_receiverLoopSegmentIndex, 0, _receiverLoopSegments.Count - 1)];
+            _receiverLoopSegmentElapsed += Mathf.Max(0f, interval);
+            float duration = Mathf.Max(receiverMinimumLoopSeconds, segment.Duration);
+            while (_receiverLoopSegmentElapsed >= duration && _receiverLoopSegments.Count > 0)
+            {
+                _receiverLoopSegmentElapsed -= duration;
+                _receiverLoopSegmentIndex = (_receiverLoopSegmentIndex + 1) % _receiverLoopSegments.Count;
+                segment = _receiverLoopSegments[_receiverLoopSegmentIndex];
+                duration = Mathf.Max(receiverMinimumLoopSeconds, segment.Duration);
+            }
+        }
+
+        private float SampleReceiverIdle(float signalTime)
+        {
+            float seedOffset = Mathf.Abs(_receiverStreamSeed % 10000) * 0.017f;
+            float slow = Mathf.Sin((signalTime * 1.9f + seedOffset) * Mathf.PI * 2f) * 0.35f;
+            float noise = Mathf.PerlinNoise(signalTime * 8.1f + seedOffset, seedOffset * 0.29f) * 2f - 1f;
+            return (slow + noise) * receiverIdleAmplitude;
+        }
+
+        private float SampleReceiverSignal(BrainwaveSemanticProfile profile, float signalTime)
+        {
+            const int profileChannel = 1;
+            float frequency = Mathf.Max(
+                0.05f,
+                profile.BaseFrequency + GetVectorComponent(profile.ChannelFrequencyOffsets, profileChannel));
+            float phase = GetVectorComponent(profile.ChannelPhaseOffsets, profileChannel);
+            float gain = GetVectorComponent(profile.ChannelGainScales, profileChannel);
+            float spikeDensity = 8.5f * profile.SpikeDensityScale;
+            float spikeGain = GetVectorComponent(profile.ChannelSpikeScales, profileChannel);
+
+            float wave =
+                Mathf.Sin((signalTime * frequency * Mathf.PI * 2f) + phase) +
+                Mathf.Sin((signalTime * frequency * profile.HarmonicRatio * Mathf.PI * 2f) + phase * 0.57f) *
+                profile.HarmonicWeight +
+                SampleComparisonNoise(signalTime, profile.TextureSeed, profile.NoiseScale) * 0.24f +
+                SampleReceiverSpike(signalTime, profile.TextureSeed, spikeDensity, spikeGain);
+
+            return Mathf.Clamp(wave * gain, -1.4f, 1.4f);
+        }
+
+        private static float WrapReceiverSignalTime(float signalTime, float loopDuration)
+        {
+            float duration = Mathf.Max(0.1f, loopDuration);
+            return Mathf.Repeat(signalTime, duration);
+        }
+
+        private float SampleReceiverSpike(float signalTime, int seed, float spikeDensity, float spikeGain)
+        {
+            float spikePosition = signalTime * Mathf.Max(0.1f, spikeDensity);
+            int cell = Mathf.FloorToInt(spikePosition);
+            float local = spikePosition - cell;
+            float chance = 0.05f * Mathf.Max(0.1f, spikeGain);
+
+            if (StableRandom01(cell, 0, seed) > chance)
+            {
+                return 0f;
+            }
+
+            float center = Mathf.Lerp(0.18f, 0.82f, StableRandom01(cell + 17, 0, seed));
+            float width = Mathf.Lerp(0.025f, 0.065f, StableRandom01(cell + 31, 0, seed));
+            float sign = StableRandom01(cell + 47, 0, seed) > 0.5f ? 1f : -1f;
+            float distance = (local - center) / width;
+            float envelope = Mathf.Exp(-(distance * distance));
+            return sign * envelope * 0.55f;
+        }
+
+        private void EnsureReceiverBuffers()
+        {
+            int count = Mathf.Max(32, sampleCount);
+            if (_receiverSamples != null && _receiverSamples.Length == count &&
+                _receiverSampleColors != null && _receiverSampleColors.Length == count)
+            {
+                return;
+            }
+
+            _receiverSamples = new float[count];
+            _receiverSampleColors = new Color[count];
+            _receiverWriteIndex = 0;
+            FillReceiverIdleSamples();
+        }
+
+        private void FillReceiverIdleSamples()
+        {
+            if (_receiverSamples == null || _receiverSampleColors == null)
+            {
+                return;
+            }
+
+            float interval = 1f / Mathf.Max(8f, receiverSamplesPerSecond);
+            float startTime = 0f;
+            for (int i = 0; i < _receiverSamples.Length; i++)
+            {
+                _receiverSamples[i] = Mathf.Clamp(SampleReceiverIdle(startTime + (i * interval)), -0.44f, 0.44f);
+                _receiverSampleColors[i] = receiverIdleColor;
+            }
+
+            _receiverWriteIndex = 0;
+            _receiverSignalTime = _receiverSamples.Length * interval;
         }
 
         private float GetChannelCenterYNormalized(int channel)
@@ -647,6 +1317,50 @@ namespace DoodleDiplomacy.Devices
             return sign * envelope * _spikeAmplitude;
         }
 
+        private float SampleComparisonNoise(float movingX, int seed, float noiseScale)
+        {
+            float seedOffset = Mathf.Abs(seed % 10000) * 0.013f;
+            float scale = Mathf.Max(0.1f, noiseScale);
+            float noise = Mathf.PerlinNoise(
+                movingX * 18.7f * scale + seedOffset,
+                seedOffset * 0.37f);
+            return noise * 2f - 1f;
+        }
+
+        private float SampleComparisonSpike(float movingX, int seed, float spikeDensity, float spikeGain)
+        {
+            float spikePosition = movingX * Mathf.Max(0.1f, spikeDensity);
+            int cell = Mathf.FloorToInt(spikePosition);
+            float local = spikePosition - cell;
+            float chance = 0.022f * Mathf.Max(0.1f, spikeGain);
+
+            if (StableRandom01(cell, 0, seed) > chance)
+            {
+                return 0f;
+            }
+
+            float center = Mathf.Lerp(0.18f, 0.82f, StableRandom01(cell + 17, 0, seed));
+            float width = Mathf.Lerp(0.025f, 0.07f, StableRandom01(cell + 31, 0, seed));
+            float sign = StableRandom01(cell + 47, 0, seed) > 0.5f ? 1f : -1f;
+            float distance = (local - center) / width;
+            float envelope = Mathf.Exp(-(distance * distance));
+            return sign * envelope * 0.09f;
+        }
+
+        private static void AddFilledRect(VertexHelper vh, Vector2 center, float size, Color rectColor)
+        {
+            float half = Mathf.Max(0.1f, size) * 0.5f;
+            int vertexStart = vh.currentVertCount;
+
+            vh.AddVert(new Vector2(center.x - half, center.y - half), rectColor, Vector2.zero);
+            vh.AddVert(new Vector2(center.x - half, center.y + half), rectColor, Vector2.zero);
+            vh.AddVert(new Vector2(center.x + half, center.y + half), rectColor, Vector2.zero);
+            vh.AddVert(new Vector2(center.x + half, center.y - half), rectColor, Vector2.zero);
+
+            vh.AddTriangle(vertexStart, vertexStart + 1, vertexStart + 2);
+            vh.AddTriangle(vertexStart, vertexStart + 2, vertexStart + 3);
+        }
+
         private static void AddLine(VertexHelper vh, Vector2 start, Vector2 end, float thickness, Color lineColor)
         {
             Vector2 direction = end - start;
@@ -708,6 +1422,16 @@ namespace DoodleDiplomacy.Devices
                 hash = (hash ^ (uint)c) * 16777619u;
                 return (hash & 0x00FFFFFF) / 16777215f;
             }
+        }
+
+        private Color GetSignalColor(BrainwaveSignalRole role)
+        {
+            return role switch
+            {
+                BrainwaveSignalRole.AlienToken => alienSignalColor,
+                BrainwaveSignalRole.UnknownToken => unknownSignalColor,
+                _ => drawingSignalColor
+            };
         }
     }
 }

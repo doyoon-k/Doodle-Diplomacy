@@ -8,7 +8,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         UnknownSlot,
         Card,
-        StableCluster
+        StableCluster,
+        BootstrapCategory
     }
 
     public sealed class FirstContactSemanticMapNode
@@ -21,6 +22,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public float[] Embedding;
         public bool IsActive;
         public char Marker;
+        public string BootstrapCategoryId;
+        public bool IsBootstrapDetached;
+        public int TraceCount;
+        public int RequiredTraceCount;
+        public bool IsBootstrapCategoryStable;
+        public float Pulse;
     }
 
     public readonly struct FirstContactSemanticMapLink
@@ -131,7 +138,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int i = 0; i < question.UnknownSlots.Count; i++)
             {
                 UnknownSlot slot = question.UnknownSlots[i];
-                if (slot?.AnchorSet == null || !slot.AnchorSet.IsValid)
+                if (slot?.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
                 {
                     continue;
                 }
@@ -143,7 +150,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     Label = slot.Id,
                     SecondaryLabel = slot.GetDisplayToken(),
                     Kind = FirstContactSemanticMapNodeKind.UnknownSlot,
-                    Embedding = slot.AnchorSet.Centroid,
+                    Embedding = slot.TargetEmbedding.Vector,
                     IsActive = string.Equals(id, activeUnknownNodeId, StringComparison.Ordinal),
                     Marker = GetUnknownMarker(i)
                 });
@@ -204,7 +211,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Kind = FirstContactSemanticMapNodeKind.Card,
                 Embedding = card.Embedding,
                 IsActive = string.Equals(id, activeCardNodeId, StringComparison.Ordinal),
-                Marker = string.Equals(id, activeCardNodeId, StringComparison.Ordinal) ? '@' : 'o'
+                Marker = string.Equals(id, activeCardNodeId, StringComparison.Ordinal) ? '@' : 'o',
+                BootstrapCategoryId = card.BootstrapCategoryId,
+                IsBootstrapDetached = card.BootstrapCategoryEvaluated && !card.BootstrapCategoryAccepted
             });
         }
 
@@ -275,6 +284,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             Vector2 direction = DeterministicUnitVector(node.Id);
+            if (node.IsBootstrapDetached && TryGetAcceptedBootstrapCenter(node, nodes, out Vector2 acceptedCenter))
+            {
+                return ClampToMap(acceptedCenter + direction * 0.82f);
+            }
+
             if (bestNode != null)
             {
                 float normalized = Mathf.Clamp01((bestScore + 1f) * 0.5f);
@@ -343,6 +357,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             forces[second.Id] += direction * repulsion;
 
             float score = Cosine(first.Embedding, second.Embedding);
+            if (ShouldSuppressBootstrapPair(first, second))
+            {
+                return;
+            }
+
             if (score < settings.semanticMapAttractionThreshold)
             {
                 return;
@@ -418,6 +437,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     }
 
                     float score = Cosine(first.Embedding, second.Embedding);
+                    if (ShouldSuppressBootstrapPair(first, second))
+                    {
+                        continue;
+                    }
+
                     if (score < threshold)
                     {
                         continue;
@@ -494,6 +518,59 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return Mathf.Clamp(sum, -1f, 1f);
+        }
+
+        private bool TryGetAcceptedBootstrapCenter(
+            FirstContactSemanticMapNode detachedNode,
+            IReadOnlyList<FirstContactSemanticMapNode> nodes,
+            out Vector2 center)
+        {
+            center = Vector2.zero;
+            if (detachedNode == null ||
+                !detachedNode.IsBootstrapDetached ||
+                string.IsNullOrWhiteSpace(detachedNode.BootstrapCategoryId) ||
+                nodes == null)
+            {
+                return false;
+            }
+
+            int count = 0;
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode candidate = nodes[i];
+                if (candidate == null ||
+                    candidate.IsBootstrapDetached ||
+                    !string.Equals(candidate.BootstrapCategoryId, detachedNode.BootstrapCategoryId, StringComparison.Ordinal) ||
+                    !_positions.TryGetValue(candidate.Id, out Vector2 position))
+                {
+                    continue;
+                }
+
+                center += position;
+                count++;
+            }
+
+            if (count <= 0)
+            {
+                return false;
+            }
+
+            center /= count;
+            return true;
+        }
+
+        private static bool ShouldSuppressBootstrapPair(
+            FirstContactSemanticMapNode first,
+            FirstContactSemanticMapNode second)
+        {
+            if (first == null || second == null ||
+                string.IsNullOrWhiteSpace(first.BootstrapCategoryId) ||
+                !string.Equals(first.BootstrapCategoryId, second.BootstrapCategoryId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return first.IsBootstrapDetached != second.IsBootstrapDetached;
         }
 
         private static uint Hash(string value)

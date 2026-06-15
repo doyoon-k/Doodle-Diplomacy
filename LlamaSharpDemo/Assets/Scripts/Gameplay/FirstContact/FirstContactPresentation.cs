@@ -11,11 +11,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 {
     public sealed class FirstContactTerminalPresenter
     {
+        public static string MeaningMapActionLabel => T("choice.meaning_map", "MEANING MAP");
+        public static string AnswerActionLabel => T("choice.send_reply", "SEND REPLY");
+
         private readonly TerminalDisplay _terminalDisplay;
         private readonly TerminalBrainwaveDisplay _brainwaveDisplay;
         private readonly FirstContactSemanticMapDisplay _semanticMapDisplay;
         private readonly FirstContactDebugSettings _debugSettings;
         private bool _hasShownQuestionOnce;
+        private int _lastIncomingTransmissionTextLength;
 
         public FirstContactTerminalPresenter(
             TerminalDisplay terminalDisplay,
@@ -46,34 +50,135 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _hasShownQuestionOnce = true;
         }
 
+        public void ShowLocalReferenceIntro(bool instant = false)
+        {
+            ClearVisualOverlays();
+            string target = GetLocalReferenceTargetLabel();
+            string text =
+                Header("local_reference", "[LOCAL REFERENCE]") + "\n\n" +
+                T("local_reference.need_known_signal", "TRANSLATOR NEEDS ONE KNOWN SIGNAL") + "\n\n" +
+                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
+                T("local_reference.draw_on_tablet", "DRAW {target} ON THE TABLET", L10n.Arg("target", target)) +
+                BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowLocalReferenceTabletOpen(bool instant = false)
+        {
+            ClearVisualOverlays();
+            string target = GetLocalReferenceTargetLabel();
+            string text =
+                Header("tablet_link_open", "[TABLET LINK OPEN]") + "\n\n" +
+                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
+                T("line.draw_target", "DRAW {target}", L10n.Arg("target", target)) + "\n\n" +
+                T("line.submit_enter", "SUBMIT: ENTER");
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void BeginIncomingTransmissionStream(int streamSeed)
+        {
+            _semanticMapDisplay?.Clear(resetTerminalInset: false);
+            _brainwaveDisplay?.BeginReceiverStream(streamSeed);
+            _hasShownQuestionOnce = true;
+            _lastIncomingTransmissionTextLength = 0;
+        }
+
+        public void CompleteIncomingTransmissionStream()
+        {
+            _brainwaveDisplay?.CompleteReceiverSequenceLoop();
+        }
+
+        public void ShowIncomingTransmissionToken(
+            AlienQuestion question,
+            int tokenIndex,
+            bool isUnknownToken,
+            BrainwaveSemanticProfile signalProfile,
+            float signalDuration,
+            float signalIntensity,
+            bool instant = true)
+        {
+            _semanticMapDisplay?.Clear(resetTerminalInset: false);
+            string[] displayTokens = question?.BuildDisplayTokens() ?? Array.Empty<string>();
+            int tokenCount = displayTokens.Length;
+            int activeIndex = tokenCount > 0
+                ? Mathf.Clamp(tokenIndex, 0, tokenCount - 1)
+                : -1;
+            string text = BuildIncomingTransmissionBaseText(displayTokens, activeIndex);
+            int visibleCharacterCount = BuildIncomingTransmissionVisibleCharacterCount(displayTokens, activeIndex);
+            if (instant)
+            {
+                _terminalDisplay?.ShowText(text, instant: true);
+            }
+            else
+            {
+                _terminalDisplay?.ShowTextWithTypedSuffix(text, visibleCharacterCount);
+            }
+
+            _lastIncomingTransmissionTextLength = text.Length;
+            if (_brainwaveDisplay != null && signalProfile.IsValid)
+            {
+                _brainwaveDisplay.InjectReceiverSignal(
+                    signalProfile,
+                    isUnknownToken ? BrainwaveSignalRole.UnknownToken : BrainwaveSignalRole.AlienToken,
+                    signalDuration,
+                    signalIntensity);
+            }
+
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowIncomingTransmissionChoices(
+            AlienQuestion question,
+            int selectedIndex,
+            string initialProbeUnknownId,
+            bool instant = true)
+        {
+            _semanticMapDisplay?.Clear(resetTerminalInset: false);
+            string[] displayTokens = question?.BuildDisplayTokens() ?? Array.Empty<string>();
+            int finalTokenIndex = displayTokens.Length > 0 ? displayTokens.Length - 1 : -1;
+            string text = BuildIncomingTransmissionBaseText(displayTokens, finalTokenIndex);
+
+            string traceId = FirstContactUnknownSlotDefinition.NormalizeUnknownId(initialProbeUnknownId);
+            if (!string.IsNullOrWhiteSpace(initialProbeUnknownId))
+            {
+                text += "\n\n";
+                text += T("line.trace", "TRACE: {trace}", L10n.Arg("trace", traceId)) + "\n";
+                text += T("line.status_signal_buffered", "STATUS: SIGNAL BUFFERED") + "\n";
+                text += T("line.unknown_token_signal_color", "UNKNOWN TOKEN SIGNAL: {color}", L10n.Arg("color", SignalColor("red", "RED")));
+            }
+
+            text += "\n\n";
+            text += Header("response_channel_ready", "[RESPONSE CHANNEL READY]") + "\n\n";
+            text += BuildQuestionChoiceBlock(question, selectedIndex, initialProbeUnknownId);
+
+            if (instant || _lastIncomingTransmissionTextLength <= 0)
+            {
+                _terminalDisplay?.ShowText(text, instant);
+            }
+            else
+            {
+                _terminalDisplay?.ShowTextWithTypedSuffix(
+                    text,
+                    Mathf.Min(_lastIncomingTransmissionTextLength, text.Length));
+            }
+
+            _hasShownQuestionOnce = true;
+        }
+
         public void ShowQuestionChoices(
             AlienQuestion question,
             int selectedIndex,
             FirstContactSemanticMapSnapshot mapSnapshot,
             FirstContactSemanticSettings semanticSettings,
             bool instant = true,
-            string fallbackReason = null)
+            string fallbackReason = null,
+            string initialProbeUnknownId = null)
         {
             _brainwaveDisplay?.Clear();
             ShowMiniMap(mapSnapshot, semanticSettings);
             string text = BuildQuestionText(question, fallbackReason);
-            text += "\n\n[RESPONSE CHANNEL READY]\n\n";
-
-            int choiceIndex = 0;
-            if (question != null)
-            {
-                for (int i = 0; i < question.UnknownSlots.Count; i++)
-                {
-                    string id = question.UnknownSlots[i].Id;
-                    text += BuildChoiceLine(choiceIndex, selectedIndex, $"DECODE {id}");
-                    choiceIndex++;
-                }
-            }
-
-            text += BuildChoiceLine(choiceIndex, selectedIndex, "VIEW SEMANTIC MAP");
-            choiceIndex++;
-            text += BuildChoiceLine(choiceIndex, selectedIndex, "TRANSMIT ANSWER");
-            text += "\nINPUT: 1-" + Mathf.Max(1, choiceIndex + 1) + " / ENTER";
+            text += "\n\n" + Header("response_channel_ready", "[RESPONSE CHANNEL READY]") + "\n\n";
+            text += BuildQuestionChoiceBlock(question, selectedIndex, initialProbeUnknownId);
 
             _terminalDisplay?.ShowText(text, instant);
             _hasShownQuestionOnce = true;
@@ -90,11 +195,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ShowFullMap(mapSnapshot, semanticSettings);
 
             string text =
-                "[SEMANTIC MAP]\n\n" +
-                "SESSION MEMORY\n\n";
+                Header("meaning_map", "[MEANING MAP]") + "\n\n" +
+                T("meaning_map.drawing_reference", "DRAWING REFERENCE") + "\n\n";
 
             int choiceIndex = 0;
-            text += BuildChoiceLine(choiceIndex, selectedIndex, "BACK TO REQUEST");
+            text += BuildChoiceLine(choiceIndex, selectedIndex, T("choice.back_to_request", "BACK TO REQUEST"));
             choiceIndex++;
 
             if (question != null)
@@ -102,13 +207,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 for (int i = 0; i < question.UnknownSlots.Count; i++)
                 {
                     string id = question.UnknownSlots[i].Id;
-                    text += BuildChoiceLine(choiceIndex, selectedIndex, $"DECODE {id}");
+                    text += BuildChoiceLine(choiceIndex, selectedIndex, BuildProbeActionLabel(id));
                     choiceIndex++;
                 }
             }
 
-            text += BuildChoiceLine(choiceIndex, selectedIndex, "TRANSMIT ANSWER");
-            text += "\nINPUT: 1-" + Mathf.Max(1, choiceIndex + 1) + " / ENTER";
+            text += BuildChoiceLine(choiceIndex, selectedIndex, AnswerActionLabel);
+            text += BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
             _hasShownQuestionOnce = true;
         }
@@ -117,7 +222,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             ClearVisualOverlays();
             string text = BuildQuestionText(question);
-            text += "\n\n[INPUT ACCEPTED]\n\n";
+            text += "\n\n" + Header("input_accepted", "[INPUT ACCEPTED]") + "\n\n";
             text += $"> {choiceLabel ?? string.Empty}";
             _terminalDisplay?.ShowText(text, instant);
             _hasShownQuestionOnce = true;
@@ -131,24 +236,180 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             ClearVisualOverlays();
             string text = BuildQuestionText(question);
-            text += "\n\n[TABLET LINK OPEN]\n\n";
-            text += $"CHANNEL: {BuildChannelLabel(source, unknownId)}\n";
-            text += "DRAW ONE OBJECT\n\n";
-            text += "SUBMIT: ENTER";
+            text += "\n\n" + Header("tablet_link_open", "[TABLET LINK OPEN]") + "\n\n";
+            text += T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId))) + "\n";
+            text += T("line.draw_one_object", "DRAW ONE OBJECT") + "\n\n";
+            text += T("line.submit_enter", "SUBMIT: ENTER");
             _terminalDisplay?.ShowText(text, instant);
             _hasShownQuestionOnce = true;
+        }
+
+        public void ShowProbeChannelOpen(
+            FirstContactCardSource source,
+            string unknownId,
+            bool instant = false)
+        {
+            ClearVisualOverlays();
+            bool isAnswer = source == FirstContactCardSource.Answer;
+            string text =
+                (isAnswer ? Header("reply_channel_open", "[REPLY CHANNEL OPEN]") : Header("probe_channel_open", "[PROBE CHANNEL OPEN]")) + "\n\n" +
+                T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId))) + "\n" +
+                T("line.draw_one_simple_object", "DRAW ONE SIMPLE OBJECT");
+            _terminalDisplay?.ShowText(text, instant);
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowBootstrapProbeSequence(
+            string category,
+            int traceCount,
+            int requiredTraceCount,
+            bool stable,
+            int selectedIndex,
+            bool instant = true)
+        {
+            ClearVisualOverlays();
+            string text =
+                Header("probe_sequence", "[PROBE SEQUENCE]") + "\n\n" +
+                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
+                T("line.group", "GROUP: {group}", L10n.Arg("group", BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
+                T("line.trace_count", "TRACE: {count}/{required}",
+                    L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
+                    L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n\n" +
+                BuildChoiceLine(0, selectedIndex, T("choice.draw_related_object", "DRAW RELATED OBJECT")) +
+                BuildSelectPrompt();
+            _terminalDisplay?.ShowText(text, instant);
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowBootstrapProbeChannelOpen(
+            string category,
+            int traceCount,
+            int requiredTraceCount,
+            bool instant = false)
+        {
+            ClearVisualOverlays();
+            string text =
+                Header("probe_channel_open", "[PROBE CHANNEL OPEN]") + "\n\n" +
+                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
+                T("line.trace_count", "TRACE: {count}/{required}",
+                    L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
+                    L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n\n" +
+                T("line.draw_related_object", "DRAW RELATED OBJECT");
+            _terminalDisplay?.ShowText(text, instant);
+            _hasShownQuestionOnce = true;
+        }
+
+        public void ShowBootstrapSignalCapture(
+            SemanticCardRecord card,
+            string category,
+            int previousTraceCount,
+            int traceCount,
+            int requiredTraceCount,
+            FirstContactSemanticMapSnapshot beforeMapSnapshot,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            bool accepted,
+            bool becameStable,
+            bool stable,
+            bool instant = false)
+        {
+            _brainwaveDisplay?.Clear();
+            ShowBootstrapResultMap(
+                beforeMapSnapshot,
+                mapSnapshot,
+                semanticSettings,
+                FirstContactSemanticMapLayout.BuildCardNodeId(card),
+                BuildBootstrapCategoryNodeId(card?.BootstrapCategoryId),
+                accepted,
+                becameStable);
+            string label = card != null ? GetDisplayLabel(card) : string.Empty;
+            string text =
+                Header("signal_capture", "[SIGNAL CAPTURE]") + "\n\n" +
+                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n" +
+                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
+                T("line.group", "GROUP: {group}", L10n.Arg("group", BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
+                BuildTraceLine(previousTraceCount, traceCount, requiredTraceCount, accepted) +
+                BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowBootstrapClusterTrace(
+            string category,
+            int traceCount,
+            int requiredTraceCount,
+            string meaning,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            bool instant = false)
+        {
+            _brainwaveDisplay?.Clear();
+            ShowFullMap(mapSnapshot, semanticSettings);
+            string text =
+                Header("cluster_trace", "[CLUSTER TRACE]") + "\n\n" +
+                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
+                T("line.trace_count", "TRACE: {count}/{required}",
+                    L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
+                    L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n" +
+                T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
+                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", NormalizeTerminalLine(meaning, "[MEANING?]").ToUpperInvariant())) +
+                BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowBootstrapComplete(bool instant = false)
+        {
+            ClearVisualOverlays();
+            string text =
+                Header("bootstrap_complete", "[BOOTSTRAP COMPLETE]") + "\n\n" +
+                T("line.translator_ready", "TRANSLATOR READY") + "\n" +
+                T("line.meaning_map_seeded", "MEANING MAP SEEDED") +
+                BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
         }
 
         public void ShowTabletImageReceived(
             FirstContactCardSource source,
             string unknownId,
+            bool instant = false)
+        {
+            ClearVisualOverlays();
+            if (source == FirstContactCardSource.LocalReference)
+            {
+                string target = GetLocalReferenceTargetLabel();
+                string localText =
+                    Header("local_reference_analysis", "[LOCAL REFERENCE ANALYSIS]") + "\n\n" +
+                    T("line.image_captured", "IMAGE CAPTURED") + "\n" +
+                    T("line.extracting_local_meaning_signal", "EXTRACTING LOCAL MEANING SIGNAL") + "\n" +
+                    T("line.target", "TARGET: {target}", L10n.Arg("target", target));
+                _terminalDisplay?.ShowText(localText, instant);
+                return;
+            }
+
+            string text =
+                Header("visual_probe_analysis", "[VISUAL PROBE ANALYSIS]") + "\n\n" +
+                T("line.image_captured", "IMAGE CAPTURED") + "\n" +
+                T("line.extracting_meaning_signal", "EXTRACTING MEANING SIGNAL") + "\n" +
+                T("line.visual_probe_signal_color", "VISUAL PROBE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n" +
+                T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId)));
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowLocalReferenceMismatch(
+            string label,
+            string reason,
+            int selectedIndex,
             bool instant = true)
         {
             ClearVisualOverlays();
+            string target = GetLocalReferenceTargetLabel();
+            string normalizedReason = NormalizeTerminalLine(reason, T("reason.reference_not_stored", "REFERENCE NOT STORED")).ToUpperInvariant();
             string text =
-                "[TABLET IMAGE RECEIVED]\n\n" +
-                $"CHANNEL: {BuildChannelLabel(source, unknownId)}\n\n" +
-                "ANALYZING VISUAL SIGNAL...";
+                Header("reference_check", "[REFERENCE CHECK]") + "\n\n" +
+                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n" +
+                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
+                $"{normalizedReason}\n\n" +
+                BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
+                BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
         }
 
@@ -156,10 +417,28 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             ClearVisualOverlays();
             string text =
-                "[INPUT REJECTED]\n\n" +
-                $"{NormalizeTerminalLine(reason, "DRAW ONE OBJECT")}\n\n" +
-                BuildChoiceLine(0, selectedIndex, "REDRAW") +
-                "\nINPUT: 1 / ENTER";
+                Header("input_rejected", "[INPUT REJECTED]") + "\n\n" +
+                $"{NormalizeTerminalLine(reason, T("reason.draw_one_object", "DRAW ONE OBJECT"))}\n\n" +
+                BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
+                BuildSelectPrompt();
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowLocalReferenceReview(
+            string label,
+            int selectedIndex,
+            bool instant = true)
+        {
+            ClearVisualOverlays();
+            string target = GetLocalReferenceTargetLabel();
+            string text =
+                Header("reference_check", "[REFERENCE CHECK]") + "\n\n" +
+                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, target).ToUpperInvariant())) + "\n" +
+                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
+                T("line.reference_match", "REFERENCE MATCH") + "\n\n" +
+                BuildChoiceLine(0, selectedIndex, T("choice.accept", "ACCEPT")) +
+                BuildChoiceLine(1, selectedIndex, T("choice.redraw", "REDRAW")) +
+                BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
         }
 
@@ -172,12 +451,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             ClearVisualOverlays();
             string text =
-                "[VISUAL LABEL]\n\n" +
-                $"{NormalizeTerminalLine(label, "UNKNOWN").ToUpperInvariant()}\n\n" +
-                $"CHANNEL: {BuildChannelLabel(source, unknownId)}\n\n" +
-                BuildChoiceLine(0, selectedIndex, "ACCEPT") +
-                BuildChoiceLine(1, selectedIndex, "REDRAW") +
-                "\nINPUT: 1-2 / ENTER";
+                Header("visual_read", "[VISUAL READ]") + "\n\n" +
+                $"{NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant()}\n\n" +
+                T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId))) + "\n\n" +
+                BuildChoiceLine(0, selectedIndex, T("choice.accept", "ACCEPT")) +
+                BuildChoiceLine(1, selectedIndex, T("choice.redraw", "REDRAW")) +
+                BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
         }
 
@@ -186,7 +465,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ClearVisualOverlays();
             string line = question?.BuildDisplayLine() ?? string.Empty;
             string id = FirstContactUnknownSlotDefinition.NormalizeUnknownId(unknownId);
-            string text = $"[DECODE SAMPLE]\n\n{line}\n\n<{id}>";
+            string text = $"{Header("probe_sample", "[PROBE SAMPLE]")}\n\n{line}\n\n<{id}>";
             _terminalDisplay?.ShowText(text);
         }
 
@@ -198,27 +477,67 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _semanticMapDisplay?.Clear();
-            string clusterLine = cluster != null ? $"[{cluster.Id}]" : "[NO CLUSTER]";
+            string clusterLine = cluster != null ? $"[{cluster.Id}]" : Header("no_cluster", "[NO CLUSTER]");
             string text =
-                $"[SEMANTIC CARD]\n\n" +
-                $"{GetDisplayLabel(card)}\n\n" +
+                Header("signal_capture", "[SIGNAL CAPTURE]") + "\n\n" +
+                T("line.visual_probe_signal_color", "VISUAL PROBE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n" +
+                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", GetDisplayLabel(card))) + "\n\n" +
                 $"{clusterLine}";
 
             if (_debugSettings != null && _debugSettings.showScoresOnTerminal && !string.IsNullOrWhiteSpace(card.TargetUnknownId))
             {
-                text += $"\nTARGET: {card.TargetUnknownId}";
+                text += "\n" + T("line.target", "TARGET: {target}", L10n.Arg("target", card.TargetUnknownId));
             }
 
+            text += BuildContinuePrompt();
             _terminalDisplay?.ShowText(text, instant);
             if (_brainwaveDisplay != null && card.WaveformProfile.IsValid)
             {
-                _brainwaveDisplay.PlayLocked(
-                    ReactionTier.Moderate,
-                    card.Label,
-                    Mathf.Max(1, card.TurnIndex + 1),
-                    1,
+                _brainwaveDisplay.PlaySignal(card.WaveformProfile);
+            }
+        }
+
+        public void ShowLocalReferenceSignal(SemanticCardRecord card, bool instant = false)
+        {
+            _semanticMapDisplay?.Clear();
+            string target = GetLocalReferenceTargetLabel();
+            string text =
+                Header("local_signal_capture", "[LOCAL SIGNAL CAPTURE]") + "\n\n" +
+                T("line.local_reference_signal_color", "LOCAL REFERENCE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n" +
+                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(GetDisplayLabel(card), target).ToUpperInvariant())) + "\n" +
+                T("line.mapping", "MAPPING: {target}", L10n.Arg("target", target)) +
+                BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
+            if (_brainwaveDisplay != null && card != null && card.WaveformProfile.IsValid)
+            {
+                _brainwaveDisplay.PlayComparisonCapture(
+                    DoodleDiplomacy.Devices.BrainwaveSemanticProfile.Invalid,
                     card.WaveformProfile);
             }
+        }
+
+        public void ShowLocalReferenceStored(
+            SemanticCardRecord card,
+            SemanticClusterRecord cluster,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            bool instant = false)
+        {
+            _brainwaveDisplay?.Clear();
+            ShowFullMap(mapSnapshot, semanticSettings);
+            string target = GetLocalReferenceTargetLabel();
+            string text =
+                Header("meaning_map", "[MEANING MAP]") + "\n\n" +
+                T("line.target_stored", "{target} STORED", L10n.Arg("target", target)) + "\n" +
+                T("line.local_reference_ready", "LOCAL REFERENCE READY");
+
+            if (_debugSettings != null && _debugSettings.showScoresOnTerminal && cluster != null)
+            {
+                text += "\n" + T("line.cluster", "CLUSTER: {cluster}", L10n.Arg("cluster", cluster.Id));
+            }
+
+            text += BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
         }
 
         public void ShowCluster(SemanticClusterRecord cluster)
@@ -244,54 +563,117 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactResolutionResult? activeResolution,
             FirstContactSemanticMapSnapshot mapSnapshot,
             FirstContactSemanticSettings semanticSettings,
-            bool instant = true)
+            BrainwaveSemanticProfile unknownSignalProfile = default,
+            bool instant = false)
         {
-            _brainwaveDisplay?.Clear();
-            ShowFullMap(mapSnapshot, semanticSettings);
+            _semanticMapDisplay?.Clear();
             string label = card != null ? GetDisplayLabel(card) : string.Empty;
-            string text =
-                "[SEMANTIC RESONANCE]\n\n" +
-                $"LABEL: {NormalizeTerminalLine(label, "UNKNOWN").ToUpperInvariant()}\n";
+            bool isProbeResult = activeResolution.HasValue && activeResolution.Value.Slot != null;
+            string text = isProbeResult
+                ? Header("probe_result", "[PROBE RESULT]") + "\n\n"
+                : Header("reply_signal", "[REPLY SIGNAL]") + "\n\n";
+            if (isProbeResult)
+            {
+                text += T("line.unknown_token_signal_color", "UNKNOWN TOKEN SIGNAL: {color}", L10n.Arg("color", SignalColor("red", "RED"))) + "\n";
+                text += T("line.visual_probe_signal_color", "VISUAL PROBE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n";
+            }
 
-            if (activeResolution.HasValue && activeResolution.Value.Slot != null)
+            text += T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n";
+
+            if (isProbeResult)
             {
                 FirstContactResolutionResult result = activeResolution.Value;
-                text += $"TARGET SLOT: {result.Slot.Id}\n";
-                text += $"RESONANCE: {BuildResonanceLabel(result.Score, semanticSettings)}\n";
-                text += $"DISTANCE: {BuildDistanceLabel(result.Score, semanticSettings)}\n";
-                text += BuildTokenShiftLine(result);
+                text += T("line.translation_alignment", "TRANSLATION ALIGNMENT: {alignment}", L10n.Arg("alignment", BuildSignalMatchLabel(result.Score, semanticSettings))) + "\n";
+                text += BuildTokenUpdateBlock(result);
             }
             else
             {
-                text += "TARGET SLOT: NONE\n";
-                text += "RESONANCE: STORED\n";
-                text += "DISTANCE: SESSION RELATIVE\n";
+                text += T("line.translation_alignment", "TRANSLATION ALIGNMENT: {alignment}", L10n.Arg("alignment", T("alignment.stored", "STORED"))) + "\n";
             }
 
-            if (cluster != null)
+            if (isProbeResult && cluster != null && cluster.IsStable)
             {
-                string stability = cluster.IsStable ? "STABLE" : "FORMING";
-                text += $"CLUSTER: {cluster.Id} / {stability}\n";
+                text += "\n" + T("line.memory_map_updated", "MEMORY MAP: {name} UPDATED", L10n.Arg("name", cluster.DisplayName)) + "\n";
             }
 
-            text += BuildSlotScoreBlock(slotScores, semanticSettings);
+            if (_debugSettings != null && _debugSettings.showScoresOnTerminal && cluster != null)
+            {
+                string stability = cluster.IsStable ? T("cluster.stable", "STABLE") : T("cluster.forming", "FORMING");
+                text += T("line.cluster_status", "CLUSTER: {cluster} / {status}", L10n.Arg("cluster", cluster.Id), L10n.Arg("status", stability)) + "\n";
+            }
+
+            if (_debugSettings != null && _debugSettings.showScoresOnTerminal)
+            {
+                text += BuildSlotScoreBlock(slotScores, semanticSettings);
+            }
+
+            text += BuildContinuePrompt();
 
             _terminalDisplay?.ShowText(text, instant);
+            if (_brainwaveDisplay != null && card != null && card.WaveformProfile.IsValid)
+            {
+                if (isProbeResult && unknownSignalProfile.IsValid)
+                {
+                    _brainwaveDisplay.PlayComparisonCapture(unknownSignalProfile, card.WaveformProfile);
+                }
+                else
+                {
+                    _brainwaveDisplay.PlaySignal(card.WaveformProfile);
+                }
+            }
         }
 
-        public void ShowAnswerTransmitted(SemanticCardRecord card)
+        public void ShowAnswerTransmitted(SemanticCardRecord card, bool instant = false)
         {
             ClearVisualOverlays();
             string label = card != null ? GetDisplayLabel(card) : string.Empty;
-            _terminalDisplay?.ShowText($"[ANSWER TRANSMITTED]\n\n{label}");
+            string text =
+                Header("reply_sent", "[REPLY SENT]") + "\n\n" +
+                T("line.visual_response", "VISUAL RESPONSE: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n" +
+                T("line.transmission_status_delivered", "TRANSMISSION STATUS: DELIVERED");
+            _terminalDisplay?.ShowText(text, instant);
         }
 
         private string BuildQuestionText(AlienQuestion question, string fallbackReason = null)
         {
-            string text = $"[ALIEN REQUEST]\n\n{question?.BuildDisplayLine() ?? string.Empty}";
+            string text = $"{Header("translation_buffer", "[TRANSLATION BUFFER]")}\n\n{question?.BuildDisplayLine() ?? string.Empty}";
             if (_debugSettings != null && _debugSettings.showQuestionFallbackReason && !string.IsNullOrWhiteSpace(fallbackReason))
             {
-                text += $"\n\n[FALLBACK]\n{fallbackReason}";
+                text += $"\n\n{Header("fallback", "[FALLBACK]")}\n{fallbackReason}";
+            }
+
+            return text + BuildSelectPrompt();
+        }
+
+        private static string BuildQuestionChoiceBlock(
+            AlienQuestion question,
+            int selectedIndex,
+            string initialProbeUnknownId)
+        {
+            string text = string.Empty;
+            int choiceIndex = 0;
+            string initialProbeId = FirstContactUnknownSlotDefinition.NormalizeUnknownId(initialProbeUnknownId);
+            if (!string.IsNullOrWhiteSpace(initialProbeUnknownId))
+            {
+                text += BuildChoiceLine(choiceIndex, selectedIndex, BuildProbeActionLabel(initialProbeId));
+                choiceIndex++;
+            }
+            else
+            {
+                if (question != null)
+                {
+                    for (int i = 0; i < question.UnknownSlots.Count; i++)
+                    {
+                        string id = question.UnknownSlots[i].Id;
+                        text += BuildChoiceLine(choiceIndex, selectedIndex, BuildProbeActionLabel(id));
+                        choiceIndex++;
+                    }
+                }
+
+                text += BuildChoiceLine(choiceIndex, selectedIndex, MeaningMapActionLabel);
+                choiceIndex++;
+                text += BuildChoiceLine(choiceIndex, selectedIndex, AnswerActionLabel);
+                choiceIndex++;
             }
 
             return text;
@@ -300,23 +682,103 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private static string BuildChoiceLine(int choiceIndex, int selectedIndex, string label)
         {
             string marker = choiceIndex == selectedIndex ? ">" : " ";
-            return $"{marker} {choiceIndex + 1}. {label}\n";
+            return $"{marker} {label}\n";
+        }
+
+        private static string BuildContinuePrompt()
+        {
+            return "\n\n" + T("prompt.continue", "PRESS ENTER TO CONTINUE");
+        }
+
+        private static string BuildSelectPrompt()
+        {
+            return "\n" + T("prompt.select", "PRESS ENTER TO SELECT");
         }
 
         private static string BuildChannelLabel(FirstContactCardSource source, string unknownId)
         {
-            if (source == FirstContactCardSource.Answer)
+            if (source == FirstContactCardSource.LocalReference)
             {
-                return "TRANSMIT ANSWER";
+                return T("channel.local_reference", "LOCAL REFERENCE");
             }
 
+            if (source == FirstContactCardSource.Answer)
+            {
+                return AnswerActionLabel;
+            }
+
+            if (source == FirstContactCardSource.BootstrapProbe)
+            {
+                return T("channel.probe_sequence", "PROBE SEQUENCE");
+            }
+
+            return BuildProbeActionLabel(unknownId);
+        }
+
+        public static string BuildProbeActionLabel(string unknownId)
+        {
             string id = FirstContactUnknownSlotDefinition.NormalizeUnknownId(unknownId);
-            return string.IsNullOrWhiteSpace(id) ? "DECODE UNKNOWN" : $"DECODE {id}";
+            return string.IsNullOrWhiteSpace(id)
+                ? T("choice.probe_unknown", "PROBE UNKNOWN")
+                : T("choice.probe_id", "PROBE {id}", L10n.Arg("id", id));
         }
 
         private static string NormalizeTerminalLine(string value, string fallback)
         {
             return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+        }
+
+        private static string BuildIncomingBufferLine(string[] displayTokens, int activeIndex)
+        {
+            if (displayTokens == null || displayTokens.Length == 0 || activeIndex < 0)
+            {
+                return "_";
+            }
+
+            int lastVisibleIndex = Mathf.Clamp(activeIndex, 0, displayTokens.Length - 1);
+            string line = string.Empty;
+            for (int i = 0; i <= lastVisibleIndex; i++)
+            {
+                if (line.Length > 0)
+                {
+                    line += " / ";
+                }
+
+                string token = NormalizeTerminalLine(displayTokens[i], "<?>");
+                line += token;
+            }
+
+            return line;
+        }
+
+        private static string BuildIncomingTransmissionBaseText(string[] displayTokens, int activeIndex)
+        {
+            return
+                Header("incoming_transmission", "[INCOMING TRANSMISSION]") + "\n\n" +
+                T("line.status_receiving_signal", "STATUS: RECEIVING SIGNAL") + "\n" +
+                T("line.translation_buffer_label", "TRANSLATION BUFFER:") + "\n" +
+                BuildIncomingBufferLine(displayTokens, activeIndex);
+        }
+
+        private static int BuildIncomingTransmissionVisibleCharacterCount(string[] displayTokens, int activeIndex)
+        {
+            string prefix =
+                Header("incoming_transmission", "[INCOMING TRANSMISSION]") + "\n\n" +
+                T("line.status_receiving_signal", "STATUS: RECEIVING SIGNAL") + "\n" +
+                T("line.translation_buffer_label", "TRANSLATION BUFFER:") + "\n";
+
+            if (displayTokens == null || displayTokens.Length == 0 || activeIndex < 0)
+            {
+                return prefix.Length;
+            }
+
+            int lastVisibleIndex = Mathf.Clamp(activeIndex, 0, displayTokens.Length - 1);
+            if (lastVisibleIndex <= 0)
+            {
+                return prefix.Length;
+            }
+
+            return prefix.Length + BuildIncomingBufferLine(displayTokens, lastVisibleIndex - 1).Length + " / ".Length;
         }
 
         private static string GetDisplayLabel(SemanticCardRecord card)
@@ -327,7 +789,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return string.IsNullOrWhiteSpace(card.LocalizedLabel)
-                ? (card.Label ?? string.Empty).ToUpperInvariant()
+                ? L10n.Label(card.Label ?? string.Empty).ToUpperInvariant()
                 : card.LocalizedLabel.Trim().ToUpperInvariant();
         }
 
@@ -353,28 +815,32 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     line += " / ";
                 }
 
-                line += label.ToUpperInvariant();
+                line += L10n.Label(label).ToUpperInvariant();
             }
 
             return line;
         }
 
-        private static string BuildTokenShiftLine(FirstContactResolutionResult result)
+        private static string BuildTokenUpdateBlock(FirstContactResolutionResult result)
         {
             if (result.Slot == null)
             {
                 return string.Empty;
             }
 
+            string text =
+                "\n" + T("line.translation_update", "TRANSLATION UPDATE") + "\n" +
+                T("line.token", "TOKEN: {token}", L10n.Arg("token", result.Slot.Id)) + "\n";
+
             if (!result.Changed)
             {
-                return "TOKEN SHIFT: NO CHANGE\n";
+                return text + T("line.no_change", "NO CHANGE") + "\n";
             }
 
             FirstContactStageTexts stageTexts = result.Slot.Definition?.stageTexts ?? new FirstContactStageTexts();
             string before = stageTexts.GetDisplayText(result.PreviousStage, result.Slot.Id);
             string after = stageTexts.GetDisplayText(result.NewStage, result.Slot.Id);
-            return $"TOKEN SHIFT: {before} -> {after}\n";
+            return text + $"{before} -> {after}\n";
         }
 
         private string BuildSlotScoreBlock(
@@ -386,7 +852,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return string.Empty;
             }
 
-            string text = "\n[SLOT READINGS]\n";
+            string text = "\n" + Header("token_signals", "[TOKEN SIGNALS]") + "\n";
             for (int i = 0; i < slotScores.Count; i++)
             {
                 FirstContactSlotScore score = slotScores[i];
@@ -396,7 +862,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
 
                 string marker = score.IsActive ? ">" : " ";
-                text += $"{marker} {score.Slot.Id}: {BuildResonanceLabel(score.Score, settings)}";
+                text += $"{marker} {score.Slot.Id}: {BuildSignalMatchLabel(score.Score, settings)}";
                 if (_debugSettings != null && _debugSettings.showScoresOnTerminal)
                 {
                     text += $" ({score.Score:0.000})";
@@ -408,56 +874,47 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return text;
         }
 
-        private static string BuildResonanceLabel(float score, FirstContactSemanticSettings settings)
+        private static string BuildSignalMatchLabel(float score, FirstContactSemanticSettings settings)
         {
             settings ??= ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
             if (score >= settings.solvedThreshold)
             {
-                return "LOCK";
+                return T("alignment.lock", "LOCK");
             }
 
             if (score >= settings.partialThreshold)
             {
-                return "STRONG";
+                return T("alignment.strong", "STRONG");
             }
 
             if (score >= settings.hintThreshold)
             {
-                return "FAINT";
+                return T("alignment.faint", "FAINT");
             }
 
             if (score >= Mathf.Min(0.28f, settings.hintThreshold))
             {
-                return "WEAK";
+                return T("alignment.weak", "WEAK");
             }
 
-            return "NONE";
+            return T("alignment.none", "NONE");
         }
 
-        private static string BuildDistanceLabel(float score, FirstContactSemanticSettings settings)
+        private static string BuildGroupState(int traceCount, int requiredTraceCount, bool stable)
         {
-            settings ??= ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
-            if (score >= settings.solvedThreshold)
+            if (stable)
             {
-                return "NEAR";
+                return T("cluster.stable", "STABLE");
             }
 
-            if (score >= settings.partialThreshold)
+            if (traceCount >= Mathf.Max(1, requiredTraceCount))
             {
-                return "CLOSE";
+                return T("cluster.unstable", "UNSTABLE");
             }
 
-            if (score >= settings.hintThreshold)
-            {
-                return "ADJACENT";
-            }
-
-            if (score >= Mathf.Min(0.28f, settings.hintThreshold))
-            {
-                return "REMOTE";
-            }
-
-            return "FAR";
+            return traceCount > 0
+                ? T("cluster.forming", "FORMING")
+                : T("cluster.unstable", "UNSTABLE");
         }
 
         private void ShowMiniMap(
@@ -496,6 +953,89 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _semanticMapDisplay?.ShowFullMap(mapSnapshot);
+        }
+
+        private void ShowBootstrapResultMap(
+            FirstContactSemanticMapSnapshot beforeMapSnapshot,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            string activeCardNodeId,
+            string categoryNodeId,
+            bool accepted,
+            bool becameStable)
+        {
+            if (semanticSettings != null && !semanticSettings.showSemanticMapFeedback)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            if (mapSnapshot == null || mapSnapshot.Nodes.Count == 0)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            _semanticMapDisplay?.ShowBootstrapResultTransition(
+                beforeMapSnapshot,
+                mapSnapshot,
+                activeCardNodeId,
+                categoryNodeId,
+                accepted,
+                becameStable);
+        }
+
+        private static string BuildTraceLine(
+            int previousTraceCount,
+            int traceCount,
+            int requiredTraceCount,
+            bool accepted)
+        {
+            string required = Mathf.Max(1, requiredTraceCount).ToString("00");
+            string current = Mathf.Max(0, traceCount).ToString("00");
+            if (accepted && previousTraceCount != traceCount)
+            {
+                return T(
+                    "line.trace_count_transition",
+                    "TRACE: {from}/{required} -> {to}/{required}",
+                    L10n.Arg("from", Mathf.Max(0, previousTraceCount).ToString("00")),
+                    L10n.Arg("to", current),
+                    L10n.Arg("required", required));
+            }
+
+            return T(
+                "line.trace_count",
+                "TRACE: {count}/{required}",
+                L10n.Arg("count", current),
+                L10n.Arg("required", required));
+        }
+
+        private static string BuildBootstrapCategoryNodeId(string categoryId)
+        {
+            return string.IsNullOrWhiteSpace(categoryId)
+                ? string.Empty
+                : $"B:{categoryId.Trim()}";
+        }
+
+        private static string T(string key, string fallback, params L10nArg[] args)
+        {
+            return L10n.T($"first_contact.terminal.{key}", fallback, args);
+        }
+
+        private static string Header(string key, string fallback)
+        {
+            return T($"header.{key}", fallback);
+        }
+
+        private static string SignalColor(string key, string fallback)
+        {
+            return T($"color.{key}", fallback);
+        }
+
+        private static string GetLocalReferenceTargetLabel()
+        {
+            string label = L10n.Label("earth");
+            return string.IsNullOrWhiteSpace(label) ? "EARTH" : label.Trim().ToUpperInvariant();
         }
 
         private void ClearVisualOverlays()

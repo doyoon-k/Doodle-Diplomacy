@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3dd2bf0003fd40ac811e135be7fc1d5b, type: 3}
   m_Name: FirstContactVlmSettings
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactVlmSettings
-  visualClassifierPipeline: {fileID: 0}
+  probeLabelPipeline: {fileID: 11400000, guid: 83b894607a334b9b859ef484e906739e, type: 2}
+  probeValidationPipeline: {fileID: 11400000, guid: fb60b97b08c34d63af5af7c32fa1802e, type: 2}
   imageStateKey: reference_image
   captureRetryCount: 2
-  classifierRetryCount: 2
+  validatorRetryCount: 2
   technicalRetryDelaySeconds: 0.15
-  useLocalizedLabelForDisplay: 1
   rejectBlank: 1
   rejectWrittenText: 1
   rejectActionOrScene: 1

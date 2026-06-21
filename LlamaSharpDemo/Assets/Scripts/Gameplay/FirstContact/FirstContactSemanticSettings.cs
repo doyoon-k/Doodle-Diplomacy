@@ -29,14 +29,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Range(-1f, 1f)] public float solvedThreshold = 0.73f;
 
         [Header("Clusters")]
-        [Tooltip("새 그림 카드가 기존 군집에 합류하려면 기존 군집 중심과 이 값 이상의 유사도가 필요합니다.")]
+        [Tooltip("카드-카드 의미 그래프에서 두 그림을 같은 후보 군집으로 연결하려면 이 값 이상의 유사도가 필요합니다.")]
         [Range(-1f, 1f)] public float clusterJoinThreshold = 0.62f;
         [Tooltip("안정화된 군집이 새 질문의 미해석 단어와 이 값 이상 가까우면 자동으로 PARTIAL 단계까지 엽니다.")]
         [Range(-1f, 1f)] public float clusterAutoPartialThreshold = 0.58f;
+        [Tooltip("각 카드가 군집 그래프를 만들 때 비교 대상으로 유지할 가장 가까운 이웃 수입니다.")]
+        [Min(1)] public int clusterNeighborCount = 2;
         [Tooltip("군집이 안정화되기 위해 필요한 최소 카드 수입니다.")]
         [Min(2)] public int minClusterMembers = 3;
         [Tooltip("군집이 안정화되기 위해 필요한 최소 응집도입니다.")]
         [Range(-1f, 1f)] public float minClusterCohesion = 0.55f;
+        [Tooltip("군집이 안정화되기 위해 필요한 카드-카드 평균 유사도입니다. 큰 잡종 군집이 중심점 응집도만으로 안정화되는 것을 막습니다.")]
+        [Range(-1f, 1f)] public float minClusterPairwiseSimilarity = 0.62f;
 
         [Header("Bootstrap Category Training")]
         [Tooltip("튜토리얼 카테고리 하나가 안정화되기 위해 필요한 최소 그림 수입니다.")]
@@ -75,6 +79,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private void OnValidate()
         {
             maxBatchSize = Math.Max(1, maxBatchSize);
+            clusterNeighborCount = Math.Max(1, clusterNeighborCount);
             minClusterMembers = Math.Max(2, minClusterMembers);
             bootstrapMinTraceCount = Math.Max(2, bootstrapMinTraceCount);
             semanticMapMaxCards = Math.Max(1, semanticMapMaxCards);

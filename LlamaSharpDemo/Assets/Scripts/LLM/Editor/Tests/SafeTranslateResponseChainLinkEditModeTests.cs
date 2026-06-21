@@ -7,10 +7,17 @@ using UnityEngine;
 
 public sealed class SafeTranslateResponseChainLinkEditModeTests
 {
+    [SetUp]
+    public void SetUp()
+    {
+        SafeTranslateResponseChainLink.ClearLabelTranslationCacheForTests();
+    }
+
     [TearDown]
     public void TearDown()
     {
         LlmServiceLocator.Unregister(LlmServiceLocator.Current);
+        SafeTranslateResponseChainLink.ClearLabelTranslationCacheForTests();
     }
 
     [Test]
@@ -119,7 +126,7 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
     }
 
     [Test]
-    public void Execute_LegacyPromptStyleParameterDoesNotChangeGenericTranslationPrompt()
+    public void Execute_LabelPromptStyleParameterUsesLabelTranslationPrompt()
     {
         var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
         var service = new FakeLlmService("{\"response\":\"휴대폰\"}");
@@ -149,8 +156,133 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
             Assert.AreEqual(1, service.CallCount);
             Assert.AreEqual("휴대폰", state.GetString("localized_label"));
             StringAssert.Contains("Target language: Korean / 한국어 (ko-KR).", service.LastPrompt);
-            StringAssert.DoesNotContain("drawing label", service.LastPrompt);
+            StringAssert.Contains("Source drawing label:", service.LastPrompt);
+            StringAssert.Contains("Translate only this short visual object label.", service.LastPrompt);
             StringAssert.Contains("phones", service.LastPrompt);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+    }
+
+    [Test]
+    public void Execute_LabelPromptStyleAcceptsPlainTextLabelResponse()
+    {
+        var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
+        var service = new FakeLlmService("휴대폰");
+        LlmServiceLocator.Register(service);
+
+        try
+        {
+            var parameters = CreateLabelParameters();
+            var link = new SafeTranslateResponseChainLink(parameters, profile);
+            var state = new PipelineState();
+            state.SetString("label", "phone");
+            state.SetString(PromptPipelineConstants.TargetLocaleKey, "ko-KR");
+            state.SetString(PromptPipelineConstants.TargetLanguageKey, "Korean");
+            state.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "한국어");
+
+            RunEnumerator(link.Execute(state, _ => { }));
+
+            Assert.AreEqual(1, service.CallCount);
+            Assert.AreEqual("휴대폰", state.GetString("localized_label"));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+    }
+
+    [Test]
+    public void Execute_LabelPromptStyleRejectsEnglishEchoAndRetries()
+    {
+        var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
+        var service = new FakeLlmService("{\"response\":\"apple\"}", "{\"response\":\"사과\"}");
+        LlmServiceLocator.Register(service);
+
+        try
+        {
+            var parameters = CreateLabelParameters();
+            var link = new SafeTranslateResponseChainLink(parameters, profile);
+            var state = new PipelineState();
+            state.SetString("label", "apple");
+            state.SetString(PromptPipelineConstants.TargetLocaleKey, "ko-KR");
+            state.SetString(PromptPipelineConstants.TargetLanguageKey, "Korean");
+            state.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "한국어");
+
+            RunEnumerator(link.Execute(state, _ => { }));
+
+            Assert.AreEqual(2, service.CallCount);
+            Assert.AreEqual("사과", state.GetString("localized_label"));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+    }
+
+    [Test]
+    public void Execute_LabelPromptStyleClearsLocalizedLabelAfterRepeatedInvalidTranslations()
+    {
+        var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
+        var service = new FakeLlmService("{\"response\":\"apple\"}");
+        LlmServiceLocator.Register(service);
+
+        try
+        {
+            var parameters = CreateLabelParameters();
+            var link = new SafeTranslateResponseChainLink(parameters, profile);
+            var state = new PipelineState();
+            state.SetString("label", "apple");
+            state.SetString(PromptPipelineConstants.TargetLocaleKey, "ko-KR");
+            state.SetString(PromptPipelineConstants.TargetLanguageKey, "Korean");
+            state.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "한국어");
+
+            RunEnumerator(link.Execute(state, _ => { }));
+
+            Assert.AreEqual(3, service.CallCount);
+            Assert.AreEqual(string.Empty, state.GetString("localized_label"));
+            Assert.AreEqual("apple", state.GetString("label"));
+            Assert.IsFalse(state.ContainsString(PromptPipelineConstants.ErrorKey));
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+    }
+
+    [Test]
+    public void Execute_LabelPromptStyleUsesCachedTranslationForSameLocaleAndLabel()
+    {
+        var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
+        var firstService = new FakeLlmService("{\"response\":\"사과\"}");
+        var secondService = new FakeLlmService("{\"response\":\"apple\"}");
+
+        try
+        {
+            var parameters = CreateLabelParameters();
+            var firstLink = new SafeTranslateResponseChainLink(parameters, profile, firstService);
+            var firstState = new PipelineState();
+            firstState.SetString("label", "apple");
+            firstState.SetString(PromptPipelineConstants.TargetLocaleKey, "ko-KR");
+            firstState.SetString(PromptPipelineConstants.TargetLanguageKey, "Korean");
+            firstState.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "한국어");
+
+            RunEnumerator(firstLink.Execute(firstState, _ => { }));
+
+            var secondLink = new SafeTranslateResponseChainLink(parameters, profile, secondService);
+            var secondState = new PipelineState();
+            secondState.SetString("label", "apple");
+            secondState.SetString(PromptPipelineConstants.TargetLocaleKey, "ko-KR");
+            secondState.SetString(PromptPipelineConstants.TargetLanguageKey, "Korean");
+            secondState.SetString(PromptPipelineConstants.TargetLanguageNativeNameKey, "한국어");
+
+            RunEnumerator(secondLink.Execute(secondState, _ => { }));
+
+            Assert.AreEqual(1, firstService.CallCount);
+            Assert.AreEqual(0, secondService.CallCount);
+            Assert.AreEqual("사과", secondState.GetString("localized_label"));
         }
         finally
         {
@@ -196,13 +328,29 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
         }
     }
 
+    private static Dictionary<string, string> CreateLabelParameters()
+    {
+        return new Dictionary<string, string>
+        {
+            ["sourceKey"] = "label",
+            ["outputKey"] = "localized_label",
+            ["localeKey"] = PromptPipelineConstants.TargetLocaleKey,
+            ["languageKey"] = PromptPipelineConstants.TargetLanguageKey,
+            ["nativeLanguageKey"] = PromptPipelineConstants.TargetLanguageNativeNameKey,
+            ["enabledKey"] = PromptPipelineConstants.LlmTranslationEnabledKey,
+            ["promptStyle"] = "label",
+        };
+    }
+
     private sealed class FakeLlmService : ILlmService
     {
-        private readonly string _response;
+        private readonly string[] _responses;
 
-        public FakeLlmService(string response)
+        public FakeLlmService(params string[] responses)
         {
-            _response = response;
+            _responses = responses == null || responses.Length == 0
+                ? new[] { string.Empty }
+                : responses;
         }
 
         public int CallCount { get; private set; }
@@ -229,7 +377,8 @@ public sealed class SafeTranslateResponseChainLinkEditModeTests
         {
             CallCount++;
             LastPrompt = userPrompt;
-            onResponse?.Invoke(_response);
+            int responseIndex = Math.Min(CallCount - 1, _responses.Length - 1);
+            onResponse?.Invoke(_responses[responseIndex]);
             yield break;
         }
 

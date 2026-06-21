@@ -10,21 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
-  m_Name: Day1ReactionEvaluatorPipeline
+  m_Name: FirstContactProbeValidationPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
-  displayName: Day1ReactionEvaluatorPipeline
-  description: Day 1 alien neural response tier evaluator. Returns reaction_tier.
+  displayName: FirstContactProbeValidationPipeline
+  description: First Contact VLM validator. Checks drawing rules and operator label match without producing semantic labels.
   steps:
-  - stepName: Day1ReactionEvaluator
+  - stepName: FirstContactProbeValidator
     stepKind: 0
-    llmProfile: {fileID: 11400000, guid: 31fa02e4a9e64963bb4dd277a3ca2bd6, type: 2}
-    userPromptTemplate: 'Label: {{stimulus_label}}'
-    jsonMaxRetries: 1
+    llmProfile: {fileID: 11400000, guid: a42e093df78b4d1894b0aa86b61043fb, type: 2}
+    userPromptTemplate: 'Validate this probe drawing.
+
+      PROBE_LABEL: {{probe_label}}
+
+      PROBE_DISPLAY_LABEL: {{probe_display_label}}'
+    jsonMaxRetries: 3
     jsonRetryDelaySeconds: 0.1
-    useVision: 0
+    useVision: 1
     imageStateKey: reference_image
-    requireImage: 0
-    resizeLongestSide: 768
+    requireImage: 1
+    resizeLongestSide: 1024
     customLinkTypeName: SafeTranslateResponseChainLink, Assembly-CSharp, Version=0.0.0.0,
       Culture=neutral, PublicKeyToken=null
     customAsset: {fileID: 0}
@@ -33,17 +37,17 @@ MonoBehaviour:
       value: 
     - key: service
       value: 
-    editorPosition: {x: -382, y: -56}
-    guid: 91f440e3-5fe5-4ba1-99e3-d08e4cb2ed82
+    editorPosition: {x: -160, y: -40}
+    guid: b4cc23f4-e7d6-4f88-8763-c27f81087f85
     nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -579, y: -40}
-    outputNodePosition: {x: 590, y: -40}
+    inputNodePosition: {x: -420, y: 0}
+    outputNodePosition: {x: 680, y: -40}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 641, y: 112, z: 0}
+    viewPosition: {x: 0, y: 0, z: 0}
     viewScale: {x: 1, y: 1, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 105, y: 45}
+    - {x: 0, y: 0}
     snapshotPositionsInitialized: 1

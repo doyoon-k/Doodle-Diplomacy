@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
+  m_Name: FirstContactProbeLabelPipeline
+  m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
+  displayName: FirstContactProbeLabelPipeline
+  description: First Contact probe label processing. Translates player labels into English canonical labels, then checks whether the label is a concrete single-object probe.
+  steps:
+  - stepName: FirstContactProbeLabelTranslation
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 53fb6e7c8d47499d96c9be51e79c984c, type: 2}
+    embeddingProfile: {fileID: 0}
+    userPromptTemplate: 'Source locale: {{source_locale}}
+
+      Label: {{probe_display_label}}'
+    embeddingOutputKey: embedding
+    failOnEmptyEmbeddingInput: 1
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: 
+    customAsset: {fileID: 0}
+    customLinkParameters: []
+    editorPosition: {x: -160, y: -80}
+    guid: 22e2b0b3-6e37-4758-8cd2-82696646fc59
+    nextStepGuid: 90369617-dc60-4b9a-bd7c-8c0a3be7242b
+  - stepName: FirstContactProbeLabelSuitability
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 0083ae3cabda4c79941a6863009fdd5c, type: 2}
+    embeddingProfile: {fileID: 0}
+    userPromptTemplate: 'Label: {{canonical_label}}'
+    embeddingOutputKey: embedding
+    failOnEmptyEmbeddingInput: 1
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: 
+    customAsset: {fileID: 0}
+    customLinkParameters: []
+    editorPosition: {x: 180, y: -80}
+    guid: 90369617-dc60-4b9a-bd7c-8c0a3be7242b
+    nextStepGuid: 
+  layoutSettings:
+    inputNodePosition: {x: -420, y: 0}
+    outputNodePosition: {x: 620, y: -80}
+    inputPositionInitialized: 1
+    outputPositionInitialized: 1
+    viewPosition: {x: 0, y: 0, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
+    viewInitialized: 1
+    snapshotPositions:
+    - {x: 0, y: 0}
+    - {x: 340, y: 0}
+    snapshotPositionsInitialized: 1

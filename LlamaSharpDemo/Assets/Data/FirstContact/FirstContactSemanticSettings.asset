@@ -22,8 +22,10 @@ MonoBehaviour:
   solvedThreshold: 0.73
   clusterJoinThreshold: 0.62
   clusterAutoPartialThreshold: 0.58
+  clusterNeighborCount: 2
   minClusterMembers: 3
   minClusterCohesion: 0.55
+  minClusterPairwiseSimilarity: 0.62
   bootstrapMinTraceCount: 3
   bootstrapMinCategoryDescriptorFit: 0.6
   waveformSemanticInfluence: 0.9

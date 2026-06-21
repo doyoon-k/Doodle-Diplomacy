@@ -10299,7 +10299,7 @@ MonoBehaviour:
   scoreManager: {fileID: 1778344081}
   cameraController: {fileID: 403058226}
   interactionManager: {fileID: 1865518810}
-  scoreConfig: {fileID: 11400000, guid: 7f52468ee2e990b47a2d104e4b805369, type: 2}
+  scoreConfig: {fileID: 0}
   dialogueSystem: {fileID: 1804211027}
   aipipelineBridge: {fileID: 1778344085}
   alienReactionController: {fileID: 798370299}
@@ -10387,7 +10387,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1046a86e1d66e2649a27f214848f1e40, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Core.ScoreManager
-  config: {fileID: 11400000, guid: 7f52468ee2e990b47a2d104e4b805369, type: 2}
+  config: {fileID: 0}
   OnScoreUpdated:
     m_PersistentCalls:
       m_Calls: []
@@ -10434,8 +10434,8 @@ MonoBehaviour:
   judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
   telepathyPipeline: {fileID: 11400000, guid: d6a1fbcfc287e004c8d88d504212d82e, type: 2}
   wordsSelectionPipeline: {fileID: 11400000, guid: b5e597c4b554f77409946243478c8943, type: 2}
-  day1StimulusClassifierPipeline: {fileID: 11400000, guid: 87eab6a22ae54c388f549d7928f7536c, type: 2}
-  day1ReactionEvaluatorPipeline: {fileID: 11400000, guid: 0c0ea937f1714e7593c45459340e62a7, type: 2}
+  day1StimulusClassifierPipeline: {fileID: 0}
+  day1ReactionEvaluatorPipeline: {fileID: 0}
   wordPairPool: {fileID: 11400000, guid: 9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b, type: 2}
   drawingImageKey: reference_image
   day1StimulusLabelKey: stimulus_label

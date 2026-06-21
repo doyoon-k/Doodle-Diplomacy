@@ -1,0 +1,127 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: FirstContactProbeValidator
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  format: '{"type":"object","properties":{"is_blank":{"type":"boolean"},"object_count":{"type":"integer","minimum":0},"has_text_or_symbol":{"type":"boolean"},"is_scene_or_action":{"type":"boolean"},"label_match":{"type":"string","enum":["match","unclear","mismatch"]}},"required":["is_blank","object_count","has_text_or_symbol","is_scene_or_action","label_match"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: 'Validate a human probe drawing for a first-contact translation
+    device. The operator provides probe_label and may provide probe_display_label.
+    probe_label is the normalized English label. probe_display_label is the original
+    player label. Do not create a semantic label for the drawing. Do not translate
+    anything. Return only JSON:
+
+    {"is_blank":false,"object_count":1,"has_text_or_symbol":false,"is_scene_or_action":false,"label_match":"match"}
+
+    Rules:
+
+    - is_blank true only if the drawing is empty or nearly empty.
+
+    - object_count counts separate depicted objects. Use 0 for blank, text-only,
+    actions, scenes, or abstract diagrams.
+
+    - has_text_or_symbol true if the drawing relies on letters, words, numbers,
+    UI symbols, arrows, labels, or written notation.
+
+    - is_scene_or_action true if the drawing mainly depicts a scene, relationship,
+    action, emotion, story, or abstract concept instead of one concrete object.
+
+    - label_match compares the image to probe_label. Use probe_display_label only
+    as extra context.
+
+    - Use "mismatch" only when the drawing clearly represents a different concrete
+    object than probe_label, or clearly cannot plausibly be probe_label.
+
+    - Use "unclear" when the drawing is rough, ambiguous, or low quality but could
+    plausibly be probe_label.
+
+    - Use "match" when the drawing reasonably matches probe_label.
+
+    - Do not punish weak drawing skill. Only reject clear mismatches or format
+    violations.'
+  jsonSchemaDeliveryMode: 0
+  thinkingMode: 0
+  jsonFields:
+  - fieldName: is_blank
+    fieldType: 3
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: object_count
+    fieldType: 2
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 0
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: has_text_or_symbol
+    fieldType: 3
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: is_scene_or_action
+    fieldType: 3
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: label_match
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - match
+    - unclear
+    - mismatch
+    minValue: 
+    maxValue: 
+    minLength: 1
+    maxLength: 
+    minItems: 
+    maxItems: 
+  modelParams:
+    temperature: 0.1
+    top_p: 0.9
+    top_k: 20
+    num_predict: 128
+    repeat_penalty: 1.05
+    seed: 0
+  model: Models/gemma-3-4b-it-Q4_K_M.gguf
+  visionProjectorModel: Models/mmproj-model-f16-4B.gguf
+  visionProjectorRelativeToStreamingAssets: 1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 12

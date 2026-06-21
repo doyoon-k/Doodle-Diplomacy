@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Devices;
 using DoodleDiplomacy.Localization;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,12 +17,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private readonly TerminalBrainwaveDisplay _brainwaveDisplay;
         private readonly FirstContactSemanticMapDisplay _semanticMapDisplay;
         private readonly FirstContactDebugSettings _debugSettings;
+        private readonly FirstContactPresentationSettings _presentationSettings;
+        private GameObject _probePreviewRoot;
+        private RawImage _probePreviewImage;
+        private AspectRatioFitter _probePreviewAspect;
+        private FirstContactProbePreviewScanline _probePreviewScanline;
         private bool _hasShownQuestionOnce;
         private int _lastIncomingTransmissionTextLength;
 
         public FirstContactTerminalPresenter(
             TerminalDisplay terminalDisplay,
-            FirstContactDebugSettings debugSettings)
+            FirstContactDebugSettings debugSettings,
+            FirstContactPresentationSettings presentationSettings = null)
         {
             _terminalDisplay = terminalDisplay;
             _brainwaveDisplay = terminalDisplay != null
@@ -32,6 +37,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 : null;
             _semanticMapDisplay = ResolveSemanticMapDisplay(terminalDisplay);
             _debugSettings = debugSettings;
+            _presentationSettings = presentationSettings != null
+                ? presentationSettings
+                : ScriptableObject.CreateInstance<FirstContactPresentationSettings>();
         }
 
         public void Clear()
@@ -71,7 +79,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Header("tablet_link_open", "[TABLET LINK OPEN]") + "\n\n" +
                 T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
                 T("line.draw_target", "DRAW {target}", L10n.Arg("target", target)) + "\n\n" +
-                T("line.submit_enter", "SUBMIT: ENTER");
+                T("line.submit_enter", "SUBMIT: ENTER") + TerminalDisplay.CursorMarker;
             _terminalDisplay?.ShowText(text, instant);
         }
 
@@ -144,7 +152,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 text += "\n\n";
                 text += T("line.trace", "TRACE: {trace}", L10n.Arg("trace", traceId)) + "\n";
                 text += T("line.status_signal_buffered", "STATUS: SIGNAL BUFFERED") + "\n";
-                text += T("line.unknown_token_signal_color", "UNKNOWN TOKEN SIGNAL: {color}", L10n.Arg("color", SignalColor("red", "RED")));
+                text += T("line.unknown_meaning_signal_color", "UNKNOWN MEANING SIGNAL: {color}", L10n.Arg("color", SignalColor("red", "RED")));
             }
 
             text += "\n\n";
@@ -239,7 +247,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             text += "\n\n" + Header("tablet_link_open", "[TABLET LINK OPEN]") + "\n\n";
             text += T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId))) + "\n";
             text += T("line.draw_one_object", "DRAW ONE OBJECT") + "\n\n";
-            text += T("line.submit_enter", "SUBMIT: ENTER");
+            text += T("line.submit_enter", "SUBMIT: ENTER") + TerminalDisplay.CursorMarker;
             _terminalDisplay?.ShowText(text, instant);
             _hasShownQuestionOnce = true;
         }
@@ -311,6 +319,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             bool accepted,
             bool becameStable,
             bool stable,
+            FirstContactClusterFormationEvent clusterFormation = default,
+            bool duplicate = false,
             bool instant = false)
         {
             _brainwaveDisplay?.Clear();
@@ -321,15 +331,39 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 FirstContactSemanticMapLayout.BuildCardNodeId(card),
                 BuildBootstrapCategoryNodeId(card?.BootstrapCategoryId),
                 accepted,
-                becameStable);
+                becameStable,
+                clusterFormation);
             string label = card != null ? GetDisplayLabel(card) : string.Empty;
-            string text =
-                Header("signal_capture", "[SIGNAL CAPTURE]") + "\n\n" +
-                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n" +
-                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
-                T("line.group", "GROUP: {group}", L10n.Arg("group", BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
-                BuildTraceLine(previousTraceCount, traceCount, requiredTraceCount, accepted) +
-                BuildContinuePrompt();
+            string safeLabel = NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant();
+            string safeCategory = NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant();
+            bool semanticClusterTrace = clusterFormation.BecameStable && clusterFormation.IsStable;
+            string text;
+            if (semanticClusterTrace)
+            {
+                text =
+                    Header("cluster_trace", "[CLUSTER TRACE]") + "\n\n" +
+                    T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
+                    T("line.category", "CATEGORY: {category}", L10n.Arg("category", safeCategory)) + "\n" +
+                    T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
+                    T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", NormalizeTerminalLine(clusterFormation.Meaning, "[MEANING?]").ToUpperInvariant())) +
+                    BuildContinuePrompt();
+            }
+            else
+            {
+                text =
+                    Header("signal_capture", "[SIGNAL CAPTURE]") + "\n\n" +
+                    T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
+                    T("line.category", "CATEGORY: {category}", L10n.Arg("category", safeCategory)) + "\n" +
+                    T("line.group", "GROUP: {group}", L10n.Arg("group", duplicate ? T("cluster.unchanged", "UNCHANGED") : BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
+                    BuildTraceLine(previousTraceCount, traceCount, requiredTraceCount, accepted, duplicate);
+                if (clusterFormation.IsIsolated)
+                {
+                    text += "\n" + T("line.trace_isolated", "TRACE: ISOLATED");
+                }
+
+                text += BuildContinuePrompt();
+            }
+
             _terminalDisplay?.ShowText(text, instant);
         }
 
@@ -367,30 +401,67 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _terminalDisplay?.ShowText(text, instant);
         }
 
-        public void ShowTabletImageReceived(
+        public void ShowProbeDispatching(
             FirstContactCardSource source,
             string unknownId,
+            string label,
+            string category,
+            Texture probeTexture,
+            BrainwaveSemanticProfile dispatchSignalProfile,
+            int streamSeed,
             bool instant = false)
         {
             ClearVisualOverlays();
-            if (source == FirstContactCardSource.LocalReference)
+            ShowProbePreview(probeTexture, ProbePreviewLayout.Dispatch, scanActive: true);
+            PlayProbeDispatchSignal(dispatchSignalProfile, streamSeed, completeLoop: false);
+            _terminalDisplay?.ShowText(BuildProbeDispatchText(source, unknownId, label, category, accepted: false), instant);
+        }
+
+        public void ShowProbeDispatchAccepted(
+            FirstContactCardSource source,
+            string unknownId,
+            string label,
+            string category,
+            Texture probeTexture,
+            BrainwaveSemanticProfile dispatchSignalProfile,
+            int streamSeed,
+            bool instant = true)
+        {
+            ClearVisualOverlays();
+            ShowProbePreview(probeTexture, ProbePreviewLayout.Dispatch, scanActive: false);
+            PlayProbeDispatchSignal(dispatchSignalProfile, streamSeed, completeLoop: true);
+            _terminalDisplay?.ShowText(BuildProbeDispatchText(source, unknownId, label, category, accepted: true), instant);
+        }
+
+        public void ShowProbeLabelEntry(
+            FirstContactCardSource source,
+            string unknownId,
+            Texture probeTexture,
+            string label,
+            string composition,
+            string status,
+            bool instant = false)
+        {
+            ClearVisualOverlays();
+            ShowProbePreview(probeTexture);
+
+            string visibleLabel = (label ?? string.Empty) + (composition ?? string.Empty);
+            string inputLabel = string.IsNullOrWhiteSpace(visibleLabel)
+                ? TerminalDisplay.CursorMarker
+                : NormalizeTerminalLine(visibleLabel, string.Empty) + TerminalDisplay.CursorMarker;
+            string text =
+                Header("probe_review", "[PROBE REVIEW]") + "\n\n" +
+                T("line.image_captured", "IMAGE CAPTURED") + "\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", inputLabel)) + "\n" +
+                T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId)));
+            if (!string.IsNullOrWhiteSpace(status))
             {
-                string target = GetLocalReferenceTargetLabel();
-                string localText =
-                    Header("local_reference_analysis", "[LOCAL REFERENCE ANALYSIS]") + "\n\n" +
-                    T("line.image_captured", "IMAGE CAPTURED") + "\n" +
-                    T("line.extracting_local_meaning_signal", "EXTRACTING LOCAL MEANING SIGNAL") + "\n" +
-                    T("line.target", "TARGET: {target}", L10n.Arg("target", target));
-                _terminalDisplay?.ShowText(localText, instant);
-                return;
+                text += "\n" + T("line.input_status", "STATUS: {status}", L10n.Arg("status", status.Trim().ToUpperInvariant()));
             }
 
-            string text =
-                Header("visual_probe_analysis", "[VISUAL PROBE ANALYSIS]") + "\n\n" +
-                T("line.image_captured", "IMAGE CAPTURED") + "\n" +
-                T("line.extracting_meaning_signal", "EXTRACTING MEANING SIGNAL") + "\n" +
-                T("line.visual_probe_signal_color", "VISUAL PROBE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n" +
-                T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId)));
+            text += "\n\n" +
+                T("line.submit_enter", "SUBMIT: ENTER") + "\n" +
+                T("line.redraw_escape", "REDRAW: ESC");
             _terminalDisplay?.ShowText(text, instant);
         }
 
@@ -405,7 +476,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string normalizedReason = NormalizeTerminalLine(reason, T("reason.reference_not_stored", "REFERENCE NOT STORED")).ToUpperInvariant();
             string text =
                 Header("reference_check", "[REFERENCE CHECK]") + "\n\n" +
-                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n" +
                 T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
                 $"{normalizedReason}\n\n" +
                 BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
@@ -433,10 +504,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string target = GetLocalReferenceTargetLabel();
             string text =
                 Header("reference_check", "[REFERENCE CHECK]") + "\n\n" +
-                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, target).ToUpperInvariant())) + "\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", NormalizeTerminalLine(label, target).ToUpperInvariant())) + "\n" +
                 T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
                 T("line.reference_match", "REFERENCE MATCH") + "\n\n" +
-                BuildChoiceLine(0, selectedIndex, T("choice.accept", "ACCEPT")) +
+                BuildChoiceLine(0, selectedIndex, T("choice.submit", "SUBMIT")) +
                 BuildChoiceLine(1, selectedIndex, T("choice.redraw", "REDRAW")) +
                 BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
@@ -451,10 +522,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             ClearVisualOverlays();
             string text =
-                Header("visual_read", "[VISUAL READ]") + "\n\n" +
+                Header("probe_label", "[PROBE LABEL]") + "\n\n" +
                 $"{NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant()}\n\n" +
                 T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId))) + "\n\n" +
-                BuildChoiceLine(0, selectedIndex, T("choice.accept", "ACCEPT")) +
+                BuildChoiceLine(0, selectedIndex, T("choice.submit", "SUBMIT")) +
                 BuildChoiceLine(1, selectedIndex, T("choice.redraw", "REDRAW")) +
                 BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
@@ -481,7 +552,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string text =
                 Header("signal_capture", "[SIGNAL CAPTURE]") + "\n\n" +
                 T("line.visual_probe_signal_color", "VISUAL PROBE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n" +
-                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", GetDisplayLabel(card))) + "\n\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", GetDisplayLabel(card))) + "\n\n" +
                 $"{clusterLine}";
 
             if (_debugSettings != null && _debugSettings.showScoresOnTerminal && !string.IsNullOrWhiteSpace(card.TargetUnknownId))
@@ -504,7 +575,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string text =
                 Header("local_signal_capture", "[LOCAL SIGNAL CAPTURE]") + "\n\n" +
                 T("line.local_reference_signal_color", "LOCAL REFERENCE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n" +
-                T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(GetDisplayLabel(card), target).ToUpperInvariant())) + "\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", NormalizeTerminalLine(GetDisplayLabel(card), target).ToUpperInvariant())) + "\n" +
                 T("line.mapping", "MAPPING: {target}", L10n.Arg("target", target)) +
                 BuildContinuePrompt();
             _terminalDisplay?.ShowText(text, instant);
@@ -564,23 +635,37 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticMapSnapshot mapSnapshot,
             FirstContactSemanticSettings semanticSettings,
             BrainwaveSemanticProfile unknownSignalProfile = default,
+            FirstContactSemanticMapSnapshot beforeMapSnapshot = null,
+            FirstContactClusterFormationEvent clusterFormation = default,
             bool instant = false)
         {
-            _semanticMapDisplay?.Clear();
+            ShowSemanticAnalysisMap(
+                beforeMapSnapshot,
+                mapSnapshot,
+                semanticSettings,
+                clusterFormation);
             string label = card != null ? GetDisplayLabel(card) : string.Empty;
             bool isProbeResult = activeResolution.HasValue && activeResolution.Value.Slot != null;
-            string text = isProbeResult
+            bool isClusterTrace = clusterFormation.BecameStable && cluster != null && cluster.IsStable;
+            string text = isClusterTrace
+                ? Header("cluster_trace", "[CLUSTER TRACE]") + "\n\n"
+                : isProbeResult
                 ? Header("probe_result", "[PROBE RESULT]") + "\n\n"
                 : Header("reply_signal", "[REPLY SIGNAL]") + "\n\n";
-            if (isProbeResult)
+            if (!isClusterTrace && isProbeResult)
             {
-                text += T("line.unknown_token_signal_color", "UNKNOWN TOKEN SIGNAL: {color}", L10n.Arg("color", SignalColor("red", "RED"))) + "\n";
+                text += T("line.unknown_meaning_signal_color", "UNKNOWN MEANING SIGNAL: {color}", L10n.Arg("color", SignalColor("red", "RED"))) + "\n";
                 text += T("line.visual_probe_signal_color", "VISUAL PROBE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n";
             }
 
-            text += T("line.visual_read", "VISUAL READ: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n";
+            text += T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n";
 
-            if (isProbeResult)
+            if (isClusterTrace)
+            {
+                text += T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n";
+                text += T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", NormalizeTerminalLine(cluster.DisplayName, "[MEANING?]").ToUpperInvariant())) + "\n";
+            }
+            else if (isProbeResult)
             {
                 FirstContactResolutionResult result = activeResolution.Value;
                 text += T("line.translation_alignment", "TRANSLATION ALIGNMENT: {alignment}", L10n.Arg("alignment", BuildSignalMatchLabel(result.Score, semanticSettings))) + "\n";
@@ -591,7 +676,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 text += T("line.translation_alignment", "TRANSLATION ALIGNMENT: {alignment}", L10n.Arg("alignment", T("alignment.stored", "STORED"))) + "\n";
             }
 
-            if (isProbeResult && cluster != null && cluster.IsStable)
+            if (!isClusterTrace && clusterFormation.IsIsolated)
+            {
+                text += T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.forming", "FORMING"))) + "\n";
+                text += T("line.trace_isolated", "TRACE: ISOLATED") + "\n";
+            }
+            else if (!isClusterTrace && clusterFormation.HasCluster && !clusterFormation.IsStable && clusterFormation.MemberCount > 1)
+            {
+                text += T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.forming", "FORMING"))) + "\n";
+            }
+
+            if (!isClusterTrace && isProbeResult && cluster != null && cluster.IsStable)
             {
                 text += "\n" + T("line.memory_map_updated", "MEMORY MAP: {name} UPDATED", L10n.Arg("name", cluster.DisplayName)) + "\n";
             }
@@ -687,12 +782,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static string BuildContinuePrompt()
         {
-            return "\n\n" + T("prompt.continue", "PRESS ENTER TO CONTINUE");
+            return "\n\n" + T("prompt.continue", "PRESS ENTER TO CONTINUE") + TerminalDisplay.CursorMarker;
         }
 
         private static string BuildSelectPrompt()
         {
-            return "\n" + T("prompt.select", "PRESS ENTER TO SELECT");
+            return "\n" + T("prompt.select", "PRESS ENTER TO SELECT") + TerminalDisplay.CursorMarker;
         }
 
         private static string BuildChannelLabel(FirstContactCardSource source, string unknownId)
@@ -721,6 +816,39 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return string.IsNullOrWhiteSpace(id)
                 ? T("choice.probe_unknown", "PROBE UNKNOWN")
                 : T("choice.probe_id", "PROBE {id}", L10n.Arg("id", id));
+        }
+
+        private static string BuildProbeDispatchText(
+            FirstContactCardSource source,
+            string unknownId,
+            string label,
+            string category,
+            bool accepted)
+        {
+            string safeLabel = NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant();
+            string text =
+                Header("probe_dispatch", "[PROBE DISPATCH]") + "\n\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n";
+
+            if (source == FirstContactCardSource.LocalReference)
+            {
+                text += T("line.target", "TARGET: {target}", L10n.Arg("target", GetLocalReferenceTargetLabel())) + "\n";
+            }
+            else if (!string.IsNullOrWhiteSpace(category))
+            {
+                text += T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n";
+            }
+            else
+            {
+                text += T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId))) + "\n";
+            }
+
+            text += accepted
+                ? T("line.probe_check_passed", "PROBE CHECK: PASSED") + "\n" +
+                  T("line.response_channel_open", "RESPONSE CHANNEL: OPEN")
+                : T("line.probe_check_in_progress", "PROBE CHECK: IN PROGRESS") + "\n" +
+                  T("line.response_channel_waiting", "RESPONSE CHANNEL: WAITING");
+            return text;
         }
 
         private static string NormalizeTerminalLine(string value, string fallback)
@@ -789,7 +917,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return string.IsNullOrWhiteSpace(card.LocalizedLabel)
-                ? L10n.Label(card.Label ?? string.Empty).ToUpperInvariant()
+                ? ResolveDynamicLabelFallback(card.Label).ToUpperInvariant()
                 : card.LocalizedLabel.Trim().ToUpperInvariant();
         }
 
@@ -804,7 +932,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string line = string.Empty;
             for (int i = start; i < cluster.Members.Count; i++)
             {
-                string label = cluster.Members[i].Label ?? string.Empty;
+                SemanticCardRecord member = cluster.Members[i];
+                if (member == null)
+                {
+                    continue;
+                }
+
+                string label = !string.IsNullOrWhiteSpace(member.LocalizedLabel)
+                    ? member.LocalizedLabel.Trim()
+                    : ResolveDynamicLabelFallback(member.Label);
                 if (string.IsNullOrWhiteSpace(label))
                 {
                     continue;
@@ -815,7 +951,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     line += " / ";
                 }
 
-                line += L10n.Label(label).ToUpperInvariant();
+                line += label.ToUpperInvariant();
             }
 
             return line;
@@ -830,7 +966,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             string text =
                 "\n" + T("line.translation_update", "TRANSLATION UPDATE") + "\n" +
-                T("line.token", "TOKEN: {token}", L10n.Arg("token", result.Slot.Id)) + "\n";
+                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", result.Slot.Id)) + "\n";
 
             if (!result.Changed)
             {
@@ -852,7 +988,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return string.Empty;
             }
 
-            string text = "\n" + Header("token_signals", "[TOKEN SIGNALS]") + "\n";
+            string text = "\n" + Header("meaning_signals", "[MEANING SIGNALS]") + "\n";
             for (int i = 0; i < slotScores.Count; i++)
             {
                 FirstContactSlotScore score = slotScores[i];
@@ -921,6 +1057,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticMapSnapshot mapSnapshot,
             FirstContactSemanticSettings semanticSettings)
         {
+            ClearProbePreview();
             if (semanticSettings != null && !semanticSettings.showSemanticMapFeedback)
             {
                 _semanticMapDisplay?.Clear();
@@ -940,6 +1077,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticMapSnapshot mapSnapshot,
             FirstContactSemanticSettings semanticSettings)
         {
+            ClearProbePreview();
             if (semanticSettings != null && !semanticSettings.showSemanticMapFeedback)
             {
                 _semanticMapDisplay?.Clear();
@@ -962,8 +1100,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string activeCardNodeId,
             string categoryNodeId,
             bool accepted,
-            bool becameStable)
+            bool becameStable,
+            FirstContactClusterFormationEvent clusterFormation)
         {
+            ClearProbePreview();
             if (semanticSettings != null && !semanticSettings.showSemanticMapFeedback)
             {
                 _semanticMapDisplay?.Clear();
@@ -976,6 +1116,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
+            if (clusterFormation.ShouldAnimate)
+            {
+                _semanticMapDisplay?.ShowClusterFormationTransition(
+                    beforeMapSnapshot,
+                    mapSnapshot,
+                    clusterFormation);
+                return;
+            }
+
             _semanticMapDisplay?.ShowBootstrapResultTransition(
                 beforeMapSnapshot,
                 mapSnapshot,
@@ -985,12 +1134,49 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 becameStable);
         }
 
+        private void ShowSemanticAnalysisMap(
+            FirstContactSemanticMapSnapshot beforeMapSnapshot,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            FirstContactClusterFormationEvent clusterFormation)
+        {
+            ClearProbePreview();
+            if (semanticSettings != null && !semanticSettings.showSemanticMapFeedback)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            if (mapSnapshot == null || mapSnapshot.Nodes.Count == 0)
+            {
+                _semanticMapDisplay?.Clear();
+                return;
+            }
+
+            if (clusterFormation.ShouldAnimate)
+            {
+                _semanticMapDisplay?.ShowClusterFormationTransition(
+                    beforeMapSnapshot,
+                    mapSnapshot,
+                    clusterFormation);
+                return;
+            }
+
+            _semanticMapDisplay?.ShowFullMap(mapSnapshot);
+        }
+
         private static string BuildTraceLine(
             int previousTraceCount,
             int traceCount,
             int requiredTraceCount,
-            bool accepted)
+            bool accepted,
+            bool duplicate = false)
         {
+            if (duplicate)
+            {
+                return T("line.trace_duplicate", "TRACE: DUPLICATE");
+            }
+
             string required = Mathf.Max(1, requiredTraceCount).ToString("00");
             string current = Mathf.Max(0, traceCount).ToString("00");
             if (accepted && previousTraceCount != traceCount)
@@ -1038,10 +1224,233 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return string.IsNullOrWhiteSpace(label) ? "EARTH" : label.Trim().ToUpperInvariant();
         }
 
+        private static string ResolveDynamicLabelFallback(string fallbackLabel)
+        {
+            if (LlmLocalizationSettings.IsEnglishLocale(L10n.CurrentLocale))
+            {
+                return string.IsNullOrWhiteSpace(fallbackLabel) ? "UNKNOWN" : fallbackLabel.Trim();
+            }
+
+            return T("fallback.unknown", "UNKNOWN");
+        }
+
         private void ClearVisualOverlays()
         {
+            ClearProbePreview();
             _brainwaveDisplay?.Clear();
             _semanticMapDisplay?.Clear();
+        }
+
+        private void ShowProbePreview(Texture probeTexture)
+        {
+            ShowProbePreview(probeTexture, ProbePreviewLayout.Review, scanActive: false);
+        }
+
+        private void ShowProbePreview(Texture probeTexture, ProbePreviewLayout layout, bool scanActive)
+        {
+            if (_terminalDisplay == null || probeTexture == null)
+            {
+                return;
+            }
+
+            RawImage image = EnsureProbePreview();
+            if (image == null)
+            {
+                return;
+            }
+
+            ApplyProbePreviewLayout(layout);
+            image.texture = probeTexture;
+            if (_probePreviewAspect != null)
+            {
+                _probePreviewAspect.aspectRatio = Mathf.Max(0.01f, probeTexture.width / (float)Mathf.Max(1, probeTexture.height));
+            }
+
+            _probePreviewScanline?.SetScanning(scanActive);
+            _probePreviewRoot.SetActive(true);
+            if (layout == ProbePreviewLayout.Dispatch)
+            {
+                _terminalDisplay.SetContentTopInsetNormalized(GetProbePreviewTextTopInset(layout));
+            }
+            else if (layout == ProbePreviewLayout.Review)
+            {
+                _terminalDisplay.SetContentTopInsetNormalized(GetProbePreviewTextTopInset(layout));
+            }
+        }
+
+        private void ClearProbePreview()
+        {
+            _probePreviewScanline?.SetScanning(false);
+            if (_probePreviewImage != null)
+            {
+                _probePreviewImage.texture = null;
+            }
+
+            if (_probePreviewRoot != null)
+            {
+                _probePreviewRoot.SetActive(false);
+            }
+        }
+
+        private RawImage EnsureProbePreview()
+        {
+            if (_probePreviewImage != null)
+            {
+                return _probePreviewImage;
+            }
+
+            RectTransform screenRect = _terminalDisplay.ScreenRectTransform;
+            if (screenRect == null)
+            {
+                return null;
+            }
+
+            _probePreviewRoot = new GameObject(
+                "FirstContactProbePreview",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            _probePreviewRoot.transform.SetParent(screenRect, false);
+
+            RectTransform rootRect = (RectTransform)_probePreviewRoot.transform;
+            rootRect.anchorMin = new Vector2(0.12f, 0.50f);
+            rootRect.anchorMax = new Vector2(0.88f, 0.93f);
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+
+            Image background = _probePreviewRoot.GetComponent<Image>();
+            background.color = new Color(0.01f, 0.015f, 0.012f, 0.88f);
+            background.raycastTarget = false;
+
+            GameObject imageObject = new(
+                "Image",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(RawImage),
+                typeof(AspectRatioFitter));
+            imageObject.transform.SetParent(_probePreviewRoot.transform, false);
+
+            RectTransform imageRect = (RectTransform)imageObject.transform;
+            imageRect.anchorMin = new Vector2(0.04f, 0.06f);
+            imageRect.anchorMax = new Vector2(0.96f, 0.94f);
+            imageRect.offsetMin = Vector2.zero;
+            imageRect.offsetMax = Vector2.zero;
+
+            _probePreviewImage = imageObject.GetComponent<RawImage>();
+            _probePreviewImage.color = Color.white;
+            _probePreviewImage.raycastTarget = false;
+
+            _probePreviewAspect = imageObject.GetComponent<AspectRatioFitter>();
+            _probePreviewAspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            _probePreviewAspect.aspectRatio = 1f;
+
+            GameObject scanObject = new(
+                "Scanline",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            scanObject.transform.SetParent(_probePreviewRoot.transform, false);
+
+            RectTransform scanRect = (RectTransform)scanObject.transform;
+            scanRect.anchorMin = new Vector2(0.04f, 0.5f);
+            scanRect.anchorMax = new Vector2(0.96f, 0.5f);
+            scanRect.offsetMin = new Vector2(0f, -1.5f);
+            scanRect.offsetMax = new Vector2(0f, 1.5f);
+
+            Image scanImage = scanObject.GetComponent<Image>();
+            scanImage.color = new Color(0.35f, 1f, 0.5f, 0.58f);
+            scanImage.raycastTarget = false;
+
+            _probePreviewScanline = _probePreviewRoot.AddComponent<FirstContactProbePreviewScanline>();
+            _probePreviewScanline.Configure(scanRect);
+            _probePreviewScanline.SetScanning(false);
+
+            _probePreviewRoot.SetActive(false);
+            return _probePreviewImage;
+        }
+
+        private void ApplyProbePreviewLayout(ProbePreviewLayout layout)
+        {
+            if (_probePreviewRoot == null)
+            {
+                return;
+            }
+
+            RectTransform rootRect = (RectTransform)_probePreviewRoot.transform;
+            rootRect.anchorMin = GetProbePreviewAnchorMin(layout);
+            rootRect.anchorMax = GetProbePreviewAnchorMax(layout);
+
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+        }
+
+        private Vector2 GetProbePreviewAnchorMin(ProbePreviewLayout layout)
+        {
+            if (_presentationSettings == null)
+            {
+                return layout == ProbePreviewLayout.Dispatch
+                    ? new Vector2(0.54f, 0.36f)
+                    : new Vector2(0.12f, 0.5f);
+            }
+
+            return layout == ProbePreviewLayout.Dispatch
+                ? _presentationSettings.probeDispatchAnchorMin
+                : _presentationSettings.probeReviewAnchorMin;
+        }
+
+        private Vector2 GetProbePreviewAnchorMax(ProbePreviewLayout layout)
+        {
+            if (_presentationSettings == null)
+            {
+                return layout == ProbePreviewLayout.Dispatch
+                    ? new Vector2(0.93f, 0.76f)
+                    : new Vector2(0.88f, 0.93f);
+            }
+
+            return layout == ProbePreviewLayout.Dispatch
+                ? _presentationSettings.probeDispatchAnchorMax
+                : _presentationSettings.probeReviewAnchorMax;
+        }
+
+        private float GetProbePreviewTextTopInset(ProbePreviewLayout layout)
+        {
+            if (_presentationSettings == null)
+            {
+                return layout == ProbePreviewLayout.Dispatch ? 0f : 0.52f;
+            }
+
+            return layout == ProbePreviewLayout.Dispatch
+                ? Mathf.Clamp01(_presentationSettings.probeDispatchTextTopInset)
+                : Mathf.Clamp01(_presentationSettings.probeReviewTextTopInset);
+        }
+
+        private void PlayProbeDispatchSignal(
+            BrainwaveSemanticProfile dispatchSignalProfile,
+            int streamSeed,
+            bool completeLoop)
+        {
+            if (_brainwaveDisplay == null)
+            {
+                return;
+            }
+
+            int safeSeed = streamSeed != 0
+                ? streamSeed
+                : (dispatchSignalProfile.IsValid ? dispatchSignalProfile.TextureSeed : 1);
+            _brainwaveDisplay.BeginReceiverStream(safeSeed);
+            if (dispatchSignalProfile.IsValid)
+            {
+                _brainwaveDisplay.InjectReceiverSignal(
+                    dispatchSignalProfile,
+                    BrainwaveSignalRole.Drawing,
+                    completeLoop ? 0.45f : 0.95f,
+                    completeLoop ? 0.6f : 0.9f);
+            }
+
+            if (completeLoop)
+            {
+                _brainwaveDisplay.CompleteReceiverSequenceLoop();
+            }
         }
 
         private static FirstContactSemanticMapDisplay ResolveSemanticMapDisplay(TerminalDisplay terminalDisplay)
@@ -1058,186 +1467,53 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 ? display
                 : terminalDisplay.gameObject.AddComponent<FirstContactSemanticMapDisplay>();
         }
+
+        private enum ProbePreviewLayout
+        {
+            Review,
+            Dispatch
+        }
     }
 
-    public interface IFirstContactActionPresenter
+    internal sealed class FirstContactProbePreviewScanline : MonoBehaviour
     {
-        void ShowSubmit(string prompt, Action onSubmit);
-        void ShowConfirmation(string prompt, string label, Action onConfirm, Action onRedraw);
-        void Hide();
-    }
+        private RectTransform _line;
+        private bool _scanning;
+        private float _phase;
 
-    [DisallowMultipleComponent]
-    public sealed class FirstContactActionButtonPanel : MonoBehaviour, IFirstContactActionPresenter
-    {
-        private Canvas _canvas;
-        private GameObject _panel;
-        private TextMeshProUGUI _promptText;
-        private RectTransform _buttonRoot;
-
-        public void ShowSubmit(string prompt, Action onSubmit)
+        public void Configure(RectTransform line)
         {
-            EnsureBuilt();
-            ClearButtons();
-            _promptText.text = prompt ?? string.Empty;
-            AddButton(L10n.T("ui.day1.submit", "Submit"), () => onSubmit?.Invoke(), 180f);
-            SetVisible(true);
+            _line = line;
         }
 
-        public void ShowConfirmation(string prompt, string label, Action onConfirm, Action onRedraw)
+        public void SetScanning(bool scanning)
         {
-            EnsureBuilt();
-            ClearButtons();
-            _promptText.text = string.IsNullOrWhiteSpace(label)
-                ? prompt ?? string.Empty
-                : $"{prompt}\n{label.ToUpperInvariant()}";
-            AddButton(L10n.T("ui.day1.confirm", "Confirm"), () => onConfirm?.Invoke(), 180f);
-            AddButton(L10n.T("ui.day1.redraw", "Redraw"), () => onRedraw?.Invoke(), 180f);
-            SetVisible(true);
+            _scanning = scanning;
+            _phase = 0f;
+            if (_line != null)
+            {
+                _line.gameObject.SetActive(scanning);
+            }
         }
 
-        public void Hide()
+        private void Update()
         {
-            SetVisible(false);
-        }
-
-        private void EnsureBuilt()
-        {
-            if (_panel != null)
+            if (!_scanning || _line == null)
             {
                 return;
             }
 
-            GameObject canvasObject = new("FirstContactActionCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            DontDestroyOnLoad(canvasObject);
-            _canvas = canvasObject.GetComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 145;
-
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            _panel = new GameObject("FirstContactActionPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(VerticalLayoutGroup));
-            _panel.transform.SetParent(canvasObject.transform, false);
-
-            RectTransform panelRect = (RectTransform)_panel.transform;
-            panelRect.anchorMin = new Vector2(0.5f, 0f);
-            panelRect.anchorMax = new Vector2(0.5f, 0f);
-            panelRect.pivot = new Vector2(0.5f, 0f);
-            panelRect.anchoredPosition = new Vector2(0f, 42f);
-            panelRect.sizeDelta = new Vector2(1120f, 150f);
-
-            Image panelImage = _panel.GetComponent<Image>();
-            panelImage.color = new Color(0.03f, 0.04f, 0.05f, 0.86f);
-            panelImage.raycastTarget = true;
-
-            VerticalLayoutGroup panelLayout = _panel.GetComponent<VerticalLayoutGroup>();
-            panelLayout.padding = new RectOffset(22, 22, 16, 18);
-            panelLayout.spacing = 10f;
-            panelLayout.childAlignment = TextAnchor.MiddleCenter;
-            panelLayout.childControlWidth = true;
-            panelLayout.childControlHeight = true;
-            panelLayout.childForceExpandWidth = true;
-            panelLayout.childForceExpandHeight = false;
-
-            _promptText = CreateText("Prompt", _panel.transform, 20f, FontStyles.Normal);
-            LayoutElement promptLayout = _promptText.gameObject.AddComponent<LayoutElement>();
-            promptLayout.preferredHeight = 38f;
-            promptLayout.flexibleHeight = 0f;
-
-            GameObject row = new("Buttons", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-            row.transform.SetParent(_panel.transform, false);
-            _buttonRoot = (RectTransform)row.transform;
-            HorizontalLayoutGroup rowLayout = row.GetComponent<HorizontalLayoutGroup>();
-            rowLayout.spacing = 12f;
-            rowLayout.childAlignment = TextAnchor.MiddleCenter;
-            rowLayout.childControlWidth = false;
-            rowLayout.childControlHeight = true;
-            rowLayout.childForceExpandWidth = false;
-            rowLayout.childForceExpandHeight = false;
-            LayoutElement rowElement = row.AddComponent<LayoutElement>();
-            rowElement.preferredHeight = 62f;
-            rowElement.flexibleWidth = 1f;
-        }
-
-        private Button AddButton(string label, Action onClick, float preferredWidth)
-        {
-            GameObject buttonObject = new($"FirstContactButton_{label}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
-            buttonObject.transform.SetParent(_buttonRoot, false);
-
-            Image image = buttonObject.GetComponent<Image>();
-            image.color = new Color(0.12f, 0.15f, 0.18f, 0.96f);
-
-            Button button = buttonObject.GetComponent<Button>();
-            ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.12f, 0.15f, 0.18f, 0.96f);
-            colors.highlightedColor = new Color(0.22f, 0.29f, 0.34f, 1f);
-            colors.pressedColor = new Color(0.08f, 0.12f, 0.15f, 1f);
-            colors.selectedColor = colors.highlightedColor;
-            button.colors = colors;
-            button.onClick.AddListener(() => onClick?.Invoke());
-
-            LayoutElement element = buttonObject.GetComponent<LayoutElement>();
-            element.preferredWidth = preferredWidth;
-            element.preferredHeight = 56f;
-
-            TextMeshProUGUI text = CreateText("Label", buttonObject.transform, 20f, FontStyles.Bold);
-            text.text = label;
-            text.enableAutoSizing = true;
-            text.fontSizeMin = 11f;
-            text.fontSizeMax = 20f;
-            RectTransform textRect = text.rectTransform;
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = new Vector2(12f, 4f);
-            textRect.offsetMax = new Vector2(-12f, -4f);
-            return button;
-        }
-
-        private static TextMeshProUGUI CreateText(string name, Transform parent, float fontSize, FontStyles style)
-        {
-            GameObject textObject = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-            textObject.transform.SetParent(parent, false);
-            TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
-            text.text = string.Empty;
-            text.fontSize = fontSize;
-            text.fontStyle = style;
-            text.alignment = TextAlignmentOptions.Center;
-            text.color = Color.white;
-            text.raycastTarget = false;
-            text.characterSpacing = 0f;
-            return text;
-        }
-
-        private void ClearButtons()
-        {
-            if (_buttonRoot == null)
+            RectTransform parent = _line.parent as RectTransform;
+            if (parent == null)
             {
                 return;
             }
 
-            for (int i = _buttonRoot.childCount - 1; i >= 0; i--)
-            {
-                Destroy(_buttonRoot.GetChild(i).gameObject);
-            }
-        }
-
-        private void SetVisible(bool visible)
-        {
-            if (_panel != null)
-            {
-                _panel.SetActive(visible);
-            }
-        }
-
-        private void OnDestroy()
-        {
-            if (_canvas != null)
-            {
-                Destroy(_canvas.gameObject);
-            }
+            float height = Mathf.Max(1f, parent.rect.height);
+            _phase = (_phase + Time.deltaTime * 0.72f) % 1f;
+            float y = Mathf.Lerp((height * 0.42f) - 2f, (-height * 0.42f) + 2f, _phase);
+            _line.anchoredPosition = new Vector2(0f, y);
         }
     }
+
 }

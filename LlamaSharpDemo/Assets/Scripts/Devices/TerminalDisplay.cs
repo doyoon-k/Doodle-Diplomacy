@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -5,6 +6,7 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using DoodleDiplomacy.Core;
+using DoodleDiplomacy.Localization;
 
 namespace DoodleDiplomacy.Devices
 {
@@ -58,6 +60,28 @@ namespace DoodleDiplomacy.Devices
         [Tooltip("ScrollRect used to drag or wheel-scroll terminal text.")]
         [SerializeField] private ScrollRect scrollRect;
 
+        [Header("Text Input")]
+        [Tooltip("TMP input field used for terminal text entry. If empty, one is created under Screen Panel at runtime.")]
+        [SerializeField] private TMP_InputField textInputField;
+        [Tooltip("Prefix label shown before the active terminal input value.")]
+        [SerializeField] private TextMeshProUGUI textInputPrefixText;
+        [Tooltip("Text component used by the active terminal input value.")]
+        [SerializeField] private TextMeshProUGUI textInputValueText;
+        [Tooltip("Placeholder component used by the active terminal input value.")]
+        [SerializeField] private TextMeshProUGUI textInputPlaceholderText;
+        [Tooltip("Create a TMP input field under the terminal screen panel when no field is assigned.")]
+        [SerializeField] private bool createTextInputIfMissing = true;
+        [Tooltip("Normalized vertical anchor min for the terminal input row inside the screen panel. Horizontal alignment follows terminal text.")]
+        [SerializeField] private Vector2 textInputAnchorMin = new(0f, 0.255f);
+        [Tooltip("Normalized vertical anchor max for the terminal input row inside the screen panel. Horizontal alignment follows terminal text.")]
+        [SerializeField] private Vector2 textInputAnchorMax = new(1f, 0.335f);
+        [Tooltip("Horizontal spacing between the input prefix and editable text.")]
+        [SerializeField, Min(0f)] private float textInputPrefixSpacing = 8f;
+        [Tooltip("Caret width for terminal text input.")]
+        [SerializeField, Min(1)] private int textInputCaretWidth = 2;
+        [Tooltip("Selection color for terminal text input.")]
+        [SerializeField] private Color textInputSelectionColor = new(0.35f, 1f, 0.5f, 0.35f);
+
         [Header("Events")]
         [Tooltip("UnityEvent invoked when terminal typing finishes.")]
         public UnityEvent OnTypingComplete = new();
@@ -74,6 +98,19 @@ namespace DoodleDiplomacy.Devices
         private Vector4 _baseTextMargin;
         private bool _hasBaseTextMargin;
         private bool _inputCursorVisible = true;
+        private RectTransform _textInputRootRect;
+        private RectTransform _textInputViewportRect;
+        private TMP_FontAsset _baseTextMeshFont;
+        private TMP_FontAsset _baseTextInputPrefixFont;
+        private TMP_FontAsset _baseTextInputValueFont;
+        private TMP_FontAsset _baseTextInputPlaceholderFont;
+        private bool _hasBaseFonts;
+        private bool _textInputConfigured;
+        private bool _textInputActive;
+        private bool _suppressTextInputCallbacks;
+        private Action<string> _activeTextInputSubmitted;
+        private Action<string> _activeTextInputChanged;
+        private Coroutine _textInputFocusRoutine;
 
         private static readonly char[] NoiseChars =
             "!@#$%^&*<>?/\\|~`0123456789ABCDEFXYZabcxyz".ToCharArray();
@@ -82,6 +119,8 @@ namespace DoodleDiplomacy.Devices
             screenPanel != null ? screenPanel.GetComponent<RectTransform>() : null;
 
         public bool IsTyping() => _isTyping;
+        public bool IsTextInputActive => _textInputActive;
+        public string TextInputValue => textInputField != null ? textInputField.text ?? string.Empty : string.Empty;
 
         public void SetContentTopInsetNormalized(float topInsetNormalized)
         {
@@ -102,13 +141,23 @@ namespace DoodleDiplomacy.Devices
         private void Awake()
         {
             CaptureBaseTextMargin();
+            CaptureBaseFonts();
             EnsureScrollViewConfigured();
+            ApplyLocalizedFonts();
             Clear();
         }
 
         private void OnEnable()
         {
+            L10n.LocaleChanged += OnLocaleChanged;
             EnsureScrollViewConfigured();
+            ApplyLocalizedFonts();
+        }
+
+        private void OnDisable()
+        {
+            L10n.LocaleChanged -= OnLocaleChanged;
+            HideTextInput();
         }
 
         private void OnValidate()
@@ -118,6 +167,9 @@ namespace DoodleDiplomacy.Devices
 
             if (scrollRect != null)
                 scrollRect.scrollSensitivity = scrollSensitivity;
+
+            textInputPrefixSpacing = Mathf.Max(0f, textInputPrefixSpacing);
+            textInputCaretWidth = Mathf.Max(1, textInputCaretWidth);
         }
 
         private void OnRectTransformDimensionsChange()
@@ -127,6 +179,7 @@ namespace DoodleDiplomacy.Devices
 
             ApplyTextViewportLayout();
             ApplyTextContentLayout();
+            ApplyTextInputLayout();
             if (textLayoutElement != null)
                 textLayoutElement.minHeight = GetTextVisibleHeight();
         }
@@ -195,6 +248,7 @@ namespace DoodleDiplomacy.Devices
 
         public void Clear()
         {
+            HideTextInput();
             if (_typingRoutine != null)
             {
                 StopCoroutine(_typingRoutine);
@@ -211,6 +265,87 @@ namespace DoodleDiplomacy.Devices
             _currentText = string.Empty;
             if (textMesh != null)
                 ApplyRenderedText(BuildRenderedText(string.Empty, true), true);
+        }
+
+        public void BeginTextInput(
+            string prefix,
+            string value,
+            int characterLimit,
+            Action<string> onSubmitted,
+            Action<string> onChanged = null)
+        {
+            EnsureTextInputConfigured();
+            if (textInputField == null)
+            {
+                Debug.LogWarning("[TerminalDisplay] Cannot begin terminal text input because no TMP_InputField is available.", this);
+                return;
+            }
+
+            _textInputActive = true;
+            _activeTextInputSubmitted = onSubmitted;
+            _activeTextInputChanged = onChanged;
+
+            textInputField.gameObject.SetActive(true);
+            textInputField.characterLimit = Mathf.Max(0, characterLimit);
+            textInputField.contentType = TMP_InputField.ContentType.Standard;
+            textInputField.lineType = TMP_InputField.LineType.SingleLine;
+            textInputField.characterValidation = TMP_InputField.CharacterValidation.None;
+            textInputField.caretWidth = textInputCaretWidth;
+            textInputField.selectionColor = textInputSelectionColor;
+
+            if (textInputPrefixText != null)
+            {
+                textInputPrefixText.text = prefix ?? string.Empty;
+            }
+
+            _suppressTextInputCallbacks = true;
+            textInputField.SetTextWithoutNotify(value ?? string.Empty);
+            _suppressTextInputCallbacks = false;
+
+            ApplyLocalizedFonts();
+            ApplyTextInputLayout();
+            FocusTextInput();
+            QueueTextInputFocus();
+        }
+
+        public void HideTextInput()
+        {
+            _textInputActive = false;
+            _activeTextInputSubmitted = null;
+            _activeTextInputChanged = null;
+
+            if (_textInputFocusRoutine != null)
+            {
+                StopCoroutine(_textInputFocusRoutine);
+                _textInputFocusRoutine = null;
+            }
+
+            if (textInputField == null)
+            {
+                return;
+            }
+
+            textInputField.DeactivateInputField();
+            textInputField.gameObject.SetActive(false);
+        }
+
+        public void FocusTextInput()
+        {
+            if (!_textInputActive || textInputField == null || !textInputField.isActiveAndEnabled)
+            {
+                return;
+            }
+
+            if (EventSystem.current == null)
+            {
+                Debug.LogWarning("[TerminalDisplay] EventSystem is missing. Terminal text input cannot receive UI focus.", this);
+                return;
+            }
+
+            EventSystem.current.SetSelectedGameObject(textInputField.gameObject);
+            textInputField.Select();
+            textInputField.ActivateInputField();
+            textInputField.MoveTextEnd(false);
         }
 
         public void OnGameStateChanged(GameState state)
@@ -235,9 +370,9 @@ namespace DoodleDiplomacy.Devices
 
             for (int i = startIndex; i < fullText.Length; i++)
             {
-                if (useNoise && fullText[i] != '\n' && fullText[i] != ' ' && Random.value < 0.25f)
+                if (useNoise && fullText[i] != '\n' && fullText[i] != ' ' && UnityEngine.Random.value < 0.25f)
                 {
-                    char noise = NoiseChars[Random.Range(0, NoiseChars.Length)];
+                    char noise = NoiseChars[UnityEngine.Random.Range(0, NoiseChars.Length)];
                     if (textMesh != null)
                         ApplyRenderedText(BuildTypingText(_currentText + noise), forceFollowBottom: true);
 
@@ -383,6 +518,122 @@ namespace DoodleDiplomacy.Devices
             ApplyTextViewportLayout();
         }
 
+        private void EnsureTextInputConfigured()
+        {
+            if (_textInputConfigured)
+            {
+                return;
+            }
+
+            if (textInputField == null && createTextInputIfMissing)
+            {
+                CreateRuntimeTextInput();
+            }
+
+            if (textInputField == null)
+            {
+                return;
+            }
+
+            _textInputRootRect = textInputField.GetComponent<RectTransform>();
+            _textInputViewportRect = textInputField.textViewport;
+            if (textInputValueText == null)
+            {
+                textInputValueText = textInputField.textComponent as TextMeshProUGUI;
+            }
+
+            if (textInputPlaceholderText == null)
+            {
+                textInputPlaceholderText = textInputField.placeholder as TextMeshProUGUI;
+            }
+
+            textInputField.onSubmit.RemoveListener(HandleTextInputSubmitted);
+            textInputField.onSubmit.AddListener(HandleTextInputSubmitted);
+            textInputField.onValueChanged.RemoveListener(HandleTextInputChanged);
+            textInputField.onValueChanged.AddListener(HandleTextInputChanged);
+
+            textInputField.richText = false;
+            textInputField.resetOnDeActivation = false;
+            textInputField.restoreOriginalTextOnEscape = false;
+            textInputField.navigation = new Navigation { mode = Navigation.Mode.None };
+
+            ApplyLocalizedFonts();
+            ApplyTextInputLayout();
+            textInputField.gameObject.SetActive(false);
+            _textInputConfigured = true;
+        }
+
+        private void CreateRuntimeTextInput()
+        {
+            RectTransform screenRect = ScreenRectTransform;
+            if (screenRect == null)
+            {
+                return;
+            }
+
+            GameObject inputObject = new(
+                "TerminalTextInput",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(TMP_InputField));
+            inputObject.transform.SetParent(screenRect, false);
+
+            _textInputRootRect = inputObject.GetComponent<RectTransform>();
+            textInputField = inputObject.GetComponent<TMP_InputField>();
+
+            Image background = inputObject.GetComponent<Image>();
+            background.color = new Color(0f, 0f, 0f, 0f);
+            background.raycastTarget = true;
+            textInputField.targetGraphic = background;
+
+            GameObject prefixObject = new(
+                "Prefix",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            prefixObject.transform.SetParent(inputObject.transform, false);
+            textInputPrefixText = prefixObject.GetComponent<TextMeshProUGUI>();
+            textInputPrefixText.raycastTarget = false;
+            textInputPrefixText.alignment = TextAlignmentOptions.Left;
+            textInputPrefixText.textWrappingMode = TextWrappingModes.PreserveWhitespaceNoWrap;
+
+            GameObject viewportObject = new(
+                "Text Area",
+                typeof(RectTransform),
+                typeof(RectMask2D));
+            viewportObject.transform.SetParent(inputObject.transform, false);
+            _textInputViewportRect = viewportObject.GetComponent<RectTransform>();
+            textInputField.textViewport = _textInputViewportRect;
+
+            GameObject valueObject = new(
+                "Text",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            valueObject.transform.SetParent(viewportObject.transform, false);
+            textInputValueText = valueObject.GetComponent<TextMeshProUGUI>();
+            textInputValueText.raycastTarget = false;
+            textInputValueText.alignment = TextAlignmentOptions.Left;
+            textInputValueText.textWrappingMode = TextWrappingModes.PreserveWhitespaceNoWrap;
+            textInputValueText.overflowMode = TextOverflowModes.Overflow;
+            textInputField.textComponent = textInputValueText;
+
+            GameObject placeholderObject = new(
+                "Placeholder",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            placeholderObject.transform.SetParent(viewportObject.transform, false);
+            textInputPlaceholderText = placeholderObject.GetComponent<TextMeshProUGUI>();
+            textInputPlaceholderText.raycastTarget = false;
+            textInputPlaceholderText.alignment = TextAlignmentOptions.Left;
+            textInputPlaceholderText.textWrappingMode = TextWrappingModes.PreserveWhitespaceNoWrap;
+            textInputPlaceholderText.color = new Color(1f, 1f, 1f, 0.35f);
+            textInputPlaceholderText.text = string.Empty;
+            textInputField.placeholder = textInputPlaceholderText;
+        }
+
         private float GetContentTopInsetPixels()
         {
             if (_panelRect == null)
@@ -424,6 +675,69 @@ namespace DoodleDiplomacy.Devices
             _textRect.offsetMax = Vector2.zero;
         }
 
+        private void ApplyTextInputLayout()
+        {
+            if (textInputField == null)
+            {
+                return;
+            }
+
+            _textInputRootRect ??= textInputField.GetComponent<RectTransform>();
+            _textInputViewportRect ??= textInputField.textViewport;
+
+            if (_textInputRootRect != null)
+            {
+                _textInputRootRect.anchorMin = new Vector2(0f, textInputAnchorMin.y);
+                _textInputRootRect.anchorMax = new Vector2(1f, textInputAnchorMax.y);
+                _textInputRootRect.pivot = new Vector2(0.5f, 0.5f);
+                _textInputRootRect.offsetMin = Vector2.zero;
+                _textInputRootRect.offsetMax = Vector2.zero;
+            }
+
+            float prefixWidth = 0f;
+            if (textInputPrefixText != null)
+            {
+                RectTransform prefixRect = textInputPrefixText.rectTransform;
+                prefixRect.anchorMin = new Vector2(0f, 0f);
+                prefixRect.anchorMax = new Vector2(0f, 1f);
+                prefixRect.pivot = new Vector2(0f, 0.5f);
+                prefixRect.anchoredPosition = Vector2.zero;
+
+                string prefix = textInputPrefixText.text ?? string.Empty;
+                prefixWidth = Mathf.Ceil(textInputPrefixText.GetPreferredValues(prefix).x + textInputPrefixSpacing);
+                prefixRect.sizeDelta = new Vector2(prefixWidth, 0f);
+                prefixRect.offsetMin = new Vector2(0f, 0f);
+                prefixRect.offsetMax = new Vector2(prefixWidth, 0f);
+            }
+
+            if (_textInputViewportRect != null)
+            {
+                _textInputViewportRect.anchorMin = Vector2.zero;
+                _textInputViewportRect.anchorMax = Vector2.one;
+                _textInputViewportRect.pivot = new Vector2(0.5f, 0.5f);
+                _textInputViewportRect.offsetMin = new Vector2(prefixWidth, 0f);
+                _textInputViewportRect.offsetMax = Vector2.zero;
+            }
+
+            ApplyTextInputTextRect(textInputValueText);
+            ApplyTextInputTextRect(textInputPlaceholderText);
+        }
+
+        private static void ApplyTextInputTextRect(TextMeshProUGUI text)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            RectTransform rect = text.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
         private bool ShouldFollowBottom()
         {
             if (!autoFollowLatestLine || scrollRect == null)
@@ -455,6 +769,93 @@ namespace DoodleDiplomacy.Devices
 
             _baseTextMargin = textMesh.margin;
             _hasBaseTextMargin = true;
+        }
+
+        private void CaptureBaseFonts()
+        {
+            if (!_hasBaseFonts && textMesh != null)
+            {
+                _baseTextMeshFont = textMesh.font;
+            }
+
+            if (_baseTextInputPrefixFont == null && textInputPrefixText != null)
+            {
+                _baseTextInputPrefixFont = textInputPrefixText.font;
+            }
+
+            if (_baseTextInputValueFont == null && textInputValueText != null)
+            {
+                _baseTextInputValueFont = textInputValueText.font;
+            }
+
+            if (_baseTextInputPlaceholderFont == null && textInputPlaceholderText != null)
+            {
+                _baseTextInputPlaceholderFont = textInputPlaceholderText.font;
+            }
+
+            _hasBaseFonts = true;
+        }
+
+        private void ApplyLocalizedFonts()
+        {
+            CaptureBaseFonts();
+            TMP_FontAsset localizedFont = L10n.CurrentFont;
+
+            if (textMesh != null)
+            {
+                textMesh.font = localizedFont != null ? localizedFont : _baseTextMeshFont;
+            }
+
+            ApplyLocalizedFont(textInputPrefixText, localizedFont, _baseTextInputPrefixFont);
+            ApplyLocalizedFont(textInputValueText, localizedFont, _baseTextInputValueFont);
+            ApplyLocalizedFont(textInputPlaceholderText, localizedFont, _baseTextInputPlaceholderFont);
+
+            if (textMesh != null)
+            {
+                ApplyTextInputTextStyle(textInputPrefixText);
+                ApplyTextInputTextStyle(textInputValueText);
+                ApplyTextInputTextStyle(textInputPlaceholderText);
+            }
+        }
+
+        private static void ApplyLocalizedFont(
+            TextMeshProUGUI text,
+            TMP_FontAsset localizedFont,
+            TMP_FontAsset fallbackFont)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            text.font = localizedFont != null ? localizedFont : fallbackFont;
+        }
+
+        private void ApplyTextInputTextStyle(TextMeshProUGUI text)
+        {
+            if (text == null || textMesh == null)
+            {
+                return;
+            }
+
+            text.fontSize = textMesh.fontSize;
+            text.fontStyle = textMesh.fontStyle;
+            text.color = textMesh.color;
+            text.characterSpacing = textMesh.characterSpacing;
+            text.wordSpacing = textMesh.wordSpacing;
+            text.lineSpacing = textMesh.lineSpacing;
+            text.alignment = TextAlignmentOptions.Left;
+            text.textWrappingMode = TextWrappingModes.PreserveWhitespaceNoWrap;
+        }
+
+        private void OnLocaleChanged(string locale)
+        {
+            ApplyLocalizedFonts();
+            ApplyTextInputLayout();
+            if (textMesh != null)
+            {
+                ApplyRenderedText(BuildRenderedText(_currentText, _inputCursorVisible), true);
+            }
         }
 
         private void ApplyTextTopInsetMargin()
@@ -540,9 +941,59 @@ namespace DoodleDiplomacy.Devices
                 RefreshScrollLayout(followBottom);
         }
 
+        private void HandleTextInputSubmitted(string value)
+        {
+            if (!_textInputActive)
+            {
+                return;
+            }
+
+            _activeTextInputSubmitted?.Invoke(value ?? string.Empty);
+
+            if (_textInputActive)
+            {
+                FocusTextInput();
+                QueueTextInputFocus();
+            }
+        }
+
+        private void HandleTextInputChanged(string value)
+        {
+            if (_suppressTextInputCallbacks || !_textInputActive)
+            {
+                return;
+            }
+
+            _activeTextInputChanged?.Invoke(value ?? string.Empty);
+        }
+
+        private void QueueTextInputFocus()
+        {
+            if (!isActiveAndEnabled)
+            {
+                return;
+            }
+
+            if (_textInputFocusRoutine != null)
+            {
+                StopCoroutine(_textInputFocusRoutine);
+            }
+
+            _textInputFocusRoutine = StartCoroutine(FocusTextInputNextFrame());
+        }
+
+        private IEnumerator FocusTextInputNextFrame()
+        {
+            yield return null;
+            _textInputFocusRoutine = null;
+            FocusTextInput();
+        }
+
         [ContextMenu("Test: ShowDummyText")]
         private void TestShow() =>
-            ShowText("[TRANSLATOR v1.0]\n> Decoding...\n> Hello, Ambassador!\n> _");
+            ShowText(
+                L10n.T("first_contact.terminal.header.translation_buffer", "[TRANSLATION BUFFER]") + "\n" +
+                L10n.T("first_contact.terminal.line.translator_ready", "TRANSLATOR READY") + "\n> _");
 
         [ContextMenu("Test: Clear")]
         private void TestClear() => Clear();

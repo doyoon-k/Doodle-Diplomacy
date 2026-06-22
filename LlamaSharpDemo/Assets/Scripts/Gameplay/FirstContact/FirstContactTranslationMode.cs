@@ -49,7 +49,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private string _pendingLabel;
         private string _pendingDisplayLabel;
         private string _currentProbeLabelInput;
-        private string _currentProbeLabelComposition = string.Empty;
         private FirstContactCardSource _pendingCardSource;
         private string _activeUnknownId;
         private bool _terminalChoiceInputEnabled;
@@ -63,11 +62,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private int _lastSubmitInputFrame = -1;
         private bool _terminalProbeLabelInputActive;
         private string _terminalProbeLabelStatus = string.Empty;
-        private string _queuedTerminalTextInput = string.Empty;
-#if ENABLE_INPUT_SYSTEM
-        private UnityEngine.InputSystem.Keyboard _terminalTextInputKeyboard;
-        private string _inputSystemProbeLabelComposition = string.Empty;
-#endif
         private readonly List<BootstrapCategoryState> _bootstrapCategories = new();
         private int _bootstrapCategoryIndex;
 
@@ -91,7 +85,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public void Exit()
         {
             StopActiveRoutine();
-            _context?.AiGateway?.CancelActiveOperations();
+            EndTerminalProbeLabelInput();
+            GamePipelineRunner.Instance?.StopGeneration();
             _context?.Drawing?.SetInteractionLocked(true);
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
@@ -104,8 +99,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void OnDestroy()
         {
-            UnsubscribeTerminalTextInput();
-            SetTerminalImeCompositionMode(false);
+            EndTerminalProbeLabelInput();
             for (int i = 0; i < _ownedTextures.Count; i++)
             {
                 if (_ownedTextures[i] != null)
@@ -119,13 +113,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void OnDisable()
         {
-            UnsubscribeTerminalTextInput();
-            SetTerminalImeCompositionMode(false);
+            EndTerminalProbeLabelInput();
         }
 
         public void Tick(float deltaTime)
         {
-            SubscribeTerminalTextInput();
             if (HandleTerminalProbeLabelInput())
             {
                 return;
@@ -532,26 +524,31 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void SubmitProbeLabel()
         {
+            SubmitProbeLabel(_context?.TerminalDisplay != null
+                ? _context.TerminalDisplay.TextInputValue
+                : _currentProbeLabelInput);
+        }
+
+        private void SubmitProbeLabel(string labelInput)
+        {
             if (_modeState != FirstContactModeState.ReviewingLabel)
             {
                 return;
             }
 
-            string labelInput = GetVisibleProbeLabelInput();
             if (!TryPreparePlayerProbeLabel(labelInput, out string canonicalLabel, out string displayLabel))
             {
+                _currentProbeLabelInput = labelInput ?? string.Empty;
                 _terminalProbeLabelStatus = L10n.T("first_contact.terminal.line.label_required", "LABEL REQUIRED");
                 RefreshTerminalProbeLabelEntry(instant: true);
                 return;
             }
 
-            _currentProbeLabelInput = displayLabel;
-            ClearProbeLabelComposition();
             _pendingLabel = canonicalLabel;
             _pendingDisplayLabel = displayLabel;
-            _terminalProbeLabelInputActive = false;
+            EndTerminalProbeLabelInput();
+            _currentProbeLabelInput = displayLabel;
             _terminalProbeLabelStatus = string.Empty;
-            SetTerminalImeCompositionMode(false);
             HideOfficerLine();
             StopActiveRoutine();
             _routine = StartCoroutine(AnalyzeDrawingRoutine());
@@ -1315,10 +1312,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             HideOfficerLine();
             StopActiveRoutine();
             DisableTerminalChoices();
-            _terminalProbeLabelInputActive = false;
+            EndTerminalProbeLabelInput();
             _terminalProbeLabelStatus = string.Empty;
-            ClearProbeLabelComposition();
-            SetTerminalImeCompositionMode(false);
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
             _routine = StartCoroutine(RedrawPendingRoutine());
@@ -1531,8 +1526,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             DisableTerminalChoices();
             _terminalProbeLabelInputActive = true;
             _terminalProbeLabelStatus = string.Empty;
-            ClearProbeLabelComposition();
-            SetTerminalImeCompositionMode(true);
             RefreshTerminalProbeLabelEntry(instant: false);
         }
 
@@ -1542,10 +1535,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _pendingCardSource,
                 _activeUnknownId,
                 _pendingTexture,
-                _currentProbeLabelInput,
-                _currentProbeLabelComposition,
                 _terminalProbeLabelStatus,
                 instant);
+
+            if (_terminalProbeLabelInputActive)
+            {
+                BeginTerminalTextInput();
+            }
         }
 
         private bool HandleTerminalProbeLabelInput()
@@ -1557,202 +1553,45 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             if (WasKeyPressed(KeyCode.Escape))
             {
-                _terminalProbeLabelInputActive = false;
                 _terminalProbeLabelStatus = string.Empty;
-                ClearProbeLabelComposition();
-                SetTerminalImeCompositionMode(false);
                 RedrawPending();
                 return true;
             }
 
-            string composition = ReadProbeLabelComposition();
-            bool compositionChanged = !string.Equals(
-                _currentProbeLabelComposition,
-                composition,
-                StringComparison.Ordinal);
-            _currentProbeLabelComposition = composition;
-            bool hasActiveComposition = !string.IsNullOrEmpty(_currentProbeLabelComposition);
-            bool changed = false;
-            bool sawBackspace = false;
-            bool submitRequested = !hasActiveComposition && WasSubmitPressedThisFrame();
-            string input = ReadTextInputThisFrame();
-            for (int i = 0; i < input.Length; i++)
+            _context?.TerminalDisplay?.FocusTextInput();
+            return true;
+        }
+
+        private void BeginTerminalTextInput()
+        {
+            TerminalDisplay terminal = _context?.TerminalDisplay;
+            if (terminal == null)
             {
-                char character = input[i];
-                if (character == '\r' || character == '\n')
-                {
-                    submitRequested |= !hasActiveComposition;
-                    continue;
-                }
-
-                if (character == '\b' || character == '\u007f')
-                {
-                    sawBackspace = true;
-                    changed |= RemoveLastProbeLabelCharacter();
-                    continue;
-                }
-
-                if (CanAppendProbeLabelCharacter(character))
-                {
-                    _currentProbeLabelInput = (_currentProbeLabelInput ?? string.Empty) + character;
-                    changed = true;
-                }
+                return;
             }
 
-            if (!hasActiveComposition && !sawBackspace && WasKeyPressed(KeyCode.Backspace))
-            {
-                changed |= RemoveLastProbeLabelCharacter();
-            }
+            terminal.BeginTextInput(
+                FirstContactTerminalPresenter.ProbeLabelInputPrefix,
+                _currentProbeLabelInput,
+                MaxProbeLabelLength,
+                SubmitProbeLabel,
+                OnTerminalProbeLabelChanged);
+        }
 
-            if (submitRequested)
-            {
-                SubmitProbeLabel();
-                return true;
-            }
-
-            if (changed || compositionChanged)
+        private void OnTerminalProbeLabelChanged(string value)
+        {
+            _currentProbeLabelInput = value ?? string.Empty;
+            if (!string.IsNullOrEmpty(_terminalProbeLabelStatus))
             {
                 _terminalProbeLabelStatus = string.Empty;
                 RefreshTerminalProbeLabelEntry(instant: true);
             }
-
-            return true;
         }
 
-        private bool RemoveLastProbeLabelCharacter()
+        private void EndTerminalProbeLabelInput()
         {
-            if (string.IsNullOrEmpty(_currentProbeLabelInput))
-            {
-                return false;
-            }
-
-            _currentProbeLabelInput = _currentProbeLabelInput[..^1];
-            return true;
-        }
-
-        private bool CanAppendProbeLabelCharacter(char character)
-        {
-            return !char.IsControl(character) &&
-                   (_currentProbeLabelInput?.Length ?? 0) < MaxProbeLabelLength;
-        }
-
-        private string GetVisibleProbeLabelInput()
-        {
-            return (_currentProbeLabelInput ?? string.Empty) + (_currentProbeLabelComposition ?? string.Empty);
-        }
-
-        private string ReadTextInputThisFrame()
-        {
-            string text = string.Empty;
-#if ENABLE_INPUT_SYSTEM
-            text = _queuedTerminalTextInput ?? string.Empty;
-            _queuedTerminalTextInput = string.Empty;
-#endif
-#if ENABLE_LEGACY_INPUT_MANAGER
-            if (string.IsNullOrEmpty(text))
-            {
-                text = Input.inputString ?? string.Empty;
-            }
-#endif
-            return text;
-        }
-
-        private string ReadProbeLabelComposition()
-        {
-            string composition = string.Empty;
-#if ENABLE_INPUT_SYSTEM
-            composition = _inputSystemProbeLabelComposition ?? string.Empty;
-#endif
-#if ENABLE_LEGACY_INPUT_MANAGER
-            string legacyComposition = Input.compositionString ?? string.Empty;
-            if (!string.IsNullOrEmpty(legacyComposition))
-            {
-                composition = legacyComposition;
-            }
-#endif
-            return composition;
-        }
-
-        private void SetTerminalImeCompositionMode(bool enabled)
-        {
-#if ENABLE_INPUT_SYSTEM
-            UnityEngine.InputSystem.Keyboard.current?.SetIMEEnabled(enabled);
-#endif
-#if ENABLE_LEGACY_INPUT_MANAGER
-            Input.imeCompositionMode = enabled ? IMECompositionMode.On : IMECompositionMode.Auto;
-#endif
-        }
-
-        private void SubscribeTerminalTextInput()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = UnityEngine.InputSystem.Keyboard.current;
-            if (_terminalTextInputKeyboard == keyboard)
-            {
-                return;
-            }
-
-            UnsubscribeTerminalTextInput();
-            if (keyboard == null)
-            {
-                return;
-            }
-
-            _terminalTextInputKeyboard = keyboard;
-            _terminalTextInputKeyboard.onTextInput += QueueTerminalTextInput;
-            _terminalTextInputKeyboard.onIMECompositionChange += QueueTerminalImeComposition;
-            _terminalTextInputKeyboard.SetIMEEnabled(_terminalProbeLabelInputActive);
-#endif
-        }
-
-        private void UnsubscribeTerminalTextInput()
-        {
-#if ENABLE_INPUT_SYSTEM
-            if (_terminalTextInputKeyboard == null)
-            {
-                return;
-            }
-
-            _terminalTextInputKeyboard.onTextInput -= QueueTerminalTextInput;
-            _terminalTextInputKeyboard.onIMECompositionChange -= QueueTerminalImeComposition;
-            _terminalTextInputKeyboard.SetIMEEnabled(false);
-            _terminalTextInputKeyboard = null;
-            _inputSystemProbeLabelComposition = string.Empty;
-#endif
-        }
-
-        private void QueueTerminalTextInput(char character)
-        {
-            if (!_terminalProbeLabelInputActive || _modeState != FirstContactModeState.ReviewingLabel)
-            {
-                return;
-            }
-
-            _queuedTerminalTextInput += character;
-#if ENABLE_INPUT_SYSTEM
-            _inputSystemProbeLabelComposition = string.Empty;
-#endif
-        }
-
-#if ENABLE_INPUT_SYSTEM
-        private void QueueTerminalImeComposition(UnityEngine.InputSystem.LowLevel.IMECompositionString composition)
-        {
-            if (!_terminalProbeLabelInputActive || _modeState != FirstContactModeState.ReviewingLabel)
-            {
-                _inputSystemProbeLabelComposition = string.Empty;
-                return;
-            }
-
-            _inputSystemProbeLabelComposition = composition.ToString();
-        }
-#endif
-
-        private void ClearProbeLabelComposition()
-        {
-            _currentProbeLabelComposition = string.Empty;
-#if ENABLE_INPUT_SYSTEM
-            _inputSystemProbeLabelComposition = string.Empty;
-#endif
+            _terminalProbeLabelInputActive = false;
+            _context?.TerminalDisplay?.HideTextInput();
         }
 
         private void HandleTerminalChoiceInput()
@@ -2220,12 +2059,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _currentProbeLabelInput = string.IsNullOrWhiteSpace(_pendingDisplayLabel)
                 ? _currentProbeLabelInput
                 : _pendingDisplayLabel;
-            ClearProbeLabelComposition();
             _terminalProbeLabelInputActive = true;
             _terminalProbeLabelStatus = L10n.T(
                 "first_contact.terminal.status.label_not_object",
                 "LABEL NOT OBJECT");
-            SetTerminalImeCompositionMode(true);
             _context?.Drawing?.SetInteractionLocked(true);
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
@@ -2798,8 +2635,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             var node = new FirstContactSemanticMapNode
             {
                 Id = categoryNodeId,
-                Label = category.DisplayName,
-                SecondaryLabel = category.Meaning,
+                Label = FirstContactTerminalLocalization.LocalizeBootstrapCategory(category.DisplayName).ToUpperInvariant(),
+                SecondaryLabel = FirstContactTerminalLocalization.LocalizeMeaning(category.Meaning).ToUpperInvariant(),
                 Kind = FirstContactSemanticMapNodeKind.BootstrapCategory,
                 Position = ResolveBootstrapCategoryPosition(snapshot, category),
                 Embedding = centroid,

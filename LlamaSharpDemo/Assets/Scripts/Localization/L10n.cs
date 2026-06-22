@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Localization
@@ -73,6 +74,15 @@ namespace DoodleDiplomacy.Localization
             {
                 GameLocalizationSettings settings = Settings;
                 return settings != null ? settings.GetLanguageNativeName(CurrentLocale) : CurrentLanguage;
+            }
+        }
+
+        public static TMP_FontAsset CurrentFont
+        {
+            get
+            {
+                GameLocalizationSettings settings = Settings;
+                return settings != null ? settings.ResolveFontForLocale(CurrentLocale) : null;
             }
         }
 

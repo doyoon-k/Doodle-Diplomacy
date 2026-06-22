@@ -106,4 +106,5 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return false;
         }
     }
+
 }

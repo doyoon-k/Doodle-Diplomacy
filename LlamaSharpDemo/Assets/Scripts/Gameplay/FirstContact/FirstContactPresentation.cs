@@ -12,6 +12,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         public static string MeaningMapActionLabel => T("choice.meaning_map", "MEANING MAP");
         public static string AnswerActionLabel => T("choice.send_reply", "SEND REPLY");
+        public static string ProbeLabelInputPrefix => T("line.probe_label_input_prefix", "PROBE LABEL: ");
 
         private readonly TerminalDisplay _terminalDisplay;
         private readonly TerminalBrainwaveDisplay _brainwaveDisplay;
@@ -278,7 +279,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ClearVisualOverlays();
             string text =
                 Header("probe_sequence", "[PROBE SEQUENCE]") + "\n\n" +
-                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
+                T("line.category", "CATEGORY: {category}", L10n.Arg("category", LocalizeCategory(category))) + "\n" +
                 T("line.group", "GROUP: {group}", L10n.Arg("group", BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
                 T("line.trace_count", "TRACE: {count}/{required}",
                     L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
@@ -298,7 +299,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ClearVisualOverlays();
             string text =
                 Header("probe_channel_open", "[PROBE CHANNEL OPEN]") + "\n\n" +
-                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
+                T("line.category", "CATEGORY: {category}", L10n.Arg("category", LocalizeCategory(category))) + "\n" +
                 T("line.trace_count", "TRACE: {count}/{required}",
                     L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
                     L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n\n" +
@@ -335,7 +336,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 clusterFormation);
             string label = card != null ? GetDisplayLabel(card) : string.Empty;
             string safeLabel = NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant();
-            string safeCategory = NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant();
+            string safeCategory = LocalizeCategory(category);
             bool semanticClusterTrace = clusterFormation.BecameStable && clusterFormation.IsStable;
             string text;
             if (semanticClusterTrace)
@@ -345,7 +346,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
                     T("line.category", "CATEGORY: {category}", L10n.Arg("category", safeCategory)) + "\n" +
                     T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
-                    T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", NormalizeTerminalLine(clusterFormation.Meaning, "[MEANING?]").ToUpperInvariant())) +
+                    T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", LocalizeMeaning(clusterFormation.Meaning))) +
                     BuildContinuePrompt();
             }
             else
@@ -380,12 +381,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ShowFullMap(mapSnapshot, semanticSettings);
             string text =
                 Header("cluster_trace", "[CLUSTER TRACE]") + "\n\n" +
-                T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n" +
+                T("line.category", "CATEGORY: {category}", L10n.Arg("category", LocalizeCategory(category))) + "\n" +
                 T("line.trace_count", "TRACE: {count}/{required}",
                     L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
                     L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n" +
                 T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
-                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", NormalizeTerminalLine(meaning, "[MEANING?]").ToUpperInvariant())) +
+                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", LocalizeMeaning(meaning))) +
                 BuildContinuePrompt();
             _terminalDisplay?.ShowText(text, instant);
         }
@@ -437,22 +438,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactCardSource source,
             string unknownId,
             Texture probeTexture,
-            string label,
-            string composition,
             string status,
             bool instant = false)
         {
             ClearVisualOverlays();
             ShowProbePreview(probeTexture);
 
-            string visibleLabel = (label ?? string.Empty) + (composition ?? string.Empty);
-            string inputLabel = string.IsNullOrWhiteSpace(visibleLabel)
-                ? TerminalDisplay.CursorMarker
-                : NormalizeTerminalLine(visibleLabel, string.Empty) + TerminalDisplay.CursorMarker;
             string text =
                 Header("probe_review", "[PROBE REVIEW]") + "\n\n" +
                 T("line.image_captured", "IMAGE CAPTURED") + "\n" +
-                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", inputLabel)) + "\n" +
+                "\n" +
                 T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId)));
             if (!string.IsNullOrWhiteSpace(status))
             {
@@ -623,7 +618,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string text =
                 $"[{cluster.Id}]\n" +
                 $"{members}\n\n" +
-                $"{cluster.DisplayName}";
+                $"{LocalizeMeaning(cluster.DisplayName)}";
             _terminalDisplay?.ShowText(text);
         }
 
@@ -663,7 +658,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             if (isClusterTrace)
             {
                 text += T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n";
-                text += T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", NormalizeTerminalLine(cluster.DisplayName, "[MEANING?]").ToUpperInvariant())) + "\n";
+                text += T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", LocalizeMeaning(cluster.DisplayName))) + "\n";
             }
             else if (isProbeResult)
             {
@@ -688,7 +683,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             if (!isClusterTrace && isProbeResult && cluster != null && cluster.IsStable)
             {
-                text += "\n" + T("line.memory_map_updated", "MEMORY MAP: {name} UPDATED", L10n.Arg("name", cluster.DisplayName)) + "\n";
+                text += "\n" + T("line.memory_map_updated", "MEMORY MAP: {name} UPDATED", L10n.Arg("name", LocalizeMeaning(cluster.DisplayName))) + "\n";
             }
 
             if (_debugSettings != null && _debugSettings.showScoresOnTerminal && cluster != null)
@@ -836,7 +831,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
             else if (!string.IsNullOrWhiteSpace(category))
             {
-                text += T("line.category", "CATEGORY: {category}", L10n.Arg("category", NormalizeTerminalLine(category, "UNKNOWN").ToUpperInvariant())) + "\n";
+                text += T("line.category", "CATEGORY: {category}", L10n.Arg("category", LocalizeCategory(category))) + "\n";
             }
             else
             {
@@ -873,7 +868,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
 
                 string token = NormalizeTerminalLine(displayTokens[i], "<?>");
-                line += token;
+                line += FirstContactTerminalLocalization.LocalizeToken(token);
             }
 
             return line;
@@ -976,7 +971,22 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactStageTexts stageTexts = result.Slot.Definition?.stageTexts ?? new FirstContactStageTexts();
             string before = stageTexts.GetDisplayText(result.PreviousStage, result.Slot.Id);
             string after = stageTexts.GetDisplayText(result.NewStage, result.Slot.Id);
-            return text + $"{before} -> {after}\n";
+            return text +
+                   $"{FirstContactTerminalLocalization.LocalizeToken(before)} -> {FirstContactTerminalLocalization.LocalizeToken(after)}\n";
+        }
+
+        private static string LocalizeCategory(string category)
+        {
+            return FirstContactTerminalLocalization
+                .LocalizeBootstrapCategory(NormalizeTerminalLine(category, T("fallback.unknown", "UNKNOWN")))
+                .ToUpperInvariant();
+        }
+
+        private static string LocalizeMeaning(string meaning)
+        {
+            return FirstContactTerminalLocalization
+                .LocalizeMeaning(NormalizeTerminalLine(meaning, "[MEANING?]"))
+                .ToUpperInvariant();
         }
 
         private string BuildSlotScoreBlock(

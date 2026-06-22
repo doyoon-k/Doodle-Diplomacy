@@ -16,6 +16,10 @@ MonoBehaviour:
   sourceLocale: en-US
   targetLocale: ko-KR
   targetLanguage: Korean
-  targetLanguageNativeName: 한국어
+  targetLanguageNativeName: "\uD55C\uAD6D\uC5B4"
   stringTable: {fileID: 11400000, guid: e37db8ec6c0f4b188540c73459f74616, type: 2}
+  defaultFont: {fileID: 11400000, guid: 7945e082cb288ef479aae8c0d773ca9a, type: 2}
+  fontOverrides:
+  - locale: ko-KR
+    font: {fileID: 11400000, guid: 7945e082cb288ef479aae8c0d773ca9a, type: 2}
   logMissingTranslations: 1

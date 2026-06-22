@@ -1,29 +1,28 @@
+using DoodleDiplomacy.Gameplay;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using DoodleDiplomacy.Gameplay;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace DoodleDiplomacy.Core
 {
     /// <summary>
-    /// 개발 전용: 키보드로 게임 상태를 강제 진행.
-    /// Phase 4(AIPipelineBridge) 구현 전까지 전체 흐름을 수동으로 테스트할 때 사용.
-    /// GameplayModeHost와 같은 GameObject에 붙이거나, 독립 GameObject에 붙여서 사용.
+    /// Development-only keyboard controls for advancing the active gameplay mode.
+    /// Attach this to the same GameObject as GameplayModeHost, or any enabled scene object.
     /// </summary>
     public class DebugStateAdvancer : MonoBehaviour
     {
         [Header("Key Bindings")]
-        [Tooltip("현재 상태를 다음 단계로 강제 진행")]
+        [Tooltip("Advance the current gameplay state.")]
         [SerializeField] private Key advanceKey = Key.F5;
 
-        [Tooltip("게임을 처음부터 다시 시작 (StartGame)")]
+        [Tooltip("Restart gameplay from the beginning.")]
         [SerializeField] private Key restartKey = Key.F6;
 
-        [Tooltip("특정 상태로 바로 점프 (Drawing → 태블릿 올라감)")]
+        [Tooltip("Jump directly to the drawing state when supported by the active mode.")]
         [SerializeField] private Key jumpToDrawingKey = Key.F7;
 
         [Header("Settings")]
-        [Tooltip("false로 설정하면 빌드에서 비활성화")]
+        [Tooltip("Disable this component automatically in non-editor builds.")]
         [SerializeField] private bool enableInBuild = false;
 
         private void Awake()
@@ -32,7 +31,6 @@ namespace DoodleDiplomacy.Core
             if (!enableInBuild)
             {
                 enabled = false;
-                return;
             }
 #endif
         }
@@ -46,22 +44,34 @@ namespace DoodleDiplomacy.Core
         {
             if (IsPressed(advanceKey))
             {
-                if (!TryResolveDebugController(out IGameplayDebugController debug, out GameState state)) { return; }
-                Debug.Log($"[DebugStateAdvancer] F5 → AdvanceState (현재: {state})");
+                if (!TryResolveDebugController(out IGameplayDebugController debug, out GameState state))
+                {
+                    return;
+                }
+
+                Debug.Log($"[DebugStateAdvancer] F5 AdvanceState (current: {state})");
                 debug.DebugAdvanceState();
             }
 
             if (IsPressed(restartKey))
             {
-                if (!TryResolveSession(out IGameplaySessionController session)) { return; }
-                Debug.Log("[DebugStateAdvancer] F6 → StartGame(false) — WaitingForRound부터 재시작");
+                if (!TryResolveSession(out IGameplaySessionController session))
+                {
+                    return;
+                }
+
+                Debug.Log("[DebugStateAdvancer] F6 StartGame(false)");
                 session.StartGame(false);
             }
 
             if (IsPressed(jumpToDrawingKey))
             {
-                if (!TryResolveDebugController(out IGameplayDebugController debug, out _)) { return; }
-                Debug.Log("[DebugStateAdvancer] F7 → Drawing 상태로 강제 점프");
+                if (!TryResolveDebugController(out IGameplayDebugController debug, out _))
+                {
+                    return;
+                }
+
+                Debug.Log("[DebugStateAdvancer] F7 JumpToDrawing");
                 debug.DebugJumpToState(GameState.Drawing);
             }
         }
@@ -76,7 +86,7 @@ namespace DoodleDiplomacy.Core
                 return true;
             }
 
-            Debug.LogWarning("[DebugStateAdvancer] Gameplay session controller 없음");
+            Debug.LogWarning("[DebugStateAdvancer] Gameplay session controller not found.");
             return false;
         }
 
@@ -91,7 +101,7 @@ namespace DoodleDiplomacy.Core
                 return true;
             }
 
-            Debug.LogWarning("[DebugStateAdvancer] Gameplay debug controller 없음");
+            Debug.LogWarning("[DebugStateAdvancer] Gameplay debug controller not found.");
             return false;
         }
     }

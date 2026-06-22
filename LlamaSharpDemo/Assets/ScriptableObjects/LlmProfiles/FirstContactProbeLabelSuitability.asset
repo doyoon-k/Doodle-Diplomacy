@@ -27,6 +27,8 @@ MonoBehaviour:
 
     - Reject abstract concepts, emotions, actions, scenes, broad categories, text, and multiple-object descriptions.
 
+    - Reject labels with mood, danger, safety, usefulness, edibility, value, or other semantic modifiers. The label should name only the visual subject, so "scary mask" should be rejected and "mask" should be accepted.
+
     - Keep reason short.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0

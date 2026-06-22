@@ -173,7 +173,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 {
                     Id = id,
                     Label = slot.Id,
-                    SecondaryLabel = slot.GetDisplayToken(),
+                    SecondaryLabel = FirstContactTerminalLocalization.LocalizeToken(slot.GetDisplayToken()),
                     Kind = FirstContactSemanticMapNodeKind.UnknownSlot,
                     Embedding = slot.TargetEmbedding.Vector,
                     IsActive = string.Equals(id, activeUnknownNodeId, StringComparison.Ordinal),
@@ -280,7 +280,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 {
                     Id = BuildClusterNodeId(cluster),
                     Label = cluster.Id,
-                    SecondaryLabel = cluster.DisplayName,
+                    SecondaryLabel = FirstContactTerminalLocalization.LocalizeMeaning(cluster.DisplayName),
                     Kind = FirstContactSemanticMapNodeKind.StableCluster,
                     Embedding = cluster.Centroid,
                     Marker = '#'

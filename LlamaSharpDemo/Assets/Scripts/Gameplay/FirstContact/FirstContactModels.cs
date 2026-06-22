@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -225,6 +226,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 {
                     displayTokens[i] = slot.GetDisplayToken();
                 }
+
+                displayTokens[i] = FirstContactTerminalLocalization.LocalizeToken(displayTokens[i]);
             }
 
             return displayTokens;
@@ -233,6 +236,85 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string BuildDisplayLine()
         {
             return string.Join(" / ", BuildDisplayTokens());
+        }
+    }
+
+    internal static class FirstContactTerminalLocalization
+    {
+        public static string LocalizeToken(string token)
+        {
+            string fallback = string.IsNullOrWhiteSpace(token) ? string.Empty : token.Trim();
+            string suffix = BuildKeySuffix(fallback);
+            return suffix switch
+            {
+                "you" => L10n.T("first_contact.terminal.token.you", "YOU"),
+                "earth" => L10n.T("first_contact.terminal.token.earth", "EARTH"),
+                "danger" => L10n.T("first_contact.terminal.token.danger", "DANGER"),
+                "protect" => L10n.T("first_contact.terminal.token.protect", "PROTECT"),
+                "select_one" => L10n.T("first_contact.terminal.token.select_one", "SELECT-ONE"),
+                "human" => L10n.T("first_contact.terminal.token.human", "HUMAN"),
+                "home" => L10n.T("first_contact.terminal.token.home", "HOME"),
+                "quality" => L10n.T("first_contact.terminal.token.quality", "[QUALITY?]"),
+                "value_related" => L10n.T("first_contact.terminal.token.value_related", "[VALUE-RELATED?]"),
+                "high_value" => L10n.T("first_contact.terminal.token.high_value", "HIGH-VALUE"),
+                "who" => L10n.T("first_contact.terminal.token.who", "[WHO?]"),
+                "your_kind" => L10n.T("first_contact.terminal.token.your_kind", "[YOUR-KIND?]"),
+                "object" => L10n.T("first_contact.terminal.token.object", "[OBJECT?]"),
+                "danger_response" => L10n.T("first_contact.terminal.token.danger_response", "[DANGER-RESPONSE?]"),
+                "response_object" => L10n.T("first_contact.terminal.token.response_object", "RESPONSE-OBJECT"),
+                "feeling" => L10n.T("first_contact.terminal.token.feeling", "[FEELING?]"),
+                "threat_related" => L10n.T("first_contact.terminal.token.threat_related", "[THREAT-RELATED?]"),
+                "fear" => L10n.T("first_contact.terminal.token.fear", "FEAR"),
+                "defense_related" => L10n.T("first_contact.terminal.token.defense_related", "[DEFENSE-RELATED?]"),
+                "defense" => L10n.T("first_contact.terminal.token.defense", "DEFENSE"),
+                _ => fallback
+            };
+        }
+
+        public static string LocalizeBootstrapCategory(string category)
+        {
+            string fallback = string.IsNullOrWhiteSpace(category) ? L10n.T("first_contact.terminal.fallback.unknown", "UNKNOWN") : category.Trim();
+            string suffix = BuildKeySuffix(fallback);
+            return suffix switch
+            {
+                "danger" => L10n.T("first_contact.terminal.category.danger", "DANGER"),
+                "protection" => L10n.T("first_contact.terminal.category.protection", "PROTECTION"),
+                "food" => L10n.T("first_contact.terminal.category.food", "FOOD"),
+                "tool" => L10n.T("first_contact.terminal.category.tool", "TOOL"),
+                _ => fallback
+            };
+        }
+
+        public static string LocalizeMeaning(string meaning)
+        {
+            string fallback = string.IsNullOrWhiteSpace(meaning) ? "[MEANING?]" : meaning.Trim();
+            string suffix = BuildKeySuffix(fallback);
+            return suffix switch
+            {
+                "danger" => L10n.T("first_contact.terminal.meaning.danger", "[DANGER?]"),
+                "protection" => L10n.T("first_contact.terminal.meaning.protection", "[PROTECTION?]"),
+                "food" => L10n.T("first_contact.terminal.meaning.food", "[FOOD?]"),
+                "tool" => L10n.T("first_contact.terminal.meaning.tool", "[TOOL?]"),
+                "meaning" => L10n.T("first_contact.terminal.meaning.unknown", "[MEANING?]"),
+                _ => LocalizeToken(fallback)
+            };
+        }
+
+        private static string BuildKeySuffix(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            char[] chars = value.Trim().ToLowerInvariant().ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                char c = chars[i];
+                chars[i] = char.IsLetterOrDigit(c) ? c : '_';
+            }
+
+            return new string(chars).Trim('_');
         }
     }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using DoodleDiplomacy.Devices;
+using DoodleDiplomacy.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -404,7 +405,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     node.Pulse = Mathf.Max(node.Pulse, scanPulse * (formation.BecameStable ? 1.9f : 1.15f));
                     if (labelGlitch)
                     {
-                        node.SecondaryLabel = "[GROUP-??]";
+                        node.SecondaryLabel = LocalizedGroupUnknownLabel();
                     }
                 }
                 else if (IsFormationMember(formation, after.Id))
@@ -523,8 +524,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             frame.Nodes.Add(new FirstContactSemanticMapNode
             {
                 Id = $"F:{formation.ActiveCardNodeId}",
-                Label = "GROUP",
-                SecondaryLabel = "[GROUP-??]",
+                Label = LocalizedGroupLabel(),
+                SecondaryLabel = LocalizedGroupUnknownLabel(),
                 Kind = FirstContactSemanticMapNodeKind.StableCluster,
                 Position = center,
                 IsActive = false,
@@ -1025,6 +1026,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             TextMeshProUGUI label = labelObject.GetComponent<TextMeshProUGUI>();
             label.text = BuildLabelText(node, fullMode);
             label.color = ResolveLabelColor(node);
+            TMP_FontAsset localizedFont = L10n.CurrentFont;
+            if (localizedFont != null)
+            {
+                label.font = localizedFont;
+            }
+
             label.fontStyle = FontStyles.Bold;
             label.alignment = TextAlignmentOptions.Left;
             label.raycastTarget = false;
@@ -1053,21 +1060,55 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             return node.Kind switch
             {
-                FirstContactSemanticMapNodeKind.UnknownSlot => string.IsNullOrWhiteSpace(node.SecondaryLabel)
-                    ? $"[{node.Label}]"
-                    : node.SecondaryLabel,
-                FirstContactSemanticMapNodeKind.StableCluster => string.IsNullOrWhiteSpace(node.SecondaryLabel)
-                    ? $"[{node.Label}]"
-                    : node.SecondaryLabel,
+                FirstContactSemanticMapNodeKind.UnknownSlot => BuildUnknownSlotLabel(node),
+                FirstContactSemanticMapNodeKind.StableCluster => BuildStableClusterLabel(node),
                 FirstContactSemanticMapNodeKind.BootstrapCategory => BuildBootstrapCategoryLabel(node),
                 FirstContactSemanticMapNodeKind.Card => fullMode || node.IsActive ? node.Label : string.Empty,
                 _ => node.Label
             };
         }
 
+        private static string BuildUnknownSlotLabel(FirstContactSemanticMapNode node)
+        {
+            if (!string.IsNullOrWhiteSpace(node.SecondaryLabel))
+            {
+                return FirstContactTerminalLocalization.LocalizeToken(node.SecondaryLabel).ToUpperInvariant();
+            }
+
+            string fallback = string.IsNullOrWhiteSpace(node.Label)
+                ? L10n.T("first_contact.terminal.token.object", "[OBJECT?]")
+                : $"[{node.Label.Trim()}]";
+            return FirstContactTerminalLocalization.LocalizeToken(fallback).ToUpperInvariant();
+        }
+
+        private static string BuildStableClusterLabel(FirstContactSemanticMapNode node)
+        {
+            if (!string.IsNullOrWhiteSpace(node.SecondaryLabel))
+            {
+                return FirstContactTerminalLocalization.LocalizeMeaning(node.SecondaryLabel).ToUpperInvariant();
+            }
+
+            string fallback = string.IsNullOrWhiteSpace(node.Label)
+                ? LocalizedGroupUnknownLabel()
+                : $"[{node.Label.Trim()}]";
+            return FirstContactTerminalLocalization.LocalizeMeaning(fallback).ToUpperInvariant();
+        }
+
+        private static string LocalizedGroupLabel()
+        {
+            return L10n.T("first_contact.terminal.semantic_map.group", "GROUP").ToUpperInvariant();
+        }
+
+        private static string LocalizedGroupUnknownLabel()
+        {
+            return L10n.T("first_contact.terminal.semantic_map.group_unknown", "[GROUP-??]").ToUpperInvariant();
+        }
+
         private static string BuildBootstrapCategoryLabel(FirstContactSemanticMapNode node)
         {
-            string label = string.IsNullOrWhiteSpace(node.Label) ? "CATEGORY" : node.Label;
+            string label = string.IsNullOrWhiteSpace(node.Label)
+                ? L10n.T("first_contact.terminal.line.category", "CATEGORY: {category}", L10n.Arg("category", string.Empty)).TrimEnd(':', ' ')
+                : node.Label;
             if (node.RequiredTraceCount <= 0)
             {
                 return label;

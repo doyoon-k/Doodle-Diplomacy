@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Localization
@@ -18,6 +20,10 @@ namespace DoodleDiplomacy.Localization
         [SerializeField] private string targetLanguageNativeName = "English";
         [Tooltip("String table asset containing source and localized UI/dialogue text.")]
         [SerializeField] private LocalizedStringTable stringTable;
+        [Tooltip("Default TMP font used when no locale-specific font override exists.")]
+        [SerializeField] private TMP_FontAsset defaultFont;
+        [Tooltip("TMP font overrides keyed by locale, for example ko-KR.")]
+        [SerializeField] private List<LocalizedFontEntry> fontOverrides = new();
         [Tooltip("Log a warning when a localization key cannot be resolved.")]
         [SerializeField] private bool logMissingTranslations = true;
 
@@ -29,6 +35,35 @@ namespace DoodleDiplomacy.Localization
         public bool LogMissingTranslations => logMissingTranslations;
 
         public bool UsesSourceLocale => !enableLocalization || LocaleEquals(SourceLocale, TargetLocale);
+
+        public TMP_FontAsset ResolveFontForLocale(string locale)
+        {
+            string resolvedLocale = string.IsNullOrWhiteSpace(locale) ? TargetLocale : locale.Trim();
+            string normalizedLocale = NormalizeLocale(resolvedLocale);
+            string language = ExtractLanguage(normalizedLocale);
+
+            if (fontOverrides != null)
+            {
+                for (int i = 0; i < fontOverrides.Count; i++)
+                {
+                    LocalizedFontEntry entry = fontOverrides[i];
+                    if (entry.Font == null || string.IsNullOrWhiteSpace(entry.Locale))
+                    {
+                        continue;
+                    }
+
+                    string candidate = NormalizeLocale(entry.Locale);
+                    if (string.Equals(candidate, normalizedLocale, StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrWhiteSpace(language) &&
+                         string.Equals(ExtractLanguage(candidate), language, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return entry.Font;
+                    }
+                }
+            }
+
+            return defaultFont;
+        }
 
         public string GetLanguageName(string locale)
         {
@@ -97,5 +132,28 @@ namespace DoodleDiplomacy.Localization
                 ? string.Empty
                 : locale.Trim().Replace('_', '-');
         }
+
+        private static string ExtractLanguage(string locale)
+        {
+            if (string.IsNullOrWhiteSpace(locale))
+            {
+                return string.Empty;
+            }
+
+            int separatorIndex = locale.IndexOf('-');
+            return separatorIndex > 0 ? locale.Substring(0, separatorIndex) : locale;
+        }
+    }
+
+    [Serializable]
+    public struct LocalizedFontEntry
+    {
+        [Tooltip("Locale code for this font override, such as ko-KR or ko.")]
+        [SerializeField] private string locale;
+        [Tooltip("TMP font used for this locale.")]
+        [SerializeField] private TMP_FontAsset font;
+
+        public string Locale => locale;
+        public TMP_FontAsset Font => font;
     }
 }

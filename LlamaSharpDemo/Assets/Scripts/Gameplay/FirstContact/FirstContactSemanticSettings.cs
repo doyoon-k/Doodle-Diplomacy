@@ -67,7 +67,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Range(0.005f, 0.25f)] public float semanticMapMaxStep = 0.045f;
 
         [Header("Waveform")]
-        [Tooltip("의미 임베딩이 Day1 스타일 파형 모양에 영향을 주는 비율입니다.")]
+        [Tooltip("의미 임베딩이 캘리브레이션 파형 모양에 영향을 주는 비율입니다.")]
         [Range(0f, 1f)] public float waveformSemanticInfluence = 0.9f;
         [Tooltip("같은 의미라도 세션마다 파형이 완전히 같지 않도록 넣는 작은 흔들림입니다.")]
         [Range(0f, 0.25f)] public float waveformSessionJitter = 0.04f;

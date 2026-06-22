@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Gameplay;
+using DoodleDiplomacy.Gameplay.FirstContact;
 using UnityEngine;
 
 #if ENABLE_INPUT_SYSTEM
@@ -28,7 +29,7 @@ namespace DoodleDiplomacy.Interaction
         private InteractableObject _hoveredObject;
         private InteractableObject _lastInteractedObject;
         private bool _inputLocked;
-        private IInteractionPolicy _interactionPolicy = new ObjectPairDrawingInteractionPolicy();
+        private IInteractionPolicy _interactionPolicy = new FirstContactInteractionPolicy();
 
         public InteractableObject HoveredObject => _hoveredObject;
         public InteractableObject LastInteractedObject => _lastInteractedObject;
@@ -41,7 +42,7 @@ namespace DoodleDiplomacy.Interaction
 
         public void ConfigureInteractionPolicy(IInteractionPolicy interactionPolicy)
         {
-            _interactionPolicy = interactionPolicy ?? new ObjectPairDrawingInteractionPolicy();
+            _interactionPolicy = interactionPolicy ?? new FirstContactInteractionPolicy();
         }
 
         private void Awake()
@@ -132,7 +133,7 @@ namespace DoodleDiplomacy.Interaction
 
         public void ApplyStatePolicy(InteractionStateContext context)
         {
-            IInteractionPolicy policy = _interactionPolicy ?? new ObjectPairDrawingInteractionPolicy();
+            IInteractionPolicy policy = _interactionPolicy ?? new FirstContactInteractionPolicy();
             SetInputLocked(!HasAnyAllowedInteraction(context, policy));
 
             foreach (var obj in _registered)

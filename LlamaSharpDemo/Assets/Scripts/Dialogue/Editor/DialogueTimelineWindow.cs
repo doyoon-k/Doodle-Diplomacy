@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Localization;
 using UnityEditor;
@@ -29,11 +28,7 @@ namespace DoodleDiplomacy.Editor
         private const string DetailPanelWidthPrefsKey = "DoodleDiplomacy.DialogueTimeline.DetailPanelWidth";
         private const string ValidationPanelWidthPrefsKey = "DoodleDiplomacy.DialogueTimeline.ValidationPanelWidth";
         private const string SearchControlName = "DialogueTimelineSearch";
-        private const string GameSceneAssetPath = "Assets/Scenes/GameScene.unity";
-        private const string IntroSequenceFieldName = "introSequence:";
         private const string LocalizationSettingsPath = "Assets/Resources/Localization/GameLocalizationSettings.asset";
-        private const string Day1OpeningSequencePath = "Assets/Resources/Dialogue/Day1/Day1Opening.asset";
-        private const string Day1DialogueFolderPath = "Assets/Resources/Dialogue/Day1/";
 
         private readonly List<DialogueAssetEntry> _sequences = new();
         private readonly List<ValidationMessage> _validationMessages = new();
@@ -139,16 +134,6 @@ namespace DoodleDiplomacy.Editor
                     {
                         EditorGUIUtility.PingObject(_activeSequence);
                     }
-                }
-
-                if (GUILayout.Button("Open Day1 Opening", EditorStyles.toolbarButton, GUILayout.Width(126f)))
-                {
-                    OpenDay1OpeningSequence();
-                }
-
-                if (GUILayout.Button("Open Round Intro", EditorStyles.toolbarButton, GUILayout.Width(118f)))
-                {
-                    OpenGameSceneIntroSequence();
                 }
 
                 GUILayout.FlexibleSpace();
@@ -266,18 +251,6 @@ namespace DoodleDiplomacy.Editor
 
             EditorGUILayout.PropertyField(_sequenceIdProperty, new GUIContent("Sequence ID"));
             DrawContextNoteField();
-            if (IsGameSceneIntroSequence(_activeSequence))
-            {
-                EditorGUILayout.HelpBox(
-                    "This is the sequence wired to the legacy object-pair RoundManager.introSequence. Day1CalibrationMode uses separate legacy Day1 dialogue assets.",
-                    MessageType.Info);
-
-                if (GUILayout.Button("Bind Day1 Intro Localization Keys"))
-                {
-                    BindDay1IntroLocalizationKeys();
-                }
-            }
-
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUI.DisabledScope(_selectedLineIndex < 0))
@@ -947,40 +920,6 @@ namespace DoodleDiplomacy.Editor
             Selection.activeObject = sequence;
         }
 
-        private void OpenGameSceneIntroSequence()
-        {
-            DialogueSequence sequence = FindGameSceneIntroSequence();
-            if (sequence == null)
-            {
-                EditorUtility.DisplayDialog(
-                    "Day1 Intro Not Found",
-                    $"Could not find a DialogueSequence reference in {GameSceneAssetPath}.",
-                    "OK");
-                return;
-            }
-
-            SetActiveSequence(sequence);
-            Selection.activeObject = sequence;
-            EditorGUIUtility.PingObject(sequence);
-        }
-
-        private void OpenDay1OpeningSequence()
-        {
-            DialogueSequence sequence = AssetDatabase.LoadAssetAtPath<DialogueSequence>(Day1OpeningSequencePath);
-            if (sequence == null)
-            {
-                EditorUtility.DisplayDialog(
-                    "Day1 Opening Not Found",
-                    $"Could not load {Day1OpeningSequencePath}.",
-                    "OK");
-                return;
-            }
-
-            SetActiveSequence(sequence);
-            Selection.activeObject = sequence;
-            EditorGUIUtility.PingObject(sequence);
-        }
-
         private void SaveActiveSequence()
         {
             if (_serializedSequence != null)
@@ -1255,11 +1194,6 @@ namespace DoodleDiplomacy.Editor
                 _validationMessages.Add(new ValidationMessage("Sequence ID is empty."));
             }
 
-            if (IsGameSceneIntroSequence(_activeSequence))
-            {
-                _validationMessages.Add(new ValidationMessage("The legacy object-pair RoundManager.introSequence uses this sequence. Day1CalibrationMode uses separate legacy Day1 dialogue assets."));
-            }
-
             for (int i = 0; i < _linesProperty.arraySize; i++)
             {
                 SerializedProperty line = _linesProperty.GetArrayElementAtIndex(i);
@@ -1299,96 +1233,12 @@ namespace DoodleDiplomacy.Editor
 
         private static string GetUsageLabel(DialogueAssetEntry entry)
         {
-            if (entry.AssetPath.StartsWith(Day1DialogueFolderPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return "Day1 Dialogue";
-            }
-
             return GetUsageLabel(entry.Asset);
         }
 
         private static string GetUsageLabel(DialogueSequence sequence)
         {
-            return IsGameSceneIntroSequence(sequence) ? "GameScene Round Intro" : string.Empty;
-        }
-
-        private static bool IsGameSceneIntroSequence(DialogueSequence sequence)
-        {
-            if (sequence == null)
-            {
-                return false;
-            }
-
-            DialogueSequence gameSceneIntro = FindGameSceneIntroSequence();
-            return gameSceneIntro == sequence;
-        }
-
-        private static DialogueSequence FindGameSceneIntroSequence()
-        {
-            string scenePath = Path.Combine(Directory.GetCurrentDirectory(), GameSceneAssetPath);
-            if (!File.Exists(scenePath))
-            {
-                return null;
-            }
-
-            foreach (string line in File.ReadLines(scenePath))
-            {
-                int fieldIndex = line.IndexOf(IntroSequenceFieldName, StringComparison.Ordinal);
-                if (fieldIndex < 0)
-                {
-                    continue;
-                }
-
-                int guidIndex = line.IndexOf("guid:", fieldIndex, StringComparison.Ordinal);
-                if (guidIndex < 0)
-                {
-                    continue;
-                }
-
-                int guidStart = guidIndex + "guid:".Length;
-                int guidEnd = line.IndexOf(',', guidStart);
-                if (guidEnd < 0)
-                {
-                    guidEnd = line.Length;
-                }
-
-                string guid = line.Substring(guidStart, guidEnd - guidStart).Trim();
-                if (string.IsNullOrWhiteSpace(guid))
-                {
-                    continue;
-                }
-
-                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-                return string.IsNullOrEmpty(assetPath) ? null : AssetDatabase.LoadAssetAtPath<DialogueSequence>(assetPath);
-            }
-
-            return null;
-        }
-
-        private void BindDay1IntroLocalizationKeys()
-        {
-            if (_linesProperty == null)
-            {
-                return;
-            }
-
-            string[] lineKeys =
-            {
-                "intro.adjutant.line1",
-                "intro.adjutant.line2",
-                "intro.adjutant.line3"
-            };
-
-            _serializedSequence.Update();
-            for (int i = 0; i < Mathf.Min(lineKeys.Length, _linesProperty.arraySize); i++)
-            {
-                SerializedProperty line = _linesProperty.GetArrayElementAtIndex(i);
-                line.FindPropertyRelative("speakerLocalizationKey").stringValue = "speaker.adjutant";
-                line.FindPropertyRelative("localizationKey").stringValue = lineKeys[i];
-            }
-
-            _serializedSequence.ApplyModifiedProperties();
-            MarkActiveSequenceDirty();
+            return string.Empty;
         }
 
         private string GenerateLineLocalizationKey()

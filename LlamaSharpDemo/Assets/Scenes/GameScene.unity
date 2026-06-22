@@ -1375,7 +1375,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: MODIFY
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7945e082cb288ef479aae8c0d773ca9a, type: 2}
   m_sharedMaterial: {fileID: 1675583992212201819, guid: 7945e082cb288ef479aae8c0d773ca9a, type: 2}
@@ -8109,7 +8109,6 @@ GameObject:
   - component: {fileID: 1478619583}
   - component: {fileID: 1478619582}
   - component: {fileID: 1478619581}
-  - component: {fileID: 1478619580}
   m_Layer: 0
   m_Name: EndingCanvas
   m_TagString: Untagged
@@ -8117,29 +8116,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &1478619580
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1478619579}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 89da016bffefef7449f8f5a13d8f2f7a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Ending.EndingController
-  endingCanvas: {fileID: 1478619579}
-  backgroundImage: {fileID: 1021490629}
-  titleText: {fileID: 1805200678}
-  descriptionText: {fileID: 76236571}
-  anyClickButton: {fileID: 1858315010}
-  endingDataList:
-  - {fileID: 11400000, guid: 8e9c2249f4d5e7448bb5353d57301ef3, type: 2}
-  - {fileID: 11400000, guid: 70bdb04b20e651a47a3b3057915c44e9, type: 2}
-  - {fileID: 11400000, guid: 63b3241530cd611498a92a620ee3e2c7, type: 2}
-  - {fileID: 11400000, guid: 73fe4199c8ea8d647acfe895cdf4a1f4, type: 2}
-  gameplayModeHost: {fileID: 0}
 --- !u!114 &1478619581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9403,30 +9379,13 @@ GameObject:
   - component: {fileID: 1669622149}
   - component: {fileID: 1669622148}
   - component: {fileID: 1669622147}
-  - component: {fileID: 1669622146}
   m_Layer: 0
   m_Name: ButtonCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1669622146
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1669622145}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffe42d01caa41854cbcc111d9b1e999c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.UI.PreviewButtonPanel
-  panel: {fileID: 1208530454}
-  submitButton: {fileID: 1371280266}
-  modifyButton: {fileID: 376041857}
-  gameplayModeHost: {fileID: 0}
+  m_IsActive: 0
 --- !u!114 &1669622147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10265,17 +10224,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1778344082}
-  - component: {fileID: 1778344080}
-  - component: {fileID: 1778344081}
-  - component: {fileID: 1778344085}
   - component: {fileID: 1778344086}
   - component: {fileID: 1778344088}
   - component: {fileID: 1778344089}
   - component: {fileID: 1778344091}
-  - component: {fileID: 1778344092}
-  - component: {fileID: 1778344093}
   - component: {fileID: 1778344095}
-  - component: {fileID: 1778344094}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -10283,117 +10236,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1778344080
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9b2b22232479090479fb5531e3bedf29, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Core.RoundManager
-  modeId: object-pair-drawing
-  scoreManager: {fileID: 1778344081}
-  cameraController: {fileID: 403058226}
-  interactionManager: {fileID: 1865518810}
-  scoreConfig: {fileID: 0}
-  dialogueSystem: {fileID: 1804211027}
-  aipipelineBridge: {fileID: 1778344085}
-  alienReactionController: {fileID: 798370299}
-  terminalDisplay: {fileID: 45035643}
-  sharedMonitorDisplay: {fileID: 1651293743}
-  drawingBoard: {fileID: 1603467082}
-  alienInteractables:
-  - {fileID: 45035644}
-  - {fileID: 45035645}
-  - {fileID: 45035646}
-  tabletInteractables:
-  - {fileID: 1603467078}
-  sharedMonitorInteractable: {fileID: 548640496}
-  terminalInteractables:
-  - {fileID: 45035642}
-  subtitleDisplay: {fileID: 1859998227}
-  endingController: {fileID: 1478619580}
-  titleScreenController: {fileID: 0}
-  introSequence: {fileID: 11400000, guid: ae633883f5568ff4abfae424c9d503a3, type: 2}
-  exitDrawingKey: 27
-  exitInterpreterKey: 27
-  exitMonitorZoomKey: 27
-  firstRoundPrefetchTimeoutSeconds: 180
-  OnStateChanged:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1651293743}
-        m_TargetAssemblyTypeName: DoodleDiplomacy.Devices.SharedMonitorDisplay, Assembly-CSharp
-        m_MethodName: OnGameStateChanged
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: DoodleDiplomacy.Character.AlienReactionController,
-          Assembly-CSharp
-        m_MethodName: OnGameStateChanged
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: DoodleDiplomacy.Devices.TabletController, Assembly-CSharp
-        m_MethodName: OnGameStateChanged
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 1669622146}
-        m_TargetAssemblyTypeName: DoodleDiplomacy.UI.PreviewButtonPanel, Assembly-CSharp
-        m_MethodName: OnGameStateChanged
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
---- !u!114 &1778344081
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1046a86e1d66e2649a27f214848f1e40, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Core.ScoreManager
-  config: {fileID: 0}
-  OnScoreUpdated:
-    m_PersistentCalls:
-      m_Calls: []
-  OnEndingDetermined:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!4 &1778344082
 Transform:
   m_ObjectHideFlags: 0
@@ -10409,57 +10251,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1778344085
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8dea8f0906e85d4cb02e962e6b45c24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.AI.AIPipelineBridge
-  sdSettings: {fileID: 11400000, guid: f4f329f6c6584f6fb4d74f3cfa77b1e2, type: 2}
-  sdModelProfile: {fileID: 11400000, guid: 649cfde59ea14a98bc4e5f6ddf522f8a, type: 2}
-  objectPromptA: studio photo of a single dog, centered, isolated, plain background,
-    simple lighting
-  objectPromptB: studio photo of a single lantern, centered, isolated, plain background,
-    simple lighting
-  sdNegativePrompt: 
-  usePreGeneratedCatalog: 1
-  preGeneratedCatalog: {fileID: 11400000, guid: 2e48d65f49517b542a06834084186a28, type: 2}
-  previewDialoguePipeline: {fileID: 11400000, guid: 1b6f09a5c4e54ee4a8574fc5d1a8331d, type: 2}
-  judgmentPipeline: {fileID: 11400000, guid: d58c5965db4e01a46a165186b3e25b71, type: 2}
-  telepathyPipeline: {fileID: 11400000, guid: d6a1fbcfc287e004c8d88d504212d82e, type: 2}
-  wordsSelectionPipeline: {fileID: 11400000, guid: b5e597c4b554f77409946243478c8943, type: 2}
-  day1StimulusClassifierPipeline: {fileID: 0}
-  day1ReactionEvaluatorPipeline: {fileID: 0}
-  wordPairPool: {fileID: 11400000, guid: 9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b, type: 2}
-  drawingImageKey: reference_image
-  day1StimulusLabelKey: stimulus_label
-  alienPersonalityKey: alien_personality
-  targetObjectsKey: target_objects
-  judgmentSatisfactionKey: satisfaction
-  judgmentSceneReadingKey: scene_reading
-  judgmentReasonKey: judgment_reason
-  wordsSelectionWordsKey: words
-  selectedKeywordPromptTemplate: '{0}'
-  monitorDisplay: {fileID: 1651293743}
-  drawingExportBridge: {fileID: 1603467076}
-  alienPersonalityProfiles:
-  - {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  alienPersonality: {fileID: 11400000, guid: 85978c95d9802984594fcd73114b7333, type: 2}
-  localizationSettings: {fileID: 11400000, guid: c22dd66f9e3d4da0be27eb0f079938da, type: 2}
-  telepathyCorruptedLineRatio: 0
-  telepathyCorruptionStrength: 0
-  telepathyMinCorruptedLines: 0
-  telepathyMaxCorruptedLines: 0
-  telepathyNoiseBursts:
-  - 2!@#@$
-  - '@@!%^^@'
-  - $#%!%
 --- !u!114 &1778344086
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10509,20 +10300,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.SceneReferenceHub
   sceneId: current-gameplay
   defaultModeBehaviour: {fileID: 1778344095}
-  roundManager: {fileID: 1778344080}
   interactionManager: {fileID: 1865518810}
   cameraController: {fileID: 403058226}
   dialogueSystem: {fileID: 1804211027}
-  aiPipelineBridge: {fileID: 1778344085}
   drawingBoard: {fileID: 1603467082}
   drawingExportBridge: {fileID: 1603467076}
   subtitleDisplay: {fileID: 1859998227}
-  previewButtonPanel: {fileID: 1669622146}
-  endingController: {fileID: 1478619580}
   terminalDisplay: {fileID: 45035643}
   sharedMonitorDisplay: {fileID: 1651293743}
   alienReactionController: {fileID: 798370299}
-  day1StimulusLibrary: {fileID: 1778344092}
 --- !u!114 &1778344091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10539,66 +10325,6 @@ MonoBehaviour:
   defaultModeBehaviour: {fileID: 1778344095}
   enterDefaultModeOnStart: 1
   validateSceneReferencesOnAwake: 1
---- !u!114 &1778344092
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e24f421831a041aa80912b616a23cf96, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.Day1StimulusLibrary
-  relativeFolder: first_contact/day1
---- !u!114 &1778344093
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30e4e82a09ab4bd28656561caee27bb7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.Day1CalibrationMode
-  modeId: day1-calibration
-  stimulusLibrary: {fileID: 1778344092}
-  stimulusButtonPanel: {fileID: 1778344094}
-  terminalDisplay: {fileID: 45035643}
-  sharedMonitorDisplay: {fileID: 1651293743}
-  alienReactionController: {fileID: 798370299}
-  brainwaveSessionSeed: 0
-  brainwaveEmbeddingProfile: {fileID: 11400000, guid: a63a81f2d8764cdcb42e5d4dd32c7bc8, type: 2}
-  brainwaveEmbeddingSemanticInfluence: 0.9
-  brainwaveEmbeddingSessionJitter: 0.04
-  brainwaveEmbeddingFeatureCount: 16
-  brainwaveEmbeddingProjectionSeed: 17331
-  openingSequence: {fileID: 0}
-  tabletBlankSequence: {fileID: 0}
-  scanningSequence: {fileID: 0}
-  classificationUnstableSequence: {fileID: 0}
-  actionOrSceneDetectedSequence: {fileID: 0}
-  writtenTextDetectedSequence: {fileID: 0}
-  nonStimulusDetectedSequence: {fileID: 0}
-  multipleObjectsDetectedSequence: {fileID: 0}
-  identifiesDrawingSequence: {fileID: 0}
-  previousImageNotTransmittedSequence: {fileID: 0}
-  transmissionLabelConfirmedSequence: {fileID: 0}
-  reactionEvaluationUnstableSequence: {fileID: 0}
-  responsePatternLoggedSequence: {fileID: 0}
-  reactionNoneSequence: {fileID: 0}
-  reactionSubtleSequence: {fileID: 0}
-  reactionModerateSequence: {fileID: 0}
-  reactionStrongSequence: {fileID: 0}
-  completeSequence: {fileID: 0}
-  transmissionHoldSeconds: 2
-  brainwaveLockDuration: 3
-  brainwaveResultHoldSeconds: 4
-  reactionEvaluationMaxAttempts: 3
-  reactionEvaluationRetryDelaySeconds: 0.4
 --- !u!114 &1778344095
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10613,19 +10339,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactTranslationMode
   modeId: first-contact-translation
   config: {fileID: 11400000, guid: 181cc61e6490452d96b5d42483bb330f, type: 2}
-  actionButtonPanel: {fileID: 0}
---- !u!114 &1778344094
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778344079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc0b343f83d74cf18d27a55f7293ce3f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.UI.Day1StimulusButtonPanel
 --- !u!1 &1781035874
 GameObject:
   m_ObjectHideFlags: 0
@@ -12431,7 +12144,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: SUBMIT
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7945e082cb288ef479aae8c0d773ca9a, type: 2}
   m_sharedMaterial: {fileID: 1675583992212201819, guid: 7945e082cb288ef479aae8c0d773ca9a, type: 2}

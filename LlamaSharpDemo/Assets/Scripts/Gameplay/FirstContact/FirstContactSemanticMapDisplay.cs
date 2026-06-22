@@ -144,6 +144,25 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 becameStable));
         }
 
+        public void ShowClusterFormationTransition(
+            FirstContactSemanticMapSnapshot beforeSnapshot,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            FirstContactClusterFormationEvent formation)
+        {
+            StopTransition();
+            ClearPersistentPulse();
+            if (afterSnapshot == null || afterSnapshot.Nodes.Count == 0)
+            {
+                Clear();
+                return;
+            }
+
+            _transitionRoutine = StartCoroutine(ClusterFormationTransitionRoutine(
+                beforeSnapshot,
+                afterSnapshot,
+                formation));
+        }
+
         public void Clear(bool resetTerminalInset = true)
         {
             StopTransition();
@@ -187,6 +206,34 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             Show(afterSnapshot, fullMode: true, rebuildLabels: true);
             StartPersistentPulse(activeCardNodeId);
+            _transitionRoutine = null;
+        }
+
+        private IEnumerator ClusterFormationTransitionRoutine(
+            FirstContactSemanticMapSnapshot beforeSnapshot,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            FirstContactClusterFormationEvent formation)
+        {
+            ClearLabels();
+            float duration = formation.BecameStable ? 2.12f : formation.IsIsolated ? 1.28f : 1.62f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                float progress = duration <= 0.0001f ? 1f : Mathf.Clamp01(elapsed / duration);
+                FirstContactSemanticMapSnapshot frame = BuildClusterFormationSnapshot(
+                    beforeSnapshot,
+                    afterSnapshot,
+                    formation,
+                    progress);
+                Show(frame, fullMode: true, rebuildLabels: true);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            Show(afterSnapshot, fullMode: true, rebuildLabels: true);
+            StartPersistentPulse(formation.IsStable && !string.IsNullOrWhiteSpace(formation.ClusterNodeId)
+                ? formation.ClusterNodeId
+                : formation.ActiveCardNodeId);
             _transitionRoutine = null;
         }
 
@@ -309,6 +356,244 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return frame;
         }
 
+        private static FirstContactSemanticMapSnapshot BuildClusterFormationSnapshot(
+            FirstContactSemanticMapSnapshot beforeSnapshot,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            FirstContactClusterFormationEvent formation,
+            float progress)
+        {
+            var frame = new FirstContactSemanticMapSnapshot();
+            if (afterSnapshot == null)
+            {
+                return frame;
+            }
+
+            float normalized = Mathf.Clamp01(progress);
+            float eased = Mathf.SmoothStep(0f, 1f, normalized);
+            float scanPulse = Mathf.Sin(normalized * Mathf.PI);
+            bool lockPhase = formation.BecameStable && normalized >= 0.52f;
+            bool labelGlitch = formation.BecameStable && normalized >= 0.52f && normalized <= 0.68f;
+            FirstContactSemanticMapNode afterActive = afterSnapshot.FindNode(formation.ActiveCardNodeId);
+            FirstContactSemanticMapNode afterCluster = afterSnapshot.FindNode(formation.ClusterNodeId);
+
+            for (int i = 0; i < afterSnapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode after = afterSnapshot.Nodes[i];
+                if (after == null)
+                {
+                    continue;
+                }
+
+                FirstContactSemanticMapNode before = beforeSnapshot?.FindNode(after.Id);
+                FirstContactSemanticMapNode node = CloneNode(after);
+                Vector2 start = ResolveClusterFormationStartPosition(
+                    before,
+                    after,
+                    afterActive,
+                    afterCluster,
+                    formation.ActiveCardNodeId,
+                    formation.ClusterNodeId);
+                node.Position = Vector2.Lerp(start, after.Position, eased);
+
+                if (string.Equals(after.Id, formation.ActiveCardNodeId, StringComparison.Ordinal))
+                {
+                    node.Pulse = Mathf.Max(node.Pulse, BuildNewNodePulse(normalized));
+                }
+                else if (string.Equals(after.Id, formation.ClusterNodeId, StringComparison.Ordinal))
+                {
+                    node.Pulse = Mathf.Max(node.Pulse, scanPulse * (formation.BecameStable ? 1.9f : 1.15f));
+                    if (labelGlitch)
+                    {
+                        node.SecondaryLabel = "[GROUP-??]";
+                    }
+                }
+                else if (IsFormationMember(formation, after.Id))
+                {
+                    float memberPulse = lockPhase
+                        ? BuildSynchronizedMemberPulse(normalized)
+                        : scanPulse * 0.48f;
+                    node.Pulse = Mathf.Max(node.Pulse, memberPulse);
+                }
+
+                frame.Nodes.Add(node);
+            }
+
+            if (formation.MemberCount >= 3 && string.IsNullOrWhiteSpace(formation.ClusterNodeId))
+            {
+                AddTransientFormationRing(frame, afterSnapshot, formation, scanPulse);
+            }
+
+            for (int i = 0; i < afterSnapshot.Links.Count; i++)
+            {
+                FirstContactSemanticMapLink afterLink = afterSnapshot.Links[i];
+                float startStrength = FindLinkStrength(beforeSnapshot, afterLink.FromId, afterLink.ToId);
+                float strength = Mathf.Lerp(startStrength, afterLink.Strength, eased);
+                if (IsFormationFocusLink(afterLink, formation.ActiveCardNodeId, formation.ClusterNodeId))
+                {
+                    strength = Mathf.Max(strength, scanPulse * (formation.BecameStable ? 1f : 0.72f));
+                }
+
+                AddOrBoostLink(frame, new FirstContactSemanticMapLink(afterLink.FromId, afterLink.ToId, strength));
+            }
+
+            AddFormationCandidateLinks(frame, formation, normalized);
+
+            return frame;
+        }
+
+        private static void AddFormationCandidateLinks(
+            FirstContactSemanticMapSnapshot frame,
+            FirstContactClusterFormationEvent formation,
+            float progress)
+        {
+            if (frame == null || formation.CandidateEdges == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < formation.CandidateEdges.Length; i++)
+            {
+                FirstContactClusterFormationEdge edge = formation.CandidateEdges[i];
+                if (frame.FindNode(edge.FromNodeId) == null || frame.FindNode(edge.ToNodeId) == null)
+                {
+                    continue;
+                }
+
+                float start = 0.16f + i * 0.14f;
+                float scanEnd = start + 0.24f;
+                float settleEnd = scanEnd + 0.32f;
+                if (progress < start)
+                {
+                    continue;
+                }
+
+                float localScan = Mathf.Clamp01((progress - start) / Mathf.Max(0.0001f, scanEnd - start));
+                if (progress <= scanEnd)
+                {
+                    float pulse = Mathf.Sin(localScan * Mathf.PI);
+                    AddOrBoostLink(frame, new FirstContactSemanticMapLink(
+                        edge.FromNodeId,
+                        edge.ToNodeId,
+                        Mathf.Lerp(0.18f, Mathf.Max(0.36f, edge.Strength), pulse),
+                        FirstContactSemanticMapLinkKind.Candidate));
+                    continue;
+                }
+
+                float localSettle = Mathf.Clamp01((progress - scanEnd) / Mathf.Max(0.0001f, settleEnd - scanEnd));
+                if (edge.Confirmed)
+                {
+                    float strength = Mathf.Lerp(Mathf.Max(0.42f, edge.Strength), 1f, Mathf.SmoothStep(0f, 1f, localSettle));
+                    AddOrBoostLink(frame, new FirstContactSemanticMapLink(
+                        edge.FromNodeId,
+                        edge.ToNodeId,
+                        strength,
+                        FirstContactSemanticMapLinkKind.Confirmed));
+                    continue;
+                }
+
+                float fade = 1f - Mathf.SmoothStep(0f, 1f, localSettle);
+                if (fade > 0.03f)
+                {
+                    AddOrBoostLink(frame, new FirstContactSemanticMapLink(
+                        edge.FromNodeId,
+                        edge.ToNodeId,
+                        Mathf.Max(0.08f, edge.Strength) * fade,
+                        FirstContactSemanticMapLinkKind.Rejected));
+                }
+            }
+        }
+
+        private static void AddTransientFormationRing(
+            FirstContactSemanticMapSnapshot frame,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            FirstContactClusterFormationEvent formation,
+            float pulse)
+        {
+            if (frame == null || afterSnapshot == null)
+            {
+                return;
+            }
+
+            if (!TryResolveMemberCenter(afterSnapshot, formation.MemberNodeIds, out Vector2 center))
+            {
+                FirstContactSemanticMapNode active = afterSnapshot.FindNode(formation.ActiveCardNodeId);
+                center = active != null ? active.Position : Vector2.zero;
+            }
+
+            frame.Nodes.Add(new FirstContactSemanticMapNode
+            {
+                Id = $"F:{formation.ActiveCardNodeId}",
+                Label = "GROUP",
+                SecondaryLabel = "[GROUP-??]",
+                Kind = FirstContactSemanticMapNodeKind.StableCluster,
+                Position = center,
+                IsActive = false,
+                Marker = '#',
+                Pulse = Mathf.Max(0.18f, pulse * 1.18f)
+            });
+        }
+
+        private static bool TryResolveMemberCenter(
+            FirstContactSemanticMapSnapshot snapshot,
+            string[] memberNodeIds,
+            out Vector2 center)
+        {
+            center = Vector2.zero;
+            if (snapshot == null || memberNodeIds == null || memberNodeIds.Length == 0)
+            {
+                return false;
+            }
+
+            int count = 0;
+            for (int i = 0; i < memberNodeIds.Length; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.FindNode(memberNodeIds[i]);
+                if (node == null)
+                {
+                    continue;
+                }
+
+                center += node.Position;
+                count++;
+            }
+
+            if (count <= 0)
+            {
+                return false;
+            }
+
+            center /= count;
+            return true;
+        }
+
+        private static bool IsFormationMember(
+            FirstContactClusterFormationEvent formation,
+            string nodeId)
+        {
+            if (formation.MemberNodeIds == null || string.IsNullOrWhiteSpace(nodeId))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < formation.MemberNodeIds.Length; i++)
+            {
+                if (string.Equals(formation.MemberNodeIds[i], nodeId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static float BuildSynchronizedMemberPulse(float progress)
+        {
+            float lockProgress = Mathf.Clamp01((progress - 0.52f) / 0.34f);
+            float envelope = Mathf.Sin(lockProgress * Mathf.PI);
+            float flash = Mathf.Sin(lockProgress * Mathf.PI * 6f);
+            return Mathf.Clamp01(0.32f + flash * flash * envelope * 1.18f);
+        }
+
         private static float BuildNewNodePulse(float progress)
         {
             float normalized = Mathf.Clamp01(progress);
@@ -405,6 +690,40 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Mathf.SmoothStep(0f, 1f, (eased - 0.58f) / 0.42f));
         }
 
+        private static Vector2 ResolveClusterFormationStartPosition(
+            FirstContactSemanticMapNode before,
+            FirstContactSemanticMapNode after,
+            FirstContactSemanticMapNode afterActive,
+            FirstContactSemanticMapNode afterCluster,
+            string activeCardNodeId,
+            string clusterNodeId)
+        {
+            if (before != null)
+            {
+                return before.Position;
+            }
+
+            if (after == null)
+            {
+                return Vector2.zero;
+            }
+
+            if (string.Equals(after.Id, activeCardNodeId, StringComparison.Ordinal))
+            {
+                float x = afterCluster != null
+                    ? Mathf.Lerp(afterCluster.Position.x, after.Position.x, 0.42f)
+                    : after.Position.x;
+                return new Vector2(Mathf.Clamp(x, -0.78f, 0.78f), 0.92f);
+            }
+
+            if (string.Equals(after.Id, clusterNodeId, StringComparison.Ordinal) && afterActive != null)
+            {
+                return afterActive.Position;
+            }
+
+            return after.Position;
+        }
+
         private static float FindLinkStrength(
             FirstContactSemanticMapSnapshot snapshot,
             string fromId,
@@ -429,6 +748,90 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return 0f;
+        }
+
+        private static bool IsLinkedTo(
+            FirstContactSemanticMapSnapshot snapshot,
+            string nodeId,
+            string activeCardNodeId,
+            string clusterNodeId)
+        {
+            if (snapshot == null || string.IsNullOrWhiteSpace(nodeId))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < snapshot.Links.Count; i++)
+            {
+                FirstContactSemanticMapLink link = snapshot.Links[i];
+                if (!LinkContains(link, nodeId))
+                {
+                    continue;
+                }
+
+                if (LinkContains(link, activeCardNodeId) || LinkContains(link, clusterNodeId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsFormationFocusLink(
+            FirstContactSemanticMapLink link,
+            string activeCardNodeId,
+            string clusterNodeId)
+        {
+            return LinkContains(link, activeCardNodeId) || LinkContains(link, clusterNodeId);
+        }
+
+        private static bool LinkContains(FirstContactSemanticMapLink link, string nodeId)
+        {
+            return !string.IsNullOrWhiteSpace(nodeId) &&
+                   (string.Equals(link.FromId, nodeId, StringComparison.Ordinal) ||
+                    string.Equals(link.ToId, nodeId, StringComparison.Ordinal));
+        }
+
+        private static void AddOrBoostLink(
+            FirstContactSemanticMapSnapshot snapshot,
+            FirstContactSemanticMapLink link)
+        {
+            if (snapshot == null ||
+                string.IsNullOrWhiteSpace(link.FromId) ||
+                string.IsNullOrWhiteSpace(link.ToId))
+            {
+                return;
+            }
+
+            for (int i = 0; i < snapshot.Links.Count; i++)
+            {
+                FirstContactSemanticMapLink existing = snapshot.Links[i];
+                bool sameDirection = string.Equals(existing.FromId, link.FromId, StringComparison.Ordinal) &&
+                                     string.Equals(existing.ToId, link.ToId, StringComparison.Ordinal);
+                bool reverseDirection = string.Equals(existing.FromId, link.ToId, StringComparison.Ordinal) &&
+                                        string.Equals(existing.ToId, link.FromId, StringComparison.Ordinal);
+                if (sameDirection || reverseDirection)
+                {
+                    bool preferFormationLink =
+                        existing.Kind == FirstContactSemanticMapLinkKind.Normal &&
+                        link.Kind != FirstContactSemanticMapLinkKind.Normal;
+                    bool preferStrongerSameKind =
+                        existing.Kind == link.Kind &&
+                        link.Strength > existing.Strength;
+                    bool preferConfirmed =
+                        link.Kind == FirstContactSemanticMapLinkKind.Confirmed &&
+                        existing.Kind != FirstContactSemanticMapLinkKind.Confirmed;
+                    if (preferFormationLink || preferStrongerSameKind || preferConfirmed)
+                    {
+                        snapshot.Links[i] = link;
+                    }
+
+                    return;
+                }
+            }
+
+            snapshot.Links.Add(link);
         }
 
         private static FirstContactSemanticMapNode CloneNode(FirstContactSemanticMapNode node)
@@ -853,6 +1256,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     continue;
                 }
 
+                if (link.Kind != FirstContactSemanticMapLinkKind.Normal)
+                {
+                    DrawFormationLink(vh, rect, from, to, link);
+                    continue;
+                }
+
                 if (TryResolveBootstrapCategoryLink(from, to, out FirstContactSemanticMapNode categoryNode))
                 {
                     float normalizedSignal = Mathf.Clamp01(link.Strength);
@@ -882,6 +1291,36 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
                 DrawLine(vh, MapToLocal(from.Position, rect), MapToLocal(to.Position, rect), thickness, color);
             }
+        }
+
+        private void DrawFormationLink(
+            VertexHelper vh,
+            Rect rect,
+            FirstContactSemanticMapNode from,
+            FirstContactSemanticMapNode to,
+            FirstContactSemanticMapLink link)
+        {
+            float normalized = Mathf.Clamp01(link.Strength);
+            Color color;
+            float thickness;
+            switch (link.Kind)
+            {
+                case FirstContactSemanticMapLinkKind.Confirmed:
+                    color = Color.Lerp(new Color(0.72f, 1f, 0.72f, 0.82f), strongLinkColor, normalized);
+                    color.a = Mathf.Max(color.a, 0.88f);
+                    thickness = Mathf.Lerp(_fullMode ? 2.8f : 1.8f, _fullMode ? 6.2f : 3.8f, normalized);
+                    break;
+                case FirstContactSemanticMapLinkKind.Rejected:
+                    color = new Color(0.44f, 0.72f, 0.95f, Mathf.Lerp(0.08f, 0.34f, normalized));
+                    thickness = Mathf.Lerp(_fullMode ? 0.7f : 0.5f, _fullMode ? 2.1f : 1.4f, normalized);
+                    break;
+                default:
+                    color = new Color(0.46f, 0.96f, 1f, Mathf.Lerp(0.18f, 0.76f, normalized));
+                    thickness = Mathf.Lerp(_fullMode ? 1.1f : 0.8f, _fullMode ? 3.6f : 2.2f, normalized);
+                    break;
+            }
+
+            DrawLine(vh, MapToLocal(from.Position, rect), MapToLocal(to.Position, rect), thickness, color);
         }
 
         private void DrawBootstrapCategoryFields(VertexHelper vh, Rect rect)
@@ -1025,6 +1464,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 {
                     Color pulseColor = new(cluster.r, cluster.g, cluster.b, Mathf.Clamp01(0.55f * node.Pulse));
                     DrawRing(vh, center, radius * (1.08f + 0.22f * node.Pulse), _fullMode ? 3.4f : 2.2f, pulseColor, 36);
+                    if (node.Pulse > 1.05f)
+                    {
+                        Color lockColor = new(cluster.r, cluster.g, cluster.b, Mathf.Clamp01(0.32f * node.Pulse));
+                        DrawRing(vh, center, radius * (1.62f + 0.18f * node.Pulse), _fullMode ? 2.2f : 1.5f, lockColor, 42);
+                    }
                 }
             }
         }

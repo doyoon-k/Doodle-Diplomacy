@@ -149,6 +149,24 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
+        public void ProbeLabelResultReadsCanonicalLabelAndSuitability()
+        {
+            var state = new PipelineState();
+            state.SetString("canonical_label", " Knife ");
+            state.SetString("is_suitable", "true");
+            state.SetString("reason", string.Empty);
+
+            bool parsed = FirstContactProbeLabelResult.TryFromPipelineState(
+                state,
+                out FirstContactProbeLabelResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.AreEqual("Knife", result.CanonicalLabel);
+            Assert.IsTrue(result.IsSuitable);
+            Assert.IsTrue(result.IsSuccess);
+        }
+
+        [Test]
         public void StableClusterCanAutoPartiallyDecodeFutureUnknown()
         {
             FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
@@ -167,7 +185,7 @@ namespace DoodleDiplomacy.Core.Editor.Tests
 
                 Assert.AreEqual(1, memory.Clusters.Count);
                 Assert.IsTrue(memory.Clusters[0].IsStable);
-                Assert.AreEqual("[DEFENSE-RELATED?]", memory.Clusters[0].DisplayName);
+                Assert.AreEqual("[PROTECTION?]", memory.Clusters[0].DisplayName);
 
                 var definition = new FirstContactQuestionDefinition
                 {
@@ -208,6 +226,64 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             }
         }
 
+        [Test]
+        public void GraphClusteringSeparatesEmergingGroupFromNearbyCentroid()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                settings.clusterJoinThreshold = 0.62f;
+                settings.clusterNeighborCount = 2;
+                settings.minClusterMembers = 3;
+                settings.minClusterCohesion = 0.5f;
+                settings.minClusterPairwiseSimilarity = 0.62f;
+
+                var embedding = new FirstContactEmbeddingService(null, settings);
+                var memory = new FirstContactSemanticMemory(embedding, settings, null);
+                memory.AddCard(CreateCard("knife", Unit(1f, 0f, 0f)));
+                memory.AddCard(CreateCard("hammer", Unit(0.92f, 0.39f, 0f)));
+                memory.AddCard(CreateCard("shield", Unit(0.92f, -0.39f, 0f)));
+                memory.AddCard(CreateCard("banana", Unit(0.65f, 0f, 0.76f)));
+                memory.AddCard(CreateCard("apple", Unit(0.6f, 0.1f, 0.79f)));
+                memory.AddCard(CreateCard("watermelon", Unit(0.6f, -0.1f, 0.79f)));
+
+                Assert.AreEqual(2, memory.Clusters.Count);
+                Assert.AreEqual(2, memory.StableClusters.Count);
+                Assert.IsTrue(HasClusterWithLabels(memory, "banana", "apple", "watermelon"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void GraphClusteringDoesNotStabilizeLooseSimilarityChain()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                settings.clusterJoinThreshold = 0.62f;
+                settings.clusterNeighborCount = 2;
+                settings.minClusterMembers = 3;
+                settings.minClusterCohesion = 0.5f;
+                settings.minClusterPairwiseSimilarity = 0.62f;
+
+                var embedding = new FirstContactEmbeddingService(null, settings);
+                var memory = new FirstContactSemanticMemory(embedding, settings, null);
+                memory.AddCard(CreateCard("alpha", Unit(1f, 0f, 0f)));
+                memory.AddCard(CreateCard("bridge", Unit(0.65f, 0.76f, 0f)));
+                memory.AddCard(CreateCard("omega", Unit(0.1f, 0.99f, 0f)));
+
+                Assert.AreEqual(1, memory.Clusters.Count);
+                Assert.IsFalse(memory.Clusters[0].IsStable);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
         private static SemanticCardRecord CreateCard(string label, float[] vector)
         {
             return new SemanticCardRecord
@@ -218,10 +294,63 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             };
         }
 
-        private static float[] Unit(float x, float y, float z)
+        private static bool HasClusterWithLabels(
+            FirstContactSemanticMemory memory,
+            params string[] labels)
         {
-            float magnitude = Mathf.Sqrt(x * x + y * y + z * z);
-            return new[] { x / magnitude, y / magnitude, z / magnitude };
+            for (int i = 0; i < memory.Clusters.Count; i++)
+            {
+                SemanticClusterRecord cluster = memory.Clusters[i];
+                if (cluster.Members.Count != labels.Length)
+                {
+                    continue;
+                }
+
+                bool matchedAll = true;
+                for (int labelIndex = 0; labelIndex < labels.Length; labelIndex++)
+                {
+                    bool matchedLabel = false;
+                    for (int memberIndex = 0; memberIndex < cluster.Members.Count; memberIndex++)
+                    {
+                        if (cluster.Members[memberIndex].Label == labels[labelIndex])
+                        {
+                            matchedLabel = true;
+                            break;
+                        }
+                    }
+
+                    if (!matchedLabel)
+                    {
+                        matchedAll = false;
+                        break;
+                    }
+                }
+
+                if (matchedAll)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static float[] Unit(params float[] values)
+        {
+            float sum = 0f;
+            for (int i = 0; i < values.Length; i++)
+            {
+                sum += values[i] * values[i];
+            }
+
+            float magnitude = Mathf.Sqrt(sum);
+            var normalized = new float[values.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                normalized[i] = values[i] / magnitude;
+            }
+
+            return normalized;
         }
     }
 }

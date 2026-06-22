@@ -720,7 +720,12 @@ MonoBehaviour:
     sourceText: '[PROBE CHANNEL OPEN]'
     translations:
     - locale: ko-KR
-      text: '[탐침 채널 열림]'
+      text: '[표본 채널 열림]'
+  - key: first_contact.terminal.header.probe_dispatch
+    sourceText: '[PROBE DISPATCH]'
+    translations:
+    - locale: ko-KR
+      text: '[표본 송신]'
   - key: first_contact.terminal.header.local_reference_analysis
     sourceText: '[LOCAL REFERENCE ANALYSIS]'
     translations:
@@ -730,7 +735,7 @@ MonoBehaviour:
     sourceText: '[VISUAL PROBE ANALYSIS]'
     translations:
     - locale: ko-KR
-      text: '[시각 탐침 분석]'
+      text: '[시각 표본 분석]'
   - key: first_contact.terminal.header.reference_check
     sourceText: '[REFERENCE CHECK]'
     translations:
@@ -741,16 +746,21 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: '[입력 거부됨]'
-  - key: first_contact.terminal.header.visual_read
-    sourceText: '[VISUAL READ]'
+  - key: first_contact.terminal.header.probe_label
+    sourceText: '[PROBE LABEL]'
     translations:
     - locale: ko-KR
-      text: '[시각 판독]'
+      text: '[표본 라벨]'
+  - key: first_contact.terminal.header.probe_review
+    sourceText: '[PROBE REVIEW]'
+    translations:
+    - locale: ko-KR
+      text: '[표본 확인]'
   - key: first_contact.terminal.header.probe_sample
     sourceText: '[PROBE SAMPLE]'
     translations:
     - locale: ko-KR
-      text: '[탐침 샘플]'
+      text: '[표본]'
   - key: first_contact.terminal.header.no_cluster
     sourceText: '[NO CLUSTER]'
     translations:
@@ -770,7 +780,7 @@ MonoBehaviour:
     sourceText: '[PROBE RESULT]'
     translations:
     - locale: ko-KR
-      text: '[탐침 결과]'
+      text: '[표본 결과]'
   - key: first_contact.terminal.header.reply_signal
     sourceText: '[REPLY SIGNAL]'
     translations:
@@ -796,16 +806,16 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: '[수신 중인 전송]'
-  - key: first_contact.terminal.header.token_signals
-    sourceText: '[TOKEN SIGNALS]'
+  - key: first_contact.terminal.header.meaning_signals
+    sourceText: '[MEANING SIGNALS]'
     translations:
     - locale: ko-KR
-      text: '[토큰 신호]'
+      text: '[의미 신호]'
   - key: first_contact.terminal.header.probe_sequence
     sourceText: '[PROBE SEQUENCE]'
     translations:
     - locale: ko-KR
-      text: '[탐침 시퀀스]'
+      text: '[표본 시퀀스]'
   - key: first_contact.terminal.header.cluster_trace
     sourceText: '[CLUSTER TRACE]'
     translations:
@@ -841,16 +851,21 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: 수락
+  - key: first_contact.terminal.choice.submit
+    sourceText: SUBMIT
+    translations:
+    - locale: ko-KR
+      text: 제출
   - key: first_contact.terminal.choice.probe_unknown
     sourceText: PROBE UNKNOWN
     translations:
     - locale: ko-KR
-      text: 미번역 단어 탐침
+      text: 미번역 단어 표본
   - key: first_contact.terminal.choice.probe_id
     sourceText: PROBE {id}
     translations:
     - locale: ko-KR
-      text: '{id} 탐침'
+      text: '{id} 표본'
   - key: first_contact.terminal.choice.draw_related_object
     sourceText: DRAW RELATED OBJECT
     translations:
@@ -901,6 +916,21 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: '제출: ENTER'
+  - key: first_contact.terminal.line.redraw_escape
+    sourceText: 'REDRAW: ESC'
+    translations:
+    - locale: ko-KR
+      text: '다시 그리기: ESC'
+  - key: first_contact.terminal.line.input_status
+    sourceText: 'STATUS: {status}'
+    translations:
+    - locale: ko-KR
+      text: '상태: {status}'
+  - key: first_contact.terminal.line.label_required
+    sourceText: LABEL REQUIRED
+    translations:
+    - locale: ko-KR
+      text: 라벨 필요
   - key: first_contact.terminal.line.trace
     sourceText: 'TRACE: {trace}'
     translations:
@@ -911,11 +941,11 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: '상태: 신호 버퍼링됨'
-  - key: first_contact.terminal.line.unknown_token_signal_color
-    sourceText: 'UNKNOWN TOKEN SIGNAL: {color}'
+  - key: first_contact.terminal.line.unknown_meaning_signal_color
+    sourceText: 'UNKNOWN MEANING SIGNAL: {color}'
     translations:
     - locale: ko-KR
-      text: '미번역 토큰 신호: {color}'
+      text: '미해석 의미 신호: {color}'
   - key: first_contact.terminal.line.channel
     sourceText: 'CHANNEL: {channel}'
     translations:
@@ -950,12 +980,37 @@ MonoBehaviour:
     sourceText: 'VISUAL PROBE SIGNAL: {color}'
     translations:
     - locale: ko-KR
-      text: '시각 탐침 신호: {color}'
-  - key: first_contact.terminal.line.visual_read
-    sourceText: 'VISUAL READ: {label}'
+      text: '시각 표본 신호: {color}'
+  - key: first_contact.terminal.line.probe_label
+    sourceText: 'PROBE LABEL: {label}'
     translations:
     - locale: ko-KR
-      text: '시각 판독: {label}'
+      text: '표본 라벨: {label}'
+  - key: first_contact.terminal.line.probe_label_pending
+    sourceText: 'PROBE LABEL: --'
+    translations:
+    - locale: ko-KR
+      text: '표본 라벨: --'
+  - key: first_contact.terminal.line.probe_check_in_progress
+    sourceText: 'PROBE CHECK: IN PROGRESS'
+    translations:
+    - locale: ko-KR
+      text: '표본 확인: 진행 중'
+  - key: first_contact.terminal.line.probe_check_passed
+    sourceText: 'PROBE CHECK: PASSED'
+    translations:
+    - locale: ko-KR
+      text: '표본 확인: 통과'
+  - key: first_contact.terminal.line.response_channel_waiting
+    sourceText: 'RESPONSE CHANNEL: WAITING'
+    translations:
+    - locale: ko-KR
+      text: '반응 채널: 대기'
+  - key: first_contact.terminal.line.response_channel_open
+    sourceText: 'RESPONSE CHANNEL: OPEN'
+    translations:
+    - locale: ko-KR
+      text: '반응 채널: 개방'
   - key: first_contact.terminal.line.reference_match
     sourceText: REFERENCE MATCH
     translations:
@@ -1026,11 +1081,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: 번역 갱신
-  - key: first_contact.terminal.line.token
-    sourceText: 'TOKEN: {token}'
-    translations:
-    - locale: ko-KR
-      text: '토큰: {token}'
   - key: first_contact.terminal.line.no_change
     sourceText: NO CHANGE
     translations:
@@ -1056,6 +1106,16 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: '추적: {from}/{required} -> {to}/{required}'
+  - key: first_contact.terminal.line.trace_duplicate
+    sourceText: 'TRACE: DUPLICATE'
+    translations:
+    - locale: ko-KR
+      text: '추적: 중복'
+  - key: first_contact.terminal.line.trace_isolated
+    sourceText: 'TRACE: ISOLATED'
+    translations:
+    - locale: ko-KR
+      text: '추적: 고립'
   - key: first_contact.terminal.line.draw_related_object
     sourceText: DRAW RELATED OBJECT
     translations:
@@ -1095,7 +1155,7 @@ MonoBehaviour:
     sourceText: PROBE SEQUENCE
     translations:
     - locale: ko-KR
-      text: 탐침 시퀀스
+      text: 표본 시퀀스
   - key: first_contact.terminal.reason.reference_not_stored
     sourceText: REFERENCE NOT STORED
     translations:
@@ -1166,11 +1226,36 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: 형성 중
+  - key: first_contact.terminal.cluster.unchanged
+    sourceText: UNCHANGED
+    translations:
+    - locale: ko-KR
+      text: 변화 없음
   - key: first_contact.terminal.cluster.unstable
     sourceText: UNSTABLE
     translations:
     - locale: ko-KR
       text: 불안정
+  - key: first_contact.officer.bootstrap_duplicate_probe
+    sourceText: Same visual probe repeats the stored response. Send a different object from the same category.
+    translations:
+    - locale: ko-KR
+      text: 같은 시각 표본은 저장된 반응만 반복합니다. 같은 분류의 다른 사물을 보내야 합니다.
+  - key: first_contact.officer.probe_label_mismatch
+    sourceText: The probe label does not match the drawing. A mismatched sample will corrupt the response group.
+    translations:
+    - locale: ko-KR
+      text: 각하, 표본 라벨과 그림이 맞지 않는 것 같습니다. 일치하지 않는 표본은 반응 군집을 오염시킵니다.
+  - key: first_contact.terminal.status.label_not_object
+    sourceText: LABEL NOT OBJECT
+    translations:
+    - locale: ko-KR
+      text: 라벨: 사물 아님
+  - key: first_contact.officer.probe_label_not_object
+    sourceText: That label names a concept, not a concrete probe. The response group needs one clear visual subject.
+    translations:
+    - locale: ko-KR
+      text: 각하, 그 라벨은 구체적인 시각 표본이라기보다 개념에 가깝습니다. 반응 군집에는 분명하게 그릴 수 있는 대상 하나가 필요합니다.
   - key: day1.opening.4
     sourceText: Let's begin
     translations:

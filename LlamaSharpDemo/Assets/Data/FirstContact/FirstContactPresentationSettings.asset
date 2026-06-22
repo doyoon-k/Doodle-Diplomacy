@@ -14,16 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactPresentationSettings
   questionReceiveDelay: 0.35
   showIncomingTokenStream: 1
-  incomingTokenHoldSeconds: 0.45
-  incomingUnknownTokenHoldSeconds: 1.35
+  incomingTokenHoldSeconds: 1.5
+  incomingUnknownTokenHoldSeconds: 3
   waitForTerminalTypingBeforeActions: 1
-  questionReadHoldSeconds: 0.6
+  questionReadHoldSeconds: 1.5
   updatedQuestionReadHoldSeconds: 0.75
   tokenUpdateDelay: 1
   choiceConfirmEchoSeconds: 1
   tabletLinkOpenHoldSeconds: 0.45
   cardRevealDelay: 0
   scanMinimumSeconds: 1.2
-  labelRevealDelay: 0.15
+  labelRevealDelay: 0.35
+  probeReviewAnchorMin: {x: 0.12, y: 0.5}
+  probeReviewAnchorMax: {x: 0.88, y: 0.93}
+  probeReviewTextTopInset: 0.52
+  probeDispatchAnchorMin: {x: 0.54, y: 0.36}
+  probeDispatchAnchorMax: {x: 0.93, y: 0.76}
+  probeDispatchTextTopInset: 0
   answerTransmitHoldSeconds: 1.5
   nextQuestionDelay: 1.2

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -10,6 +11,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         Card,
         StableCluster,
         BootstrapCategory
+    }
+
+    public enum FirstContactSemanticMapLinkKind
+    {
+        Normal,
+        Candidate,
+        Rejected,
+        Confirmed
     }
 
     public sealed class FirstContactSemanticMapNode
@@ -35,12 +44,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public readonly string FromId;
         public readonly string ToId;
         public readonly float Strength;
+        public readonly FirstContactSemanticMapLinkKind Kind;
 
-        public FirstContactSemanticMapLink(string fromId, string toId, float strength)
+        public FirstContactSemanticMapLink(
+            string fromId,
+            string toId,
+            float strength,
+            FirstContactSemanticMapLinkKind kind = FirstContactSemanticMapLinkKind.Normal)
         {
             FromId = fromId ?? string.Empty;
             ToId = toId ?? string.Empty;
             Strength = strength;
+            Kind = kind;
         }
     }
 
@@ -125,6 +140,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return card == null || string.IsNullOrWhiteSpace(card.Id) ? string.Empty : $"C:{card.Id}";
         }
 
+        public static string BuildClusterNodeId(SemanticClusterRecord cluster)
+        {
+            return cluster == null ? string.Empty : BuildClusterNodeId(cluster.Id);
+        }
+
+        public static string BuildClusterNodeId(string clusterId)
+        {
+            return string.IsNullOrWhiteSpace(clusterId) ? string.Empty : $"K:{clusterId.Trim()}";
+        }
+
         private static void AddUnknownNodes(
             FirstContactSemanticMapSnapshot snapshot,
             AlienQuestion question,
@@ -206,7 +231,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             snapshot.Nodes.Add(new FirstContactSemanticMapNode
             {
                 Id = id,
-                Label = string.IsNullOrWhiteSpace(card.Label) ? "CARD" : card.Label.Trim().ToUpperInvariant(),
+                Label = ResolveCardDisplayLabel(card),
                 SecondaryLabel = card.ClusterId,
                 Kind = FirstContactSemanticMapNodeKind.Card,
                 Embedding = card.Embedding,
@@ -215,6 +240,23 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 BootstrapCategoryId = card.BootstrapCategoryId,
                 IsBootstrapDetached = card.BootstrapCategoryEvaluated && !card.BootstrapCategoryAccepted
             });
+        }
+
+        private static string ResolveCardDisplayLabel(SemanticCardRecord card)
+        {
+            if (!string.IsNullOrWhiteSpace(card?.LocalizedLabel))
+            {
+                return card.LocalizedLabel.Trim().ToUpperInvariant();
+            }
+
+            if (LlmLocalizationSettings.IsEnglishLocale(L10n.CurrentLocale))
+            {
+                return string.IsNullOrWhiteSpace(card?.Label)
+                    ? "CARD"
+                    : card.Label.Trim().ToUpperInvariant();
+            }
+
+            return L10n.T("first_contact.terminal.fallback.unknown", "UNKNOWN").ToUpperInvariant();
         }
 
         private static void AddStableClusterNodes(
@@ -236,7 +278,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
                 snapshot.Nodes.Add(new FirstContactSemanticMapNode
                 {
-                    Id = $"K:{cluster.Id}",
+                    Id = BuildClusterNodeId(cluster),
                     Label = cluster.Id,
                     SecondaryLabel = cluster.DisplayName,
                     Kind = FirstContactSemanticMapNodeKind.StableCluster,

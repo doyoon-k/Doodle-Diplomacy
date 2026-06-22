@@ -12,6 +12,7 @@ namespace DoodleDiplomacy.Devices
     public class TerminalDisplay : MonoBehaviour
     {
         private const string TextViewportName = "TerminalTextViewport";
+        public const string CursorMarker = "\uE000";
 
         [Header("Display")]
         [Tooltip("TextMeshPro label that renders terminal output before the CRT composite pass.")]
@@ -72,6 +73,7 @@ namespace DoodleDiplomacy.Devices
         private float _contentTopInsetNormalized;
         private Vector4 _baseTextMargin;
         private bool _hasBaseTextMargin;
+        private bool _inputCursorVisible = true;
 
         private static readonly char[] NoiseChars =
             "!@#$%^&*<>?/\\|~`0123456789ABCDEFXYZabcxyz".ToCharArray();
@@ -152,8 +154,9 @@ namespace DoodleDiplomacy.Devices
                 _typingRoutine = null;
                 _currentText = resolvedText;
                 if (textMesh != null)
-                    ApplyRenderedText(_currentText, true);
+                    ApplyRenderedText(BuildRenderedText(_currentText, true), true);
 
+                StartCursorBlinkIfNeeded();
                 OnTypingComplete?.Invoke();
                 return;
             }
@@ -180,8 +183,9 @@ namespace DoodleDiplomacy.Devices
                 _typingRoutine = null;
                 _currentText = resolvedText;
                 if (textMesh != null)
-                    ApplyRenderedText(_currentText, true);
+                    ApplyRenderedText(BuildRenderedText(_currentText, true), true);
 
+                StartCursorBlinkIfNeeded();
                 OnTypingComplete?.Invoke();
                 return;
             }
@@ -206,7 +210,7 @@ namespace DoodleDiplomacy.Devices
             _isTyping = false;
             _currentText = string.Empty;
             if (textMesh != null)
-                ApplyRenderedText(string.Empty, true);
+                ApplyRenderedText(BuildRenderedText(string.Empty, true), true);
         }
 
         public void OnGameStateChanged(GameState state)
@@ -227,7 +231,7 @@ namespace DoodleDiplomacy.Devices
             _currentText = startIndex > 0 ? fullText.Substring(0, startIndex) : string.Empty;
 
             if (textMesh != null)
-                ApplyRenderedText(_currentText + (showCursor ? "_" : string.Empty), forceFollowBottom: true);
+                ApplyRenderedText(BuildTypingText(_currentText), forceFollowBottom: true);
 
             for (int i = startIndex; i < fullText.Length; i++)
             {
@@ -235,18 +239,14 @@ namespace DoodleDiplomacy.Devices
                 {
                     char noise = NoiseChars[Random.Range(0, NoiseChars.Length)];
                     if (textMesh != null)
-                        ApplyRenderedText(
-                            _currentText + noise + (showCursor ? "_" : string.Empty),
-                            forceFollowBottom: true);
+                        ApplyRenderedText(BuildTypingText(_currentText + noise), forceFollowBottom: true);
 
                     yield return new WaitForSeconds(noiseDisplayTime);
                 }
 
                 _currentText += fullText[i];
                 if (textMesh != null)
-                    ApplyRenderedText(
-                        _currentText + (showCursor ? "_" : string.Empty),
-                        forceFollowBottom: true);
+                    ApplyRenderedText(BuildTypingText(_currentText), forceFollowBottom: true);
 
                 float delay = fullText[i] is '\n' or ' ' ? typingSpeed * 0.3f : typingSpeed;
                 yield return new WaitForSeconds(delay);
@@ -255,23 +255,62 @@ namespace DoodleDiplomacy.Devices
             _isTyping = false;
             _typingRoutine = null;
             if (textMesh != null)
-                ApplyRenderedText(_currentText, forceFollowBottom: true);
+                ApplyRenderedText(BuildRenderedText(_currentText, true), forceFollowBottom: true);
 
+            StartCursorBlinkIfNeeded();
             OnTypingComplete?.Invoke();
         }
 
         private IEnumerator CursorBlink()
         {
-            bool visible = true;
+            _inputCursorVisible = true;
             while (true)
             {
                 yield return new WaitForSeconds(cursorBlinkRate);
                 if (!_isTyping && textMesh != null)
                 {
-                    visible = !visible;
-                    ApplyRenderedText(_currentText + (visible ? "_" : string.Empty));
+                    _inputCursorVisible = !_inputCursorVisible;
+                    ApplyRenderedText(BuildRenderedText(_currentText, _inputCursorVisible));
                 }
             }
+        }
+
+        private void StartCursorBlinkIfNeeded()
+        {
+            if (_cursorRoutine != null)
+            {
+                StopCoroutine(_cursorRoutine);
+                _cursorRoutine = null;
+            }
+
+            _inputCursorVisible = true;
+            if (!showCursor || string.IsNullOrEmpty(_currentText) || !_currentText.Contains(CursorMarker) || !isActiveAndEnabled)
+            {
+                return;
+            }
+
+            _cursorRoutine = StartCoroutine(CursorBlink());
+        }
+
+        private string BuildTypingText(string rawText)
+        {
+            bool hasInputCursor = !string.IsNullOrEmpty(rawText) && rawText.Contains(CursorMarker);
+            string typingText = showCursor && !hasInputCursor
+                ? (rawText ?? string.Empty) + "_"
+                : rawText ?? string.Empty;
+            return BuildRenderedText(typingText, true);
+        }
+
+        private string BuildRenderedText(string rawText, bool cursorVisible)
+        {
+            string text = rawText ?? string.Empty;
+            if (!text.Contains(CursorMarker))
+            {
+                return text;
+            }
+
+            string cursorText = cursorVisible ? "_" : " ";
+            return text.Replace(CursorMarker, cursorText);
         }
 
         private void EnsureScrollViewConfigured()

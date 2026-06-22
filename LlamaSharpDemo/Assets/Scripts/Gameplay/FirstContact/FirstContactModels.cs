@@ -289,6 +289,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string BootstrapCategoryDisplayName;
         public bool BootstrapCategoryEvaluated;
         public bool BootstrapCategoryAccepted;
+        public bool BootstrapCategoryDuplicate;
+        public string DuplicateOfCardId;
         public string QuestionId;
         public string ClusterId;
         public int TurnIndex;
@@ -304,6 +306,87 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public float Cohesion;
 
         public string DisplayName => string.IsNullOrWhiteSpace(ProvisionalName) ? $"[{Id}]" : ProvisionalName.Trim();
+    }
+
+    public readonly struct FirstContactClusterFormationEdge
+    {
+        public readonly string FromNodeId;
+        public readonly string ToNodeId;
+        public readonly float Strength;
+        public readonly bool Confirmed;
+
+        public FirstContactClusterFormationEdge(
+            string fromNodeId,
+            string toNodeId,
+            float strength,
+            bool confirmed)
+        {
+            FromNodeId = fromNodeId ?? string.Empty;
+            ToNodeId = toNodeId ?? string.Empty;
+            Strength = Mathf.Clamp(strength, -1f, 1f);
+            Confirmed = confirmed;
+        }
+    }
+
+    public readonly struct FirstContactClusterFormationEvent
+    {
+        public readonly string ActiveCardNodeId;
+        public readonly string ClusterNodeId;
+        public readonly string Meaning;
+        public readonly bool HasCluster;
+        public readonly bool IsNewCluster;
+        public readonly bool BecameStable;
+        public readonly bool IsStable;
+        public readonly int MemberCount;
+        public readonly FirstContactClusterFormationEdge[] CandidateEdges;
+        public readonly string[] MemberNodeIds;
+
+        public FirstContactClusterFormationEvent(
+            string activeCardNodeId,
+            string clusterNodeId,
+            string meaning,
+            bool hasCluster,
+            bool isNewCluster,
+            bool becameStable,
+            bool isStable,
+            int memberCount,
+            FirstContactClusterFormationEdge[] candidateEdges,
+            string[] memberNodeIds)
+        {
+            ActiveCardNodeId = activeCardNodeId ?? string.Empty;
+            ClusterNodeId = clusterNodeId ?? string.Empty;
+            Meaning = meaning ?? string.Empty;
+            HasCluster = hasCluster;
+            IsNewCluster = isNewCluster;
+            BecameStable = becameStable;
+            IsStable = isStable;
+            MemberCount = Mathf.Max(0, memberCount);
+            CandidateEdges = candidateEdges ?? Array.Empty<FirstContactClusterFormationEdge>();
+            MemberNodeIds = memberNodeIds ?? Array.Empty<string>();
+        }
+
+        public bool HasConfirmedEdge
+        {
+            get
+            {
+                for (int i = 0; i < CandidateEdges.Length; i++)
+                {
+                    if (CandidateEdges[i].Confirmed)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public bool IsIsolated => HasCluster && MemberCount <= 1 && !HasConfirmedEdge;
+
+        public bool ShouldAnimate =>
+            HasCluster &&
+            !string.IsNullOrWhiteSpace(ActiveCardNodeId) &&
+            (CandidateEdges.Length > 0 || MemberCount > 1 || BecameStable || IsIsolated);
     }
 
     public sealed class FirstContactSessionContext

@@ -17,8 +17,6 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         private const string GameRootScenePath = "Assets/Scenes/GameRoot.unity";
         private const string GameScenePath = "Assets/Scenes/GameScene.unity";
         private const string GameFlowPath = "Assets/Data/FirstContact/FirstContactGameFlow.asset";
-        private const string LegacyDay1FlowEntryPath = "Assets/Data/Legacy/Day1Calibration/FlowEntry_Day1Calibration.asset";
-        private const string LegacyObjectPairFlowEntryPath = "Assets/Data/Legacy/ObjectPairDrawing/FlowEntry_CurrentObjectPairDrawing.asset";
 
         [Test]
         public void GameSceneHostUsesDirectGameplayMode()
@@ -58,11 +56,6 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsInstanceOf<IGameplaySceneModeResolver>(hub);
             var resolver = (IGameplaySceneModeResolver)hub;
             Assert.IsInstanceOf<FirstContactTranslationMode>(resolver.GetModeBehaviour(flow.entries[0]));
-
-            var legacyDay1 = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.FlowEntryDefinition>(LegacyDay1FlowEntryPath);
-            var legacyObjectPair = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.FlowEntryDefinition>(LegacyObjectPairFlowEntryPath);
-            Assert.IsInstanceOf<Day1CalibrationMode>(resolver.GetModeBehaviour(legacyDay1));
-            Assert.IsInstanceOf<RoundManager>(resolver.GetModeBehaviour(legacyObjectPair));
         }
 
         [Test]

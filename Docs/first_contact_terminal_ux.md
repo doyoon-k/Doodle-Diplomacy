@@ -55,6 +55,21 @@ Use these terms consistently in player-facing terminal text.
 | `MEANING` | The interpreted meaning opened by a stable group. | Result line, e.g. `MEANING: [THREAT?]`. |
 | `CATEGORY` | A bootstrap target type the player is currently trying to sample. | Goal line, e.g. `CATEGORY: DEFENSE`. |
 
+## Game Glossary
+
+Use this glossary for First Contact player-facing copy and localization.
+
+| English source term | Korean player term | Meaning | Notes |
+|---|---|---|---|
+| `PROBE` | `표본` | One player-submitted drawing used to collect an alien response. | Use `시각 표본` in science-officer prose when extra clarity is useful. Do not use `탐침`. |
+| `PROBE LABEL` | `표본 라벨` | The player-entered name for the drawing. | The visible label can be localized; the internal canonical label may be English. |
+| `VISUAL PROBE` | `시각 표본` | A drawing as a visual response sample. | Prefer this in prose over bare `표본` when the sentence could be ambiguous. |
+| `TRACE` | `추적` | One recorded response trace from the alien. | Keep short in terminal lines. |
+| `GROUP` | `군집` | A cluster of similar traces. | Use for stability state. |
+| `MEANING` | `의미` | The rough interpretation opened by a stable group. | Do not use as a bootstrap goal. |
+| `CATEGORY` | `분류` | The current bootstrap target type. | Keep raw category names uppercase unless explicitly localized. |
+| `SIGNAL` | `신호` | The waveform or response signal shown by the device. | Use with `표본` as `시각 표본 신호`. |
+
 Avoid these as player-facing terminal terms:
 
 | Avoid | Reason | Replacement |
@@ -63,6 +78,7 @@ Avoid these as player-facing terminal terms:
 | `SELECT-ONE` | Internal request mode, not an alien word. | Hide it; use terminal choices. |
 | `TARGET CLUSTER` | Too tutorial/debug-like. | `CATEGORY` and `GROUP`. |
 | `SUGGESTED PROBES` | Makes the player follow examples as answers. | `DRAW RELATED OBJECT`; optional hints belong in officer dialogue. |
+| `탐침` | Too technical and not intuitive for the player action. | `표본`; use `시각 표본` in prose when needed. |
 
 ## Formatting Rules
 
@@ -71,6 +87,7 @@ Avoid these as player-facing terminal terms:
 - Dynamic raw values such as category names and meaning labels stay uppercase.
 - Choices use a `>` cursor.
 - Continue prompts use the standard terminal prompt style.
+- Any terminal state waiting for player input should show a blinking cursor at the active input point.
 - Avoid full explanatory sentences in terminal body text.
 - Do not show long paragraphs in the terminal.
 - Do not use natural-language question text for alien communication in this loop.
@@ -120,14 +137,29 @@ TRACE: 01/03
 DRAW RELATED OBJECT
 ```
 
+### Probe Review
+
+Shown after the tablet drawing is captured. The drawing preview is displayed inside the terminal screen, and the player types the probe label directly into the terminal.
+
+```text
+[PROBE REVIEW]
+
+IMAGE CAPTURED
+PROBE LABEL: FIRE_
+CHANNEL: PROBE SEQUENCE
+
+SUBMIT: ENTER
+REDRAW: ESC
+```
+
 ### Signal Capture
 
-Shown after the drawing is classified and an alien response trace is recorded.
+Shown after the drawing label is accepted and an alien response trace is recorded.
 
 ```text
 [SIGNAL CAPTURE]
 
-VISUAL READ: FIRE
+PROBE LABEL: FIRE
 CATEGORY: THREAT
 TRACE: 01/03
 GROUP: FORMING
@@ -220,6 +252,7 @@ Do not use `MEANING` as a goal label before the group stabilizes.
 - Preserve the terse terminal style in translations.
 - Keep raw category and meaning values stable unless the design explicitly localizes them.
 - Prefer short Korean labels over explanatory Korean sentences for terminal body lines.
+- Translate `PROBE` as `표본`, not `탐침`.
 - Use science-officer dialogue for localized prose explanations.
 
 ## Implementation Checklist

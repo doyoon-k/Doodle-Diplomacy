@@ -34,13 +34,44 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Header("Drawing")]
         [Tooltip("VLM 라벨링이 빨리 끝나도 최소한 분석 중 상태로 유지하는 시간입니다.")]
         [Min(0f)] public float scanMinimumSeconds = 1.2f;
-        [Tooltip("분석이 끝난 뒤, 터미널에 인식 라벨 확인 화면을 보여주기 전까지 기다리는 시간입니다.")]
+        [Tooltip("표본 검증이 통과된 뒤, 반응 채널 개방 상태를 짧게 보여주는 시간입니다.")]
         [Min(0f)] public float labelRevealDelay = 0.15f;
+
+        [Header("Probe Preview")]
+        [Tooltip("표본 라벨 입력 화면에서 그림 프리뷰가 차지하는 터미널 화면 앵커 최소값입니다.")]
+        public Vector2 probeReviewAnchorMin = new(0.12f, 0.5f);
+        [Tooltip("표본 라벨 입력 화면에서 그림 프리뷰가 차지하는 터미널 화면 앵커 최대값입니다.")]
+        public Vector2 probeReviewAnchorMax = new(0.88f, 0.93f);
+        [Tooltip("표본 라벨 입력 화면에서 터미널 텍스트가 프리뷰 아래로 밀리는 비율입니다.")]
+        [Range(0f, 1f)] public float probeReviewTextTopInset = 0.52f;
+        [Tooltip("그림 제출 후 스캔/송신 화면에서 그림 프리뷰가 차지하는 터미널 화면 앵커 최소값입니다.")]
+        public Vector2 probeDispatchAnchorMin = new(0.54f, 0.36f);
+        [Tooltip("그림 제출 후 스캔/송신 화면에서 그림 프리뷰가 차지하는 터미널 화면 앵커 최대값입니다.")]
+        public Vector2 probeDispatchAnchorMax = new(0.93f, 0.76f);
+        [Tooltip("그림 제출 후 스캔/송신 화면에서 터미널 텍스트가 프리뷰 아래로 밀리는 비율입니다. 오른쪽 배치에서는 0을 권장합니다.")]
+        [Range(0f, 1f)] public float probeDispatchTextTopInset = 0f;
 
         [Header("Answer")]
         [Tooltip("답변 그림을 외계인에게 송신했다는 화면을 유지하는 시간입니다.")]
         [Min(0f)] public float answerTransmitHoldSeconds = 1.5f;
         [Tooltip("답변 송신 후 다음 외계 질문으로 넘어가기 전까지 기다리는 시간입니다.")]
         [Min(0f)] public float nextQuestionDelay = 1.2f;
+
+        private void OnValidate()
+        {
+            ClampPreviewAnchors(ref probeReviewAnchorMin, ref probeReviewAnchorMax);
+            ClampPreviewAnchors(ref probeDispatchAnchorMin, ref probeDispatchAnchorMax);
+            probeReviewTextTopInset = Mathf.Clamp01(probeReviewTextTopInset);
+            probeDispatchTextTopInset = Mathf.Clamp01(probeDispatchTextTopInset);
+        }
+
+        private static void ClampPreviewAnchors(ref Vector2 min, ref Vector2 max)
+        {
+            min = new Vector2(Mathf.Clamp01(min.x), Mathf.Clamp01(min.y));
+            max = new Vector2(Mathf.Clamp01(max.x), Mathf.Clamp01(max.y));
+            max.x = Mathf.Max(max.x, min.x + 0.05f);
+            max.y = Mathf.Max(max.y, min.y + 0.05f);
+            max = new Vector2(Mathf.Clamp01(max.x), Mathf.Clamp01(max.y));
+        }
     }
 }

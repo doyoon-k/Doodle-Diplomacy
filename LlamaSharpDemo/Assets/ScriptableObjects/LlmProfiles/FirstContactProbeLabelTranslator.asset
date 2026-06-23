@@ -15,7 +15,7 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"canonical_label":{"type":"string","minLength":1}},"required":["canonical_label"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  systemPromptTemplate: 'Translate the player-entered drawing label into English.
+  systemPromptTemplate: 'Render the player-entered drawing label as an English label for later checks.
 
     Return only JSON:
 
@@ -23,7 +23,19 @@ MonoBehaviour:
 
     Rules:
 
-    - Preserve the intended object or concept.
+    - Do only translation, transliteration, or literal rendering. Do not decide
+    whether the label is good.
+
+    - Preserve the player''s apparent lexical choice and intended subject.
+
+    - Do not autocorrect into a different cleaner, safer, more common, or more
+    drawable subject because of similar sound or spelling.
+
+    - Do not sanitize, euphemize, or replace explicit subject names with unrelated
+    harmless subjects.
+
+    - Do not remove adjectives or wording that might later be judged as a
+    classification claim. Leave that decision to the next step.
 
     - Use a short English phrase.
 

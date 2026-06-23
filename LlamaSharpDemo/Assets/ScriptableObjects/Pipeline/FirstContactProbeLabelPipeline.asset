@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FirstContactProbeLabelPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: FirstContactProbeLabelPipeline
-  description: First Contact probe label processing. Translates player labels into English canonical labels, then checks whether the label is a concrete single-object probe.
+  description: First Contact probe label processing. Renders the player label in English, separates classification-claim wording from the neutral subject label, then checks whether the label names one concrete visible subject.
   steps:
   - stepName: FirstContactProbeLabelTranslation
     stepKind: 0
@@ -35,12 +35,14 @@ MonoBehaviour:
     customLinkParameters: []
     editorPosition: {x: -160, y: -80}
     guid: 22e2b0b3-6e37-4758-8cd2-82696646fc59
-    nextStepGuid: 90369617-dc60-4b9a-bd7c-8c0a3be7242b
-  - stepName: FirstContactProbeLabelSuitability
+    nextStepGuid: 8a19b733-3570-443c-b100-83301b7fce2f
+  - stepName: FirstContactProbeLabelClassificationClaim
     stepKind: 0
-    llmProfile: {fileID: 11400000, guid: 0083ae3cabda4c79941a6863009fdd5c, type: 2}
+    llmProfile: {fileID: 11400000, guid: b6a99dc3e06a4ce2a610b635bdad0d29, type: 2}
     embeddingProfile: {fileID: 0}
-    userPromptTemplate: 'Label: {{canonical_label}}'
+    userPromptTemplate: 'Original player label: {{probe_display_label}}
+
+      English label: {{canonical_label}}'
     embeddingOutputKey: embedding
     failOnEmptyEmbeddingInput: 1
     jsonMaxRetries: 3
@@ -53,11 +55,30 @@ MonoBehaviour:
     customAsset: {fileID: 0}
     customLinkParameters: []
     editorPosition: {x: 180, y: -80}
+    guid: 8a19b733-3570-443c-b100-83301b7fce2f
+    nextStepGuid: 90369617-dc60-4b9a-bd7c-8c0a3be7242b
+  - stepName: FirstContactProbeLabelSuitability
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 0083ae3cabda4c79941a6863009fdd5c, type: 2}
+    embeddingProfile: {fileID: 0}
+    userPromptTemplate: 'Canonical subject label: {{canonical_label}}'
+    embeddingOutputKey: embedding
+    failOnEmptyEmbeddingInput: 1
+    jsonMaxRetries: 3
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: 
+    customAsset: {fileID: 0}
+    customLinkParameters: []
+    editorPosition: {x: 520, y: -80}
     guid: 90369617-dc60-4b9a-bd7c-8c0a3be7242b
     nextStepGuid: 
   layoutSettings:
     inputNodePosition: {x: -420, y: 0}
-    outputNodePosition: {x: 620, y: -80}
+    outputNodePosition: {x: 960, y: -80}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
     viewPosition: {x: 0, y: 0, z: 0}
@@ -66,4 +87,5 @@ MonoBehaviour:
     snapshotPositions:
     - {x: 0, y: 0}
     - {x: 340, y: 0}
+    - {x: 680, y: 0}
     snapshotPositionsInitialized: 1

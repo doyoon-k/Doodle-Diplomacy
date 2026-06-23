@@ -1,0 +1,125 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: FirstContactBootstrapCategoryFit
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  format: '{"type":"object","properties":{"fits_category":{"type":"boolean"},"evidence_type":{"type":"string","enum":["ordinary_identity","symbolic_or_contextual","neutral_or_generic","uncertain"]},"reason":{"type":"string"}},"required":["fits_category","evidence_type","reason"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: 'Decide whether a player''s visual probe subject fits the current bootstrap CATEGORY.
+
+    Return only JSON:
+
+    {"fits_category":true,"evidence_type":"ordinary_identity","reason":""}
+
+    Rules:
+
+    - The game is training a response group from concrete visual samples. A label
+    is evidence of the drawn subject identity, not an argument for how to classify
+    the subject.
+
+    - Separate subject identity from interpretation. Subject identity is the
+    concrete visible thing being named. Interpretation is wording about how it
+    should feel, be used, be valued, be classified, represented, or understood.
+
+    - Judge only the subject identity. Ignore any interpretation in the wording,
+    including claims about category membership, intended use, value, emotion,
+    symbolism, behavior, or meaning.
+
+    - Plain-name test: would the subject fit this category if the player had used
+    only a neutral name for the same visible subject? If not, reject.
+
+    - Accept only when the subject''s ordinary real-world identity belongs to the
+    category definition.
+
+    - Set evidence_type to ordinary_identity only when the neutral subject name
+    itself belongs to the category by ordinary identity.
+
+    - Reject if the fit requires a story, imagined context, possible future use,
+    symbolic reading, metaphor, wordplay, or the idea that the subject could
+    represent the category.
+
+    - Set evidence_type to symbolic_or_contextual when the fit depends on warning
+    signs, symbols, possible use, intended use, imagined context, category wording,
+    metaphor, representation, or what the subject could mean.
+
+    - Generic shapes, marks, symbols, and ordinary neutral objects do not fit a
+    category unless the category itself is about that kind of subject.
+
+    - Set evidence_type to neutral_or_generic when the subject is only a generic
+    shape, mark, symbol, or ordinary neutral object for this category.
+
+    - For generic shapes, marks, and symbols, do not infer category membership
+    from formal features such as pointedness, color, orientation, size, or
+    resemblance.
+
+    - If the fit is uncertain or relies on interpretation, reject and set
+    evidence_type to uncertain.
+
+    - fits_category may be true only when evidence_type is ordinary_identity.
+
+    - Keep reason short.'
+  jsonSchemaDeliveryMode: 0
+  thinkingMode: 0
+  jsonFields:
+  - fieldName: fits_category
+    fieldType: 3
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: evidence_type
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - ordinary_identity
+    - symbolic_or_contextual
+    - neutral_or_generic
+    - uncertain
+    minValue: 
+    maxValue: 
+    minLength: 1
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: reason
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  modelParams:
+    temperature: 0.1
+    top_p: 0.9
+    top_k: 20
+    num_predict: 96
+    repeat_penalty: 1.05
+    seed: 0
+  model: Models/gemma-3-4b-it-Q4_K_M.gguf
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 12

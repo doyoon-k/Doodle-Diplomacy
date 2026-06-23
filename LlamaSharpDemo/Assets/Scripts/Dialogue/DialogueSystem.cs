@@ -25,6 +25,8 @@ namespace DoodleDiplomacy.Dialogue
         [Header("Typing")]
         [Tooltip("초당 표시할 글자 수")]
         [SerializeField] private float typingSpeed = 30f;
+        [Tooltip("When enabled, every dialogue line waits for Space after typing, ignoring Auto/Wait advance.")]
+        [SerializeField] private bool requireSpaceAdvanceForAllLines = true;
 
         [Header("Events")]
         public UnityEvent OnSequenceComplete = new UnityEvent();
@@ -126,6 +128,14 @@ namespace DoodleDiplomacy.Dialogue
             }
 
             yield return StartCoroutine(TypeText(text, textSetter));
+
+            if (requireSpaceAdvanceForAllLines)
+            {
+                _clickPending = false;
+                while (!_clickPending) yield return null;
+                _clickPending = false;
+                yield break;
+            }
 
             // 타이핑 완료 후 진행 방식 처리
             switch (line.advanceType)
@@ -254,16 +264,10 @@ namespace DoodleDiplomacy.Dialogue
         private bool GetAdvanceThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            var mouse = Mouse.current;
             var keyboard = Keyboard.current;
-            return (mouse != null && mouse.leftButton.wasPressedThisFrame) ||
-                   (keyboard != null &&
-                    (keyboard.spaceKey.wasPressedThisFrame ||
-                     keyboard.enterKey.wasPressedThisFrame));
+            return keyboard != null && keyboard.spaceKey.wasPressedThisFrame;
 #else
-            return Input.GetMouseButtonDown(0) ||
-                   Input.GetKeyDown(KeyCode.Space) ||
-                   Input.GetKeyDown(KeyCode.Return);
+            return Input.GetKeyDown(KeyCode.Space);
 #endif
         }
     }

@@ -74,7 +74,7 @@ namespace DoodleDiplomacy.Camera
 
         [Header("Transition")]
         [Tooltip("Seconds for camera moves between mode presets.")]
-        [SerializeField] private float transitionDuration = 0.5f;
+        [SerializeField] private float transitionDuration = 0.75f;
 
         [Header("Hover Look")]
         [Tooltip("How quickly the free-look camera rotates toward hovered interactable focus points.")]
@@ -105,6 +105,7 @@ namespace DoodleDiplomacy.Camera
 
         public CameraMode CurrentMode => _currentMode;
         public UnityEngine.Camera TargetCamera => targetCamera;
+        public bool IsTransitioning => _isTransitioning;
 
         private void Awake()
         {

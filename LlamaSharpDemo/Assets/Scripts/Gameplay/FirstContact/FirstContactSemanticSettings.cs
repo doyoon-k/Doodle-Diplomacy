@@ -45,7 +45,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Header("Bootstrap Category Training")]
         [Tooltip("튜토리얼 카테고리 하나가 안정화되기 위해 필요한 최소 그림 수입니다.")]
         [Min(2)] public int bootstrapMinTraceCount = 3;
-        [Tooltip("튜토리얼 카테고리 진행 중 새 그림이 현재 카테고리 설명 임베딩과 이 값 이상 가까워야 합니다.")]
+        [Tooltip("튜토리얼 카테고리 설명 임베딩과의 적합도를 표시/디버그할 때 참고하는 보조 기준입니다. 카테고리 거절은 별도 판정 파이프라인이 처리합니다.")]
         [Range(-1f, 1f)] public float bootstrapMinCategoryDescriptorFit = 0.6f;
 
         [Header("Semantic Map")]

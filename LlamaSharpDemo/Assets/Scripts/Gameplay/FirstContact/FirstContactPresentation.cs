@@ -55,33 +55,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ClearVisualOverlays();
             _terminalDisplay?.ShowText(
                 BuildQuestionText(question, fallbackReason),
-                instant || _hasShownQuestionOnce);
+                instant);
             _hasShownQuestionOnce = true;
-        }
-
-        public void ShowLocalReferenceIntro(bool instant = false)
-        {
-            ClearVisualOverlays();
-            string target = GetLocalReferenceTargetLabel();
-            string text =
-                Header("local_reference", "[LOCAL REFERENCE]") + "\n\n" +
-                T("local_reference.need_known_signal", "TRANSLATOR NEEDS ONE KNOWN SIGNAL") + "\n\n" +
-                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
-                T("local_reference.draw_on_tablet", "DRAW {target} ON THE TABLET", L10n.Arg("target", target)) +
-                BuildContinuePrompt();
-            _terminalDisplay?.ShowText(text, instant);
-        }
-
-        public void ShowLocalReferenceTabletOpen(bool instant = false)
-        {
-            ClearVisualOverlays();
-            string target = GetLocalReferenceTargetLabel();
-            string text =
-                Header("tablet_link_open", "[TABLET LINK OPEN]") + "\n\n" +
-                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
-                T("line.draw_target", "DRAW {target}", L10n.Arg("target", target)) + "\n\n" +
-                T("line.submit_enter", "SUBMIT: ENTER") + TerminalDisplay.CursorMarker;
-            _terminalDisplay?.ShowText(text, instant);
         }
 
         public void BeginIncomingTransmissionStream(int streamSeed)
@@ -227,7 +202,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _hasShownQuestionOnce = true;
         }
 
-        public void ShowQuestionChoiceEcho(AlienQuestion question, string choiceLabel, bool instant = true)
+        public void ShowQuestionChoiceEcho(AlienQuestion question, string choiceLabel, bool instant = false)
         {
             ClearVisualOverlays();
             string text = BuildQuestionText(question);
@@ -241,7 +216,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             AlienQuestion question,
             FirstContactCardSource source,
             string unknownId,
-            bool instant = true)
+            bool instant = false)
         {
             ClearVisualOverlays();
             string text = BuildQuestionText(question);
@@ -426,7 +401,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             Texture probeTexture,
             BrainwaveSemanticProfile dispatchSignalProfile,
             int streamSeed,
-            bool instant = true)
+            bool instant = false)
         {
             ClearVisualOverlays();
             ShowProbePreview(probeTexture, ProbePreviewLayout.Dispatch, scanActive: false);
@@ -438,16 +413,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactCardSource source,
             string unknownId,
             Texture probeTexture,
+            string labelInput,
             string status,
             bool instant = false)
         {
             ClearVisualOverlays();
             ShowProbePreview(probeTexture);
 
+            string renderedLabelInput = (labelInput ?? string.Empty) + TerminalDisplay.CursorMarker;
             string text =
                 Header("probe_review", "[PROBE REVIEW]") + "\n\n" +
                 T("line.image_captured", "IMAGE CAPTURED") + "\n" +
-                "\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", renderedLabelInput)) + "\n" +
                 T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source, unknownId)));
             if (!string.IsNullOrWhiteSpace(status))
             {
@@ -460,25 +437,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _terminalDisplay?.ShowText(text, instant);
         }
 
-        public void ShowLocalReferenceMismatch(
-            string label,
-            string reason,
-            int selectedIndex,
-            bool instant = true)
-        {
-            ClearVisualOverlays();
-            string target = GetLocalReferenceTargetLabel();
-            string normalizedReason = NormalizeTerminalLine(reason, T("reason.reference_not_stored", "REFERENCE NOT STORED")).ToUpperInvariant();
-            string text =
-                Header("reference_check", "[REFERENCE CHECK]") + "\n\n" +
-                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant())) + "\n" +
-                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
-                $"{normalizedReason}\n\n" +
-                BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
-                BuildSelectPrompt();
-            _terminalDisplay?.ShowText(text, instant);
-        }
-
         public void ShowInputRejected(string reason, int selectedIndex, bool instant = true)
         {
             ClearVisualOverlays();
@@ -486,24 +444,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Header("input_rejected", "[INPUT REJECTED]") + "\n\n" +
                 $"{NormalizeTerminalLine(reason, T("reason.draw_one_object", "DRAW ONE OBJECT"))}\n\n" +
                 BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
-                BuildSelectPrompt();
-            _terminalDisplay?.ShowText(text, instant);
-        }
-
-        public void ShowLocalReferenceReview(
-            string label,
-            int selectedIndex,
-            bool instant = true)
-        {
-            ClearVisualOverlays();
-            string target = GetLocalReferenceTargetLabel();
-            string text =
-                Header("reference_check", "[REFERENCE CHECK]") + "\n\n" +
-                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", NormalizeTerminalLine(label, target).ToUpperInvariant())) + "\n" +
-                T("line.target", "TARGET: {target}", L10n.Arg("target", target)) + "\n" +
-                T("line.reference_match", "REFERENCE MATCH") + "\n\n" +
-                BuildChoiceLine(0, selectedIndex, T("choice.submit", "SUBMIT")) +
-                BuildChoiceLine(1, selectedIndex, T("choice.redraw", "REDRAW")) +
                 BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
         }
@@ -561,49 +501,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 _brainwaveDisplay.PlaySignal(card.WaveformProfile);
             }
-        }
-
-        public void ShowLocalReferenceSignal(SemanticCardRecord card, bool instant = false)
-        {
-            _semanticMapDisplay?.Clear();
-            string target = GetLocalReferenceTargetLabel();
-            string text =
-                Header("local_signal_capture", "[LOCAL SIGNAL CAPTURE]") + "\n\n" +
-                T("line.local_reference_signal_color", "LOCAL REFERENCE SIGNAL: {color}", L10n.Arg("color", SignalColor("cyan", "CYAN"))) + "\n\n" +
-                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", NormalizeTerminalLine(GetDisplayLabel(card), target).ToUpperInvariant())) + "\n" +
-                T("line.mapping", "MAPPING: {target}", L10n.Arg("target", target)) +
-                BuildContinuePrompt();
-            _terminalDisplay?.ShowText(text, instant);
-            if (_brainwaveDisplay != null && card != null && card.WaveformProfile.IsValid)
-            {
-                _brainwaveDisplay.PlayComparisonCapture(
-                    DoodleDiplomacy.Devices.BrainwaveSemanticProfile.Invalid,
-                    card.WaveformProfile);
-            }
-        }
-
-        public void ShowLocalReferenceStored(
-            SemanticCardRecord card,
-            SemanticClusterRecord cluster,
-            FirstContactSemanticMapSnapshot mapSnapshot,
-            FirstContactSemanticSettings semanticSettings,
-            bool instant = false)
-        {
-            _brainwaveDisplay?.Clear();
-            ShowFullMap(mapSnapshot, semanticSettings);
-            string target = GetLocalReferenceTargetLabel();
-            string text =
-                Header("meaning_map", "[MEANING MAP]") + "\n\n" +
-                T("line.target_stored", "{target} STORED", L10n.Arg("target", target)) + "\n" +
-                T("line.local_reference_ready", "LOCAL REFERENCE READY");
-
-            if (_debugSettings != null && _debugSettings.showScoresOnTerminal && cluster != null)
-            {
-                text += "\n" + T("line.cluster", "CLUSTER: {cluster}", L10n.Arg("cluster", cluster.Id));
-            }
-
-            text += BuildContinuePrompt();
-            _terminalDisplay?.ShowText(text, instant);
         }
 
         public void ShowCluster(SemanticClusterRecord cluster)
@@ -787,11 +684,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static string BuildChannelLabel(FirstContactCardSource source, string unknownId)
         {
-            if (source == FirstContactCardSource.LocalReference)
-            {
-                return T("channel.local_reference", "LOCAL REFERENCE");
-            }
-
             if (source == FirstContactCardSource.Answer)
             {
                 return AnswerActionLabel;
@@ -825,11 +717,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Header("probe_dispatch", "[PROBE DISPATCH]") + "\n\n" +
                 T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n";
 
-            if (source == FirstContactCardSource.LocalReference)
-            {
-                text += T("line.target", "TARGET: {target}", L10n.Arg("target", GetLocalReferenceTargetLabel())) + "\n";
-            }
-            else if (!string.IsNullOrWhiteSpace(category))
+            if (!string.IsNullOrWhiteSpace(category))
             {
                 text += T("line.category", "CATEGORY: {category}", L10n.Arg("category", LocalizeCategory(category))) + "\n";
             }
@@ -1226,12 +1114,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private static string SignalColor(string key, string fallback)
         {
             return T($"color.{key}", fallback);
-        }
-
-        private static string GetLocalReferenceTargetLabel()
-        {
-            string label = L10n.Label("earth");
-            return string.IsNullOrWhiteSpace(label) ? "EARTH" : label.Trim().ToUpperInvariant();
         }
 
         private static string ResolveDynamicLabelFallback(string fallbackLabel)

@@ -15,7 +15,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
     public enum FirstContactCardSource
     {
-        LocalReference,
         BootstrapProbe,
         DecodeSample,
         Answer

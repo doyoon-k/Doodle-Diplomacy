@@ -1,0 +1,126 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: FirstContactProbeLabelClassificationClaim
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  format: '{"type":"object","properties":{"has_classification_claim":{"type":"boolean"},"classification_claim_text":{"type":"string"},"neutral_subject_label":{"type":"string"},"label_reason":{"type":"string"}},"required":["has_classification_claim","classification_claim_text","neutral_subject_label","label_reason"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: 'Decide whether the player label contains a classification claim.
+
+    Return only JSON:
+
+    {"has_classification_claim":false,"classification_claim_text":"","neutral_subject_label":"","label_reason":""}
+
+    Rules:
+
+    - Do not translate, rewrite, or judge drawing quality.
+
+    - A classification claim is label wording that argues how the subject should be
+    classified, valued, used, felt, represented, or understood instead of naming
+    what the visible subject is.
+
+    - classification_claim_text must be an exact word or phrase from the original
+    player label or English label. Do not write a summary, explanation, or outside
+    description.
+
+    - Always set neutral_subject_label to the English subject name with any classification
+    claim removed. If there is no classification claim, copy the English label.
+
+    - If there is no exact label phrase that is a classification claim, return
+    has_classification_claim false, empty classification_claim_text, and the
+    English label as neutral_subject_label.
+
+    - A subject name itself is not a classification claim, even if it is anatomical,
+    vulgar, obscene, slang, explicit, or socially sensitive.
+
+    - Concrete subject descriptors such as color, size, material, species, body
+    part, object subtype, or proper/common subject names are part of the subject
+    name. They are not classification claims by themselves.
+
+    - Do not use the whole original label or whole English label as
+    classification_claim_text when a smaller removable claim phrase exists.
+
+    - True only when removing classification_claim_text would leave a more neutral subject name,
+    or when a generic shape, mark, symbol, or ordinary object is being pushed
+    into a category by wording rather than identity.
+
+    - For labels like "dangerous triangle" or "useful stone", the subject is the
+    neutral object and the classification claim is the category/value wording.
+
+    - Do not treat tone, appropriateness, audience reaction, or how the label
+    sounds as classification claims.
+
+    - If true, keep label_reason short. If false, classification_claim_text and
+    label_reason must be empty.'
+  jsonSchemaDeliveryMode: 0
+  thinkingMode: 0
+  jsonFields:
+  - fieldName: has_classification_claim
+    fieldType: 3
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: classification_claim_text
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: neutral_subject_label
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: label_reason
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  modelParams:
+    temperature: 0.1
+    top_p: 0.9
+    top_k: 20
+    num_predict: 96
+    repeat_penalty: 1.05
+    seed: 0
+  model: Models/gemma-3-4b-it-Q4_K_M.gguf
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 12

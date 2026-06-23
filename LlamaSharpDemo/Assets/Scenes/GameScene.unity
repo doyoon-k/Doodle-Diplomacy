@@ -2203,7 +2203,7 @@ MonoBehaviour:
   sharedMonitorZoomPreset:
     target: {fileID: 1655673615}
     fieldOfView: 38
-  transitionDuration: 0.5
+  transitionDuration: 0.75
   hoverLookLerpSpeed: 1.52
   focusAcquireDelay: 0.15
   edgeBrowseThresholdNormalized: 0.08

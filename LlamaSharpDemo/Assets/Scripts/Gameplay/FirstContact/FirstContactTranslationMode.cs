@@ -18,7 +18,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         private const string DefaultModeId = "first-contact-translation";
         private const string ScienceOfficerSpeakerKey = "speaker.science_officer";
-        private const string LocalReferenceLabel = "earth";
         private const int BootstrapRequiredTraceCount = 3;
         private const int MaxProbeLabelLength = 32;
 
@@ -59,9 +58,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private bool _terminalContinueRequested;
         private bool _incomingTransmissionChoicesActive;
         private bool _hasShownBootstrapDuplicateOfficerLine;
+        private bool _officerLineVisible;
+        private bool _officerLineAwaitingDismissal;
+        private int _officerLineShownFrame = -1;
         private int _lastSubmitInputFrame = -1;
         private bool _terminalProbeLabelInputActive;
         private string _terminalProbeLabelStatus = string.Empty;
+        private string _queuedTerminalProbeLabelText = string.Empty;
+        private string _currentProbeLabelComposition = string.Empty;
+        private int _lastTerminalProbeLabelTextInputFrame = -1;
+        private bool _hasPreviousImeCompositionMode;
+        private IMECompositionMode _previousImeCompositionMode;
+#if ENABLE_INPUT_SYSTEM
+        private UnityEngine.InputSystem.Keyboard _subscribedTextInputKeyboard;
+        private string _inputSystemProbeLabelComposition = string.Empty;
+#endif
         private readonly List<BootstrapCategoryState> _bootstrapCategories = new();
         private int _bootstrapCategoryIndex;
 
@@ -87,6 +98,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             StopActiveRoutine();
             EndTerminalProbeLabelInput();
             GamePipelineRunner.Instance?.StopGeneration();
+            HideOfficerLine(force: true);
             _context?.Drawing?.SetInteractionLocked(true);
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
@@ -100,6 +112,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private void OnDestroy()
         {
             EndTerminalProbeLabelInput();
+#if ENABLE_INPUT_SYSTEM
+            UnsubscribeTerminalProbeLabelTextInput();
+#endif
             for (int i = 0; i < _ownedTextures.Count; i++)
             {
                 if (_ownedTextures[i] != null)
@@ -111,13 +126,29 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _ownedTextures.Clear();
         }
 
+        private void OnEnable()
+        {
+#if ENABLE_INPUT_SYSTEM
+            SubscribeTerminalProbeLabelTextInput();
+#endif
+        }
+
         private void OnDisable()
         {
             EndTerminalProbeLabelInput();
+#if ENABLE_INPUT_SYSTEM
+            UnsubscribeTerminalProbeLabelTextInput();
+#endif
+            HideOfficerLine(force: true);
         }
 
         public void Tick(float deltaTime)
         {
+            if (HandleOfficerLineDismissInput())
+            {
+                return;
+            }
+
             if (HandleTerminalProbeLabelInput())
             {
                 return;
@@ -132,9 +163,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             if (type == InteractionType.Tablet &&
                 (_modeState == FirstContactModeState.DrawingDecodeSample ||
                  _modeState == FirstContactModeState.DrawingAnswer ||
-                 _modeState == FirstContactModeState.DrawingLocalReference ||
                  _modeState == FirstContactModeState.DrawingBootstrapProbe))
             {
+                HideOfficerLine();
                 _context?.Camera?.SetMode(CameraMode.TabletView);
             }
             else if (type == InteractionType.Terminal)
@@ -146,12 +177,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public void StartGame(bool isFirstPlay = true)
         {
             StopActiveRoutine();
+            HideOfficerLine(force: true);
             _routine = StartCoroutine(StartFirstContactRoutine());
         }
 
         public void ChangeToTitle()
         {
             StopActiveRoutine();
+            HideOfficerLine(force: true);
             _context?.Drawing?.SetInteractionLocked(true);
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
@@ -212,30 +245,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _routine = null;
         }
 
-        private IEnumerator StartLocalReferenceCalibrationRoutine()
-        {
-            ChangeState(FirstContactModeState.LocalReferenceIntro);
-            DisableTerminalChoices();
-            _pendingCardSource = FirstContactCardSource.LocalReference;
-            _activeUnknownId = string.Empty;
-            _pendingTexture = null;
-            _pendingPngBytes = null;
-            _pendingLabel = string.Empty;
-            _pendingDisplayLabel = string.Empty;
-            _context?.Drawing?.SetInteractionLocked(true);
-            _context?.Drawing?.ClearRecognitionLabel();
-            _context?.Drawing?.ClearInstructionLabel();
-            _context?.Camera?.SetMode(CameraMode.TerminalZoom);
-            _terminalPresenter?.ShowLocalReferenceIntro(instant: false);
-            yield return WaitForTerminalContinueRoutine();
-
-            _terminalPresenter?.ShowLocalReferenceTabletOpen(instant: false);
-            float linkHoldSeconds = GetPresentationSettings().tabletLinkOpenHoldSeconds;
-            yield return WaitForTerminalPresentationRoutine(linkHoldSeconds, true);
-
-            yield return BeginDrawingRoutine(FirstContactCardSource.LocalReference, string.Empty);
-        }
-
         private void InitializeBootstrapCategories()
         {
             _bootstrapCategories.Clear();
@@ -244,22 +253,22 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 "danger",
                 "DANGER",
                 "[DANGER?]",
-                "dangerous harmful threatening object weapon knife blade sharp fire monster poison trap explosion");
+                "concrete visible subjects whose ordinary identity is a source or instrument of harm, threat, injury, poisoning, fire, explosion, attack, or other direct hazard");
             AddBootstrapCategory(
                 "protection",
                 "PROTECTION",
                 "[PROTECTION?]",
-                "protective safety object shield armor helmet lock wall guard barrier");
+                "concrete visible subjects whose ordinary identity is protection, defense, shelter, guarding, or blocking harm");
             AddBootstrapCategory(
                 "food",
                 "FOOD",
                 "[FOOD?]",
-                "food edible meal fruit bread meat drink vegetable dessert");
+                "concrete visible subjects whose ordinary identity is something eaten, drunk, prepared as a meal, or used as food");
             AddBootstrapCategory(
                 "tool",
                 "TOOL",
                 "[TOOL?]",
-                "tool useful instrument device used to build fix open measure");
+                "concrete visible subjects whose ordinary identity is a tool, instrument, device, or implement for doing work");
         }
 
         private void AddBootstrapCategory(string id, string displayName, string meaning, string descriptor)
@@ -396,7 +405,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     yield return new WaitForSeconds(presentation.tokenUpdateDelay);
                 }
 
-                _terminalPresenter.ShowQuestion(question, instant: true, fallbackReason);
+                _terminalPresenter.ShowQuestion(question, instant: false, fallbackReason: fallbackReason);
                 yield return WaitForTerminalPresentationRoutine(presentation.updatedQuestionReadHoldSeconds, false);
             }
 
@@ -412,7 +421,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 question.PrimitiveTokens == null ||
                 question.PrimitiveTokens.Count == 0)
             {
-                _terminalPresenter.ShowQuestion(question, instant: false, fallbackReason);
+                _terminalPresenter.ShowQuestion(question, instant: false, fallbackReason: fallbackReason);
                 _incomingTransmissionChoicesActive = false;
                 yield break;
             }
@@ -465,7 +474,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _pendingDisplayLabel = string.Empty;
             if (!preserveCanvas)
             {
-                _currentProbeLabelInput = GetDefaultProbeLabel(source);
+                _currentProbeLabelInput = string.Empty;
             }
 
             DisableTerminalChoices();
@@ -479,11 +488,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ShowInstructionLabel(GetDrawingInstructionText(source));
             _context?.Camera?.SetMode(CameraMode.TabletView);
-            if (source == FirstContactCardSource.LocalReference)
-            {
-                ChangeState(FirstContactModeState.DrawingLocalReference);
-            }
-            else if (source == FirstContactCardSource.BootstrapProbe)
+            if (source == FirstContactCardSource.BootstrapProbe)
             {
                 ChangeState(FirstContactModeState.DrawingBootstrapProbe);
             }
@@ -504,15 +509,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             if (_modeState != FirstContactModeState.DrawingDecodeSample &&
                 _modeState != FirstContactModeState.DrawingAnswer &&
-                _modeState != FirstContactModeState.DrawingLocalReference &&
                 _modeState != FirstContactModeState.DrawingBootstrapProbe)
             {
                 return;
             }
 
+            HideOfficerLine();
             if (_context?.Drawing == null || !_context.Drawing.HasVisibleDrawing)
             {
-                ShowContentRedrawPrompt("DRAW SOMETHING");
+                StopActiveRoutine();
+                _routine = StartCoroutine(ShowContentRedrawPromptRoutine(
+                    "DRAW SOMETHING",
+                    "first_contact.officer.probe_blank"));
                 return;
             }
 
@@ -524,7 +532,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void SubmitProbeLabel()
         {
-            SubmitProbeLabel(_context?.TerminalDisplay != null
+            SubmitProbeLabel(_context?.TerminalDisplay != null && _context.TerminalDisplay.IsTextInputActive
                 ? _context.TerminalDisplay.TextInputValue
                 : _currentProbeLabelInput);
         }
@@ -540,7 +548,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 _currentProbeLabelInput = labelInput ?? string.Empty;
                 _terminalProbeLabelStatus = L10n.T("first_contact.terminal.line.label_required", "LABEL REQUIRED");
-                RefreshTerminalProbeLabelEntry(instant: true);
+                RefreshTerminalProbeLabelEntry(instant: false);
                 return;
             }
 
@@ -552,13 +560,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             HideOfficerLine();
             StopActiveRoutine();
             _routine = StartCoroutine(AnalyzeDrawingRoutine());
-        }
-
-        private static string GetDefaultProbeLabel(FirstContactCardSource source)
-        {
-            return source == FirstContactCardSource.LocalReference
-                ? GetLocalReferenceDisplayLabel()
-                : string.Empty;
         }
 
         private static bool TryPreparePlayerProbeLabel(
@@ -583,6 +584,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ChangeState(FirstContactModeState.AnalyzingDrawing);
             DisableTerminalChoices();
             _context?.Camera?.SetMode(CameraMode.TerminalZoom);
+            yield return WaitForCameraTransitionRoutine();
 
             bool captureSucceeded = false;
             string captureError = string.Empty;
@@ -602,6 +604,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
             _context?.Camera?.SetMode(CameraMode.TerminalZoom);
+            yield return WaitForCameraTransitionRoutine();
             ChangeState(FirstContactModeState.ReviewingLabel);
             BeginTerminalProbeLabelInput();
             _routine = null;
@@ -648,9 +651,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             if (validation == null || !validation.IsSuccess)
             {
-                if (TryGetValidationErrorRedrawPrompt(validation, out string errorRedrawPrompt))
+                if (TryGetValidationErrorRedrawPrompt(
+                        validation,
+                        out string errorRedrawPrompt,
+                        out string errorOfficerLineKey))
                 {
-                    ShowContentRedrawPrompt(errorRedrawPrompt);
+                    ShowContentRedrawPrompt(errorRedrawPrompt, errorOfficerLineKey);
                     _routine = null;
                     yield break;
                 }
@@ -660,9 +666,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield break;
             }
 
-            if (TryGetContentRedrawPrompt(validation, out string redrawPrompt))
+            if (TryGetContentRedrawPrompt(validation, out string redrawPrompt, out string officerLineKey))
             {
-                ShowContentRedrawPrompt(redrawPrompt);
+                ShowContentRedrawPrompt(redrawPrompt, officerLineKey);
                 _routine = null;
                 yield break;
             }
@@ -674,24 +680,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield break;
             }
 
-            if (_pendingCardSource == FirstContactCardSource.LocalReference)
-            {
-                if (!IsEarthLikeLocalReference(_pendingLabel))
-                {
-                    Debug.Log(
-                        "[FirstContactTranslationMode] Local reference rejected. " +
-                        $"ProbeLabel='{_pendingLabel}', DisplayLabel='{_pendingDisplayLabel}'.",
-                        this);
-                    ShowContentRedrawPrompt("REFERENCE NOT STORED");
-                    _routine = null;
-                    yield break;
-                }
-
-                _pendingLabel = LocalReferenceLabel;
-                _pendingDisplayLabel = GetLocalReferenceDisplayLabel();
-                _currentProbeLabelInput = _pendingDisplayLabel;
-            }
-
             if (presentation.labelRevealDelay > 0f)
             {
                 _terminalPresenter?.ShowProbeDispatchAccepted(
@@ -701,7 +689,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     GetPendingProbeDispatchCategory(),
                     _pendingTexture,
                     BuildProbeDispatchSignalProfile(),
-                    BuildProbeDispatchStreamSeed());
+                    BuildProbeDispatchStreamSeed(),
+                    instant: false);
                 yield return new WaitForSeconds(presentation.labelRevealDelay);
             }
 
@@ -854,6 +843,68 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             onComplete?.Invoke(validation ?? FirstContactProbeValidationResult.Failed("Probe validation unstable."));
         }
 
+        private IEnumerator EvaluateBootstrapCategoryFitRoutine(
+            SemanticCardRecord card,
+            BootstrapCategoryState category,
+            Action<FirstContactBootstrapCategoryFitResult> onComplete)
+        {
+            if (category == null)
+            {
+                onComplete?.Invoke(FirstContactBootstrapCategoryFitResult.Accepted("No active category."));
+                yield break;
+            }
+
+            FirstContactVlmSettings vlmSettings = GetVlmSettings();
+            if (vlmSettings.bootstrapCategoryFitPipeline == null)
+            {
+                Debug.LogWarning(
+                    "[FirstContactTranslationMode] Bootstrap category fit pipeline is not assigned. " +
+                    "Accepting bootstrap probe by label.",
+                    this);
+                onComplete?.Invoke(FirstContactBootstrapCategoryFitResult.Accepted("Category fit pipeline is not assigned."));
+                yield break;
+            }
+
+            if (GamePipelineRunner.Instance == null)
+            {
+                Debug.LogWarning(
+                    "[FirstContactTranslationMode] GamePipelineRunner is missing. Accepting bootstrap probe by label.",
+                    this);
+                onComplete?.Invoke(FirstContactBootstrapCategoryFitResult.Accepted("GamePipelineRunner is missing."));
+                yield break;
+            }
+
+            var state = new PipelineState();
+            state.SetString("category_id", category.Id);
+            state.SetString("category_display_name", category.DisplayName);
+            state.SetString("category_definition", category.DescriptorText);
+            state.SetString("probe_label", card?.Label ?? _pendingLabel ?? string.Empty);
+            state.SetString("probe_display_label", card?.LocalizedLabel ?? _pendingDisplayLabel ?? _pendingLabel ?? string.Empty);
+
+            bool done = false;
+            PipelineState finalState = null;
+            GamePipelineRunner.Instance.RunPipeline(vlmSettings.bootstrapCategoryFitPipeline, state, result =>
+            {
+                finalState = result;
+                done = true;
+            });
+            yield return new WaitUntil(() => done);
+
+            if (FirstContactBootstrapCategoryFitResult.TryFromPipelineState(
+                    finalState,
+                    out FirstContactBootstrapCategoryFitResult fitResult))
+            {
+                onComplete?.Invoke(fitResult);
+                yield break;
+            }
+
+            Debug.LogWarning(
+                $"[FirstContactTranslationMode] Bootstrap category fit pipeline returned an unstable result. " +
+                $"Accepting probe. Error='{fitResult?.Error ?? string.Empty}'",
+                this);
+            onComplete?.Invoke(fitResult ?? FirstContactBootstrapCategoryFitResult.Accepted("Category fit pipeline unstable."));
+        }
+
         private IEnumerator PreparePendingProbeLabelRoutine(Action<FirstContactProbeLabelResult> onComplete)
         {
             string displayLabel = string.IsNullOrWhiteSpace(_pendingDisplayLabel)
@@ -953,7 +1004,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ChangeState(_pendingCardSource switch
             {
                 FirstContactCardSource.Answer => FirstContactModeState.TransmittingAnswer,
-                FirstContactCardSource.LocalReference => FirstContactModeState.StoringLocalReference,
                 FirstContactCardSource.BootstrapProbe => FirstContactModeState.StoringBootstrapProbe,
                 _ => FirstContactModeState.UpdatingTranslation
             });
@@ -979,11 +1029,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 TargetUnknownId = _pendingCardSource == FirstContactCardSource.DecodeSample ? _activeUnknownId : string.Empty,
                 BootstrapCategoryId = GetActiveBootstrapCategory()?.Id ?? string.Empty,
                 BootstrapCategoryDisplayName = GetActiveBootstrapCategory()?.DisplayName ?? string.Empty,
-                QuestionId = _pendingCardSource == FirstContactCardSource.LocalReference
-                    ? "local-reference"
-                    : (_pendingCardSource == FirstContactCardSource.BootstrapProbe
-                        ? (GetActiveBootstrapCategory()?.Id ?? "bootstrap-probe")
-                        : (_session?.CurrentQuestion?.Id ?? string.Empty)),
+                QuestionId = _pendingCardSource == FirstContactCardSource.BootstrapProbe
+                    ? (GetActiveBootstrapCategory()?.Id ?? "bootstrap-probe")
+                    : (_session?.CurrentQuestion?.Id ?? string.Empty),
                 TurnIndex = _session?.TurnIndex ?? 0
             };
 
@@ -1020,11 +1068,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 beforeClusterStates,
                 _semanticMemory?.LastFormationEdges);
 
-            if (_pendingCardSource == FirstContactCardSource.LocalReference)
-            {
-                yield return StoreLocalReferenceCardRoutine(card, cluster);
-            }
-            else if (_pendingCardSource == FirstContactCardSource.BootstrapProbe)
+            if (_pendingCardSource == FirstContactCardSource.BootstrapProbe)
             {
                 yield return StoreBootstrapProbeCardRoutine(card, cluster, clusterFormation);
             }
@@ -1042,25 +1086,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _routine = null;
-        }
-
-        private IEnumerator StoreLocalReferenceCardRoutine(SemanticCardRecord card, SemanticClusterRecord cluster)
-        {
-            RefreshSessionStableClusters();
-            FirstContactSemanticMapSnapshot mapSnapshot = BuildSemanticMapSnapshot(card, string.Empty);
-            _terminalPresenter?.ShowLocalReferenceSignal(card, instant: false);
-            yield return WaitForTerminalContinueRoutine();
-
-            _terminalPresenter?.ShowLocalReferenceStored(
-                card,
-                cluster,
-                mapSnapshot,
-                GetSemanticSettings(),
-                instant: false);
-            yield return WaitForTerminalContinueRoutine();
-
-            _incomingTransmissionChoicesActive = false;
-            yield return StartBootstrapProbeSequenceRoutine();
         }
 
         private IEnumerator StoreBootstrapDuplicateProbeCardRoutine(
@@ -1122,7 +1147,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 card,
                 category,
                 includeActiveCard: false);
-            bool accepted = category.TryAcceptCard(card, _embeddingService, GetSemanticSettings(), fit);
+            FirstContactBootstrapCategoryFitResult categoryFitResult = null;
+            yield return EvaluateBootstrapCategoryFitRoutine(
+                card,
+                category,
+                result => categoryFitResult = result);
+            bool categoryAccepted = categoryFitResult?.FitsCategory ?? true;
+            bool accepted = category.TryAcceptCard(
+                card,
+                _embeddingService,
+                GetSemanticSettings(),
+                fit,
+                categoryAccepted);
             RefreshSessionStableClusters();
             bool stable = category.IsStable;
             if (GetDebugSettings().logSimilarityScores)
@@ -1131,7 +1167,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     $"[FirstContactTranslationMode] Bootstrap category={category.Id} " +
                     $"traces={category.TraceCount}/{category.RequiredTraceCount} " +
                     $"accepted={accepted} categoryFit={fit.CategoryDescriptorFit:0.000} " +
+                    $"categoryJudge={categoryAccepted} " +
+                    $"evidence='{categoryFitResult?.EvidenceType ?? string.Empty}' " +
+                    $"reason='{categoryFitResult?.Reason ?? string.Empty}' " +
                     $"stable={stable}");
+            }
+
+            if (!accepted)
+            {
+                ShowOfficerLine("first_contact.officer.bootstrap_category_mismatch");
             }
 
             FirstContactSemanticMapSnapshot mapSnapshot = BuildBootstrapSemanticMapSnapshot(
@@ -1371,11 +1415,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _context?.Drawing?.SetInteractionLocked(true);
             _context?.Drawing?.ClearInstructionLabel();
             _context?.Camera?.SetMode(CameraMode.TerminalZoom);
-            if (_pendingCardSource == FirstContactCardSource.LocalReference)
-            {
-                _terminalPresenter?.ShowLocalReferenceTabletOpen(instant: false);
-            }
-            else if (_pendingCardSource == FirstContactCardSource.BootstrapProbe)
+            if (_pendingCardSource == FirstContactCardSource.BootstrapProbe)
             {
                 BootstrapCategoryState category = GetActiveBootstrapCategory();
                 _terminalPresenter?.ShowBootstrapProbeChannelOpen(
@@ -1389,7 +1429,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _terminalPresenter?.ShowTabletLinkOpen(
                     _session?.CurrentQuestion,
                     _pendingCardSource,
-                    _activeUnknownId);
+                    _activeUnknownId,
+                    instant: false);
             }
 
             float holdSeconds = GetPresentationSettings().tabletLinkOpenHoldSeconds;
@@ -1413,7 +1454,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _selectedTerminalChoiceIndex = 0;
             _terminalChoiceInputEnabled = true;
             _terminalChoiceMode = FirstContactTerminalChoiceMode.QuestionActions;
-            ShowActiveQuestionChoices(instant: !_incomingTransmissionChoicesActive);
+            ShowActiveQuestionChoices(instant: false);
         }
 
         private void EnableBootstrapProbeChoice()
@@ -1461,7 +1502,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _session?.CurrentQuestion,
                 _selectedTerminalChoiceIndex,
                 BuildSemanticMapSnapshot(GetMostRecentCard(), string.Empty),
-                GetSemanticSettings());
+                GetSemanticSettings(),
+                instant: false);
         }
 
         private void EnableLabelReviewChoices()
@@ -1469,22 +1511,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _selectedTerminalChoiceIndex = 0;
             _terminalChoiceInputEnabled = true;
             _terminalChoiceMode = FirstContactTerminalChoiceMode.LabelReview;
-            if (_pendingCardSource == FirstContactCardSource.LocalReference)
-            {
-                _terminalPresenter?.ShowLocalReferenceReview(
-                    _pendingDisplayLabel,
-                    _selectedTerminalChoiceIndex,
-                    instant: false);
-            }
-            else
-            {
-                _terminalPresenter?.ShowLabelReview(
-                    _pendingCardSource,
-                    _activeUnknownId,
-                    _pendingDisplayLabel,
-                    _selectedTerminalChoiceIndex,
-                    instant: false);
-            }
+            _terminalPresenter?.ShowLabelReview(
+                _pendingCardSource,
+                _activeUnknownId,
+                _pendingDisplayLabel,
+                _selectedTerminalChoiceIndex,
+                instant: false);
         }
 
         private void EnableRejectedInputChoice(string reason)
@@ -1492,18 +1524,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _selectedTerminalChoiceIndex = 0;
             _terminalChoiceInputEnabled = true;
             _terminalChoiceMode = FirstContactTerminalChoiceMode.RejectedInput;
-            if (_pendingCardSource == FirstContactCardSource.LocalReference)
-            {
-                _terminalPresenter?.ShowLocalReferenceMismatch(
-                    _pendingDisplayLabel,
-                    reason,
-                    _selectedTerminalChoiceIndex,
-                    instant: false);
-            }
-            else
-            {
-                _terminalPresenter?.ShowInputRejected(reason, _selectedTerminalChoiceIndex, instant: false);
-            }
+            _terminalPresenter?.ShowInputRejected(reason, _selectedTerminalChoiceIndex, instant: false);
         }
 
         private void EnableContinueChoice()
@@ -1526,6 +1547,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             DisableTerminalChoices();
             _terminalProbeLabelInputActive = true;
             _terminalProbeLabelStatus = string.Empty;
+            EnableImeComposition();
             RefreshTerminalProbeLabelEntry(instant: false);
         }
 
@@ -1535,10 +1557,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _pendingCardSource,
                 _activeUnknownId,
                 _pendingTexture,
+                GetRenderedProbeLabelInput(),
                 _terminalProbeLabelStatus,
                 instant);
 
-            if (_terminalProbeLabelInputActive)
+            if (_terminalProbeLabelInputActive && !instant && UsesHiddenTerminalTextInput())
             {
                 BeginTerminalTextInput();
             }
@@ -1558,7 +1581,79 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return true;
             }
 
-            _context?.TerminalDisplay?.FocusTextInput();
+            TerminalDisplay terminal = _context?.TerminalDisplay;
+            if (terminal != null && terminal.IsTextInputActive)
+            {
+                if (terminal.IsTyping())
+                {
+                    return true;
+                }
+
+                if (SyncTerminalTextInputState(terminal))
+                {
+                    return true;
+                }
+
+                terminal.FocusTextInput();
+                return true;
+            }
+
+            if (terminal != null && terminal.IsTyping())
+            {
+                QueueLegacyTerminalProbeLabelTextInput();
+                return true;
+            }
+
+            bool changed = false;
+            bool consumedBackspace = false;
+            string textInput = ConsumeTerminalProbeLabelTextInput();
+            for (int i = 0; i < textInput.Length; i++)
+            {
+                char character = textInput[i];
+                if (character == '\b')
+                {
+                    consumedBackspace = true;
+                    changed |= RemoveLastProbeLabelCharacter();
+                    continue;
+                }
+
+                if (character == '\n' || character == '\r' || character == '\t' || char.IsControl(character))
+                {
+                    continue;
+                }
+
+                if ((_currentProbeLabelInput?.Length ?? 0) >= MaxProbeLabelLength)
+                {
+                    continue;
+                }
+
+                _currentProbeLabelInput = (_currentProbeLabelInput ?? string.Empty) + character;
+                changed = true;
+            }
+
+            if (!consumedBackspace && WasKeyPressed(KeyCode.Backspace))
+            {
+                changed |= RemoveLastProbeLabelCharacter();
+            }
+
+            string composition = GetCurrentImeCompositionString();
+            if (!string.Equals(_currentProbeLabelComposition, composition, StringComparison.Ordinal))
+            {
+                _currentProbeLabelComposition = composition;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                HideOfficerLine();
+                if (!string.IsNullOrEmpty(_terminalProbeLabelStatus))
+                {
+                    _terminalProbeLabelStatus = string.Empty;
+                }
+
+                RefreshTerminalProbeLabelEntry(instant: true);
+            }
+
             return true;
         }
 
@@ -1570,27 +1665,191 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
+            EnableImeComposition();
             terminal.BeginTextInput(
                 FirstContactTerminalPresenter.ProbeLabelInputPrefix,
                 _currentProbeLabelInput,
                 MaxProbeLabelLength,
                 SubmitProbeLabel,
-                OnTerminalProbeLabelChanged);
+                OnTerminalProbeLabelChanged,
+                visible: false);
+        }
+
+        private static bool UsesHiddenTerminalTextInput()
+        {
+            return true;
         }
 
         private void OnTerminalProbeLabelChanged(string value)
         {
+            HideOfficerLine();
+            if (_context?.TerminalDisplay != null && SyncTerminalTextInputState(_context.TerminalDisplay))
+            {
+                return;
+            }
+
             _currentProbeLabelInput = value ?? string.Empty;
+            _currentProbeLabelComposition = string.Empty;
             if (!string.IsNullOrEmpty(_terminalProbeLabelStatus))
             {
                 _terminalProbeLabelStatus = string.Empty;
-                RefreshTerminalProbeLabelEntry(instant: true);
             }
+            RefreshTerminalProbeLabelEntry(instant: true);
+        }
+
+        private bool SyncTerminalTextInputState(TerminalDisplay terminal)
+        {
+            if (terminal == null)
+            {
+                return false;
+            }
+
+            string value = terminal.TextInputValue ?? string.Empty;
+            string displayValue = terminal.TextInputDisplayValue ?? value;
+            SplitCommittedAndDisplayProbeLabel(value, displayValue, out string committed, out string composition);
+            bool changed =
+                !string.Equals(_currentProbeLabelInput, committed, StringComparison.Ordinal) ||
+                !string.Equals(_currentProbeLabelComposition, composition, StringComparison.Ordinal);
+            if (!changed)
+            {
+                return false;
+            }
+
+            HideOfficerLine();
+            _currentProbeLabelInput = committed;
+            _currentProbeLabelComposition = composition;
+            if (!string.IsNullOrEmpty(_terminalProbeLabelStatus))
+            {
+                _terminalProbeLabelStatus = string.Empty;
+            }
+
+            RefreshTerminalProbeLabelEntry(instant: true);
+            return true;
+        }
+
+        private static void SplitCommittedAndDisplayProbeLabel(
+            string committedValue,
+            string displayValue,
+            out string committed,
+            out string composition)
+        {
+            committed = committedValue ?? string.Empty;
+            string display = displayValue ?? committed;
+            if (display.StartsWith(committed, StringComparison.Ordinal))
+            {
+                composition = display.Substring(committed.Length);
+                return;
+            }
+
+            committed = display;
+            composition = string.Empty;
+        }
+
+        private string ConsumeTerminalProbeLabelTextInput()
+        {
+            string textInput = string.Empty;
+#if ENABLE_INPUT_SYSTEM
+            SubscribeTerminalProbeLabelTextInput();
+            textInput = _queuedTerminalProbeLabelText ?? string.Empty;
+            _queuedTerminalProbeLabelText = string.Empty;
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (string.IsNullOrEmpty(textInput))
+            {
+                textInput = Input.inputString ?? string.Empty;
+            }
+#endif
+
+            return textInput;
+        }
+
+        private void QueueLegacyTerminalProbeLabelTextInput()
+        {
+#if ENABLE_LEGACY_INPUT_MANAGER
+#if ENABLE_INPUT_SYSTEM
+            if (_lastTerminalProbeLabelTextInputFrame == Time.frameCount)
+            {
+                return;
+            }
+#endif
+
+            string textInput = Input.inputString ?? string.Empty;
+            if (!string.IsNullOrEmpty(textInput))
+            {
+                _queuedTerminalProbeLabelText += textInput;
+                _lastTerminalProbeLabelTextInputFrame = Time.frameCount;
+            }
+#endif
+        }
+
+        private bool RemoveLastProbeLabelCharacter()
+        {
+            if (string.IsNullOrEmpty(_currentProbeLabelInput))
+            {
+                return false;
+            }
+
+            _currentProbeLabelInput = _currentProbeLabelInput.Substring(0, _currentProbeLabelInput.Length - 1);
+            return true;
+        }
+
+        private string GetRenderedProbeLabelInput()
+        {
+            return (_currentProbeLabelInput ?? string.Empty) + (_currentProbeLabelComposition ?? string.Empty);
+        }
+
+        private string GetCurrentImeCompositionString()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return _inputSystemProbeLabelComposition ?? string.Empty;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.compositionString ?? string.Empty;
+#else
+            return string.Empty;
+#endif
+        }
+
+        private void EnableImeComposition()
+        {
+#if ENABLE_INPUT_SYSTEM
+            SubscribeTerminalProbeLabelTextInput();
+            UnityEngine.InputSystem.Keyboard.current?.SetIMEEnabled(true);
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!_hasPreviousImeCompositionMode)
+            {
+                _previousImeCompositionMode = Input.imeCompositionMode;
+                _hasPreviousImeCompositionMode = true;
+            }
+
+            Input.imeCompositionMode = IMECompositionMode.On;
+#endif
+        }
+
+        private void RestoreImeComposition()
+        {
+#if ENABLE_INPUT_SYSTEM
+            UnityEngine.InputSystem.Keyboard.current?.SetIMEEnabled(false);
+            _inputSystemProbeLabelComposition = string.Empty;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!_hasPreviousImeCompositionMode)
+            {
+                return;
+            }
+
+            Input.imeCompositionMode = _previousImeCompositionMode;
+            _hasPreviousImeCompositionMode = false;
+#endif
         }
 
         private void EndTerminalProbeLabelInput()
         {
             _terminalProbeLabelInputActive = false;
+            _queuedTerminalProbeLabelText = string.Empty;
+            _currentProbeLabelComposition = string.Empty;
+            RestoreImeComposition();
             _context?.TerminalDisplay?.HideTextInput();
         }
 
@@ -1635,7 +1894,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             if (_modeState != FirstContactModeState.DrawingDecodeSample &&
                 _modeState != FirstContactModeState.DrawingAnswer &&
-                _modeState != FirstContactModeState.DrawingLocalReference &&
                 _modeState != FirstContactModeState.DrawingBootstrapProbe)
             {
                 return;
@@ -1651,7 +1909,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             if (_modeState != FirstContactModeState.DrawingDecodeSample &&
                 _modeState != FirstContactModeState.DrawingAnswer &&
-                _modeState != FirstContactModeState.DrawingLocalReference &&
                 _modeState != FirstContactModeState.DrawingBootstrapProbe)
             {
                 return false;
@@ -1706,6 +1963,64 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         }
 
 #if ENABLE_INPUT_SYSTEM
+        private void SubscribeTerminalProbeLabelTextInput()
+        {
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+            if (_subscribedTextInputKeyboard == keyboard)
+            {
+                return;
+            }
+
+            UnsubscribeTerminalProbeLabelTextInput();
+            if (keyboard == null)
+            {
+                return;
+            }
+
+            _subscribedTextInputKeyboard = keyboard;
+            _subscribedTextInputKeyboard.onTextInput += HandleTerminalProbeLabelTextInput;
+            _subscribedTextInputKeyboard.onIMECompositionChange += HandleTerminalProbeLabelImeCompositionChanged;
+        }
+
+        private void UnsubscribeTerminalProbeLabelTextInput()
+        {
+            if (_subscribedTextInputKeyboard == null)
+            {
+                return;
+            }
+
+            _subscribedTextInputKeyboard.onTextInput -= HandleTerminalProbeLabelTextInput;
+            _subscribedTextInputKeyboard.onIMECompositionChange -= HandleTerminalProbeLabelImeCompositionChanged;
+            _subscribedTextInputKeyboard = null;
+        }
+
+        private void HandleTerminalProbeLabelTextInput(char character)
+        {
+            if (!_terminalProbeLabelInputActive || _modeState != FirstContactModeState.ReviewingLabel)
+            {
+                return;
+            }
+
+            _queuedTerminalProbeLabelText += character;
+            _inputSystemProbeLabelComposition = string.Empty;
+            _lastTerminalProbeLabelTextInputFrame = Time.frameCount;
+        }
+
+        private void HandleTerminalProbeLabelImeCompositionChanged(
+            UnityEngine.InputSystem.LowLevel.IMECompositionString composition)
+        {
+            if (!_terminalProbeLabelInputActive || _modeState != FirstContactModeState.ReviewingLabel)
+            {
+                return;
+            }
+
+            _inputSystemProbeLabelComposition = composition.Count == 0
+                ? string.Empty
+                : composition.ToString();
+        }
+#endif
+
+#if ENABLE_INPUT_SYSTEM
         private static UnityEngine.InputSystem.Controls.KeyControl GetInputSystemKeyControl(
             UnityEngine.InputSystem.Keyboard keyboard,
             KeyCode keyCode)
@@ -1718,6 +2033,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 KeyCode.S => keyboard.sKey,
                 KeyCode.Return => keyboard.enterKey,
                 KeyCode.KeypadEnter => keyboard.numpadEnterKey,
+                KeyCode.Space => keyboard.spaceKey,
                 KeyCode.Backspace => keyboard.backspaceKey,
                 KeyCode.Escape => keyboard.escapeKey,
                 _ => null
@@ -1788,7 +2104,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int i = 0; i < _session.RecentCards.Count; i++)
             {
                 SemanticCardRecord card = _session.RecentCards[i];
-                if (card != null && card.Source != FirstContactCardSource.LocalReference)
+                if (card != null)
                 {
                     return true;
                 }
@@ -1799,6 +2115,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void SelectTerminalChoice(int choiceIndex)
         {
+            HideOfficerLine();
             switch (_terminalChoiceMode)
             {
                 case FirstContactTerminalChoiceMode.QuestionActions:
@@ -1956,35 +2273,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                         GetSemanticSettings());
                     break;
                 case FirstContactTerminalChoiceMode.LabelReview:
-                    if (_pendingCardSource == FirstContactCardSource.LocalReference)
-                    {
-                        _terminalPresenter?.ShowLocalReferenceReview(
-                            _pendingDisplayLabel,
-                            _selectedTerminalChoiceIndex);
-                    }
-                    else
-                    {
-                        _terminalPresenter?.ShowLabelReview(
-                            _pendingCardSource,
-                            _activeUnknownId,
-                            _pendingDisplayLabel,
-                            _selectedTerminalChoiceIndex);
-                    }
+                    _terminalPresenter?.ShowLabelReview(
+                        _pendingCardSource,
+                        _activeUnknownId,
+                        _pendingDisplayLabel,
+                        _selectedTerminalChoiceIndex);
                     break;
                 case FirstContactTerminalChoiceMode.RejectedInput:
-                    if (_pendingCardSource == FirstContactCardSource.LocalReference)
-                    {
-                        _terminalPresenter?.ShowLocalReferenceMismatch(
-                            _pendingDisplayLabel,
-                            _currentRejectedInputReason,
-                            _selectedTerminalChoiceIndex);
-                    }
-                    else
-                    {
-                        _terminalPresenter?.ShowInputRejected(
-                            _currentRejectedInputReason,
-                            _selectedTerminalChoiceIndex);
-                    }
+                    _terminalPresenter?.ShowInputRejected(
+                        _currentRejectedInputReason,
+                        _selectedTerminalChoiceIndex);
                     break;
                 case FirstContactTerminalChoiceMode.BootstrapProbe:
                     {
@@ -2030,16 +2328,36 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _routine = null;
         }
 
-        private void ShowContentRedrawPrompt(string prompt)
+        private void ShowContentRedrawPrompt(string prompt, string officerLineKey = null)
         {
             string safePrompt = string.IsNullOrWhiteSpace(prompt) ? "DRAW ONE OBJECT" : prompt.Trim();
+            PrepareContentRedrawPrompt(safePrompt);
+            CompleteContentRedrawPrompt(officerLineKey);
+        }
+
+        private IEnumerator ShowContentRedrawPromptRoutine(string prompt, string officerLineKey = null)
+        {
+            string safePrompt = string.IsNullOrWhiteSpace(prompt) ? "DRAW ONE OBJECT" : prompt.Trim();
+            PrepareContentRedrawPrompt(safePrompt);
+            yield return WaitForCameraTransitionRoutine();
+            CompleteContentRedrawPrompt(officerLineKey);
+            _routine = null;
+        }
+
+        private void PrepareContentRedrawPrompt(string safePrompt)
+        {
             _currentRejectedInputReason = LocalizeRedrawPrompt(safePrompt);
             _context?.Drawing?.SetInteractionLocked(true);
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
             _context?.Camera?.SetMode(CameraMode.TerminalZoom);
+        }
+
+        private void CompleteContentRedrawPrompt(string officerLineKey)
+        {
             ChangeState(FirstContactModeState.ReviewingRejectedInput);
             EnableRejectedInputChoice(_currentRejectedInputReason);
+            ShowOfficerLine(officerLineKey);
         }
 
         private void ShowProbeLabelMismatchPrompt()
@@ -2068,7 +2386,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _context?.Drawing?.ClearInstructionLabel();
             _context?.Camera?.SetMode(CameraMode.TerminalZoom);
             ChangeState(FirstContactModeState.ReviewingLabel);
-            RefreshTerminalProbeLabelEntry(instant: true);
+            RefreshTerminalProbeLabelEntry(instant: false);
             ShowOfficerLine("first_contact.officer.probe_label_not_object");
 
             if (GetDebugSettings().logSimilarityScores)
@@ -2076,6 +2394,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Debug.Log(
                     "[FirstContactTranslationMode] Probe label rejected as unsuitable. " +
                     $"DisplayLabel='{_pendingDisplayLabel}' CanonicalLabel='{result?.CanonicalLabel}' " +
+                    $"HasClassificationClaim={result?.HasClassificationClaim} " +
+                    $"ClassificationClaimText='{result?.ClassificationClaimText}' " +
+                    $"NeutralSubjectLabel='{result?.NeutralSubjectLabel}' " +
                     $"Reason='{result?.Reason}'",
                     this);
             }
@@ -2083,11 +2404,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static FirstContactModeState GetDrawingModeState(FirstContactCardSource source)
         {
-            if (source == FirstContactCardSource.LocalReference)
-            {
-                return FirstContactModeState.DrawingLocalReference;
-            }
-
             if (source == FirstContactCardSource.BootstrapProbe)
             {
                 return FirstContactModeState.DrawingBootstrapProbe;
@@ -2101,37 +2417,48 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return FirstContactModeState.DrawingAnswer;
         }
 
-        private bool TryGetContentRedrawPrompt(FirstContactProbeValidationResult result, out string prompt)
+        private bool TryGetContentRedrawPrompt(
+            FirstContactProbeValidationResult result,
+            out string prompt,
+            out string officerLineKey)
         {
             prompt = string.Empty;
+            officerLineKey = string.Empty;
             FirstContactVlmSettings vlmSettings = GetVlmSettings();
             if (result == null)
             {
                 prompt = "DRAW ONE OBJECT";
+                officerLineKey = "first_contact.officer.probe_unresolved_object";
                 return true;
             }
 
             if (vlmSettings.rejectBlank && result.IsBlank)
             {
                 prompt = "DRAW SOMETHING";
+                officerLineKey = "first_contact.officer.probe_blank";
                 return true;
             }
 
             if (vlmSettings.rejectWrittenText && result.HasTextOrSymbol)
             {
                 prompt = "TEXT OR SYMBOL DETECTED";
+                officerLineKey = "first_contact.officer.probe_text_or_symbol";
                 return true;
             }
 
             if (vlmSettings.rejectActionOrScene && result.IsSceneOrAction)
             {
                 prompt = "DRAW ONE OBJECT";
+                officerLineKey = "first_contact.officer.probe_scene_or_action";
                 return true;
             }
 
             if (vlmSettings.rejectMultipleObjects && result.ObjectCount != 1)
             {
                 prompt = result.ObjectCount <= 0 ? "DRAW ONE OBJECT" : "DRAW ONE OBJECT ONLY";
+                officerLineKey = result.ObjectCount <= 0
+                    ? "first_contact.officer.probe_unresolved_object"
+                    : "first_contact.officer.probe_multiple_objects";
                 return true;
             }
 
@@ -2140,9 +2467,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static bool TryGetValidationErrorRedrawPrompt(
             FirstContactProbeValidationResult result,
-            out string prompt)
+            out string prompt,
+            out string officerLineKey)
         {
             prompt = string.Empty;
+            officerLineKey = string.Empty;
             if (result == null || result.IsSuccess || string.IsNullOrWhiteSpace(result.Error))
             {
                 return false;
@@ -2151,60 +2480,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             if (result.Error.Trim().Equals("Drawing is blank.", StringComparison.OrdinalIgnoreCase))
             {
                 prompt = "DRAW SOMETHING";
+                officerLineKey = "first_contact.officer.probe_blank";
                 return true;
-            }
-
-            return false;
-        }
-
-        private static bool IsEarthLikeLocalReference(string canonicalLabel)
-        {
-            return IsEarthLikeLabel(canonicalLabel);
-        }
-
-        private static bool IsEarthLikeLabel(string label)
-        {
-            if (string.IsNullOrWhiteSpace(label))
-            {
-                return false;
-            }
-
-            string normalized = NormalizeProbeLabel(label)
-                .Replace('-', ' ')
-                .Replace('_', ' ')
-                .Replace('/', ' ');
-            return ContainsWholeTerm(normalized, "earth") ||
-                   ContainsWholeTerm(normalized, "globe") ||
-                   ContainsWholeTerm(normalized, "planet") ||
-                   ContainsWholeTerm(normalized, "world") ||
-                   ContainsWholeTerm(normalized, "sphere") ||
-                   ContainsWholeTerm(normalized, "map") ||
-                   ContainsWholeTerm(normalized, "ocean") ||
-                   ContainsWholeTerm(normalized, "land") ||
-                   normalized.IndexOf("blue planet", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   normalized.IndexOf("blue marble", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        private static bool ContainsWholeTerm(string text, string term)
-        {
-            if (string.IsNullOrWhiteSpace(text) || string.IsNullOrWhiteSpace(term))
-            {
-                return false;
-            }
-
-            int index = text.IndexOf(term, StringComparison.OrdinalIgnoreCase);
-            while (index >= 0)
-            {
-                int before = index - 1;
-                int after = index + term.Length;
-                bool startsAtBoundary = before < 0 || !char.IsLetterOrDigit(text[before]);
-                bool endsAtBoundary = after >= text.Length || !char.IsLetterOrDigit(text[after]);
-                if (startsAtBoundary && endsAtBoundary)
-                {
-                    return true;
-                }
-
-                index = text.IndexOf(term, index + term.Length, StringComparison.OrdinalIgnoreCase);
             }
 
             return false;
@@ -2227,12 +2504,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private void LogFatalTechnicalFailure(string message)
         {
             Debug.LogError($"[FirstContactTranslationMode] {message}", this);
-        }
-
-        private static string GetLocalReferenceDisplayLabel()
-        {
-            string label = L10n.Label(LocalReferenceLabel);
-            return string.IsNullOrWhiteSpace(label) ? "EARTH" : label.Trim();
         }
 
         private static string ResolveDynamicLabelFallback(string fallbackLabel)
@@ -2264,7 +2535,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 "DRAW ONE OBJECT" => L10n.T("first_contact.terminal.reason.draw_one_object", "DRAW ONE OBJECT"),
                 "DRAW ONE OBJECT ONLY" => L10n.T("first_contact.terminal.reason.draw_one_object_only", "DRAW ONE OBJECT ONLY"),
                 "TEXT OR SYMBOL DETECTED" => L10n.T("first_contact.terminal.reason.text_or_symbol_detected", "TEXT OR SYMBOL DETECTED"),
-                "REFERENCE NOT STORED" => L10n.T("first_contact.terminal.reason.reference_not_stored", "REFERENCE NOT STORED"),
                 _ => prompt.Trim()
             };
         }
@@ -2432,6 +2702,27 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return false;
         }
 
+        private bool HandleOfficerLineDismissInput()
+        {
+            if (!_officerLineVisible || !_officerLineAwaitingDismissal)
+            {
+                return false;
+            }
+
+            if (Time.frameCount <= _officerLineShownFrame)
+            {
+                return false;
+            }
+
+            if (!WasKeyPressed(KeyCode.Space))
+            {
+                return false;
+            }
+
+            HideOfficerLine(force: true);
+            return true;
+        }
+
         private void ShowOfficerLine(string localizationKey)
         {
             if (string.IsNullOrWhiteSpace(localizationKey))
@@ -2447,11 +2738,27 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             string speaker = L10n.T(ScienceOfficerSpeakerKey, "Science Officer");
             _context?.Subtitles?.Show(speaker, line);
+            _officerLineVisible = true;
+            _officerLineAwaitingDismissal = true;
+            _officerLineShownFrame = Time.frameCount;
         }
 
-        private void HideOfficerLine()
+        private void HideOfficerLine(bool force = false)
         {
+            if (!force && _officerLineAwaitingDismissal)
+            {
+                return;
+            }
+
+            if (!force && !_officerLineVisible)
+            {
+                return;
+            }
+
             _context?.Subtitles?.Hide();
+            _officerLineVisible = false;
+            _officerLineAwaitingDismissal = false;
+            _officerLineShownFrame = -1;
         }
 
         private IReadOnlyList<FirstContactSlotScore> BuildSlotScores(
@@ -2928,6 +3235,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
+        private IEnumerator WaitForCameraTransitionRoutine()
+        {
+            if (_context?.Camera == null)
+            {
+                yield break;
+            }
+
+            yield return null;
+            while (_context.Camera.IsTransitioning)
+            {
+                yield return null;
+            }
+        }
+
         private IEnumerator WaitForTerminalContinueRoutine()
         {
             TerminalDisplay terminal = _context?.TerminalDisplay;
@@ -2949,10 +3270,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void ChangeState(FirstContactModeState state)
         {
+            if (_modeState != state)
+            {
+                HideOfficerLine();
+            }
+
             _modeState = state;
             GameState gameState = state switch
             {
-                FirstContactModeState.DrawingLocalReference => GameState.Drawing,
                 FirstContactModeState.DrawingBootstrapProbe => GameState.Drawing,
                 FirstContactModeState.DrawingDecodeSample => GameState.Drawing,
                 FirstContactModeState.DrawingAnswer => GameState.Drawing,
@@ -3182,12 +3507,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 SemanticCardRecord card,
                 FirstContactEmbeddingService embeddingService,
                 FirstContactSemanticSettings settings,
-                BootstrapProbeFit fit)
+                BootstrapProbeFit fit,
+                bool categoryAccepted)
             {
                 settings ??= ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
-                bool categoryAccepted =
-                    !fit.HasCategoryDescriptor ||
-                    fit.CategoryDescriptorFit >= settings.bootstrapMinCategoryDescriptorFit;
                 bool accepted = fit.HasUsableSignal &&
                                 categoryAccepted;
 
@@ -3286,8 +3609,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             Inactive,
             Ready,
-            LocalReferenceIntro,
-            DrawingLocalReference,
             BootstrapProbeSequence,
             DrawingBootstrapProbe,
             ReceivingQuestion,
@@ -3297,7 +3618,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             AnalyzingDrawing,
             ReviewingLabel,
             ReviewingRejectedInput,
-            StoringLocalReference,
             StoringBootstrapProbe,
             UpdatingTranslation,
             TransmittingAnswer,

@@ -15,7 +15,7 @@ MonoBehaviour:
   format: '{"type":"object","properties":{"is_suitable":{"type":"boolean"},"reason":{"type":"string"}},"required":["is_suitable","reason"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  systemPromptTemplate: 'Decide whether the English drawing label is suitable for a single concrete visual probe.
+  systemPromptTemplate: 'Decide whether the English label names one concrete visible subject.
 
     Return only JSON:
 
@@ -23,11 +23,14 @@ MonoBehaviour:
 
     Rules:
 
-    - Suitable labels name one concrete drawable thing, object, organism, substance, or simple natural phenomenon.
+    - Accept one drawable object, organism, body part, substance, artifact,
+    concrete subtype, or simple natural phenomenon.
 
-    - Reject abstract concepts, emotions, actions, scenes, broad categories, text, and multiple-object descriptions.
+    - Do not reject a label because of politeness, social register,
+    offensiveness, or explicitness.
 
-    - Reject labels with mood, danger, safety, usefulness, edibility, value, or other semantic modifiers. The label should name only the visual subject, so "scary mask" should be rejected and "mask" should be accepted.
+    - Reject broad categories, roles, actions, scenes, emotions, abstract
+    concepts, written text, and multiple subjects.
 
     - Keep reason short.'
   jsonSchemaDeliveryMode: 0

@@ -36,11 +36,28 @@ MonoBehaviour:
     - is_scene_or_action true if the drawing mainly depicts a scene, relationship,
     action, emotion, story, or abstract concept instead of one concrete object.
 
-    - label_match compares the image to probe_label. Use probe_display_label only
-    as extra context.
+    - label_match compares the image to the visible subject identity in probe_label.
+    Use probe_display_label only as extra context.
+
+    - Separate subject identity from classification claims. Subject identity is
+    the concrete visible thing being named. A classification claim is wording
+    about how it should feel, be used, be valued, be categorized, represented, or
+    understood.
+
+    - Do not judge label_match by politeness, social register, offensiveness, or
+    explicitness. Judge only whether the image plausibly shows the named visible
+    subject.
+
+    - A modifier is visually supported only when it changes the visible identity of
+    the subject or names a concrete subtype, material, species, part, or artifact
+    class visible in the image.
 
     - Use "mismatch" only when the drawing clearly represents a different concrete
     object than probe_label, or clearly cannot plausibly be probe_label.
+
+    - Use "mismatch" when the drawing only supports a generic shape or ordinary
+    neutral object, and the label depends on intended use, value judgment,
+    emotional reading, symbolic meaning, behavior, or category membership.
 
     - Use "unclear" when the drawing is rough, ambiguous, or low quality but could
     plausibly be probe_label.

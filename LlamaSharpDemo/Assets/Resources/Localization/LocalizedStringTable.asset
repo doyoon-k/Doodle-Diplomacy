@@ -463,16 +463,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uCD94\uC0C1\uC801\uC778 \uD45C\uC2DC"
-  - key: label.earth
-    sourceText: earth
-    translations:
-    - locale: ko-KR
-      text: "\uC9C0\uAD6C"
-  - key: first_contact.terminal.header.local_reference
-    sourceText: '[LOCAL REFERENCE]'
-    translations:
-    - locale: ko-KR
-      text: "[\uAE30\uC900 \uC2E0\uD638]"
   - key: first_contact.terminal.header.tablet_link_open
     sourceText: '[TABLET LINK OPEN]'
     translations:
@@ -508,21 +498,11 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "[\uD45C\uBCF8 \uC1A1\uC2E0]"
-  - key: first_contact.terminal.header.local_reference_analysis
-    sourceText: '[LOCAL REFERENCE ANALYSIS]'
-    translations:
-    - locale: ko-KR
-      text: "[\uAE30\uC900 \uC2E0\uD638 \uBD84\uC11D]"
   - key: first_contact.terminal.header.visual_probe_analysis
     sourceText: '[VISUAL PROBE ANALYSIS]'
     translations:
     - locale: ko-KR
       text: "[\uC2DC\uAC01 \uD45C\uBCF8 \uBD84\uC11D]"
-  - key: first_contact.terminal.header.reference_check
-    sourceText: '[REFERENCE CHECK]'
-    translations:
-    - locale: ko-KR
-      text: "[\uAE30\uC900 \uD655\uC778]"
   - key: first_contact.terminal.header.input_rejected
     sourceText: '[INPUT REJECTED]'
     translations:
@@ -553,11 +533,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "[\uC2E0\uD638 \uD3EC\uCC29]"
-  - key: first_contact.terminal.header.local_signal_capture
-    sourceText: '[LOCAL SIGNAL CAPTURE]'
-    translations:
-    - locale: ko-KR
-      text: "[\uAE30\uC900 \uC2E0\uD638 \uD3EC\uCC29]"
   - key: first_contact.terminal.header.probe_result
     sourceText: '[PROBE RESULT]'
     translations:
@@ -668,16 +643,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uBCF4\uB0B4\uB824\uBA74 ENTER"
-  - key: first_contact.terminal.local_reference.need_known_signal
-    sourceText: TRANSLATOR NEEDS ONE KNOWN SIGNAL
-    translations:
-    - locale: ko-KR
-      text: "\uBC88\uC5ED\uAE30\uC5D0 \uC54C\uB824\uC9C4 \uC2E0\uD638 \uD558\uB098\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4"
-  - key: first_contact.terminal.local_reference.draw_on_tablet
-    sourceText: DRAW {target} ON THE TABLET
-    translations:
-    - locale: ko-KR
-      text: "\uD0DC\uBE14\uB9BF\uC5D0 {target}\uC744 \uADF8\uB9AC\uC2ED\uC2DC\uC624"
   - key: first_contact.terminal.meaning_map.drawing_reference
     sourceText: DRAWING REFERENCE
     translations:
@@ -798,31 +763,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uC751\uB2F5 \uCC44\uB110: \uAC1C\uBC29"
-  - key: first_contact.terminal.line.reference_match
-    sourceText: REFERENCE MATCH
-    translations:
-    - locale: ko-KR
-      text: "\uAE30\uC900 \uC77C\uCE58"
-  - key: first_contact.terminal.line.local_reference_signal_color
-    sourceText: 'LOCAL REFERENCE SIGNAL: {color}'
-    translations:
-    - locale: ko-KR
-      text: "\uAE30\uC900 \uC2E0\uD638: {color}"
-  - key: first_contact.terminal.line.mapping
-    sourceText: 'MAPPING: {target}'
-    translations:
-    - locale: ko-KR
-      text: "\uB9E4\uD551: {target}"
-  - key: first_contact.terminal.line.target_stored
-    sourceText: '{target} STORED'
-    translations:
-    - locale: ko-KR
-      text: "{target} \uC800\uC7A5\uB428"
-  - key: first_contact.terminal.line.local_reference_ready
-    sourceText: LOCAL REFERENCE READY
-    translations:
-    - locale: ko-KR
-      text: "\uAE30\uC900 \uC2E0\uD638 \uC900\uBE44\uB428"
   - key: first_contact.terminal.line.cluster
     sourceText: 'CLUSTER: {cluster}'
     translations:
@@ -933,21 +873,11 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uCCAD\uB85D"
-  - key: first_contact.terminal.channel.local_reference
-    sourceText: LOCAL REFERENCE
-    translations:
-    - locale: ko-KR
-      text: "\uAE30\uC900 \uC2E0\uD638"
   - key: first_contact.terminal.channel.probe_sequence
     sourceText: PROBE SEQUENCE
     translations:
     - locale: ko-KR
       text: "\uD45C\uBCF8 \uC2DC\uD000\uC2A4"
-  - key: first_contact.terminal.reason.reference_not_stored
-    sourceText: REFERENCE NOT STORED
-    translations:
-    - locale: ko-KR
-      text: "\uAE30\uC900 \uC2E0\uD638 \uC5C6\uC74C"
   - key: first_contact.terminal.reason.draw_one_object
     sourceText: DRAW ONE OBJECT
     translations:
@@ -1034,173 +964,77 @@ MonoBehaviour:
     - locale: ko-KR
       text: "[\uAD70\uC9D1-??]"
   - key: first_contact.officer.bootstrap_duplicate_probe
-    sourceText: Same visual probe repeats the stored response. Send a different object from the same category.
+    sourceText: The same sample repeats the same response. Try a different object
+      in the same category.
     translations:
     - locale: ko-KR
-      text: "\uAC19\uC740 \uC2DC\uAC01 \uD45C\uBCF8\uC740 \uC800\uC7A5\uB41C \uBC18\uC751\uB9CC \uBC18\uBCF5\uD569\uB2C8\uB2E4. \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978 \uC0AC\uBB3C\uC744 \uBCF4\uB0B4\uC57C \uD569\uB2C8\uB2E4."
+      text: "\uAC19\uC740 \uD45C\uBCF8\uC740 \uAC19\uC740 \uBC18\uC751\uB9CC \uBC18\uBCF5\uD569\uB2C8\uB2E4.
+        \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978 \uC0AC\uBB3C\uC744 \uBCF4\uB0B4
+        \uC8FC\uC138\uC694."
+  - key: first_contact.officer.bootstrap_category_mismatch
+    sourceText: This sample does not seem to fit the current category. Try a different
+      object in that category.
+    translations:
+    - locale: ko-KR
+      text: "\uD45C\uBCF8\uC774 \uD604\uC7AC \uBD84\uB958\uC5D0 \uB9DE\uC9C0 \uC54A\uB294
+        \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978
+        \uC0AC\uBB3C\uC744 \uBCF4\uB0B4 \uC8FC\uC138\uC694."
+  - key: first_contact.officer.probe_blank
+    sourceText: The drawing is too empty to read. Draw one visible object.
+    translations:
+    - locale: ko-KR
+      text: "\uADF8\uB9BC\uC774 \uBE44\uC5B4 \uC788\uC5B4 \uD310\uB3C5\uD558\uAE30
+        \uC5B4\uB835\uC2B5\uB2C8\uB2E4. \uBCF4\uC774\uB294 \uC0AC\uBB3C \uD558\uB098\uB97C
+        \uADF8\uB824 \uC8FC\uC138\uC694."
+  - key: first_contact.officer.probe_text_or_symbol
+    sourceText: The sample includes text or symbols. Draw the object without writing.
+    translations:
+    - locale: ko-KR
+      text: "\uD45C\uBCF8\uC5D0 \uAE00\uC790\uB098 \uAE30\uD638\uAC00 \uB4E4\uC5B4
+        \uC788\uC2B5\uB2C8\uB2E4. \uAE00\uC790 \uC5C6\uC774 \uC0AC\uBB3C \uD615\uD0DC\uB9CC
+        \uADF8\uB824 \uC8FC\uC138\uC694."
+  - key: first_contact.officer.probe_scene_or_action
+    sourceText: This looks like a scene or action. Draw one object by itself.
+    translations:
+    - locale: ko-KR
+      text: "\uC7A5\uBA74\uC774\uB098 \uD589\uB3D9\uC73C\uB85C \uBCF4\uC785\uB2C8\uB2E4.
+        \uC0AC\uBB3C \uD558\uB098\uB9CC \uB530\uB85C \uADF8\uB824 \uC8FC\uC138\uC694."
+  - key: first_contact.officer.probe_multiple_objects
+    sourceText: More than one object is detected. Leave only one object.
+    translations:
+    - locale: ko-KR
+      text: "\uC0AC\uBB3C\uC774 \uB458 \uC774\uC0C1 \uAC10\uC9C0\uB429\uB2C8\uB2E4.
+        \uD558\uB098\uB9CC \uB0A8\uACA8 \uC8FC\uC138\uC694."
+  - key: first_contact.officer.probe_unresolved_object
+    sourceText: The device cannot read one clear object. Draw one concrete object.
+    translations:
+    - locale: ko-KR
+      text: "\uB69C\uB837\uD55C \uC0AC\uBB3C \uD558\uB098\uB85C \uD310\uB3C5\uB418\uC9C0
+        \uC54A\uC2B5\uB2C8\uB2E4. \uAD6C\uCCB4\uC801\uC778 \uC0AC\uBB3C \uD558\uB098\uB97C
+        \uADF8\uB824 \uC8FC\uC138\uC694."
   - key: first_contact.officer.probe_label_mismatch
-    sourceText: The probe label does not match the drawing. A mismatched sample will corrupt the response group.
+    sourceText: The label doesn't seem to describe the drawing that well. Make the
+      label match the drawing.
     translations:
     - locale: ko-KR
-      text: "\uAC01\uD558, \uD45C\uBCF8 \uB77C\uBCA8\uACFC \uADF8\uB9BC\uC774 \uB9DE\uC9C0 \uC54A\uB294 \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uC77C\uCE58\uD558\uC9C0 \uC54A\uB294 \uD45C\uBCF8\uC740 \uC751\uB2F5 \uAD70\uC9D1\uC744 \uC624\uC5FC\uC2DC\uD0B5\uB2C8\uB2E4."
+      text: "\uB77C\uBCA8\uC774 \uADF8\uB2E4\uC9C0 \uADF8\uB9BC\uC744 \uC798 \uB098\uD0C0\uB0B4\uC9C0
+        \uBABB\uD558\uB294 \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uADF8\uB9BC\uACFC \uB9DE\uB294
+        \uB77C\uBCA8\uC744 \uC81C\uCD9C\uD574\uC8FC\uC138\uC694. "
   - key: first_contact.terminal.status.label_not_object
     sourceText: LABEL OBJECT ONLY
     translations:
     - locale: ko-KR
       text: "\uB77C\uBCA8: \uC0AC\uBB3C\uB9CC"
   - key: first_contact.officer.probe_label_not_object
-    sourceText: Use only the object name. Mood or category words can corrupt the response group.
+    sourceText: Use the object name only. Avoid moods, actions, categories, or value
+      words.
     translations:
     - locale: ko-KR
-      text: "\uAC01\uD558, \uB77C\uBCA8\uC5D0\uB294 \uC0AC\uBB3C \uC774\uB984\uB9CC \uC785\uB825\uD574\uC57C \uD569\uB2C8\uB2E4. \uAC10\uC815\uC774\uB098 \uBD84\uB958\uB97C \uC554\uC2DC\uD558\uB294 \uB9D0\uC740 \uC751\uB2F5 \uAD70\uC9D1\uC744 \uC624\uC5FC\uC2DC\uD0B5\uB2C8\uB2E4."
+      text: "\uB77C\uBCA8\uC5D0\uB294 \uC0AC\uBB3C \uC774\uB984\uB9CC \uC785\uB825\uD574
+        \uC8FC\uC138\uC694. \uAC10\uC815, \uD589\uB3D9, \uBD84\uB958, \uAC00\uCE58
+        \uD45C\uD604\uC740 \uD53C\uD574 \uC8FC\uC138\uC694."
   - key: day1.opening.4
     sourceText: Let's begin
     translations:
     - locale: ko-KR
       text: "\uADF8\uB7FC \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4."
-
-  - key: first_contact.terminal.category.danger
-    sourceText: DANGER
-    translations:
-    - locale: ko-KR
-      text: "\uC704\uD5D8"
-  - key: first_contact.terminal.category.protection
-    sourceText: PROTECTION
-    translations:
-    - locale: ko-KR
-      text: "\uBCF4\uD638"
-  - key: first_contact.terminal.category.food
-    sourceText: FOOD
-    translations:
-    - locale: ko-KR
-      text: "\uC2DD\uB7C9"
-  - key: first_contact.terminal.category.tool
-    sourceText: TOOL
-    translations:
-    - locale: ko-KR
-      text: "\uB3C4\uAD6C"
-  - key: first_contact.terminal.meaning.danger
-    sourceText: [DANGER?]
-    translations:
-    - locale: ko-KR
-      text: "[\uC704\uD5D8?]"
-  - key: first_contact.terminal.meaning.protection
-    sourceText: [PROTECTION?]
-    translations:
-    - locale: ko-KR
-      text: "[\uBCF4\uD638?]"
-  - key: first_contact.terminal.meaning.food
-    sourceText: [FOOD?]
-    translations:
-    - locale: ko-KR
-      text: "[\uC2DD\uB7C9?]"
-  - key: first_contact.terminal.meaning.tool
-    sourceText: [TOOL?]
-    translations:
-    - locale: ko-KR
-      text: "[\uB3C4\uAD6C?]"
-  - key: first_contact.terminal.meaning.unknown
-    sourceText: [MEANING?]
-    translations:
-    - locale: ko-KR
-      text: "[\uC758\uBBF8?]"
-  - key: first_contact.terminal.token.you
-    sourceText: YOU
-    translations:
-    - locale: ko-KR
-      text: "\uB2F9\uC2E0"
-  - key: first_contact.terminal.token.earth
-    sourceText: EARTH
-    translations:
-    - locale: ko-KR
-      text: "\uC9C0\uAD6C"
-  - key: first_contact.terminal.token.danger
-    sourceText: DANGER
-    translations:
-    - locale: ko-KR
-      text: "\uC704\uD5D8"
-  - key: first_contact.terminal.token.protect
-    sourceText: PROTECT
-    translations:
-    - locale: ko-KR
-      text: "\uBCF4\uD638"
-  - key: first_contact.terminal.token.select_one
-    sourceText: SELECT-ONE
-    translations:
-    - locale: ko-KR
-      text: "\uD558\uB098 \uC120\uD0DD"
-  - key: first_contact.terminal.token.human
-    sourceText: HUMAN
-    translations:
-    - locale: ko-KR
-      text: "\uC778\uB958"
-  - key: first_contact.terminal.token.home
-    sourceText: HOME
-    translations:
-    - locale: ko-KR
-      text: "\uAC70\uCC98"
-  - key: first_contact.terminal.token.quality
-    sourceText: [QUALITY?]
-    translations:
-    - locale: ko-KR
-      text: "[\uD2B9\uC131?]"
-  - key: first_contact.terminal.token.value_related
-    sourceText: [VALUE-RELATED?]
-    translations:
-    - locale: ko-KR
-      text: "[\uAC00\uCE58 \uAD00\uB828?]"
-  - key: first_contact.terminal.token.high_value
-    sourceText: HIGH-VALUE
-    translations:
-    - locale: ko-KR
-      text: "\uB192\uC740 \uAC00\uCE58"
-  - key: first_contact.terminal.token.who
-    sourceText: [WHO?]
-    translations:
-    - locale: ko-KR
-      text: "[\uB204\uAD6C?]"
-  - key: first_contact.terminal.token.your_kind
-    sourceText: [YOUR-KIND?]
-    translations:
-    - locale: ko-KR
-      text: "[\uB2F9\uC2E0 \uC885\uC871?]"
-  - key: first_contact.terminal.token.object
-    sourceText: [OBJECT?]
-    translations:
-    - locale: ko-KR
-      text: "[\uC0AC\uBB3C?]"
-  - key: first_contact.terminal.token.danger_response
-    sourceText: [DANGER-RESPONSE?]
-    translations:
-    - locale: ko-KR
-      text: "[\uC704\uD5D8 \uB300\uC751?]"
-  - key: first_contact.terminal.token.response_object
-    sourceText: RESPONSE-OBJECT
-    translations:
-    - locale: ko-KR
-      text: "\uB300\uC751 \uC0AC\uBB3C"
-  - key: first_contact.terminal.token.feeling
-    sourceText: [FEELING?]
-    translations:
-    - locale: ko-KR
-      text: "[\uAC10\uC815?]"
-  - key: first_contact.terminal.token.threat_related
-    sourceText: [THREAT-RELATED?]
-    translations:
-    - locale: ko-KR
-      text: "[\uC704\uD611 \uAD00\uB828?]"
-  - key: first_contact.terminal.token.fear
-    sourceText: FEAR
-    translations:
-    - locale: ko-KR
-      text: "\uACF5\uD3EC"
-  - key: first_contact.terminal.token.defense_related
-    sourceText: [DEFENSE-RELATED?]
-    translations:
-    - locale: ko-KR
-      text: "[\uBC29\uC5B4 \uAD00\uB828?]"
-  - key: first_contact.terminal.token.defense
-    sourceText: DEFENSE
-    translations:
-    - locale: ko-KR
-      text: "\uBC29\uC5B4"

@@ -36,6 +36,18 @@ namespace DoodleDiplomacy.Devices
         [Tooltip("Seconds that a temporary noise character remains visible during typewriter playback.")]
         [SerializeField] private float noiseDisplayTime = 0.02f;
 
+        [Header("Refresh")]
+        [Tooltip("When enabled, non-instant terminal screen changes briefly refresh the buffer before the next text is printed.")]
+        [SerializeField] private bool useRefreshTransition = true;
+        [Tooltip("Seconds to hold the old buffer for one beat after a new screen is requested.")]
+        [SerializeField, Min(0f)] private float refreshHoldSeconds = 0.025f;
+        [Tooltip("Seconds spent dimming the current buffer before the next screen is printed.")]
+        [SerializeField, Min(0f)] private float refreshDimSeconds = 0.08f;
+        [Tooltip("Seconds to leave the buffer dark between dimming and the next text.")]
+        [SerializeField, Min(0f)] private float refreshBlankSeconds = 0.025f;
+        [Tooltip("Full-screen overlay color used while the terminal buffer refreshes.")]
+        [SerializeField] private Color refreshOverlayColor = new(0f, 0.035f, 0.014f, 0.46f);
+
         [Header("Cursor")]
         [Tooltip("Show a blinking underscore cursor at the end of terminal text.")]
         [SerializeField] private bool showCursor = true;
@@ -100,6 +112,7 @@ namespace DoodleDiplomacy.Devices
         private bool _inputCursorVisible = true;
         private RectTransform _textInputRootRect;
         private RectTransform _textInputViewportRect;
+        private CanvasGroup _textInputCanvasGroup;
         private TMP_FontAsset _baseTextMeshFont;
         private TMP_FontAsset _baseTextInputPrefixFont;
         private TMP_FontAsset _baseTextInputValueFont;
@@ -107,10 +120,14 @@ namespace DoodleDiplomacy.Devices
         private bool _hasBaseFonts;
         private bool _textInputConfigured;
         private bool _textInputActive;
+        private bool _textInputVisible = true;
         private bool _suppressTextInputCallbacks;
         private Action<string> _activeTextInputSubmitted;
         private Action<string> _activeTextInputChanged;
         private Coroutine _textInputFocusRoutine;
+        private Coroutine _textInputActivationRoutine;
+        private Image _refreshOverlay;
+        private RectTransform _refreshOverlayRect;
 
         private static readonly char[] NoiseChars =
             "!@#$%^&*<>?/\\|~`0123456789ABCDEFXYZabcxyz".ToCharArray();
@@ -121,6 +138,9 @@ namespace DoodleDiplomacy.Devices
         public bool IsTyping() => _isTyping;
         public bool IsTextInputActive => _textInputActive;
         public string TextInputValue => textInputField != null ? textInputField.text ?? string.Empty : string.Empty;
+        public string TextInputDisplayValue => textInputValueText != null
+            ? textInputValueText.text ?? string.Empty
+            : TextInputValue;
 
         public void SetContentTopInsetNormalized(float topInsetNormalized)
         {
@@ -164,6 +184,9 @@ namespace DoodleDiplomacy.Devices
         {
             scrollSensitivity = Mathf.Max(1f, scrollSensitivity);
             bottomSnapThreshold = Mathf.Clamp(bottomSnapThreshold, 0f, 0.1f);
+            refreshHoldSeconds = Mathf.Max(0f, refreshHoldSeconds);
+            refreshDimSeconds = Mathf.Max(0f, refreshDimSeconds);
+            refreshBlankSeconds = Mathf.Max(0f, refreshBlankSeconds);
 
             if (scrollRect != null)
                 scrollRect.scrollSensitivity = scrollSensitivity;
@@ -180,6 +203,7 @@ namespace DoodleDiplomacy.Devices
             ApplyTextViewportLayout();
             ApplyTextContentLayout();
             ApplyTextInputLayout();
+            AlignRefreshOverlay();
             if (textLayoutElement != null)
                 textLayoutElement.minHeight = GetTextVisibleHeight();
         }
@@ -203,6 +227,7 @@ namespace DoodleDiplomacy.Devices
             string resolvedText = text ?? string.Empty;
             if (instant)
             {
+                SetRefreshOverlayVisible(false, 0f);
                 _isTyping = false;
                 _typingRoutine = null;
                 _currentText = resolvedText;
@@ -214,7 +239,9 @@ namespace DoodleDiplomacy.Devices
                 return;
             }
 
-            _typingRoutine = StartCoroutine(TypingRoutine(resolvedText));
+            SuspendTextInputView();
+            CancelQueuedTextInputActivation();
+            _typingRoutine = StartCoroutine(RefreshThenTypingRoutine(resolvedText));
         }
 
         public void ShowTextWithTypedSuffix(string text, int visibleCharacterCount, bool instant = false)
@@ -228,6 +255,13 @@ namespace DoodleDiplomacy.Devices
                 _cursorRoutine = null;
             }
 
+            if (!instant)
+            {
+                SuspendTextInputView();
+                CancelQueuedTextInputActivation();
+            }
+
+            SetRefreshOverlayVisible(false, 0f);
             string resolvedText = text ?? string.Empty;
             int clampedVisibleCount = Mathf.Clamp(visibleCharacterCount, 0, resolvedText.Length);
             if (instant || clampedVisibleCount >= resolvedText.Length)
@@ -263,6 +297,7 @@ namespace DoodleDiplomacy.Devices
 
             _isTyping = false;
             _currentText = string.Empty;
+            SetRefreshOverlayVisible(false, 0f);
             if (textMesh != null)
                 ApplyRenderedText(BuildRenderedText(string.Empty, true), true);
         }
@@ -272,7 +307,8 @@ namespace DoodleDiplomacy.Devices
             string value,
             int characterLimit,
             Action<string> onSubmitted,
-            Action<string> onChanged = null)
+            Action<string> onChanged = null,
+            bool visible = true)
         {
             EnsureTextInputConfigured();
             if (textInputField == null)
@@ -282,10 +318,11 @@ namespace DoodleDiplomacy.Devices
             }
 
             _textInputActive = true;
+            _textInputVisible = visible;
             _activeTextInputSubmitted = onSubmitted;
             _activeTextInputChanged = onChanged;
 
-            textInputField.gameObject.SetActive(true);
+            textInputField.gameObject.SetActive(false);
             textInputField.characterLimit = Mathf.Max(0, characterLimit);
             textInputField.contentType = TMP_InputField.ContentType.Standard;
             textInputField.lineType = TMP_InputField.LineType.SingleLine;
@@ -304,8 +341,7 @@ namespace DoodleDiplomacy.Devices
 
             ApplyLocalizedFonts();
             ApplyTextInputLayout();
-            FocusTextInput();
-            QueueTextInputFocus();
+            QueueTextInputActivation();
         }
 
         public void HideTextInput()
@@ -314,6 +350,7 @@ namespace DoodleDiplomacy.Devices
             _activeTextInputSubmitted = null;
             _activeTextInputChanged = null;
 
+            CancelQueuedTextInputActivation();
             if (_textInputFocusRoutine != null)
             {
                 StopCoroutine(_textInputFocusRoutine);
@@ -325,8 +362,7 @@ namespace DoodleDiplomacy.Devices
                 return;
             }
 
-            textInputField.DeactivateInputField();
-            textInputField.gameObject.SetActive(false);
+            SuspendTextInputView();
         }
 
         public void FocusTextInput()
@@ -394,6 +430,38 @@ namespace DoodleDiplomacy.Devices
 
             StartCursorBlinkIfNeeded();
             OnTypingComplete?.Invoke();
+        }
+
+        private IEnumerator RefreshThenTypingRoutine(string fullText)
+        {
+            _isTyping = true;
+
+            if (useRefreshTransition && textMesh != null && !string.IsNullOrEmpty(_currentText))
+            {
+                EnsureRefreshOverlay();
+                SetRefreshOverlayVisible(true, 0f);
+                if (refreshHoldSeconds > 0f)
+                {
+                    yield return new WaitForSeconds(refreshHoldSeconds);
+                }
+
+                if (refreshDimSeconds > 0f)
+                {
+                    SetRefreshOverlayVisible(true, 0.58f);
+                    yield return new WaitForSeconds(refreshDimSeconds);
+                }
+
+                ApplyRenderedText(string.Empty, forceFollowBottom: true);
+                if (refreshBlankSeconds > 0f)
+                {
+                    SetRefreshOverlayVisible(true, 0.72f);
+                    yield return new WaitForSeconds(refreshBlankSeconds);
+                }
+
+                SetRefreshOverlayVisible(false, 0f);
+            }
+
+            yield return TypingRoutine(fullText);
         }
 
         private IEnumerator CursorBlink()
@@ -536,6 +604,12 @@ namespace DoodleDiplomacy.Devices
             }
 
             _textInputRootRect = textInputField.GetComponent<RectTransform>();
+            _textInputCanvasGroup = textInputField.GetComponent<CanvasGroup>();
+            if (_textInputCanvasGroup == null)
+            {
+                _textInputCanvasGroup = textInputField.gameObject.AddComponent<CanvasGroup>();
+            }
+
             _textInputViewportRect = textInputField.textViewport;
             if (textInputValueText == null)
             {
@@ -560,7 +634,70 @@ namespace DoodleDiplomacy.Devices
             ApplyLocalizedFonts();
             ApplyTextInputLayout();
             textInputField.gameObject.SetActive(false);
+            SetTextInputViewVisible(false);
             _textInputConfigured = true;
+        }
+
+        private void EnsureRefreshOverlay()
+        {
+            if (_refreshOverlay != null)
+            {
+                AlignRefreshOverlay();
+                _refreshOverlay.transform.SetAsLastSibling();
+                return;
+            }
+
+            RectTransform screenRect = ScreenRectTransform;
+            if (screenRect == null)
+            {
+                return;
+            }
+
+            GameObject overlayObject = new(
+                "TerminalRefreshOverlay",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            overlayObject.transform.SetParent(screenRect, false);
+            _refreshOverlayRect = overlayObject.GetComponent<RectTransform>();
+            _refreshOverlay = overlayObject.GetComponent<Image>();
+            _refreshOverlay.raycastTarget = false;
+            AlignRefreshOverlay();
+            SetRefreshOverlayVisible(false, 0f);
+            _refreshOverlay.transform.SetAsLastSibling();
+        }
+
+        private void AlignRefreshOverlay()
+        {
+            if (_refreshOverlayRect == null)
+            {
+                return;
+            }
+
+            _refreshOverlayRect.anchorMin = Vector2.zero;
+            _refreshOverlayRect.anchorMax = Vector2.one;
+            _refreshOverlayRect.pivot = new Vector2(0.5f, 0.5f);
+            _refreshOverlayRect.offsetMin = Vector2.zero;
+            _refreshOverlayRect.offsetMax = Vector2.zero;
+        }
+
+        private void SetRefreshOverlayVisible(bool visible, float alphaMultiplier)
+        {
+            if (_refreshOverlay == null)
+            {
+                return;
+            }
+
+            _refreshOverlay.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            _refreshOverlay.transform.SetAsLastSibling();
+            Color color = refreshOverlayColor;
+            color.a *= Mathf.Clamp01(alphaMultiplier);
+            _refreshOverlay.color = color;
         }
 
         private void CreateRuntimeTextInput()
@@ -965,6 +1102,95 @@ namespace DoodleDiplomacy.Devices
             }
 
             _activeTextInputChanged?.Invoke(value ?? string.Empty);
+        }
+
+        private void QueueTextInputActivation()
+        {
+            CancelQueuedTextInputActivation();
+
+            if (!_textInputActive || textInputField == null)
+            {
+                return;
+            }
+
+            if (_isTyping || _typingRoutine != null)
+            {
+                _textInputActivationRoutine = StartCoroutine(ActivateTextInputAfterTyping());
+                return;
+            }
+
+            ActivateTextInputView();
+        }
+
+        private IEnumerator ActivateTextInputAfterTyping()
+        {
+            while (_textInputActive && (_isTyping || _typingRoutine != null))
+            {
+                yield return null;
+            }
+
+            _textInputActivationRoutine = null;
+            ActivateTextInputView();
+        }
+
+        private void ActivateTextInputView()
+        {
+            if (!_textInputActive || textInputField == null)
+            {
+                return;
+            }
+
+            textInputField.gameObject.SetActive(true);
+            SetTextInputViewVisible(_textInputVisible);
+            ApplyTextInputLayout();
+            FocusTextInput();
+            QueueTextInputFocus();
+        }
+
+        private void SuspendTextInputView()
+        {
+            if (textInputField == null)
+            {
+                return;
+            }
+
+            if (_textInputFocusRoutine != null)
+            {
+                StopCoroutine(_textInputFocusRoutine);
+                _textInputFocusRoutine = null;
+            }
+
+            textInputField.DeactivateInputField();
+            SetTextInputViewVisible(false);
+            textInputField.gameObject.SetActive(false);
+        }
+
+        private void SetTextInputViewVisible(bool visible)
+        {
+            if (_textInputCanvasGroup == null && textInputField != null)
+            {
+                _textInputCanvasGroup = textInputField.GetComponent<CanvasGroup>();
+            }
+
+            if (_textInputCanvasGroup == null)
+            {
+                return;
+            }
+
+            _textInputCanvasGroup.alpha = visible ? 1f : 0f;
+            _textInputCanvasGroup.interactable = true;
+            _textInputCanvasGroup.blocksRaycasts = visible;
+        }
+
+        private void CancelQueuedTextInputActivation()
+        {
+            if (_textInputActivationRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_textInputActivationRoutine);
+            _textInputActivationRoutine = null;
         }
 
         private void QueueTextInputFocus()

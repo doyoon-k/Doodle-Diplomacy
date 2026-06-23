@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactVlmSettings
   probeLabelPipeline: {fileID: 11400000, guid: 83b894607a334b9b859ef484e906739e, type: 2}
   probeValidationPipeline: {fileID: 11400000, guid: fb60b97b08c34d63af5af7c32fa1802e, type: 2}
+  bootstrapCategoryFitPipeline: {fileID: 11400000, guid: a5fd0e6ceab346c5a58da20b1fe90ec0, type: 2}
   imageStateKey: reference_image
   captureRetryCount: 2
   validatorRetryCount: 2

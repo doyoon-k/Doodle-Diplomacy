@@ -17,17 +17,18 @@ MonoBehaviour:
   normalizeVectorsInMemory: 1
   maxBatchSize: 32
   failCardWhenEmbeddingMissing: 0
-  hintThreshold: 0.46
-  partialThreshold: 0.58
-  solvedThreshold: 0.73
-  clusterJoinThreshold: 0.62
-  clusterAutoPartialThreshold: 0.58
+  hintThreshold: 0.6
+  partialThreshold: 0.68
+  solvedThreshold: 0.78
+  clusterJoinThreshold: 0.75
+  clusterAutoPartialThreshold: 0.68
   clusterNeighborCount: 2
   minClusterMembers: 3
-  minClusterCohesion: 0.55
-  minClusterPairwiseSimilarity: 0.62
+  minClusterCohesion: 0.72
+  minClusterPairwiseSimilarity: 0.75
   bootstrapMinTraceCount: 3
   bootstrapMinCategoryDescriptorFit: 0.6
+  bootstrapDuplicateSemanticThreshold: 0.9
   waveformSemanticInfluence: 0.9
   waveformSessionJitter: 0.04
   waveformFeatureCount: 16

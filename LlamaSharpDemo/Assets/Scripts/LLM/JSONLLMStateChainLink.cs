@@ -509,7 +509,8 @@ public class JSONLLMStateChainLink : IStateChainLink
 
     private IEnumerator Fail(PipelineState state, Action<PipelineState> onDone, string error)
     {
-        Log(error);
+        _log?.Invoke(error);
+        Debug.LogError(error);
         state.SetString(PromptPipelineConstants.ErrorKey, error);
         onDone?.Invoke(state);
         yield break;
@@ -518,7 +519,10 @@ public class JSONLLMStateChainLink : IStateChainLink
     private void Log(string message)
     {
         _log?.Invoke(message);
-        Debug.Log(message);
+        if (Application.isEditor || Debug.isDebugBuild)
+        {
+            Debug.Log(message);
+        }
     }
 }
 

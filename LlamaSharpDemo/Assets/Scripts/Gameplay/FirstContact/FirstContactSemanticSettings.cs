@@ -22,31 +22,33 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         [Header("Unknown Resolution")]
         [Tooltip("그림과 미해석 단어의 의미 유사도가 이 값 이상이면 HINT 단계로 엽니다.")]
-        [Range(-1f, 1f)] public float hintThreshold = 0.46f;
+        [Range(-1f, 1f)] public float hintThreshold = 0.6f;
         [Tooltip("그림과 미해석 단어의 의미 유사도가 이 값 이상이면 PARTIAL 단계로 엽니다.")]
-        [Range(-1f, 1f)] public float partialThreshold = 0.58f;
+        [Range(-1f, 1f)] public float partialThreshold = 0.68f;
         [Tooltip("그림과 미해석 단어의 의미 유사도가 이 값 이상이면 SOLVED 단계로 확정합니다.")]
-        [Range(-1f, 1f)] public float solvedThreshold = 0.73f;
+        [Range(-1f, 1f)] public float solvedThreshold = 0.78f;
 
         [Header("Clusters")]
         [Tooltip("카드-카드 의미 그래프에서 두 그림을 같은 후보 군집으로 연결하려면 이 값 이상의 유사도가 필요합니다.")]
-        [Range(-1f, 1f)] public float clusterJoinThreshold = 0.62f;
+        [Range(-1f, 1f)] public float clusterJoinThreshold = 0.75f;
         [Tooltip("안정화된 군집이 새 질문의 미해석 단어와 이 값 이상 가까우면 자동으로 PARTIAL 단계까지 엽니다.")]
-        [Range(-1f, 1f)] public float clusterAutoPartialThreshold = 0.58f;
+        [Range(-1f, 1f)] public float clusterAutoPartialThreshold = 0.68f;
         [Tooltip("각 카드가 군집 그래프를 만들 때 비교 대상으로 유지할 가장 가까운 이웃 수입니다.")]
         [Min(1)] public int clusterNeighborCount = 2;
         [Tooltip("군집이 안정화되기 위해 필요한 최소 카드 수입니다.")]
         [Min(2)] public int minClusterMembers = 3;
         [Tooltip("군집이 안정화되기 위해 필요한 최소 응집도입니다.")]
-        [Range(-1f, 1f)] public float minClusterCohesion = 0.55f;
+        [Range(-1f, 1f)] public float minClusterCohesion = 0.72f;
         [Tooltip("군집이 안정화되기 위해 필요한 카드-카드 평균 유사도입니다. 큰 잡종 군집이 중심점 응집도만으로 안정화되는 것을 막습니다.")]
-        [Range(-1f, 1f)] public float minClusterPairwiseSimilarity = 0.62f;
+        [Range(-1f, 1f)] public float minClusterPairwiseSimilarity = 0.75f;
 
         [Header("Bootstrap Category Training")]
         [Tooltip("튜토리얼 카테고리 하나가 안정화되기 위해 필요한 최소 그림 수입니다.")]
         [Min(2)] public int bootstrapMinTraceCount = 3;
         [Tooltip("튜토리얼 카테고리 설명 임베딩과의 적합도를 표시/디버그할 때 참고하는 보조 기준입니다. 카테고리 거절은 별도 판정 파이프라인이 처리합니다.")]
         [Range(-1f, 1f)] public float bootstrapMinCategoryDescriptorFit = 0.6f;
+        [Tooltip("부트스트랩 전체 표본에서 라벨 임베딩이 이 값 이상 같으면 의미 중복으로 처리합니다. 서로 다른 유사 사물을 막지 않도록 높게 유지합니다.")]
+        [Range(0.8f, 1f)] public float bootstrapDuplicateSemanticThreshold = 0.9f;
 
         [Header("Semantic Map")]
         [Tooltip("켜면 그림 제출 후 터미널에 세션 기반 의미공간 맵과 공명 피드백을 표시합니다.")]
@@ -56,7 +58,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Tooltip("새 노드가 추가될 때 의미공간 배치를 안정화하기 위해 수행할 반복 계산 횟수입니다.")]
         [Min(1)] public int semanticMapLayoutIterations = 28;
         [Tooltip("두 의미 노드가 이 유사도 이상 가까울 때 서로 끌어당깁니다.")]
-        [Range(-1f, 1f)] public float semanticMapAttractionThreshold = 0.36f;
+        [Range(-1f, 1f)] public float semanticMapAttractionThreshold = 0.7f;
         [Tooltip("의미가 가까운 노드끼리 서로 끌어당기는 힘입니다.")]
         [Range(0f, 1f)] public float semanticMapAttractionStrength = 0.08f;
         [Tooltip("모든 노드가 서로 겹치지 않도록 밀어내는 힘입니다.")]
@@ -82,6 +84,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             clusterNeighborCount = Math.Max(1, clusterNeighborCount);
             minClusterMembers = Math.Max(2, minClusterMembers);
             bootstrapMinTraceCount = Math.Max(2, bootstrapMinTraceCount);
+            bootstrapDuplicateSemanticThreshold = Mathf.Clamp(bootstrapDuplicateSemanticThreshold, 0.8f, 1f);
             semanticMapMaxCards = Math.Max(1, semanticMapMaxCards);
             semanticMapLayoutIterations = Math.Max(1, semanticMapLayoutIterations);
             semanticMapAttractionStrength = Mathf.Clamp01(semanticMapAttractionStrength);

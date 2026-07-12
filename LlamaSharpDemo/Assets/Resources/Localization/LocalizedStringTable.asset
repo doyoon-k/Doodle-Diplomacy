@@ -603,6 +603,11 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uB2E4\uC2DC \uADF8\uB9AC\uAE30"
+  - key: first_contact.terminal.choice.retry
+    sourceText: RETRY
+    translations:
+    - locale: ko-KR
+      text: "재시도"
   - key: first_contact.terminal.choice.accept
     sourceText: ACCEPT
     translations:
@@ -838,6 +843,11 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uCD94\uC801: \uC911\uBCF5"
+  - key: first_contact.terminal.line.trace_rejected
+    sourceText: 'TRACE: REJECTED'
+    translations:
+    - locale: ko-KR
+      text: "추적: 거절됨"
   - key: first_contact.terminal.line.trace_isolated
     sourceText: 'TRACE: ISOLATED'
     translations:
@@ -898,6 +908,21 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uBB38\uC790 \uB610\uB294 \uAE30\uD638 \uAC10\uC9C0\uB428"
+  - key: first_contact.terminal.reason.scene_or_action_detected
+    sourceText: SCENE OR ACTION DETECTED
+    translations:
+    - locale: ko-KR
+      text: "장면 또는 행동 감지됨"
+  - key: first_contact.terminal.reason.object_not_clear
+    sourceText: OBJECT NOT CLEAR
+    translations:
+    - locale: ko-KR
+      text: "사물 판독 불가"
+  - key: first_contact.terminal.reason.label_mismatch
+    sourceText: LABEL MISMATCH
+    translations:
+    - locale: ko-KR
+      text: "라벨 불일치"
   - key: first_contact.terminal.fallback.unknown
     sourceText: UNKNOWN
     translations:
@@ -979,6 +1004,21 @@ MonoBehaviour:
       text: "\uD45C\uBCF8\uC774 \uD604\uC7AC \uBD84\uB958\uC5D0 \uB9DE\uC9C0 \uC54A\uB294
         \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978
         \uC0AC\uBB3C\uC744 \uBCF4\uB0B4 \uC8FC\uC138\uC694."
+  - key: first_contact.officer.bootstrap_category_contextual
+    sourceText: This subject fits only through context, symbolism, or possible use. Send an object whose ordinary identity fits the category.
+    translations:
+    - locale: ko-KR
+      text: "이 대상은 맥락이나 상징, 가능한 용도를 통해서만 분류에 맞습니다. 대상 자체의 일반적인 정체성이 분류에 맞는 사물을 보내 주세요."
+  - key: first_contact.officer.bootstrap_category_generic
+    sourceText: This subject is too generic for the current category. Send a more specific object that ordinarily belongs to it.
+    translations:
+    - locale: ko-KR
+      text: "현재 분류를 판단하기에는 대상이 너무 일반적입니다. 평소에도 이 분류에 속하는 더 구체적인 사물을 보내 주세요."
+  - key: first_contact.officer.bootstrap_category_uncertain
+    sourceText: The device cannot establish that this subject belongs to the current category. Try a clearer example.
+    translations:
+    - locale: ko-KR
+      text: "이 대상이 현재 분류에 속하는지 판정할 수 없습니다. 더 분명한 예시를 보내 주세요."
   - key: first_contact.officer.probe_blank
     sourceText: The drawing is too empty to read. Draw one visible object.
     translations:
@@ -1025,6 +1065,26 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uB77C\uBCA8: \uC0AC\uBB3C\uB9CC"
+  - key: first_contact.terminal.status.label_action_or_abstract
+    sourceText: 'LABEL: ACTION OR ABSTRACT'
+    translations:
+    - locale: ko-KR
+      text: "라벨: 행동 또는 추상 개념"
+  - key: first_contact.terminal.status.label_broad_category
+    sourceText: 'LABEL: CATEGORY TOO BROAD'
+    translations:
+    - locale: ko-KR
+      text: "라벨: 분류가 너무 넓음"
+  - key: first_contact.terminal.status.label_multiple_subjects
+    sourceText: 'LABEL: MULTIPLE SUBJECTS'
+    translations:
+    - locale: ko-KR
+      text: "라벨: 대상이 여러 개"
+  - key: first_contact.terminal.status.label_classification_claim
+    sourceText: 'LABEL: REMOVE CLAIM'
+    translations:
+    - locale: ko-KR
+      text: "라벨: 주장 표현 제거"
   - key: first_contact.officer.probe_label_not_object
     sourceText: Use the object name only. Avoid moods, actions, categories, or value
       words.
@@ -1033,8 +1093,93 @@ MonoBehaviour:
       text: "\uB77C\uBCA8\uC5D0\uB294 \uC0AC\uBB3C \uC774\uB984\uB9CC \uC785\uB825\uD574
         \uC8FC\uC138\uC694. \uAC10\uC815, \uD589\uB3D9, \uBD84\uB958, \uAC00\uCE58
         \uD45C\uD604\uC740 \uD53C\uD574 \uC8FC\uC138\uC694."
+  - key: first_contact.officer.probe_label_action_or_abstract
+    sourceText: The label names an action or abstract idea. Enter the name of one concrete visible subject.
+    translations:
+    - locale: ko-KR
+      text: "라벨이 행동이나 추상적인 개념을 나타냅니다. 눈에 보이는 구체적인 대상 하나의 이름을 입력해 주세요."
+  - key: first_contact.officer.probe_label_broad_category
+    sourceText: The label is a broad category. Enter one specific subject name.
+    translations:
+    - locale: ko-KR
+      text: "라벨이 너무 넓은 분류를 나타냅니다. 구체적인 대상 하나의 이름을 입력해 주세요."
+  - key: first_contact.officer.probe_label_multiple_subjects
+    sourceText: The label names multiple subjects. Enter only one subject name.
+    translations:
+    - locale: ko-KR
+      text: "라벨에 대상이 여러 개 포함되어 있습니다. 대상 하나의 이름만 입력해 주세요."
+  - key: first_contact.officer.probe_label_classification_claim
+    sourceText: Remove wording that argues how the subject should be classified, valued, or understood. Keep only the subject name.
+    translations:
+    - locale: ko-KR
+      text: "대상을 어떻게 분류하거나 평가해야 하는지 주장하는 표현을 빼고 대상 이름만 입력해 주세요."
   - key: day1.opening.4
     sourceText: Let's begin
     translations:
     - locale: ko-KR
       text: "\uADF8\uB7FC \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.terminal.header.analysis_error
+    sourceText: '[ANALYSIS ERROR]'
+    translations:
+    - locale: ko-KR
+      text: "[\uBD84\uC11D \uC624\uB958]"
+  - key: first_contact.terminal.line.analysis_unstable
+    sourceText: 'STATUS: ANALYSIS UNSTABLE'
+    translations:
+    - locale: ko-KR
+      text: "\uC0C1\uD0DC: \uBD84\uC11D \uBD88\uC548\uC815"
+  - key: first_contact.terminal.choice.retry_analysis
+    sourceText: RETRY ANALYSIS
+    translations:
+    - locale: ko-KR
+      text: "\uBD84\uC11D \uC7AC\uC2DC\uB3C4"
+  - key: first_contact.terminal.status.analysis_unavailable
+    sourceText: ANALYSIS UNAVAILABLE
+    translations:
+    - locale: ko-KR
+      text: "분석 사용 불가"
+  - key: first_contact.terminal.status.image_capture_failed
+    sourceText: IMAGE CAPTURE FAILED
+    translations:
+    - locale: ko-KR
+      text: "이미지 캡처 실패"
+  - key: first_contact.terminal.status.label_analysis_failed
+    sourceText: LABEL ANALYSIS FAILED
+    translations:
+    - locale: ko-KR
+      text: "라벨 분석 실패"
+  - key: first_contact.terminal.status.image_validation_failed
+    sourceText: IMAGE VALIDATION FAILED
+    translations:
+    - locale: ko-KR
+      text: "그림 판정 실패"
+  - key: first_contact.terminal.status.signal_encoding_failed
+    sourceText: SIGNAL ENCODING FAILED
+    translations:
+    - locale: ko-KR
+      text: "신호 기록 실패"
+  - key: first_contact.terminal.status.category_analysis_failed
+    sourceText: CATEGORY ANALYSIS FAILED
+    translations:
+    - locale: ko-KR
+      text: "분류 판정 실패"
+  - key: first_contact.terminal.status.category_mismatch
+    sourceText: CATEGORY MISMATCH
+    translations:
+    - locale: ko-KR
+      text: "분류 불일치"
+  - key: first_contact.terminal.status.category_context_dependent
+    sourceText: CONTEXT DEPENDENT
+    translations:
+    - locale: ko-KR
+      text: "맥락 의존"
+  - key: first_contact.terminal.status.category_subject_too_generic
+    sourceText: SUBJECT TOO GENERIC
+    translations:
+    - locale: ko-KR
+      text: "대상이 너무 일반적"
+  - key: first_contact.terminal.status.category_unresolved
+    sourceText: CATEGORY UNRESOLVED
+    translations:
+    - locale: ko-KR
+      text: "분류 판정 불명"

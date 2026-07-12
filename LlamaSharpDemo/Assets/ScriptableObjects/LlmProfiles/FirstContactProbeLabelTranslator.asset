@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: FirstContactProbeLabelTranslator
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  format: '{"type":"object","properties":{"canonical_label":{"type":"string","minLength":1}},"required":["canonical_label"],"additionalProperties":false}'
+  format: '{"type":"object","properties":{"canonical_label":{"type":"string","minLength":1,"maxLength":64}},"required":["canonical_label"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  systemPromptTemplate: 'Render the player-entered drawing label as an English label for later checks.
+  systemPromptTemplate: 'Translate the player-entered drawing label into one concise English helper label.
 
     Return only JSON:
 
@@ -23,23 +23,32 @@ MonoBehaviour:
 
     Rules:
 
-    - Do only translation, transliteration, or literal rendering. Do not decide
-    whether the label is good.
+    - The player is expected to name one concrete, visually depictable subject.
+    The actual input language may differ from the UI locale or mix languages.
 
-    - Preserve the player''s apparent lexical choice and intended subject.
+    - This step receives text only. Never infer content from a drawing.
 
-    - Do not autocorrect into a different cleaner, safer, more common, or more
-    drawable subject because of similar sound or spelling.
+    - The input is a drawing label, so prefer a common concrete noun or noun-phrase
+    sense when the standalone wording genuinely permits one. Otherwise translate
+    the wording literally without turning it into a subject.
 
-    - Do not sanitize, euphemize, or replace explicit subject names with unrelated
-    harmless subjects.
+    - For a short standalone word, do not omit a common noun, slang, taboo, or
+    anatomical sense merely because a verb or polite dictionary sense is more frequent.
+
+    - canonical_label must be English. Never echo the source-language text when an
+    English translation exists.
+
+    - Preserve literal vulgar, sexual, violent, or offensive meanings. Never sanitize
+    them, euphemize them, or infer omitted words.
+
+    - If direct translation is not possible, transliterate or render it literally.
+
+    - Do not decide whether the label is good or suitable.
 
     - Do not remove adjectives or wording that might later be judged as a
     classification claim. Leave that decision to the next step.
 
-    - Use a short English phrase.
-
-    - Do not add explanation.'
+    - Return one translation only. Do not add alternatives or explanation.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:
@@ -51,16 +60,16 @@ MonoBehaviour:
     minValue: 
     maxValue: 
     minLength: 1
-    maxLength: 
+    maxLength: 64
     minItems: 
     maxItems: 
   modelParams:
-    temperature: 0.1
+    temperature: 0
     top_p: 0.9
     top_k: 20
     num_predict: 64
     repeat_penalty: 1.05
-    seed: 0
+    seed: 17331
   model: Models/gemma-3-4b-it-Q4_K_M.gguf
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1

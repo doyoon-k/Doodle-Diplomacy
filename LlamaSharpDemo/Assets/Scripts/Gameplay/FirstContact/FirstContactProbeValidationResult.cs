@@ -1,8 +1,18 @@
 using System;
+using System.Collections.Generic;
 using DoodleDiplomacy.Core;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
+    public enum FirstContactProbeVisualIssue
+    {
+        Blank,
+        TextOrSymbol,
+        SceneOrAction,
+        MultipleObjects,
+        UnresolvedObject
+    }
+
     public sealed class FirstContactProbeValidationResult
     {
         private const string IsBlankKey = "is_blank";
@@ -20,6 +30,46 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public bool IsSuccess => string.IsNullOrWhiteSpace(Error);
         public bool IsLabelMismatch => string.Equals(LabelMatch, "mismatch", StringComparison.OrdinalIgnoreCase);
+
+        public IReadOnlyList<FirstContactProbeVisualIssue> CollectRejectedVisualIssues(
+            FirstContactVlmSettings settings)
+        {
+            var issues = new List<FirstContactProbeVisualIssue>();
+            if (settings == null)
+            {
+                return issues;
+            }
+
+            if (settings.rejectBlank && IsBlank)
+            {
+                issues.Add(FirstContactProbeVisualIssue.Blank);
+                return issues;
+            }
+
+            if (settings.rejectWrittenText && HasTextOrSymbol)
+            {
+                issues.Add(FirstContactProbeVisualIssue.TextOrSymbol);
+            }
+
+            if (settings.rejectActionOrScene && IsSceneOrAction)
+            {
+                issues.Add(FirstContactProbeVisualIssue.SceneOrAction);
+            }
+
+            if (settings.rejectMultipleObjects)
+            {
+                if (ObjectCount > 1)
+                {
+                    issues.Add(FirstContactProbeVisualIssue.MultipleObjects);
+                }
+                else if (ObjectCount <= 0 && !IsSceneOrAction && !HasTextOrSymbol)
+                {
+                    issues.Add(FirstContactProbeVisualIssue.UnresolvedObject);
+                }
+            }
+
+            return issues;
+        }
 
         public static FirstContactProbeValidationResult PassedUnchecked(string reason = null)
         {
@@ -89,10 +139,22 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
+            objectCount = Math.Max(0, objectCount);
+            if (isBlank || isSceneOrAction)
+            {
+                objectCount = 0;
+            }
+
+            if (objectCount == 0 &&
+                string.Equals(normalizedLabelMatch, "match", StringComparison.OrdinalIgnoreCase))
+            {
+                normalizedLabelMatch = "unclear";
+            }
+
             result = new FirstContactProbeValidationResult
             {
                 IsBlank = isBlank,
-                ObjectCount = Math.Max(0, objectCount),
+                ObjectCount = objectCount,
                 HasTextOrSymbol = hasTextOrSymbol,
                 IsSceneOrAction = isSceneOrAction,
                 LabelMatch = normalizedLabelMatch,

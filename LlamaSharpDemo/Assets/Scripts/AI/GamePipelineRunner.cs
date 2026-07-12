@@ -20,6 +20,17 @@ public class GamePipelineRunner : MonoBehaviour
     [SerializeField] private RoutingLlmService _runtimeService;
 
     private Coroutine _currentRoutine;
+    private ActiveRun _activeRun;
+    private int _nextRunId;
+
+    private sealed class ActiveRun
+    {
+        public int Id;
+        public PipelineState InitialState;
+        public Action<PipelineState> OnComplete;
+        public Coroutine Routine;
+        public bool Completed;
+    }
 
     private void Awake()
     {
@@ -29,14 +40,7 @@ public class GamePipelineRunner : MonoBehaviour
 
     public void StopGeneration()
     {
-        _runtimeService?.CancelActiveOperations();
-
-        if (_currentRoutine != null)
-        {
-            StopCoroutine(_currentRoutine);
-            _currentRoutine = null;
-            Debug.Log("[GamePipelineRunner] Generation stopped by user.");
-        }
+        CancelActiveRun("[GamePipelineRunner] Pipeline cancelled.");
     }
 
     private void OnDisable()
@@ -47,8 +51,20 @@ public class GamePipelineRunner : MonoBehaviour
     public void RunPipeline(PromptPipelineAsset asset, PipelineState initialState, Action<PipelineState> onComplete)
     {
         EnsureRuntimeService();
-        StopGeneration();
-        _currentRoutine = StartCoroutine(RunRoutine(asset, initialState, onComplete));
+        CancelActiveRun("[GamePipelineRunner] Pipeline cancelled by a newer request.");
+
+        var run = new ActiveRun
+        {
+            Id = ++_nextRunId,
+            InitialState = initialState,
+            OnComplete = onComplete
+        };
+        _activeRun = run;
+        run.Routine = StartCoroutine(RunRoutine(run, asset, initialState));
+        if (ReferenceEquals(_activeRun, run) && !run.Completed)
+        {
+            _currentRoutine = run.Routine;
+        }
     }
 
     private void EnsureRuntimeService()
@@ -70,12 +86,12 @@ public class GamePipelineRunner : MonoBehaviour
             LlmServiceLocator.Register(_runtimeService);
     }
 
-    private IEnumerator RunRoutine(PromptPipelineAsset asset, PipelineState initialState, Action<PipelineState> onComplete)
+    private IEnumerator RunRoutine(ActiveRun run, PromptPipelineAsset asset, PipelineState initialState)
     {
         if (asset == null || asset.steps == null)
         {
             Debug.LogError("[GamePipelineRunner] Asset is null or empty!");
-            onComplete?.Invoke(CreateErrorState(initialState, "[GamePipelineRunner] Asset is null or empty."));
+            CompleteRun(run, CreateErrorState(initialState, "[GamePipelineRunner] Asset is null or empty."));
             yield break;
         }
 
@@ -148,9 +164,45 @@ public class GamePipelineRunner : MonoBehaviour
             finalState = CreateErrorState(initialState, "[GamePipelineRunner] Pipeline execution failed.");
         }
 
-        onComplete?.Invoke(finalState);
+        CompleteRun(run, finalState);
+    }
 
-        _currentRoutine = null;
+    private void CancelActiveRun(string reason)
+    {
+        ActiveRun run = _activeRun;
+        _runtimeService?.CancelActiveOperations();
+        if (run == null || run.Completed)
+        {
+            _currentRoutine = null;
+            return;
+        }
+
+        if (run.Routine != null)
+        {
+            StopCoroutine(run.Routine);
+        }
+
+        Debug.Log(reason);
+        CompleteRun(run, CreateErrorState(run.InitialState, reason));
+    }
+
+    private void CompleteRun(ActiveRun run, PipelineState finalState)
+    {
+        if (run == null || run.Completed)
+        {
+            return;
+        }
+
+        run.Completed = true;
+        if (ReferenceEquals(_activeRun, run))
+        {
+            _activeRun = null;
+            _currentRoutine = null;
+        }
+
+        Action<PipelineState> callback = run.OnComplete;
+        run.OnComplete = null;
+        callback?.Invoke(finalState ?? CreateErrorState(run.InitialState, "[GamePipelineRunner] Pipeline returned no state."));
     }
 
     private IStateChainLink CreateLink(PromptPipelineStep step)

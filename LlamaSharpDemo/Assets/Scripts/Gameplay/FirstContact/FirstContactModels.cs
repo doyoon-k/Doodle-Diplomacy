@@ -361,7 +361,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public Texture2D Texture;
         public byte[] PngBytes;
         public string Label;
+        public string CanonicalLabel;
         public string LocalizedLabel;
+        public bool TranslationAvailable;
         public float[] Embedding;
         public DoodleDiplomacy.Devices.BrainwaveSemanticProfile WaveformProfile;
         public FirstContactCardSource Source;
@@ -500,5 +502,86 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string TargetConcept;
         public float[] Vector;
         public bool IsValid => Vector != null && Vector.Length > 0;
+    }
+
+    public static class FirstContactProbeDuplicateDetector
+    {
+        public static bool TryFindDuplicate(
+            SemanticCardRecord candidate,
+            IReadOnlyList<SemanticCardRecord> recordedCards,
+            FirstContactEmbeddingService embeddingService,
+            FirstContactSemanticSettings settings,
+            out SemanticCardRecord duplicate)
+        {
+            duplicate = null;
+            if (candidate == null || recordedCards == null)
+            {
+                return false;
+            }
+
+            float semanticThreshold = settings != null
+                ? settings.bootstrapDuplicateSemanticThreshold
+                : 0.96f;
+            string candidateLabel = NormalizeLabel(candidate.Label);
+
+            for (int i = 0; i < recordedCards.Count; i++)
+            {
+                SemanticCardRecord recorded = recordedCards[i];
+                if (recorded == null || ReferenceEquals(recorded, candidate))
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(candidateLabel) &&
+                    string.Equals(candidateLabel, NormalizeLabel(recorded.Label), StringComparison.Ordinal))
+                {
+                    duplicate = recorded;
+                    return true;
+                }
+
+                if (HaveIdenticalPng(candidate.PngBytes, recorded.PngBytes))
+                {
+                    duplicate = recorded;
+                    return true;
+                }
+
+                if (embeddingService != null &&
+                    candidate.Embedding != null &&
+                    recorded.Embedding != null &&
+                    embeddingService.Similarity(candidate.Embedding, recorded.Embedding) >=
+                    semanticThreshold)
+                {
+                    duplicate = recorded;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HaveIdenticalPng(byte[] left, byte[] right)
+        {
+            if (left == null || right == null || left.Length == 0 || left.Length != right.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (left[i] != right[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string NormalizeLabel(string label)
+        {
+            return string.IsNullOrWhiteSpace(label)
+                ? string.Empty
+                : FirstContactEmbeddingService.NormalizeText(label);
+        }
     }
 }

@@ -19,7 +19,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Tooltip("PNG 캡처가 일시적으로 실패했을 때 내부적으로 다시 시도할 횟수입니다. 플레이어에게는 표시하지 않습니다.")]
         [Min(0)] public int captureRetryCount = 2;
         [Tooltip("VLM validator가 일시적으로 실패했을 때 내부적으로 다시 시도할 횟수입니다. 플레이어에게는 표시하지 않습니다.")]
-        [Min(0)] public int validatorRetryCount = 2;
+        [Min(0)] public int validatorRetryCount = 1;
         [Tooltip("기술적 재시도 사이에 기다릴 시간입니다.")]
         [Min(0f)] public float technicalRetryDelaySeconds = 0.15f;
         [Tooltip("켜면 빈 그림이나 알아볼 수 없는 그림 라벨을 거절하고 다시 그리게 합니다.")]

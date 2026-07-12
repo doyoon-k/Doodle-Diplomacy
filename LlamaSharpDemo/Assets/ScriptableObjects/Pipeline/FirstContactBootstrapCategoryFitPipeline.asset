@@ -23,7 +23,9 @@ MonoBehaviour:
 
       Category definition: {{category_definition}}
 
-      Probe subject label: {{probe_label}}'
+      Source locale: {{source_locale}}
+
+      Original player label: {{probe_display_label}}'
     embeddingOutputKey: embedding
     failOnEmptyEmbeddingInput: 1
     jsonMaxRetries: 3

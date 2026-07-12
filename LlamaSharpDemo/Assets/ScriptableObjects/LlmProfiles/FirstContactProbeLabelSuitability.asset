@@ -59,12 +59,12 @@ MonoBehaviour:
     minItems: 
     maxItems: 
   modelParams:
-    temperature: 0.1
+    temperature: 0
     top_p: 0.9
     top_k: 20
     num_predict: 96
     repeat_penalty: 1.05
-    seed: 0
+    seed: 17331
   model: Models/gemma-3-4b-it-Q4_K_M.gguf
   visionProjectorModel: 
   visionProjectorRelativeToStreamingAssets: 1

@@ -459,7 +459,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
-            float threshold = settings != null ? settings.semanticMapAttractionThreshold : 0.36f;
+            float threshold = settings != null ? settings.semanticMapAttractionThreshold : 0.7f;
             int maxLinks = Mathf.Max(8, snapshot.Nodes.Count * 2);
             var candidates = new List<FirstContactSemanticMapLink>();
             for (int i = 0; i < snapshot.Nodes.Count; i++)

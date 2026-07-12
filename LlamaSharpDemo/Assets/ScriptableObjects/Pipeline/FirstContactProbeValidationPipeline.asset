@@ -18,25 +18,20 @@ MonoBehaviour:
   - stepName: FirstContactProbeValidator
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: a42e093df78b4d1894b0aa86b61043fb, type: 2}
-    userPromptTemplate: 'Validate this probe drawing.
+    userPromptTemplate: 'Validate this probe drawing conservatively.
 
-      PROBE_LABEL: {{probe_label}}
+      SOURCE_LOCALE: {{source_locale}}
 
-      PROBE_DISPLAY_LABEL: {{probe_display_label}}'
-    jsonMaxRetries: 3
+      ORIGINAL_PLAYER_LABEL: {{probe_display_label}}'
+    jsonMaxRetries: 1
     jsonRetryDelaySeconds: 0.1
     useVision: 1
     imageStateKey: reference_image
     requireImage: 1
     resizeLongestSide: 1024
-    customLinkTypeName: SafeTranslateResponseChainLink, Assembly-CSharp, Version=0.0.0.0,
-      Culture=neutral, PublicKeyToken=null
+    customLinkTypeName:
     customAsset: {fileID: 0}
-    customLinkParameters:
-    - key: parameters
-      value: 
-    - key: service
-      value: 
+    customLinkParameters: []
     editorPosition: {x: -160, y: -40}
     guid: b4cc23f4-e7d6-4f88-8763-c27f81087f85
     nextStepGuid: 

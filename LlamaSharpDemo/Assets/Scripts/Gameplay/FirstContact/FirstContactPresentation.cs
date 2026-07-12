@@ -312,6 +312,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string label = card != null ? GetDisplayLabel(card) : string.Empty;
             string safeLabel = NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant();
             string safeCategory = LocalizeCategory(category);
+            bool rejected = !accepted && !duplicate;
             bool semanticClusterTrace = clusterFormation.BecameStable && clusterFormation.IsStable;
             string text;
             if (semanticClusterTrace)
@@ -330,9 +331,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     Header("signal_capture", "[SIGNAL CAPTURE]") + "\n\n" +
                     T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
                     T("line.category", "CATEGORY: {category}", L10n.Arg("category", safeCategory)) + "\n" +
-                    T("line.group", "GROUP: {group}", L10n.Arg("group", duplicate ? T("cluster.unchanged", "UNCHANGED") : BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
-                    BuildTraceLine(previousTraceCount, traceCount, requiredTraceCount, accepted, duplicate);
-                if (clusterFormation.IsIsolated)
+                    T("line.group", "GROUP: {group}", L10n.Arg("group", rejected || duplicate ? T("cluster.unchanged", "UNCHANGED") : BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n";
+                if (rejected)
+                {
+                }
+                else
+                {
+                    text += BuildTraceLine(previousTraceCount, traceCount, requiredTraceCount, accepted, duplicate);
+                }
+                if (!rejected && clusterFormation.IsIsolated)
                 {
                     text += "\n" + T("line.trace_isolated", "TRACE: ISOLATED");
                 }
@@ -444,6 +451,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Header("input_rejected", "[INPUT REJECTED]") + "\n\n" +
                 $"{NormalizeTerminalLine(reason, T("reason.draw_one_object", "DRAW ONE OBJECT"))}\n\n" +
                 BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
+                BuildSelectPrompt();
+            _terminalDisplay?.ShowText(text, instant);
+        }
+
+        public void ShowAnalysisError(string status, int selectedIndex, bool instant = true)
+        {
+            ClearVisualOverlays();
+            string safeStatus = string.IsNullOrWhiteSpace(status)
+                ? T("status.analysis_unavailable", "ANALYSIS UNAVAILABLE")
+                : status.Trim();
+            string text =
+                Header("analysis_error", "[ANALYSIS ERROR]") + "\n\n" +
+                T("line.input_status", "STATUS: {status}", L10n.Arg("status", safeStatus)) + "\n\n" +
+                BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
+                BuildChoiceLine(1, selectedIndex, T("choice.retry", "RETRY")) +
                 BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
         }

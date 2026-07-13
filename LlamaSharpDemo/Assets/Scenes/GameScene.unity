@@ -207,17 +207,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6530586757822023823, guid: d13b939810f4e164d9e46d93ddefc456, type: 3}
   m_PrefabInstance: {fileID: 41264274}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &45035642 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5351844516698924268, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
-  m_PrefabInstance: {fileID: 1577116835}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
 --- !u!114 &45035643 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3845552468368687222, guid: 55b2c3a08bc153e41b57d9d4a9e2c0cf, type: 3}
@@ -229,39 +218,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17a29466210a31245aab41b43eaa4b04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Devices.TerminalDisplay
---- !u!114 &45035644 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-  m_PrefabInstance: {fileID: 796133098}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
---- !u!114 &45035645 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-  m_PrefabInstance: {fileID: 887548415}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
---- !u!114 &45035646 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
-  m_PrefabInstance: {fileID: 3536624680693865213}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
 --- !u!1001 &50699592
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3946,7 +3902,7 @@ PrefabInstance:
     - target: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: OnInteracted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1778344080}
+      objectReference: {fileID: 0}
     - target: {fileID: 3533601573625300685, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: m_Name
       value: Alien (2)
@@ -4026,7 +3982,7 @@ PrefabInstance:
     - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: OnReactionComplete.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1778344080}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4364,7 +4320,7 @@ PrefabInstance:
     - target: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: OnInteracted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1778344080}
+      objectReference: {fileID: 0}
     - target: {fileID: 3533601573625300685, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: m_Name
       value: Alien (1)
@@ -4444,7 +4400,7 @@ PrefabInstance:
     - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: OnReactionComplete.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1778344080}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -9038,17 +8994,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3819ba30f0450b040a33ec8fc4009e78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DrawingExportBridge
---- !u!114 &1603467078 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5688922101784938926, guid: 478acb9c9c6a6644993d6aaa96aef596, type: 3}
-  m_PrefabInstance: {fileID: 1706139839}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6ecbcee5e4368324480c3b2d8bc88f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Interaction.InteractableObject
 --- !u!114 &1603467082 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6228499341151014494, guid: 478acb9c9c6a6644993d6aaa96aef596, type: 3}
@@ -9662,7 +9607,7 @@ PrefabInstance:
     - target: {fileID: 5688922101784938926, guid: 478acb9c9c6a6644993d6aaa96aef596, type: 3}
       propertyPath: OnInteracted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1778344080}
+      objectReference: {fileID: 0}
     - target: {fileID: 6228499341151014494, guid: 478acb9c9c6a6644993d6aaa96aef596, type: 3}
       propertyPath: brushPreview
       value: 
@@ -10473,6 +10418,7 @@ MonoBehaviour:
   worldSpaceDialogue: {fileID: 1442241564}
   subtitleDisplay: {fileID: 1859998227}
   typingSpeed: 30
+  requireSpaceAdvanceForAllLines: 1
   OnSequenceComplete:
     m_PersistentCalls:
       m_Calls: []
@@ -10954,7 +10900,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1859998226}
-  m_LocalRotation: {x: 0.0011468647, y: -0.0000045092197, z: 0.008724651, w: 0.99996126}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -10962,10 +10908,10 @@ RectTransform:
   - {fileID: 2087700826}
   - {fileID: 901862419}
   m_Father: {fileID: 1781035875}
-  m_LocalEulerAnglesHint: {x: 0.131, y: 0.001, z: 1}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0.2}
-  m_AnchoredPosition: {x: 4, y: 0}
+  m_AnchoredPosition: {x: -1, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1859998229
@@ -13091,7 +13037,7 @@ PrefabInstance:
     - target: {fileID: 2855851588202388082, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: OnInteracted.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1778344080}
+      objectReference: {fileID: 0}
     - target: {fileID: 3533601573625300685, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: m_Name
       value: Alien
@@ -13171,7 +13117,7 @@ PrefabInstance:
     - target: {fileID: 6437706050454276249, guid: a52c9196aca462a468c5a8fc555abb99, type: 3}
       propertyPath: OnReactionComplete.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1778344080}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

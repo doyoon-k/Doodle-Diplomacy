@@ -3,9 +3,20 @@ using DoodleDiplomacy.Core;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
+    public enum FirstContactProbeLabelIssue
+    {
+        None,
+        NotConcrete,
+        ActionOrAbstract,
+        BroadCategory,
+        MultipleSubjects,
+        ClassificationClaim
+    }
+
     public sealed class FirstContactProbeLabelResult
     {
         private const string CanonicalLabelKey = "canonical_label";
+        private const string TranslationAvailableKey = "translation_available";
         private const string HasClassificationClaimKey = "has_classification_claim";
         private const string ClassificationClaimTextKey = "classification_claim_text";
         private const string NeutralSubjectLabelKey = "neutral_subject_label";
@@ -14,9 +25,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private const string ReasonKey = "reason";
 
         public string CanonicalLabel = string.Empty;
+        public bool TranslationAvailable;
         public bool HasClassificationClaim;
         public string ClassificationClaimText = string.Empty;
         public string NeutralSubjectLabel = string.Empty;
+        public FirstContactProbeLabelIssue LabelIssue;
+        public bool AnalysisInconclusive;
         public bool IsSuitable = true;
         public string Reason = string.Empty;
         public string Error = string.Empty;
@@ -66,6 +80,19 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
+            bool translationAvailable =
+                TryReadBool(state, TranslationAvailableKey, out bool parsedTranslationAvailable) &&
+                parsedTranslationAvailable;
+
+            if (state.ContainsString(FirstContactLabelAnalysisContract.DecisionKey))
+            {
+                return TryFromUnifiedAnalysis(
+                    state,
+                    canonicalLabel,
+                    translationAvailable,
+                    out result);
+            }
+
             if (!TryReadBool(state, IsSuitableKey, out bool isSuitable))
             {
                 result = Failed("Label pipeline returned no is_suitable.");
@@ -78,7 +105,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 result = new FirstContactProbeLabelResult
                 {
                     CanonicalLabel = canonicalLabel.Trim(),
+                    TranslationAvailable = translationAvailable,
                     HasClassificationClaim = true,
+                    LabelIssue = FirstContactProbeLabelIssue.ClassificationClaim,
                     IsSuitable = false,
                     Reason = string.IsNullOrWhiteSpace(missingSignalReason)
                         ? "Label classifier returned no classification-claim signal."
@@ -93,6 +122,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             neutralSubjectLabel = string.IsNullOrWhiteSpace(neutralSubjectLabel)
                 ? canonicalLabel.Trim()
                 : neutralSubjectLabel.Trim();
+            bool unsupportedClassificationClaim = false;
             if (hasClassificationClaim &&
                 !HasSupportedClassificationClaim(
                     state,
@@ -100,9 +130,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     classificationClaimText,
                     neutralSubjectLabel))
             {
-                hasClassificationClaim = false;
-                classificationClaimText = string.Empty;
-                neutralSubjectLabel = canonicalLabel.Trim();
+                unsupportedClassificationClaim = true;
             }
 
             state.TryGetString(LabelReasonKey, out string labelReason);
@@ -111,7 +139,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             if (hasClassificationClaim)
             {
                 isSuitable = false;
-                finalReason = string.IsNullOrWhiteSpace(labelReason)
+                finalReason = unsupportedClassificationClaim
+                    ? "Label classifier could not isolate a concrete subject name."
+                    : string.IsNullOrWhiteSpace(labelReason)
                     ? "Label includes a classification claim instead of only the subject name."
                     : labelReason.Trim();
             }
@@ -119,11 +149,90 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             result = new FirstContactProbeLabelResult
             {
                 CanonicalLabel = canonicalLabel.Trim(),
+                TranslationAvailable = translationAvailable,
                 HasClassificationClaim = hasClassificationClaim,
                 ClassificationClaimText = classificationClaimText,
                 NeutralSubjectLabel = neutralSubjectLabel,
+                LabelIssue = hasClassificationClaim
+                    ? FirstContactProbeLabelIssue.ClassificationClaim
+                    : isSuitable
+                        ? FirstContactProbeLabelIssue.None
+                        : FirstContactProbeLabelIssue.NotConcrete,
                 IsSuitable = isSuitable,
                 Reason = finalReason
+            };
+            return true;
+        }
+
+        private static bool TryFromUnifiedAnalysis(
+            PipelineState state,
+            string canonicalLabel,
+            bool translationAvailable,
+            out FirstContactProbeLabelResult result)
+        {
+            result = null;
+            if (!FirstContactLabelAnalysisContract.TryValidate(
+                    state,
+                    out FirstContactLabelAnalysisData analysis,
+                    out string contractError))
+            {
+                result = Failed($"Label analysis contract failed: {contractError}");
+                return false;
+            }
+
+            bool inconclusive = analysis.Decision == FirstContactLabelAnalysisContract.UnclearDecision;
+            if (state.TryGetString(FirstContactLabelAnalysisContract.InconclusiveKey, out string inconclusiveText) &&
+                bool.TryParse(inconclusiveText?.Trim(), out bool parsedInconclusive))
+            {
+                inconclusive |= parsedInconclusive;
+            }
+
+            bool hasClassificationClaim =
+                analysis.Decision == FirstContactLabelAnalysisContract.ClassificationClaimDecision;
+            bool isSuitable =
+                analysis.Decision == FirstContactLabelAnalysisContract.AcceptDecision || inconclusive;
+            FirstContactProbeLabelIssue labelIssue = analysis.Decision switch
+            {
+                FirstContactLabelAnalysisContract.ActionOrAbstractDecision =>
+                    FirstContactProbeLabelIssue.ActionOrAbstract,
+                FirstContactLabelAnalysisContract.BroadCategoryDecision =>
+                    FirstContactProbeLabelIssue.BroadCategory,
+                FirstContactLabelAnalysisContract.MultipleSubjectsDecision =>
+                    FirstContactProbeLabelIssue.MultipleSubjects,
+                FirstContactLabelAnalysisContract.ClassificationClaimDecision =>
+                    FirstContactProbeLabelIssue.ClassificationClaim,
+                FirstContactLabelAnalysisContract.NotConcreteDecision =>
+                    FirstContactProbeLabelIssue.NotConcrete,
+                _ => FirstContactProbeLabelIssue.None
+            };
+            string reason = analysis.Decision switch
+            {
+                FirstContactLabelAnalysisContract.ActionOrAbstractDecision =>
+                    "Label names an action, scene, relationship, message, or abstract concept.",
+                FirstContactLabelAnalysisContract.BroadCategoryDecision =>
+                    "Label names a broad category instead of one concrete subject.",
+                FirstContactLabelAnalysisContract.MultipleSubjectsDecision =>
+                    "Label names multiple subjects.",
+                FirstContactLabelAnalysisContract.NotConcreteDecision =>
+                    "Label does not name one concrete visible subject.",
+                FirstContactLabelAnalysisContract.ClassificationClaimDecision =>
+                    "Label includes a classification claim instead of only the subject name.",
+                _ => string.Empty
+            };
+
+            result = new FirstContactProbeLabelResult
+            {
+                CanonicalLabel = canonicalLabel.Trim(),
+                TranslationAvailable = translationAvailable,
+                HasClassificationClaim = hasClassificationClaim,
+                ClassificationClaimText = analysis.ClassificationClaimText,
+                NeutralSubjectLabel = string.IsNullOrWhiteSpace(analysis.NeutralSubjectLabel)
+                    ? canonicalLabel.Trim()
+                    : analysis.NeutralSubjectLabel,
+                LabelIssue = labelIssue,
+                AnalysisInconclusive = inconclusive,
+                IsSuitable = isSuitable,
+                Reason = reason
             };
             return true;
         }

@@ -7,8 +7,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         private const string FitsCategoryKey = "fits_category";
         private const string EvidenceTypeKey = "evidence_type";
-        private const string OrdinaryIdentityEvidence = "ordinary_identity";
-        private const string UncertainEvidence = "uncertain";
+        public const string OrdinaryIdentityEvidence = "ordinary_identity";
+        public const string SymbolicOrContextualEvidence = "symbolic_or_contextual";
+        public const string NeutralOrGenericEvidence = "neutral_or_generic";
+        public const string UncertainEvidence = "uncertain";
         private const string ReasonKey = "reason";
 
         public bool FitsCategory = true;
@@ -32,8 +34,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             return new FirstContactBootstrapCategoryFitResult
             {
-                FitsCategory = true,
-                EvidenceType = OrdinaryIdentityEvidence,
+                FitsCategory = false,
+                EvidenceType = UncertainEvidence,
                 Error = string.IsNullOrWhiteSpace(message)
                     ? "Bootstrap category fit processing failed."
                     : message.Trim()
@@ -92,8 +94,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return evidenceType switch
             {
                 OrdinaryIdentityEvidence => OrdinaryIdentityEvidence,
-                "symbolic_or_contextual" => "symbolic_or_contextual",
-                "neutral_or_generic" => "neutral_or_generic",
+                SymbolicOrContextualEvidence => SymbolicOrContextualEvidence,
+                NeutralOrGenericEvidence => NeutralOrGenericEvidence,
                 _ => UncertainEvidence
             };
         }

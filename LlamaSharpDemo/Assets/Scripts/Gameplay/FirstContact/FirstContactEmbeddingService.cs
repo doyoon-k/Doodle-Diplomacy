@@ -7,6 +7,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 {
     public sealed class FirstContactEmbeddingService
     {
+        public const string SentenceSimilarityPrefix = "task: sentence similarity | query: ";
+
         private readonly IEmbeddingService _embeddingService;
         private readonly FirstContactSemanticSettings _settings;
         private readonly Dictionary<string, float[]> _cache = new(StringComparer.Ordinal);
@@ -55,6 +57,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             var missingTexts = new List<string>();
             var missingKeys = new List<string>();
+            var computedVectors = new Dictionary<string, float[]>(StringComparer.Ordinal);
             for (int i = 0; i < labels.Count; i++)
             {
                 string normalized = NormalizeText(labels[i]);
@@ -73,7 +76,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 if (!missingKeys.Contains(normalized))
                 {
                     missingKeys.Add(normalized);
-                    missingTexts.Add(normalized);
+                    missingTexts.Add(BuildEmbeddingInput(normalized));
                 }
             }
 
@@ -99,9 +102,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                             NormalizeInPlace(vector);
                         }
 
+                        computedVectors[missingKeys[start + i]] = vector;
                         if (_settings.cacheEmbeddings)
                         {
-                            _cache[batch[i]] = vector;
+                            _cache[missingKeys[start + i]] = vector;
                         }
                     }
                 }
@@ -115,7 +119,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
 
                 string normalized = NormalizeText(labels[i]);
-                if (_settings.cacheEmbeddings && _cache.TryGetValue(normalized, out float[] cached))
+                if (computedVectors.TryGetValue(normalized, out float[] computed))
+                {
+                    results[i] = new EmbeddingResult(normalized, computed);
+                }
+                else if (_settings.cacheEmbeddings && _cache.TryGetValue(normalized, out float[] cached))
                 {
                     results[i] = new EmbeddingResult(normalized, cached);
                 }
@@ -243,6 +251,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return new string(chars, 0, count).Trim();
+        }
+
+        public static string BuildEmbeddingInput(string value)
+        {
+            string normalized = NormalizeText(value);
+            return string.IsNullOrWhiteSpace(normalized)
+                ? string.Empty
+                : SentenceSimilarityPrefix + normalized;
         }
 
         private static void FillError(EmbeddingResult[] results, IReadOnlyList<string> labels, string error)

@@ -17,7 +17,7 @@ MonoBehaviour:
   bootstrapCategoryFitPipeline: {fileID: 11400000, guid: a5fd0e6ceab346c5a58da20b1fe90ec0, type: 2}
   imageStateKey: reference_image
   captureRetryCount: 2
-  validatorRetryCount: 2
+  validatorRetryCount: 1
   technicalRetryDelaySeconds: 0.15
   rejectBlank: 1
   rejectWrittenText: 1

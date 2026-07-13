@@ -1,0 +1,125 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: FirstContactProbeLabelAnalysis
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  format: '{"type":"object","properties":{"label_decision":{"type":"string","enum":["accept","action_or_abstract","broad_category","multiple_subjects","classification_claim","unclear"],"minLength":1},"classification_claim_text":{"type":"string","maxLength":64},"neutral_subject_label":{"type":"string","maxLength":64}},"required":["label_decision","classification_claim_text","neutral_subject_label"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: 'Analyze whether the original player label names one visually separable concrete subject.
+
+    Return only JSON:
+
+    {"label_decision":"accept","classification_claim_text":"","neutral_subject_label":"..."}
+
+    Decisions:
+
+    - accept: The original label names exactly one concrete visible subject,
+    including an object, organism, person, or body part. Set neutral_subject_label
+    to the exact original player label, preserving its language.
+
+    - action_or_abstract: The label is an action, command, scene, relationship,
+    written message, emotion, story, or abstract concept. Leave both other fields
+    empty.
+
+    - broad_category: The label names a broad class instead of one concrete visible
+    subject. Leave both other fields empty.
+
+    - multiple_subjects: The label names more than one separable subject. Leave
+    both other fields empty.
+
+    - classification_claim: A removable word or phrase argues how the subject
+    should be classified, valued, used, felt, represented, or understood. Copy
+    that exact removable phrase into classification_claim_text and put the remaining
+    concrete subject name from the original label in neutral_subject_label, preserving
+    its language.
+
+    - unclear: The information is genuinely insufficient. Leave both other fields
+    empty. Do not use unclear merely because wording is vulgar or explicit.
+
+    Rules:
+
+    - The original player label and its expected locale are the only semantic evidence.
+
+    - The original text was entered as a drawing label. If a short standalone word
+    genuinely has both a concrete noun sense and a verb or command sense, prefer
+    the concrete noun sense, including slang, taboo, and anatomical noun senses.
+
+    - Do not translate, rewrite, sanitize, or judge drawing quality.
+
+    - Anatomical, vulgar, obscene, sexual, violent, slang, or socially sensitive
+    subject names are ordinary subject names, not classification claims.
+
+    - Concrete descriptors such as color, size, material, species, body part,
+    subtype, and proper or common names belong to the subject name.
+
+    - classification_claim_text must be a proper removable part of the original
+    label. Never use the entire label as the claim.
+
+    - Prefer accept over unclear when the original label plainly names one subject.'
+  jsonSchemaDeliveryMode: 0
+  thinkingMode: 0
+  jsonFields:
+  - fieldName: label_decision
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - accept
+    - action_or_abstract
+    - broad_category
+    - multiple_subjects
+    - classification_claim
+    - unclear
+    minValue: 
+    maxValue: 
+    minLength: 1
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: classification_claim_text
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 64
+    minItems: 
+    maxItems: 
+  - fieldName: neutral_subject_label
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 64
+    minItems: 
+    maxItems: 
+  modelParams:
+    temperature: 0
+    top_p: 0.9
+    top_k: 20
+    num_predict: 96
+    repeat_penalty: 1.05
+    seed: 17331
+  model: Models/gemma-3-4b-it-Q4_K_M.gguf
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 12

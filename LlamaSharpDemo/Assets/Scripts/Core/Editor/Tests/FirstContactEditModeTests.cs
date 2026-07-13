@@ -130,11 +130,14 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
-        public void EmbeddingWrapperNormalizesLabelsWithoutSemanticPrefix()
+        public void EmbeddingWrapperNormalizesLabelsAndBuildsMultilingualSimilarityInput()
         {
             var service = new FirstContactEmbeddingService(null, null);
 
             Assert.AreEqual("shield wall", FirstContactEmbeddingService.NormalizeText("  Shield   Wall  "));
+            Assert.AreEqual(
+                "task: sentence similarity | query: 바나나",
+                FirstContactEmbeddingService.BuildEmbeddingInput("  바나나  "));
             Assert.IsTrue(
                 service.TryBuildCentroid(
                     new List<float[]>
@@ -164,6 +167,283 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.AreEqual("Knife", result.CanonicalLabel);
             Assert.IsTrue(result.IsSuitable);
             Assert.IsTrue(result.IsSuccess);
+        }
+
+        [Test]
+        public void ProbeLabelResultRejectsClaimWithoutConcreteSubjectReduction()
+        {
+            var state = new PipelineState();
+            state.SetString("canonical_label", "don't look");
+            state.SetString("has_classification_claim", "true");
+            state.SetString("classification_claim_text", "don't look");
+            state.SetString("neutral_subject_label", string.Empty);
+            state.SetString("label_reason", string.Empty);
+            state.SetString("is_suitable", "true");
+            state.SetString("reason", string.Empty);
+
+            bool parsed = FirstContactProbeLabelResult.TryFromPipelineState(
+                state,
+                out FirstContactProbeLabelResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsTrue(result.HasClassificationClaim);
+            Assert.IsFalse(result.IsSuitable);
+        }
+
+        [Test]
+        public void UnifiedLabelAnalysisAcceptsExplicitAnatomicalSubject()
+        {
+            var state = new PipelineState();
+            state.SetString("probe_display_label", "여자 성기");
+            state.SetString("canonical_label", "여자 성기");
+            state.SetString("translation_available", "false");
+            state.SetString(FirstContactLabelAnalysisContract.DecisionKey, "accept");
+            state.SetString(FirstContactLabelAnalysisContract.ClassificationClaimTextKey, string.Empty);
+            state.SetString(FirstContactLabelAnalysisContract.NeutralSubjectLabelKey, "여자 성기");
+
+            bool parsed = FirstContactProbeLabelResult.TryFromPipelineState(
+                state,
+                out FirstContactProbeLabelResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsTrue(result.IsSuitable);
+            Assert.IsFalse(result.HasClassificationClaim);
+            Assert.IsFalse(result.TranslationAvailable);
+            Assert.AreEqual("여자 성기", result.CanonicalLabel);
+        }
+
+        [Test]
+        public void UnifiedLabelAnalysisRejectsWholeLabelAsClassificationClaim()
+        {
+            var state = new PipelineState();
+            state.SetString("probe_display_label", "여자 성기");
+            state.SetString("canonical_label", "female genitalia");
+            state.SetString(FirstContactLabelAnalysisContract.DecisionKey, "classification_claim");
+            state.SetString(FirstContactLabelAnalysisContract.ClassificationClaimTextKey, "female genitalia");
+            state.SetString(FirstContactLabelAnalysisContract.NeutralSubjectLabelKey, string.Empty);
+
+            bool valid = FirstContactLabelAnalysisContract.TryValidate(
+                state,
+                out _,
+                out string error);
+
+            Assert.IsFalse(valid);
+            StringAssert.Contains("neutral subject", error);
+        }
+
+        [Test]
+        public void UnifiedLabelAnalysisAcceptsRemovableClassificationClaim()
+        {
+            var state = new PipelineState();
+            state.SetString("probe_display_label", "dangerous triangle");
+            state.SetString("canonical_label", "dangerous triangle");
+            state.SetString(FirstContactLabelAnalysisContract.DecisionKey, "classification_claim");
+            state.SetString(FirstContactLabelAnalysisContract.ClassificationClaimTextKey, "dangerous");
+            state.SetString(FirstContactLabelAnalysisContract.NeutralSubjectLabelKey, "triangle");
+
+            bool parsed = FirstContactProbeLabelResult.TryFromPipelineState(
+                state,
+                out FirstContactProbeLabelResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsTrue(result.HasClassificationClaim);
+            Assert.IsFalse(result.IsSuitable);
+            Assert.AreEqual("triangle", result.NeutralSubjectLabel);
+            Assert.AreEqual(
+                FirstContactProbeLabelIssue.ClassificationClaim,
+                result.LabelIssue);
+        }
+
+        [TestCase("action_or_abstract", FirstContactProbeLabelIssue.ActionOrAbstract)]
+        [TestCase("broad_category", FirstContactProbeLabelIssue.BroadCategory)]
+        [TestCase("multiple_subjects", FirstContactProbeLabelIssue.MultipleSubjects)]
+        public void UnifiedLabelAnalysisPreservesPlayerFacingIssue(
+            string decision,
+            FirstContactProbeLabelIssue expectedIssue)
+        {
+            var state = new PipelineState();
+            state.SetString("probe_display_label", "test label");
+            state.SetString("canonical_label", "test label");
+            state.SetString(FirstContactLabelAnalysisContract.DecisionKey, decision);
+            state.SetString(FirstContactLabelAnalysisContract.ClassificationClaimTextKey, string.Empty);
+            state.SetString(FirstContactLabelAnalysisContract.NeutralSubjectLabelKey, string.Empty);
+
+            bool parsed = FirstContactProbeLabelResult.TryFromPipelineState(
+                state,
+                out FirstContactProbeLabelResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsFalse(result.IsSuitable);
+            Assert.AreEqual(expectedIssue, result.LabelIssue);
+        }
+
+        [Test]
+        public void UnifiedLabelAnalysisLetsInconclusiveModelJudgmentReachVisionValidation()
+        {
+            var state = new PipelineState();
+            state.SetString("probe_display_label", "ambiguous label");
+            state.SetString("canonical_label", "ambiguous label");
+            FirstContactLabelAnalysisContract.ApplyInconclusive(state, "contract remained unstable");
+
+            bool parsed = FirstContactProbeLabelResult.TryFromPipelineState(
+                state,
+                out FirstContactProbeLabelResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsTrue(result.AnalysisInconclusive);
+            Assert.IsTrue(result.IsSuitable);
+        }
+
+        [Test]
+        public void ProbeValidationNormalizesContradictoryObjectCount()
+        {
+            var state = new PipelineState();
+            state.SetString("is_blank", "true");
+            state.SetString("object_count", "1");
+            state.SetString("has_text_or_symbol", "false");
+            state.SetString("is_scene_or_action", "false");
+            state.SetString("label_match", "match");
+
+            bool parsed = FirstContactProbeValidationResult.TryFromPipelineState(
+                state,
+                out FirstContactProbeValidationResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.AreEqual(0, result.ObjectCount);
+            Assert.AreEqual("unclear", result.LabelMatch);
+        }
+
+        [Test]
+        public void ProbeValidationCollectsAllIndependentVisualIssues()
+        {
+            FirstContactVlmSettings settings = ScriptableObject.CreateInstance<FirstContactVlmSettings>();
+            try
+            {
+                settings.rejectBlank = true;
+                settings.rejectWrittenText = true;
+                settings.rejectActionOrScene = true;
+                settings.rejectMultipleObjects = true;
+                var result = new FirstContactProbeValidationResult
+                {
+                    IsBlank = false,
+                    HasTextOrSymbol = true,
+                    IsSceneOrAction = false,
+                    ObjectCount = 2,
+                    LabelMatch = "match"
+                };
+
+                IReadOnlyList<FirstContactProbeVisualIssue> issues =
+                    result.CollectRejectedVisualIssues(settings);
+
+                CollectionAssert.AreEqual(
+                    new[]
+                    {
+                        FirstContactProbeVisualIssue.TextOrSymbol,
+                        FirstContactProbeVisualIssue.MultipleObjects
+                    },
+                    issues);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void BlankVisualIssueSuppressesRedundantSecondaryIssues()
+        {
+            FirstContactVlmSettings settings = ScriptableObject.CreateInstance<FirstContactVlmSettings>();
+            try
+            {
+                settings.rejectBlank = true;
+                settings.rejectWrittenText = true;
+                settings.rejectActionOrScene = true;
+                settings.rejectMultipleObjects = true;
+                var result = new FirstContactProbeValidationResult
+                {
+                    IsBlank = true,
+                    HasTextOrSymbol = true,
+                    IsSceneOrAction = true,
+                    ObjectCount = 0
+                };
+
+                IReadOnlyList<FirstContactProbeVisualIssue> issues =
+                    result.CollectRejectedVisualIssues(settings);
+
+                CollectionAssert.AreEqual(
+                    new[] { FirstContactProbeVisualIssue.Blank },
+                    issues);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void FailedCategoryFitDoesNotAcceptProbe()
+        {
+            FirstContactBootstrapCategoryFitResult result =
+                FirstContactBootstrapCategoryFitResult.Failed("technical failure");
+
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsFalse(result.FitsCategory);
+            Assert.AreEqual("uncertain", result.EvidenceType);
+        }
+
+        [TestCase("symbolic_or_contextual")]
+        [TestCase("neutral_or_generic")]
+        [TestCase("uncertain")]
+        public void CategoryFitPreservesAuthoredRejectionEvidence(string evidenceType)
+        {
+            var state = new PipelineState();
+            state.SetString("fits_category", "true");
+            state.SetString("evidence_type", evidenceType);
+            state.SetString("reason", "model detail");
+
+            bool parsed = FirstContactBootstrapCategoryFitResult.TryFromPipelineState(
+                state,
+                out FirstContactBootstrapCategoryFitResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsFalse(result.FitsCategory);
+            Assert.AreEqual(evidenceType, result.EvidenceType);
+        }
+
+        [Test]
+        public void DuplicateDetectorFindsSemanticDuplicateAcrossRecordedCards()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                settings.bootstrapDuplicateSemanticThreshold = 0.96f;
+                var embedding = new FirstContactEmbeddingService(null, settings);
+                var recorded = new SemanticCardRecord
+                {
+                    Label = "knife",
+                    Embedding = Unit(1f, 0f, 0f)
+                };
+                var candidate = new SemanticCardRecord
+                {
+                    Label = "blade",
+                    Embedding = Unit(0.999f, 0.02f, 0f)
+                };
+
+                bool duplicateFound = FirstContactProbeDuplicateDetector.TryFindDuplicate(
+                    candidate,
+                    new List<SemanticCardRecord> { recorded },
+                    embedding,
+                    settings,
+                    out SemanticCardRecord duplicate);
+
+                Assert.IsTrue(duplicateFound);
+                Assert.AreSame(recorded, duplicate);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
         }
 
         [Test]

@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3ec50616c4048448f287ad994d8fdce, type: 3}
   m_Name: BrainwaveEmbeddingProfile
   m_EditorClassIdentifier: 
-  model: Models/Embeddings/bge-small-en-v1.5.Q8_0.gguf
+  model: Models/Embeddings/embeddinggemma-300M-Q8_0.gguf
   modelPathRelativeToStreamingAssets: 1
-  contextSize: 512
+  contextSize: 2048
   gpuLayerCount: 0
   threads: 0
-  poolingType: 0
+  poolingType: -1
   normalizeOutput: 1

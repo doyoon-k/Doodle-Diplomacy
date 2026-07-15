@@ -19,13 +19,13 @@ MonoBehaviour:
 
     Return only JSON:
 
-    {"label_decision":"accept","classification_claim_text":"","neutral_subject_label":"..."}
+    {"label_decision":"accept","classification_claim_text":"","neutral_subject_label":""}
 
     Decisions:
 
     - accept: The original label names exactly one concrete visible subject,
-    including an object, organism, person, or body part. Set neutral_subject_label
-    to the exact original player label, preserving its language.
+    including an object, organism, person, or body part. Leave both other fields
+    empty. The application preserves the exact original player label.
 
     - action_or_abstract: The label is an action, command, scene, relationship,
     written message, emotion, story, or abstract concept. Leave both other fields

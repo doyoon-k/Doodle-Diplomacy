@@ -30,7 +30,7 @@ Material:
     m_Ints: []
     m_Floats:
     - FrameCount: 0
-    - acc_modulate: 0.891
+    - acc_modulate: 0.32
     m_Colors:
     - OriginalSize: {r: 1, g: 1, b: 1, a: 1}
     - OutputSize: {r: 1, g: 1, b: 1, a: 1}

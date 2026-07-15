@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using UnityEngine;
 
@@ -9,6 +10,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     public sealed class FirstContactLabelAnalysisChainLink : IStateChainLink, ICustomLinkStateProvider
     {
         private const int DefaultMaxSemanticAttempts = 2;
+
+        private static readonly JsonSerializerOptions PromptJsonOptions = new JsonSerializerOptions
+        {
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
 
         private readonly BaseLlmGenerationProfile _profile;
         private readonly ILlmService _service;
@@ -115,8 +121,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private static string BuildInitialPrompt(PipelineState state)
         {
             string sourceLocale = JsonSerializer.Serialize(
-                state.GetString(PromptPipelineConstants.SourceLocaleKey, string.Empty));
-            string original = JsonSerializer.Serialize(state.GetString("probe_display_label", string.Empty));
+                state.GetString(PromptPipelineConstants.SourceLocaleKey, string.Empty),
+                PromptJsonOptions);
+            string original = JsonSerializer.Serialize(
+                state.GetString("probe_display_label", string.Empty),
+                PromptJsonOptions);
             return $"Expected source locale: {sourceLocale}" +
                    $"\nOriginal player label JSON string: {original}";
         }
@@ -126,18 +135,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             PipelineState previousResult,
             string contractError)
         {
-            string previousJson = JsonSerializer.Serialize(new Dictionary<string, string>
-            {
-                [FirstContactLabelAnalysisContract.DecisionKey] = previousResult?.GetString(
-                    FirstContactLabelAnalysisContract.DecisionKey,
-                    string.Empty) ?? string.Empty,
-                [FirstContactLabelAnalysisContract.ClassificationClaimTextKey] = previousResult?.GetString(
-                    FirstContactLabelAnalysisContract.ClassificationClaimTextKey,
-                    string.Empty) ?? string.Empty,
-                [FirstContactLabelAnalysisContract.NeutralSubjectLabelKey] = previousResult?.GetString(
-                    FirstContactLabelAnalysisContract.NeutralSubjectLabelKey,
-                    string.Empty) ?? string.Empty
-            });
+            string previousJson = JsonSerializer.Serialize(
+                new Dictionary<string, string>
+                {
+                    [FirstContactLabelAnalysisContract.DecisionKey] = previousResult?.GetString(
+                        FirstContactLabelAnalysisContract.DecisionKey,
+                        string.Empty) ?? string.Empty,
+                    [FirstContactLabelAnalysisContract.ClassificationClaimTextKey] = previousResult?.GetString(
+                        FirstContactLabelAnalysisContract.ClassificationClaimTextKey,
+                        string.Empty) ?? string.Empty,
+                    [FirstContactLabelAnalysisContract.NeutralSubjectLabelKey] = previousResult?.GetString(
+                        FirstContactLabelAnalysisContract.NeutralSubjectLabelKey,
+                        string.Empty) ?? string.Empty
+                },
+                PromptJsonOptions);
 
             return BuildInitialPrompt(state) +
                    $"\nPrevious response: {previousJson}" +

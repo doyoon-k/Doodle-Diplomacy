@@ -136,19 +136,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             onComplete?.Invoke(results);
         }
 
-        public IEnumerator EmbedTargetConcept(
-            string targetConcept,
-            Action<TargetConceptEmbedding> onComplete)
-        {
-            EmbeddingResult result = default;
-            yield return EmbedLabel(targetConcept, value => result = value);
-            onComplete?.Invoke(new TargetConceptEmbedding
-            {
-                TargetConcept = result.Text,
-                Vector = result.Vector
-            });
-        }
-
         public float Similarity(float[] a, float[] b)
         {
             if (a == null || b == null || a.Length == 0 || a.Length != b.Length)

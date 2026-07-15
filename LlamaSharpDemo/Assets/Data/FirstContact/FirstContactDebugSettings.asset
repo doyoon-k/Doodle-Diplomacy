@@ -12,8 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af135612f76d42589a9de8eaf975d16e, type: 3}
   m_Name: FirstContactDebugSettings
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactDebugSettings
-  logQuestionProvider: 1
   logSimilarityScores: 1
   logClusterUpdates: 1
   showScoresOnTerminal: 0
-  showQuestionFallbackReason: 0

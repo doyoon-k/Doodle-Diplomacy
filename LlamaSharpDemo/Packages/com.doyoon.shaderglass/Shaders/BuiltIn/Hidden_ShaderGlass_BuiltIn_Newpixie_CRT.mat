@@ -33,10 +33,12 @@ Material:
     - FrameCount: 0
     - curvature: 2.19
     - ghosting: 2
-    - scanroll: 0.388
-    - use_frame: 1
+    - interference_speed: 1
+    - scanroll: 1
+    - scanroll_speed: 1
+    - use_frame: 0
     - vignette: 1
-    - wiggle_toggle: 5
+    - wiggle_toggle: 0.72
     m_Colors:
     - OutputSize: {r: 1, g: 1, b: 1, a: 1}
     - SourceSize: {r: 1, g: 1, b: 1, a: 1}

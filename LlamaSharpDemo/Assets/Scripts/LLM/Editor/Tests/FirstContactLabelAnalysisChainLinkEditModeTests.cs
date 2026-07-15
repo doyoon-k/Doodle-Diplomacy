@@ -10,6 +10,37 @@ using UnityEngine;
 public sealed class FirstContactLabelAnalysisChainLinkEditModeTests
 {
     [Test]
+    public void AcceptUsesOriginalUnicodeLabelInsteadOfModelEcho()
+    {
+        var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();
+        var service = new FakeLlmService(
+            "{\"label_decision\":\"accept\",\"classification_claim_text\":\"\",\"neutral_subject_label\":\"개\"}");
+        try
+        {
+            var link = new FirstContactLabelAnalysisChainLink(
+                new Dictionary<string, string> { ["maxSemanticAttempts"] = "2" },
+                profile,
+                service);
+            PipelineState state = CreateState("사과", "사과");
+
+            Run(link.Execute(state, _ => { }));
+
+            Assert.AreEqual(1, service.CallCount);
+            Assert.AreEqual("accept", state.GetString(FirstContactLabelAnalysisContract.DecisionKey));
+            Assert.AreEqual(
+                "사과",
+                state.GetString(FirstContactLabelAnalysisContract.NeutralSubjectLabelKey));
+            Assert.IsFalse(state.ContainsString(PromptPipelineConstants.ErrorKey));
+            StringAssert.Contains("Original player label JSON string: \"사과\"", service.LastPrompt);
+            StringAssert.DoesNotContain("\\uC0AC\\uACFC", service.LastPrompt);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(profile);
+        }
+    }
+
+    [Test]
     public void InvalidSemanticResponseIsCorrectedOnce()
     {
         var profile = ScriptableObject.CreateInstance<LlmGenerationProfile>();

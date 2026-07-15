@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using DoodleDiplomacy.Interaction;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -13,71 +14,33 @@ namespace DoodleDiplomacy.Camera
     public enum CameraMode { Default, FreeLook, TabletView, TerminalZoom, AlienReaction, SharedMonitorZoom }
 
     [Serializable]
-    public class CameraPreset
-    {
-        [Tooltip("Camera anchor transform. Camera moves to this position and aligns forward to this transform's world-space +Z.")]
-        public Transform target;
-        [Range(10f, 120f)]
-        [Tooltip("Field of view applied when this camera preset becomes active.")]
-        public float fieldOfView = 60f;
-
-        public bool TryGetPose(out Vector3 position, out Quaternion rotation)
-        {
-            if (target == null)
-            {
-                position = Vector3.zero;
-                rotation = Quaternion.identity;
-                return false;
-            }
-
-            Vector3 forward = target.forward;
-            if (forward.sqrMagnitude < 0.0001f)
-            {
-                forward = Vector3.forward;
-            }
-
-            position = target.position;
-
-            Vector3 up = target.up;
-            if (up.sqrMagnitude < 0.0001f)
-            {
-                up = Vector3.up;
-            }
-
-            rotation = Quaternion.LookRotation(forward.normalized, up.normalized);
-            return true;
-        }
-    }
-
-    [Serializable]
     public class CameraModeUnityEvent : UnityEvent<CameraMode> { }
 
+    [DisallowMultipleComponent]
     public class CameraController : MonoBehaviour
     {
-        [Header("Camera")]
-        [Tooltip("Defaults to Camera.main when empty.")]
+        [Header("Output Camera")]
+        [Tooltip("Physical gameplay camera. It keeps rendering, raycasting, and post-processing while Cinemachine drives its pose.")]
         [SerializeField] private UnityEngine.Camera targetCamera;
+        [Tooltip("Cinemachine Brain attached to the physical gameplay camera.")]
+        [SerializeField] private CinemachineBrain brain;
 
-        [Header("Mode Presets")]
-        [Tooltip("Camera pose used by the default room view.")]
-        [SerializeField] private CameraPreset defaultPreset = new() { fieldOfView = 60f };
-        [Tooltip("Camera pose used for normal free-look interaction around the room.")]
-        [SerializeField] private CameraPreset freeLookPreset = new() { fieldOfView = 60f };
-        [Tooltip("Camera pose used while the player is drawing on the tablet.")]
-        [SerializeField] private CameraPreset tabletViewPreset = new() { fieldOfView = 45f };
-        [Tooltip("Camera pose used when zooming into the terminal screen.")]
-        [SerializeField] private CameraPreset terminalZoomPreset = new() { fieldOfView = 35f };
-        [Tooltip("Camera pose used during the alien reaction cutaway.")]
-        [SerializeField] private CameraPreset alienReactionPreset = new() { fieldOfView = 42f };
-        [Tooltip("Camera pose used when inspecting the shared monitor.")]
-        [SerializeField] private CameraPreset sharedMonitorZoomPreset = new() { fieldOfView = 38f };
+        [Header("Cinemachine Mode Cameras")]
+        [Tooltip("Default room view used before free-look interaction begins.")]
+        [SerializeField] private CinemachineCamera defaultCamera;
+        [Tooltip("Normal room view that receives hover-focus and edge-browse rotation.")]
+        [SerializeField] private CinemachineCamera freeLookCamera;
+        [Tooltip("View used while the player draws on the tablet.")]
+        [SerializeField] private CinemachineCamera tabletViewCamera;
+        [Tooltip("Close view of the First Contact terminal.")]
+        [SerializeField] private CinemachineCamera terminalZoomCamera;
+        [Tooltip("Cutaway view used for alien reactions.")]
+        [SerializeField] private CinemachineCamera alienReactionCamera;
+        [Tooltip("Close view of the shared monitor.")]
+        [SerializeField] private CinemachineCamera sharedMonitorZoomCamera;
 
-        [Header("Transition")]
-        [Tooltip("Seconds for camera moves between mode presets.")]
-        [SerializeField] private float transitionDuration = 0.75f;
-
-        [Header("Hover Look")]
-        [Tooltip("How quickly the free-look camera rotates toward hovered interactable focus points.")]
+        [Header("Free Look Assist")]
+        [Tooltip("How quickly the free-look Cinemachine camera rotates toward hovered interaction focus points.")]
         [SerializeField] private float hoverLookLerpSpeed = 5f;
         [Tooltip("Seconds the cursor must hover an interactable before the camera starts focusing it.")]
         [SerializeField] private float focusAcquireDelay = 0.15f;
@@ -91,7 +54,7 @@ namespace DoodleDiplomacy.Camera
         [SerializeField] private float maxBrowseYaw = 65f;
 
         [Header("Events")]
-        [Tooltip("UnityEvent invoked after a camera mode transition completes.")]
+        [Tooltip("UnityEvent invoked after Cinemachine finishes a gameplay mode transition.")]
         public CameraModeUnityEvent OnTransitionComplete;
 
         public static CameraController Instance { get; private set; }
@@ -99,9 +62,9 @@ namespace DoodleDiplomacy.Camera
         private CameraMode _currentMode = CameraMode.Default;
         private bool _isTransitioning;
         private Coroutine _transitionRoutine;
-        private bool _isCustomViewActive;
         private CameraHoverFocusController _hoverFocusController;
         private CameraEdgeBrowseController _edgeBrowseController;
+        private Quaternion _freeLookAuthoredRotation = Quaternion.identity;
 
         public CameraMode CurrentMode => _currentMode;
         public UnityEngine.Camera TargetCamera => targetCamera;
@@ -116,20 +79,19 @@ namespace DoodleDiplomacy.Camera
             }
 
             Instance = this;
-
-            if (targetCamera == null)
-            {
-                targetCamera = UnityEngine.Camera.main;
-            }
-
-            if (targetCamera == null)
-            {
-                Debug.LogError("[CameraController] No camera found. Assign one in the inspector.", this);
-            }
+            ResolveOutputReferences();
 
             _hoverFocusController = new CameraHoverFocusController(focusAcquireDelay);
             _edgeBrowseController = new CameraEdgeBrowseController();
             SyncFreeLookControllers();
+
+            CinemachineCamera freeLookCamera = GetModeCamera(CameraMode.FreeLook);
+            if (freeLookCamera != null)
+            {
+                _freeLookAuthoredRotation = freeLookCamera.transform.rotation;
+            }
+
+            ActivateInitialMode();
         }
 
         private void OnDestroy()
@@ -140,22 +102,21 @@ namespace DoodleDiplomacy.Camera
             }
         }
 
+        private void OnValidate()
+        {
+            hoverLookLerpSpeed = Mathf.Max(0.01f, hoverLookLerpSpeed);
+            focusAcquireDelay = Mathf.Max(0f, focusAcquireDelay);
+            edgeBrowseThresholdNormalized = Mathf.Clamp(edgeBrowseThresholdNormalized, 0.01f, 0.45f);
+            edgeBrowseYawSpeed = Mathf.Max(0f, edgeBrowseYawSpeed);
+            maxBrowseYaw = Mathf.Max(0f, maxBrowseYaw);
+
+            SyncFreeLookControllers();
+        }
+
         private void Update()
         {
-            if (targetCamera == null)
-            {
-                return;
-            }
-
-            // Tablet anchor is intentionally parented under the tablet, so keep following it
-            // after transitions to avoid stale one-time snapshots.
-            if (!_isCustomViewActive && _currentMode == CameraMode.TabletView && !_isTransitioning)
-            {
-                UpdateTabletViewFollowPose();
-                return;
-            }
-
-            if (_isCustomViewActive || _currentMode != CameraMode.FreeLook || _isTransitioning)
+            CinemachineCamera freeLookCamera = GetModeCamera(CameraMode.FreeLook);
+            if (freeLookCamera == null || _currentMode != CameraMode.FreeLook || _isTransitioning)
             {
                 return;
             }
@@ -163,105 +124,151 @@ namespace DoodleDiplomacy.Camera
             SyncFreeLookControllers();
             UpdateFreeLookAssistControllers(Time.deltaTime);
 
-            Quaternion desiredRotation = ResolveFreeLookRotation();
-            float t = 1f - Mathf.Exp(-Mathf.Max(0.01f, hoverLookLerpSpeed) * Time.deltaTime);
-            targetCamera.transform.rotation = Quaternion.Slerp(targetCamera.transform.rotation, desiredRotation, t);
-        }
-
-        private void UpdateTabletViewFollowPose()
-        {
-            CameraPreset preset = GetPreset(CameraMode.TabletView);
-            if (preset == null || !preset.TryGetPose(out Vector3 position, out Quaternion rotation))
-            {
-                return;
-            }
-
-            targetCamera.transform.position = position;
-            targetCamera.transform.rotation = rotation;
-            targetCamera.fieldOfView = preset.fieldOfView;
+            Quaternion desiredRotation = ResolveFreeLookRotation(freeLookCamera);
+            float t = 1f - Mathf.Exp(-hoverLookLerpSpeed * Time.deltaTime);
+            freeLookCamera.transform.rotation = Quaternion.Slerp(
+                freeLookCamera.transform.rotation,
+                desiredRotation,
+                t);
         }
 
         public void SetMode(CameraMode mode)
         {
-            if (_currentMode == mode && !_isCustomViewActive)
+            CinemachineCamera modeCamera = GetModeCamera(mode);
+            if (modeCamera == null)
+            {
+                Debug.LogError($"[CameraController] No Cinemachine camera is assigned for mode {mode}.", this);
+                return;
+            }
+
+            if (_currentMode == mode && modeCamera.enabled)
             {
                 return;
             }
 
-            if (_transitionRoutine != null)
-            {
-                StopCoroutine(_transitionRoutine);
-            }
-
-            _isCustomViewActive = false;
+            CancelTransition();
             _currentMode = mode;
-            ResetHoverFocusState();
-            if (TryResolvePresetPose(mode, out Vector3 targetPosition, out Quaternion targetRotation, out float targetFov))
-            {
-                _transitionRoutine = StartCoroutine(TransitionRoutine(targetPosition, targetRotation, targetFov));
-            }
-        }
-
-        public void SetCustomView(Vector3 position, Quaternion rotation, float fieldOfView)
-        {
-            if (targetCamera == null)
-            {
-                return;
-            }
-
-            if (_transitionRoutine != null)
-            {
-                StopCoroutine(_transitionRoutine);
-            }
-
-            _isCustomViewActive = true;
-            ResetHoverFocusState();
-            _transitionRoutine = StartCoroutine(TransitionRoutine(position, rotation, fieldOfView));
+            ResetFreeLookState(modeCamera, mode);
+            ActivateOnly(modeCamera);
+            _transitionRoutine = StartCoroutine(WaitForBlendRoutine(modeCamera, mode));
         }
 
         public bool HasValidPreset(CameraMode mode)
         {
-            return TryResolvePresetPose(mode, out _, out _, out _);
+            return GetModeCamera(mode) != null;
         }
 
-        private IEnumerator TransitionRoutine(Vector3 targetPosition, Quaternion targetRotation, float targetFieldOfView)
+        public bool ValidateConfiguration(bool logErrors = true)
+        {
+            ResolveOutputReferences();
+            bool valid = targetCamera != null && brain != null;
+
+            if (logErrors && targetCamera == null)
+            {
+                Debug.LogError("[CameraController] No physical gameplay camera is assigned.", this);
+            }
+
+            if (logErrors && brain == null)
+            {
+                Debug.LogError("[CameraController] The gameplay camera needs a Cinemachine Brain.", this);
+            }
+
+            foreach (CameraMode mode in Enum.GetValues(typeof(CameraMode)))
+            {
+                if (GetModeCamera(mode) != null)
+                {
+                    continue;
+                }
+
+                valid = false;
+                if (logErrors)
+                {
+                    Debug.LogError($"[CameraController] Missing Cinemachine camera for mode {mode}.", this);
+                }
+            }
+
+            return valid;
+        }
+
+        private void ResolveOutputReferences()
+        {
+            if (targetCamera == null)
+            {
+                targetCamera = UnityEngine.Camera.main;
+            }
+
+            if (brain == null && targetCamera != null)
+            {
+                brain = targetCamera.GetComponent<CinemachineBrain>();
+            }
+        }
+
+        private void ActivateInitialMode()
+        {
+            CinemachineCamera initialCamera = GetModeCamera(CameraMode.Default);
+            if (initialCamera == null)
+            {
+                ValidateConfiguration();
+                return;
+            }
+
+            _currentMode = CameraMode.Default;
+            ActivateOnly(initialCamera);
+            brain?.ResetState();
+        }
+
+        private void ActivateOnly(CinemachineCamera selectedCamera)
+        {
+            foreach (CinemachineCamera modeCamera in EnumerateModeCameras())
+            {
+                if (modeCamera != null)
+                {
+                    modeCamera.enabled = modeCamera == selectedCamera;
+                }
+            }
+
+            if (selectedCamera != null)
+            {
+                selectedCamera.enabled = true;
+                selectedCamera.Prioritize();
+            }
+        }
+
+        private IEnumerator WaitForBlendRoutine(CinemachineCamera selectedCamera, CameraMode mode)
         {
             _isTransitioning = true;
 
-            Vector3 startPos = targetCamera.transform.position;
-            Quaternion startRot = targetCamera.transform.rotation;
-            float startFov = targetCamera.fieldOfView;
-            bool shouldFollowDynamicPreset = !_isCustomViewActive && _currentMode == CameraMode.TabletView;
+            // CinemachineBrain resolves activation and starts its blend in LateUpdate.
+            yield return null;
 
-            float elapsed = 0f;
-            while (elapsed < transitionDuration)
+            while (brain != null && brain.IsBlending && brain.IsLiveChild(selectedCamera))
             {
-                if (shouldFollowDynamicPreset &&
-                    TryResolvePresetPose(CameraMode.TabletView, out Vector3 dynamicPosition, out Quaternion dynamicRotation, out float dynamicFov))
-                {
-                    targetPosition = dynamicPosition;
-                    targetRotation = dynamicRotation;
-                    targetFieldOfView = dynamicFov;
-                }
-
-                elapsed += Time.deltaTime;
-                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / transitionDuration));
-
-                targetCamera.transform.position = Vector3.Lerp(startPos, targetPosition, t);
-                targetCamera.transform.rotation = Quaternion.Slerp(startRot, targetRotation, t);
-                targetCamera.fieldOfView = Mathf.Lerp(startFov, targetFieldOfView, t);
-
                 yield return null;
             }
 
-            targetCamera.transform.position = targetPosition;
-            targetCamera.transform.rotation = targetRotation;
-            targetCamera.fieldOfView = targetFieldOfView;
-
             _isTransitioning = false;
             _transitionRoutine = null;
+            OnTransitionComplete?.Invoke(mode);
+        }
 
-            OnTransitionComplete?.Invoke(_currentMode);
+        private void CancelTransition()
+        {
+            if (_transitionRoutine != null)
+            {
+                StopCoroutine(_transitionRoutine);
+                _transitionRoutine = null;
+            }
+
+            _isTransitioning = false;
+        }
+
+        private void ResetFreeLookState(CinemachineCamera modeCamera, CameraMode mode)
+        {
+            ResetHoverFocusState();
+            if (mode == CameraMode.FreeLook && modeCamera != null)
+            {
+                modeCamera.transform.rotation = _freeLookAuthoredRotation;
+            }
         }
 
         private void UpdateFreeLookAssistControllers(float deltaTime)
@@ -289,76 +296,28 @@ namespace DoodleDiplomacy.Camera
 
         private void SyncFreeLookControllers()
         {
-            if (_hoverFocusController != null)
-            {
-                _hoverFocusController.SetFocusAcquireDelay(focusAcquireDelay);
-            }
-
-            if (_edgeBrowseController != null)
-            {
-                _edgeBrowseController.Configure(
-                    edgeBrowseThresholdNormalized,
-                    edgeBrowseYawSpeed,
-                    maxBrowseYaw);
-            }
+            _hoverFocusController?.SetFocusAcquireDelay(focusAcquireDelay);
+            _edgeBrowseController?.Configure(
+                edgeBrowseThresholdNormalized,
+                edgeBrowseYawSpeed,
+                maxBrowseYaw);
         }
 
-        private Quaternion ResolveFreeLookRotation()
+        private Quaternion ResolveFreeLookRotation(CinemachineCamera freeLookCamera)
         {
             InteractableObject focusObject = _hoverFocusController != null ? _hoverFocusController.ActiveFocus : null;
             if (focusObject != null)
             {
-                Vector3 focusPosition = focusObject.GetCameraFocusPosition();
-                Vector3 viewDirection = focusPosition - targetCamera.transform.position;
+                Vector3 viewDirection = focusObject.GetCameraFocusPosition() - freeLookCamera.transform.position;
                 if (viewDirection.sqrMagnitude > 0.0001f)
                 {
                     return Quaternion.LookRotation(viewDirection.normalized, Vector3.up);
                 }
             }
 
-            Quaternion baseRotation = ResolvePresetRotation(freeLookPreset);
-            Vector3 baseEuler = baseRotation.eulerAngles;
+            Vector3 baseEuler = _freeLookAuthoredRotation.eulerAngles;
             float browseYaw = _edgeBrowseController != null ? _edgeBrowseController.BrowseYaw : 0f;
             return Quaternion.Euler(baseEuler.x, baseEuler.y + browseYaw, baseEuler.z);
-        }
-
-        private bool TryResolvePresetPose(
-            CameraMode mode,
-            out Vector3 position,
-            out Quaternion rotation,
-            out float fieldOfView)
-        {
-            CameraPreset preset = GetPreset(mode);
-            return TryResolvePresetPose(preset, out position, out rotation, out fieldOfView);
-        }
-
-        private bool TryResolvePresetPose(
-            CameraPreset preset,
-            out Vector3 position,
-            out Quaternion rotation,
-            out float fieldOfView)
-        {
-            position = Vector3.zero;
-            rotation = Quaternion.identity;
-            fieldOfView = 60f;
-
-            if (preset == null)
-            {
-                return false;
-            }
-
-            fieldOfView = preset.fieldOfView;
-            return preset.TryGetPose(out position, out rotation);
-        }
-
-        private static Quaternion ResolvePresetRotation(CameraPreset preset)
-        {
-            if (preset != null && preset.TryGetPose(out _, out Quaternion rotation))
-            {
-                return rotation;
-            }
-
-            return Quaternion.identity;
         }
 
         private void ResetHoverFocusState()
@@ -367,16 +326,29 @@ namespace DoodleDiplomacy.Camera
             _edgeBrowseController?.Reset();
         }
 
-        private CameraPreset GetPreset(CameraMode mode) => mode switch
+        private CinemachineCamera GetModeCamera(CameraMode mode) => mode switch
         {
-            CameraMode.Default => defaultPreset,
-            CameraMode.FreeLook => freeLookPreset,
-            CameraMode.TabletView => tabletViewPreset,
-            CameraMode.TerminalZoom => terminalZoomPreset,
-            CameraMode.AlienReaction => alienReactionPreset,
-            CameraMode.SharedMonitorZoom => sharedMonitorZoomPreset,
-            _ => defaultPreset
+            CameraMode.Default => defaultCamera,
+            CameraMode.FreeLook => freeLookCamera,
+            CameraMode.TabletView => tabletViewCamera,
+            CameraMode.TerminalZoom => terminalZoomCamera,
+            CameraMode.AlienReaction => alienReactionCamera,
+            CameraMode.SharedMonitorZoom => sharedMonitorZoomCamera,
+            _ => defaultCamera
         };
+
+        private CinemachineCamera[] EnumerateModeCameras()
+        {
+            return new[]
+            {
+                defaultCamera,
+                freeLookCamera,
+                tabletViewCamera,
+                terminalZoomCamera,
+                alienReactionCamera,
+                sharedMonitorZoomCamera
+            };
+        }
 
         private bool TryGetPointerNormalizedPosition(out Vector2 normalizedPosition)
         {
@@ -423,13 +395,7 @@ namespace DoodleDiplomacy.Camera
                 return false;
             }
 
-            Rect screenRect = new(0f, 0f, Mathf.Max(1f, Screen.width), Mathf.Max(1f, Screen.height));
-            if (screenRect.width <= 0f || screenRect.height <= 0f)
-            {
-                return false;
-            }
-
-            return true;
+            return Screen.width > 0 && Screen.height > 0;
         }
     }
 }

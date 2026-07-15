@@ -64,11 +64,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                         return false;
                     }
 
-                    if (!NormalizedEquals(neutralSubject, originalLabel))
-                    {
-                        error = "accept requires neutral_subject_label to equal the original player label.";
-                        return false;
-                    }
+                    // The application already owns the exact player input. Do not depend on a
+                    // generative model to reproduce deterministic source data without changes.
+                    neutralSubject = originalLabel;
                     break;
 
                 case ClassificationClaimDecision:
@@ -178,13 +176,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                    !string.IsNullOrWhiteSpace(normalizedCandidate) &&
                    normalizedSource != normalizedCandidate &&
                    normalizedSource.Contains(normalizedCandidate, StringComparison.Ordinal);
-        }
-
-        private static bool NormalizedEquals(string left, string right)
-        {
-            string normalizedLeft = Normalize(left);
-            return !string.IsNullOrWhiteSpace(normalizedLeft) &&
-                   normalizedLeft == Normalize(right);
         }
 
         private static string Normalize(string text)

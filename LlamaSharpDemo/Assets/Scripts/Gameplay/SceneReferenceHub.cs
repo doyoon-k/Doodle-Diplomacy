@@ -117,6 +117,10 @@ namespace DoodleDiplomacy.Gameplay
             bool valid = true;
             valid &= Require(interactionManager, nameof(interactionManager), logErrors);
             valid &= Require(cameraController, nameof(cameraController), logErrors);
+            if (cameraController != null)
+            {
+                valid &= cameraController.ValidateConfiguration(logErrors);
+            }
             valid &= Require(dialogueSystem, nameof(dialogueSystem), logErrors);
             valid &= Require(drawingBoard, nameof(drawingBoard), logErrors);
             valid &= Require(drawingExportBridge, nameof(drawingExportBridge), logErrors);

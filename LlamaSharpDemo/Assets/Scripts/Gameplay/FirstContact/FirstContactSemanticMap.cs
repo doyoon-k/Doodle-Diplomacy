@@ -7,7 +7,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 {
     public enum FirstContactSemanticMapNodeKind
     {
-        UnknownSlot,
         Card,
         StableCluster,
         BootstrapCategory
@@ -97,19 +96,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         }
 
         public FirstContactSemanticMapSnapshot BuildSnapshot(
-            AlienQuestion question,
             IReadOnlyList<SemanticCardRecord> cards,
             IReadOnlyList<SemanticClusterRecord> clusters,
             SemanticCardRecord activeCard,
-            string activeUnknownId,
             FirstContactSemanticSettings settings)
         {
             settings ??= ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
             var snapshot = new FirstContactSemanticMapSnapshot();
             string activeCardNodeId = BuildCardNodeId(activeCard);
-            string activeUnknownNodeId = BuildUnknownNodeId(question, activeUnknownId);
-
-            AddUnknownNodes(snapshot, question, activeUnknownNodeId);
             AddCardNodes(snapshot, cards, activeCard, settings.semanticMapMaxCards, activeCardNodeId);
             AddStableClusterNodes(snapshot, clusters);
 
@@ -122,17 +116,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             RunLayout(snapshot.Nodes, settings);
             AssignNodePositions(snapshot.Nodes);
             AddRelatedLinks(snapshot, settings);
-            AddActiveLinks(snapshot, activeCardNodeId, activeUnknownNodeId);
             return snapshot;
-        }
-
-        public static string BuildUnknownNodeId(AlienQuestion question, string unknownId)
-        {
-            string questionId = string.IsNullOrWhiteSpace(question?.Id) ? "QUESTION" : question.Id.Trim();
-            string normalized = FirstContactUnknownSlotDefinition.NormalizeUnknownId(unknownId);
-            return string.IsNullOrWhiteSpace(normalized)
-                ? string.Empty
-                : $"U:{questionId}:{normalized}";
         }
 
         public static string BuildCardNodeId(SemanticCardRecord card)
@@ -150,37 +134,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return string.IsNullOrWhiteSpace(clusterId) ? string.Empty : $"K:{clusterId.Trim()}";
         }
 
-        private static void AddUnknownNodes(
-            FirstContactSemanticMapSnapshot snapshot,
-            AlienQuestion question,
-            string activeUnknownNodeId)
-        {
-            if (question == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < question.UnknownSlots.Count; i++)
-            {
-                UnknownSlot slot = question.UnknownSlots[i];
-                if (slot?.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
-                {
-                    continue;
-                }
-
-                string id = BuildUnknownNodeId(question, slot.Id);
-                snapshot.Nodes.Add(new FirstContactSemanticMapNode
-                {
-                    Id = id,
-                    Label = slot.Id,
-                    SecondaryLabel = FirstContactTerminalLocalization.LocalizeToken(slot.GetDisplayToken()),
-                    Kind = FirstContactSemanticMapNodeKind.UnknownSlot,
-                    Embedding = slot.TargetEmbedding.Vector,
-                    IsActive = string.Equals(id, activeUnknownNodeId, StringComparison.Ordinal),
-                    Marker = GetUnknownMarker(i)
-                });
-            }
-        }
 
         private static void AddCardNodes(
             FirstContactSemanticMapSnapshot snapshot,
@@ -338,8 +291,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return ClampToMap(_positions[bestNode.Id] + direction * distance);
             }
 
-            float radius = node.Kind == FirstContactSemanticMapNodeKind.UnknownSlot ? 0.42f : 0.66f;
-            return ClampToMap(direction * radius);
+            return ClampToMap(direction * 0.66f);
         }
 
         private void RunLayout(
@@ -430,24 +382,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     node.Position = position;
                 }
             }
-        }
-
-        private static void AddActiveLinks(
-            FirstContactSemanticMapSnapshot snapshot,
-            string activeCardNodeId,
-            string activeUnknownNodeId)
-        {
-            FirstContactSemanticMapNode activeCard = snapshot.FindNode(activeCardNodeId);
-            FirstContactSemanticMapNode activeUnknown = snapshot.FindNode(activeUnknownNodeId);
-            if (activeCard == null || activeUnknown == null)
-            {
-                return;
-            }
-
-            AddLinkIfMissing(snapshot, new FirstContactSemanticMapLink(
-                activeCard.Id,
-                activeUnknown.Id,
-                Cosine(activeCard.Embedding, activeUnknown.Embedding)));
         }
 
         private static void AddRelatedLinks(
@@ -630,10 +564,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
-        private static char GetUnknownMarker(int index)
-        {
-            return index >= 0 && index <= 8 ? (char)('1' + index) : '?';
-        }
     }
 
 }

@@ -6,179 +6,12 @@ using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
-    public readonly struct FirstContactResolutionResult
-    {
-        public readonly UnknownSlot Slot;
-        public readonly FirstContactTranslationStage PreviousStage;
-        public readonly FirstContactTranslationStage NewStage;
-        public readonly float Score;
-        public readonly bool Changed;
-
-        public FirstContactResolutionResult(
-            UnknownSlot slot,
-            FirstContactTranslationStage previousStage,
-            FirstContactTranslationStage newStage,
-            float score,
-            bool changed)
-        {
-            Slot = slot;
-            PreviousStage = previousStage;
-            NewStage = newStage;
-            Score = score;
-            Changed = changed;
-        }
-    }
-
-    public sealed class FirstContactUnknownResolver
-    {
-        private readonly FirstContactEmbeddingService _embeddingService;
-        private readonly FirstContactSemanticSettings _settings;
-
-        public FirstContactUnknownResolver(
-            FirstContactEmbeddingService embeddingService,
-            FirstContactSemanticSettings settings)
-        {
-            _embeddingService = embeddingService;
-            _settings = settings;
-        }
-
-        public IEnumerator PrepareQuestion(AlienQuestion question)
-        {
-            if (question == null || _embeddingService == null)
-            {
-                yield break;
-            }
-
-            for (int i = 0; i < question.UnknownSlots.Count; i++)
-            {
-                UnknownSlot slot = question.UnknownSlots[i];
-                TargetConceptEmbedding targetEmbedding = null;
-                yield return _embeddingService.EmbedTargetConcept(
-                    slot.TargetConcept,
-                    result => targetEmbedding = result);
-                slot.TargetEmbedding = targetEmbedding;
-            }
-        }
-
-        public FirstContactResolutionResult EvaluateCard(SemanticCardRecord card, UnknownSlot slot)
-        {
-            if (card == null || slot == null || card.Embedding == null || slot.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
-            {
-                return new FirstContactResolutionResult(
-                    slot,
-                    slot != null ? slot.Stage : FirstContactTranslationStage.Unknown,
-                    slot != null ? slot.Stage : FirstContactTranslationStage.Unknown,
-                    0f,
-                    false);
-            }
-
-            float score = ScoreCardAgainstSlot(card, slot);
-            FirstContactTranslationStage nextStage = DetermineStage(score);
-            FirstContactTranslationStage previous = slot.Stage;
-            bool changed = slot.TryAdvanceTo(nextStage, score);
-            return new FirstContactResolutionResult(slot, previous, slot.Stage, score, changed);
-        }
-
-        public float ScoreCardAgainstSlot(SemanticCardRecord card, UnknownSlot slot)
-        {
-            if (card == null || slot == null || card.Embedding == null || slot.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
-            {
-                return 0f;
-            }
-
-            return _embeddingService != null
-                ? _embeddingService.Similarity(card.Embedding, slot.TargetEmbedding.Vector)
-                : 0f;
-        }
-
-        public FirstContactTranslationStage DetermineStageForScore(float score)
-        {
-            return DetermineStage(score);
-        }
-
-        public bool ApplyAutomaticClusterHints(AlienQuestion question, FirstContactSemanticMemory memory)
-        {
-            if (question == null || memory == null)
-            {
-                return false;
-            }
-
-            bool changedAny = false;
-            IReadOnlyList<SemanticClusterRecord> stableClusters = memory.StableClusters;
-            for (int i = 0; i < question.UnknownSlots.Count; i++)
-            {
-                UnknownSlot slot = question.UnknownSlots[i];
-                if (slot == null || slot.Stage >= FirstContactTranslationStage.Partial ||
-                    slot.TargetEmbedding == null || !slot.TargetEmbedding.IsValid)
-                {
-                    continue;
-                }
-
-                SemanticClusterRecord bestCluster = null;
-                float bestScore = -1f;
-                for (int c = 0; c < stableClusters.Count; c++)
-                {
-                    SemanticClusterRecord cluster = stableClusters[c];
-                    if (cluster?.Centroid == null)
-                    {
-                        continue;
-                    }
-
-                    float score = _embeddingService != null
-                        ? _embeddingService.Similarity(cluster.Centroid, slot.TargetEmbedding.Vector)
-                        : 0f;
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                        bestCluster = cluster;
-                    }
-                }
-
-                if (bestCluster != null && bestScore >= GetSettings().clusterAutoPartialThreshold)
-                {
-                    if (slot.TryAdvanceTo(FirstContactTranslationStage.Partial, bestScore))
-                    {
-                        slot.LinkedClusterId = bestCluster.Id;
-                        changedAny = true;
-                    }
-                }
-            }
-
-            return changedAny;
-        }
-
-        private FirstContactTranslationStage DetermineStage(float score)
-        {
-            FirstContactSemanticSettings settings = GetSettings();
-            if (score >= settings.solvedThreshold)
-            {
-                return FirstContactTranslationStage.Solved;
-            }
-
-            if (score >= settings.partialThreshold)
-            {
-                return FirstContactTranslationStage.Partial;
-            }
-
-            if (score >= settings.hintThreshold)
-            {
-                return FirstContactTranslationStage.Hint;
-            }
-
-            return FirstContactTranslationStage.Unknown;
-        }
-
-        private FirstContactSemanticSettings GetSettings()
-        {
-            return _settings != null ? _settings : ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
-        }
-    }
-
     public sealed class FirstContactSemanticMemory
     {
         private readonly FirstContactEmbeddingService _embeddingService;
         private readonly FirstContactSemanticSettings _settings;
         private readonly FirstContactDebugSettings _debugSettings;
+        private readonly IReadOnlyList<FirstContactBootstrapCategoryDefinition> _bootstrapCategories;
         private readonly List<SemanticCardRecord> _cards = new();
         private readonly List<SemanticClusterRecord> _clusters = new();
         private FirstContactClusterFormationEdge[] _lastFormationEdges = Array.Empty<FirstContactClusterFormationEdge>();
@@ -189,11 +22,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public FirstContactSemanticMemory(
             FirstContactEmbeddingService embeddingService,
             FirstContactSemanticSettings settings,
-            FirstContactDebugSettings debugSettings)
+            FirstContactDebugSettings debugSettings,
+            IReadOnlyList<FirstContactBootstrapCategoryDefinition> bootstrapCategories = null)
         {
             _embeddingService = embeddingService;
             _settings = settings;
             _debugSettings = debugSettings;
+            _bootstrapCategories = bootstrapCategories ?? Array.Empty<FirstContactBootstrapCategoryDefinition>();
         }
 
         public IReadOnlyList<SemanticCardRecord> Cards => _cards;
@@ -689,43 +524,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             cluster.ProvisionalName = InferClusterName(cluster);
         }
 
-        private static string InferClusterName(SemanticClusterRecord cluster)
+        private string InferClusterName(SemanticClusterRecord cluster)
         {
-            bool HasAny(params string[] tokens)
+            for (int categoryIndex = 0; categoryIndex < _bootstrapCategories.Count; categoryIndex++)
             {
+                FirstContactBootstrapCategoryDefinition category = _bootstrapCategories[categoryIndex];
+                if (category == null)
+                {
+                    continue;
+                }
+
                 for (int i = 0; i < cluster.Members.Count; i++)
                 {
                     string label = cluster.Members[i].Label ?? string.Empty;
-                    for (int t = 0; t < tokens.Length; t++)
+                    if (category.MatchesClusterLabel(label))
                     {
-                        if (label.IndexOf(tokens[t], StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            return true;
-                        }
+                        return category.MeaningDisplayName;
                     }
                 }
-
-                return false;
-            }
-
-            if (HasAny("shield", "wall", "helmet", "bunker", "armor", "lock", "door", "fence"))
-            {
-                return "[PROTECTION?]";
-            }
-
-            if (HasAny("apple", "bread", "rice", "meat", "fish", "fruit", "banana", "egg", "cake"))
-            {
-                return "[FOOD?]";
-            }
-
-            if (HasAny("hammer", "wrench", "saw", "shovel", "needle", "key", "scissors", "tool"))
-            {
-                return "[TOOL?]";
-            }
-
-            if (HasAny("gun", "weapon", "knife", "sword", "missile", "fire", "monster", "bomb"))
-            {
-                return "[DANGER?]";
             }
 
             return $"[{cluster.Id}]";
@@ -745,7 +561,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return TryCreateWaveformProfile(
                 card.Embedding,
                 card.Label,
-                Mathf.Max(1, card.TurnIndex + 1),
+                Mathf.Max(1, card.ProbeIndex + 1),
                 sessionSeed,
                 out profile);
         }

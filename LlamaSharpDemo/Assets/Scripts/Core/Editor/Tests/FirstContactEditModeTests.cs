@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System.Reflection;
+using DoodleDiplomacy.Devices;
 using DoodleDiplomacy.Gameplay.FirstContact;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Core.Editor.Tests
@@ -8,125 +11,448 @@ namespace DoodleDiplomacy.Core.Editor.Tests
     public sealed class FirstContactEditModeTests
     {
         [Test]
-        public void RuntimeFallbackQuestionsAreValidSelectOneRequests()
+        public void BootstrapCategoryConfigUsesOrderedDesignerDefinitionsAndRejectsDuplicateIds()
         {
-            FirstContactQuestionSettings settings = ScriptableObject.CreateInstance<FirstContactQuestionSettings>();
+            var config = ScriptableObject.CreateInstance<FirstContactModeConfig>();
             try
             {
-                Assert.AreEqual(5, FirstContactRuntimeFallbackQuestions.Count);
-
-                for (int i = 0; i < FirstContactRuntimeFallbackQuestions.Count; i++)
+                config.bootstrapCategories = new List<FirstContactBootstrapCategoryDefinition>
                 {
-                    FirstContactQuestionDefinition question = FirstContactRuntimeFallbackQuestions.GetQuestion(i);
-
-                    Assert.IsTrue(
-                        FirstContactQuestionValidator.Validate(question, settings, out string error),
-                        $"Fallback question {i} should validate: {error}");
-                    Assert.AreEqual("SELECT-ONE", question.primitiveTokens[question.primitiveTokens.Length - 1]);
-                    Assert.GreaterOrEqual(question.unknownSlots.Length, 1);
-                    Assert.LessOrEqual(question.unknownSlots.Length, 3);
-                }
-            }
-            finally
-            {
-                Object.DestroyImmediate(settings);
-            }
-        }
-
-        [Test]
-        public void QuestionValidatorRejectsNonSelectOneRequests()
-        {
-            FirstContactQuestionSettings settings = ScriptableObject.CreateInstance<FirstContactQuestionSettings>();
-            try
-            {
-                var question = new FirstContactQuestionDefinition
-                {
-                    primitiveTokens = new[] { "YOU", "[UNKNOWN-01]" },
-                    unknownSlots = new[]
+                    new()
                     {
-                        new FirstContactUnknownSlotDefinition
-                        {
-                            id = "UNKNOWN-01",
-                            targetConcept = "important"
-                        }
+                        id = "danger",
+                        categoryDisplayName = "DANGER",
+                        meaningDisplayName = "[DANGER?]",
+                        descriptorText = "visible hazards",
+                        clusterLabelKeywords = new List<string> { "blade" },
+                        requiredTraceCount = 0
+                    },
+                    new()
+                    {
+                        id = "shelter",
+                        categoryDisplayName = "SHELTER",
+                        meaningDisplayName = "[SHELTER?]",
+                        descriptorText = "visible protective shelters",
+                        requiredTraceCount = 4
                     }
                 };
 
-                bool valid = FirstContactQuestionValidator.Validate(question, settings, out string error);
+                Assert.IsTrue(config.TryGetBootstrapCategories(
+                    out IReadOnlyList<FirstContactBootstrapCategoryDefinition> categories,
+                    out string error));
+                Assert.IsEmpty(error);
+                Assert.AreEqual("danger", categories[0].Id);
+                Assert.AreEqual("shelter", categories[1].Id);
+                Assert.AreEqual(3, categories[0].ResolveRequiredTraceCount(3));
+                Assert.AreEqual(4, categories[1].ResolveRequiredTraceCount(3));
+                Assert.IsTrue(categories[0].MatchesClusterLabel("ceremonial blade"));
 
-                Assert.IsFalse(valid);
-                StringAssert.Contains("SELECT-ONE", error);
+                config.bootstrapCategories[1].id = "danger";
+                Assert.IsFalse(config.TryGetBootstrapCategories(out _, out error));
+                StringAssert.Contains("unique", error);
             }
             finally
             {
-                Object.DestroyImmediate(settings);
+                Object.DestroyImmediate(config);
             }
         }
 
         [Test]
-        public void QuestionValidatorRejectsBannedQuestionTokens()
+        public void BootstrapSessionOwnsCategoryProgressAndStability()
         {
-            FirstContactQuestionSettings settings = ScriptableObject.CreateInstance<FirstContactQuestionSettings>();
-            try
+            var definitions = new List<FirstContactBootstrapCategoryDefinition>
             {
-                var question = new FirstContactQuestionDefinition
+                new()
                 {
-                    primitiveTokens = new[] { "YOU", "WHY", "[UNKNOWN-01]", "SELECT-ONE" },
-                    unknownSlots = new[]
-                    {
-                        new FirstContactUnknownSlotDefinition
-                        {
-                            id = "UNKNOWN-01",
-                            targetConcept = "important"
-                        }
-                    }
-                };
-
-                bool valid = FirstContactQuestionValidator.Validate(question, settings, out string error);
-
-                Assert.IsFalse(valid);
-                StringAssert.Contains("WHY", error);
-            }
-            finally
-            {
-                Object.DestroyImmediate(settings);
-            }
-        }
-
-        [Test]
-        public void AlienQuestionDisplayLineReflectsTranslationStage()
-        {
-            var definition = new FirstContactQuestionDefinition
-            {
-                primitiveTokens = new[] { "YOU", "EARTH", "[UNKNOWN-01]", "SELECT-ONE" },
-                unknownSlots = new[]
+                    id = "danger",
+                    categoryDisplayName = "Danger",
+                    meaningDisplayName = "Threat",
+                    descriptorText = "visible hazards"
+                },
+                new()
                 {
-                    new FirstContactUnknownSlotDefinition
-                    {
-                        id = "UNKNOWN-01",
-                        targetConcept = "defense",
-                        stageTexts = new FirstContactStageTexts
-                        {
-                            hint = "[OBJECT?]",
-                            partial = "[DEFENSE-RELATED?]",
-                            solved = "DEFENSE"
-                        }
-                    }
+                    id = "food",
+                    categoryDisplayName = "Food",
+                    meaningDisplayName = "Edible",
+                    descriptorText = "edible objects"
                 }
             };
-            AlienQuestion question = AlienQuestion.FromDefinition(definition, FirstContactQuestionSource.Fallback);
-            UnknownSlot slot = question.FindUnknown("UNKNOWN-01");
+            var session = new FirstContactBootstrapSession(definitions, defaultRequiredTraceCount: 2);
+            var service = new FirstContactEmbeddingService(null, null);
 
-            Assert.AreEqual("YOU / EARTH / [UNKNOWN-01] / SELECT-ONE", question.BuildDisplayLine());
+            Assert.AreEqual("danger", session.ActiveCategory.Id);
+            Assert.IsFalse(session.IsComplete);
 
-            slot.TryAdvanceTo(FirstContactTranslationStage.Hint, 0.5f);
-            Assert.AreEqual("YOU / EARTH / [OBJECT?] / SELECT-ONE", question.BuildDisplayLine());
+            session.ActiveCategory.SetDescriptorEmbedding(new[] { 1f, 0f });
+            var firstCard = new SemanticCardRecord
+            {
+                Label = "knife",
+                Embedding = new[] { 1f, 0f }
+            };
+            FirstContactBootstrapProbeFit firstFit =
+                session.ActiveCategory.EvaluateCandidate(firstCard, service);
 
-            slot.TryAdvanceTo(FirstContactTranslationStage.Partial, 0.6f);
-            Assert.AreEqual("YOU / EARTH / [DEFENSE-RELATED?] / SELECT-ONE", question.BuildDisplayLine());
+            Assert.IsTrue(session.ActiveCategory.RecordProbe(firstCard, firstFit, categoryAccepted: true));
+            Assert.IsFalse(session.ActiveCategory.IsStable);
 
-            slot.TryAdvanceTo(FirstContactTranslationStage.Solved, 0.8f);
-            Assert.AreEqual("YOU / EARTH / DEFENSE / SELECT-ONE", question.BuildDisplayLine());
+            var secondCard = new SemanticCardRecord
+            {
+                Label = "fire",
+                Embedding = new[] { 0.9f, 0.1f }
+            };
+            FirstContactBootstrapProbeFit secondFit =
+                session.ActiveCategory.EvaluateCandidate(secondCard, service);
+
+            Assert.IsTrue(session.ActiveCategory.RecordProbe(secondCard, secondFit, categoryAccepted: true));
+            Assert.IsTrue(session.ActiveCategory.IsStable);
+
+            session.AdvanceCategory();
+            Assert.AreEqual("food", session.ActiveCategory.Id);
+            session.AdvanceCategory();
+            Assert.IsTrue(session.IsComplete);
+        }
+
+        [Test]
+        public void BootstrapMapBuilderKeepsOnlyTheActiveCategoryContext()
+        {
+            var definition = new FirstContactBootstrapCategoryDefinition
+            {
+                id = "danger",
+                categoryDisplayName = "Danger",
+                meaningDisplayName = "Threat",
+                descriptorText = "visible hazards"
+            };
+            var category = new FirstContactBootstrapCategoryState(definition, 2);
+            var activeCard = new SemanticCardRecord
+            {
+                Id = "active",
+                Label = "knife",
+                LocalizedLabel = "knife",
+                Embedding = new[] { 1f, 0f },
+                BootstrapCategoryId = "danger",
+                BootstrapCategoryEvaluated = true,
+                BootstrapCategoryAccepted = true
+            };
+            var unrelatedCard = new SemanticCardRecord
+            {
+                Id = "other",
+                Label = "apple",
+                LocalizedLabel = "apple",
+                Embedding = new[] { 0f, 1f },
+                BootstrapCategoryId = "food",
+                BootstrapCategoryEvaluated = true,
+                BootstrapCategoryAccepted = true
+            };
+            var settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                var builder = new FirstContactBootstrapMapBuilder(
+                    new FirstContactEmbeddingService(null, settings));
+                builder.Reset(1234);
+
+                FirstContactSemanticMapSnapshot snapshot = builder.Build(
+                    new List<SemanticCardRecord> { activeCard, unrelatedCard },
+                    new List<SemanticClusterRecord>(),
+                    activeCard,
+                    category,
+                    includeActiveCard: true,
+                    settings);
+
+                Assert.IsNotNull(snapshot.FindNode("B:danger"));
+                Assert.IsNotNull(snapshot.FindNode("C:active"));
+                Assert.IsNull(snapshot.FindNode("C:other"));
+                Assert.AreEqual(2, snapshot.Nodes.Count);
+                Assert.AreEqual(1, snapshot.Links.Count);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void SemanticMapDisplayReusesLabelsAcrossSnapshotUpdates()
+        {
+            var terminalObject = new GameObject("Terminal", typeof(RectTransform), typeof(Canvas));
+            try
+            {
+                var screenObject = new GameObject("Screen", typeof(RectTransform));
+                screenObject.transform.SetParent(terminalObject.transform, false);
+                ((RectTransform)screenObject.transform).sizeDelta = new Vector2(1024f, 512f);
+
+                TerminalDisplay terminal = terminalObject.AddComponent<TerminalDisplay>();
+                SetPrivateField(terminal, "screenPanel", screenObject);
+                SetPrivateField(terminal, "enableScroll", false);
+                FirstContactSemanticMapDisplay display =
+                    terminalObject.AddComponent<FirstContactSemanticMapDisplay>();
+
+                display.ShowFullMap(CreateMapSnapshot("C:first"));
+                FirstContactSemanticMapGraphic graphic =
+                    terminalObject.GetComponentInChildren<FirstContactSemanticMapGraphic>(true);
+                Assert.IsNotNull(graphic);
+
+                TextMeshProUGUI[] firstLabels = graphic.GetComponentsInChildren<TextMeshProUGUI>(true);
+                Assert.AreEqual(1, firstLabels.Length);
+                TextMeshProUGUI firstLabel = firstLabels[0];
+
+                display.ShowFullMap(CreateMapSnapshot("C:first", "C:second"));
+                TextMeshProUGUI[] expandedLabels = graphic.GetComponentsInChildren<TextMeshProUGUI>(true);
+                Assert.AreEqual(2, expandedLabels.Length);
+
+                display.ShowFullMap(CreateMapSnapshot("C:first"));
+                TextMeshProUGUI[] reusedLabels = graphic.GetComponentsInChildren<TextMeshProUGUI>(true);
+                Assert.AreEqual(2, reusedLabels.Length);
+                Assert.AreSame(firstLabel, reusedLabels[0]);
+                Assert.IsTrue(reusedLabels[0].gameObject.activeSelf);
+                Assert.IsFalse(reusedLabels[1].gameObject.activeSelf);
+            }
+            finally
+            {
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void SemanticMapTransitionBuilderDoesNotMutateSourceSnapshots()
+        {
+            FirstContactSemanticMapSnapshot before = CreateMapSnapshot("B:danger");
+            FirstContactSemanticMapSnapshot after = CreateMapSnapshot("B:danger", "C:active");
+            FirstContactSemanticMapNode category = after.FindNode("B:danger");
+            FirstContactSemanticMapNode activeCard = after.FindNode("C:active");
+            category.Position = new Vector2(-0.35f, 0.2f);
+            activeCard.Position = new Vector2(0.55f, -0.45f);
+            activeCard.Pulse = 0.27f;
+            Vector2 sourcePosition = activeCard.Position;
+            float sourcePulse = activeCard.Pulse;
+
+            FirstContactSemanticMapSnapshot frame =
+                FirstContactSemanticMapTransitionBuilder.BuildBootstrapResultFrame(
+                    before,
+                    after,
+                    activeCard.Id,
+                    category.Id,
+                    accepted: true,
+                    becameStable: false,
+                    progress: 0.5f);
+
+            FirstContactSemanticMapNode frameCard = frame.FindNode(activeCard.Id);
+            Assert.IsNotNull(frameCard);
+            Assert.AreNotSame(activeCard, frameCard);
+            Assert.AreEqual(sourcePosition, activeCard.Position);
+            Assert.AreEqual(sourcePulse, activeCard.Pulse);
+            Assert.AreNotEqual(sourcePosition, frameCard.Position);
+        }
+
+        [Test]
+        public void SemanticMapDisplayValidationDoesNotCreateLabelHierarchy()
+        {
+            var terminalObject = new GameObject("Terminal", typeof(RectTransform), typeof(Canvas));
+            try
+            {
+                terminalObject.AddComponent<TerminalDisplay>();
+                FirstContactSemanticMapDisplay display =
+                    terminalObject.AddComponent<FirstContactSemanticMapDisplay>();
+
+                var mapObject = new GameObject(
+                    "SemanticMap",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(FirstContactSemanticMapGraphic));
+                mapObject.transform.SetParent(terminalObject.transform, false);
+                FirstContactSemanticMapGraphic graphic =
+                    mapObject.GetComponent<FirstContactSemanticMapGraphic>();
+                SetPrivateField(display, "mapGraphic", graphic);
+
+                InvokePrivateMethod(display, "OnValidate");
+
+                Assert.IsNull(graphic.transform.Find("SemanticMapLabels"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void SemanticMapDisplayAppliesPersistentStyleToRuntimeMap()
+        {
+            var terminalObject = new GameObject("Terminal", typeof(RectTransform), typeof(Canvas));
+            FirstContactSemanticMapStyle style =
+                ScriptableObject.CreateInstance<FirstContactSemanticMapStyle>();
+            try
+            {
+                var screenObject = new GameObject("Screen", typeof(RectTransform));
+                screenObject.transform.SetParent(terminalObject.transform, false);
+                ((RectTransform)screenObject.transform).sizeDelta = new Vector2(1024f, 512f);
+
+                TerminalDisplay terminal = terminalObject.AddComponent<TerminalDisplay>();
+                SetPrivateField(terminal, "screenPanel", screenObject);
+                SetPrivateField(terminal, "enableScroll", false);
+                FirstContactSemanticMapDisplay display =
+                    terminalObject.AddComponent<FirstContactSemanticMapDisplay>();
+                style.mapHorizontalPaddingRatio = 0.08f;
+                style.miniMap.mapHeightRatio = 0.41f;
+                style.showMiniMapLabels = false;
+
+                display.SetStyle(style);
+                display.ShowMiniMap(CreateMapSnapshot("C:first"));
+
+                FirstContactSemanticMapGraphic graphic =
+                    terminalObject.GetComponentInChildren<FirstContactSemanticMapGraphic>(true);
+                Assert.IsNotNull(graphic);
+                Assert.AreSame(style, GetPrivateField<FirstContactSemanticMapStyle>(graphic, "_style"));
+                Assert.AreEqual(style.mapHorizontalPaddingRatio, graphic.rectTransform.anchorMin.x);
+                Assert.AreEqual(1f - style.miniMap.mapHeightRatio, graphic.rectTransform.anchorMin.y);
+                Assert.AreEqual(0, graphic.GetComponentsInChildren<TextMeshProUGUI>(true).Length);
+            }
+            finally
+            {
+                Object.DestroyImmediate(style);
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void ProbeFeedbackMapsDomainIssuesWithoutControllerState()
+        {
+            FirstContactProbeLabelFeedback feedback =
+                FirstContactProbeFeedback.ResolveLabelIssue(
+                    FirstContactProbeLabelIssue.ClassificationClaim);
+
+            Assert.AreEqual(
+                "first_contact.terminal.status.label_classification_claim",
+                feedback.StatusKey);
+            Assert.AreEqual(
+                "first_contact.officer.probe_label_classification_claim",
+                feedback.OfficerLineKey);
+            Assert.IsTrue(FirstContactProbeFeedback.IsFatalValidationFailure(
+                "GamePipelineRunner is missing."));
+            Assert.IsFalse(FirstContactProbeFeedback.IsFatalValidationFailure(
+                "Temporary model response failure."));
+        }
+
+        [Test]
+        public void ProbeWorkingStateAppliesCaptureAndLabelResultsAtomically()
+        {
+            var texture = new Texture2D(2, 2);
+            try
+            {
+                var state = new FirstContactProbeWorkingState();
+                state.Reset(FirstContactCardSource.BootstrapProbe);
+                byte[] pngBytes = { 1, 2, 3 };
+
+                Assert.IsTrue(state.TryApplyCapture(
+                    FirstContactProbeCaptureResult.Succeeded(texture, pngBytes)));
+                Assert.IsTrue(state.TrySetSubmittedLabel("knife", "Knife"));
+                Assert.IsTrue(state.TryApplyLabelAnalysis(new FirstContactProbeLabelResult
+                {
+                    CanonicalLabel = "blade",
+                    TranslationAvailable = true
+                }));
+
+                FirstContactProbeDraft draft = state.CreateDraft();
+                Assert.AreSame(texture, draft.Texture);
+                Assert.AreSame(pngBytes, state.PngBytes);
+                Assert.AreEqual("blade", draft.CanonicalLabel);
+                Assert.AreEqual("Knife", draft.DisplayLabel);
+                Assert.IsTrue(draft.TranslationAvailable);
+                Assert.AreEqual("Knife", state.PreferredLabel);
+
+                Assert.IsFalse(state.TrySetSubmittedLabel(string.Empty, "Invalid"));
+                Assert.AreEqual("blade", state.CanonicalLabel);
+                Assert.AreEqual("Knife", state.DisplayLabel);
+                Assert.IsFalse(state.TryApplyLabelAnalysis(
+                    FirstContactProbeLabelResult.Failed("analysis failed")));
+                Assert.AreEqual("blade", state.CanonicalLabel);
+                Assert.IsTrue(state.TranslationAvailable);
+
+                Assert.IsFalse(state.TryApplyCapture(
+                    FirstContactProbeCaptureResult.Failed("capture failed")));
+                Assert.AreSame(texture, state.Texture);
+                Assert.AreSame(pngBytes, state.PngBytes);
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
+        public void ProbeWorkingStateResetClearsTheWholePendingProbe()
+        {
+            var texture = new Texture2D(2, 2);
+            try
+            {
+                var state = new FirstContactProbeWorkingState();
+                state.Reset(FirstContactCardSource.BootstrapProbe);
+                state.TryApplyCapture(FirstContactProbeCaptureResult.Succeeded(
+                    texture,
+                    new byte[] { 1 }));
+                state.TrySetSubmittedLabel("knife", "Knife");
+
+                state.Reset(FirstContactCardSource.BootstrapProbe);
+
+                Assert.IsFalse(state.HasCapture);
+                Assert.IsNull(state.Texture);
+                Assert.IsNull(state.PngBytes);
+                Assert.IsEmpty(state.CanonicalLabel);
+                Assert.IsEmpty(state.DisplayLabel);
+                Assert.IsFalse(state.TranslationAvailable);
+                Assert.IsEmpty(state.PreferredLabel);
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
+        public void ClusterFormationTrackerDetectsAStableTransition()
+        {
+            var card = new SemanticCardRecord { Id = "card-1" };
+            var cluster = new SemanticClusterRecord
+            {
+                Id = "cluster-1",
+                IsStable = true,
+                ProvisionalName = "warning"
+            };
+            cluster.Members.Add(card);
+            var before = new List<FirstContactClusterTransitionSnapshot>
+            {
+                new("cluster-1", isStable: false, memberCount: 1)
+            };
+
+            FirstContactClusterFormationEvent formation =
+                FirstContactClusterFormationTracker.BuildFormation(
+                    card,
+                    cluster,
+                    before,
+                    formationEdges: null);
+
+            Assert.IsTrue(formation.HasCluster);
+            Assert.IsTrue(formation.BecameStable);
+            Assert.IsTrue(formation.ShouldAnimate);
+            Assert.AreEqual("C:card-1", formation.ActiveCardNodeId);
+            Assert.AreEqual("K:cluster-1", formation.ClusterNodeId);
+        }
+
+        [Test]
+        public void TerminalTextEntrySessionOwnsInputLifetimeWithoutAVisibleTerminal()
+        {
+            var session = new TerminalTextEntrySession(null);
+            session.Begin(
+                "initial",
+                32,
+                onChanged: null,
+                onSubmitted: null,
+                onCancelled: null);
+
+            Assert.IsTrue(session.IsActive);
+            Assert.AreEqual("initial", session.Value);
+            Assert.AreEqual("initial", session.RenderedValue);
+
+            session.End();
+            Assert.IsFalse(session.IsActive);
         }
 
         [Test]
@@ -447,66 +773,6 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
-        public void StableClusterCanAutoPartiallyDecodeFutureUnknown()
-        {
-            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
-            try
-            {
-                settings.clusterJoinThreshold = 0.5f;
-                settings.minClusterMembers = 3;
-                settings.minClusterCohesion = 0.5f;
-                settings.clusterAutoPartialThreshold = 0.58f;
-
-                var embedding = new FirstContactEmbeddingService(null, settings);
-                var memory = new FirstContactSemanticMemory(embedding, settings, null);
-                memory.AddCard(CreateCard("shield", Unit(1f, 0f, 0f)));
-                memory.AddCard(CreateCard("wall", Unit(0.98f, 0.2f, 0f)));
-                memory.AddCard(CreateCard("helmet", Unit(0.97f, 0.22f, 0f)));
-
-                Assert.AreEqual(1, memory.Clusters.Count);
-                Assert.IsTrue(memory.Clusters[0].IsStable);
-                Assert.AreEqual("[PROTECTION?]", memory.Clusters[0].DisplayName);
-
-                var definition = new FirstContactQuestionDefinition
-                {
-                    primitiveTokens = new[] { "YOU", "HOME", "[UNKNOWN-01]", "SELECT-ONE" },
-                    unknownSlots = new[]
-                    {
-                        new FirstContactUnknownSlotDefinition
-                        {
-                            id = "UNKNOWN-01",
-                            targetConcept = "defense",
-                            stageTexts = new FirstContactStageTexts
-                            {
-                                hint = "[OBJECT?]",
-                                partial = "[DEFENSE-RELATED?]",
-                                solved = "DEFENSE"
-                            }
-                        }
-                    }
-                };
-                AlienQuestion question = AlienQuestion.FromDefinition(definition, FirstContactQuestionSource.Fallback);
-                UnknownSlot slot = question.FindUnknown("UNKNOWN-01");
-                slot.TargetEmbedding = new TargetConceptEmbedding
-                {
-                    TargetConcept = "defense",
-                    Vector = Unit(1f, 0f, 0f)
-                };
-
-                var resolver = new FirstContactUnknownResolver(embedding, settings);
-                bool changed = resolver.ApplyAutomaticClusterHints(question, memory);
-
-                Assert.IsTrue(changed);
-                Assert.AreEqual(FirstContactTranslationStage.Partial, slot.Stage);
-                Assert.AreEqual("YOU / HOME / [DEFENSE-RELATED?] / SELECT-ONE", question.BuildDisplayLine());
-            }
-            finally
-            {
-                Object.DestroyImmediate(settings);
-            }
-        }
-
-        [Test]
         public void GraphClusteringSeparatesEmergingGroupFromNearbyCentroid()
         {
             FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
@@ -564,14 +830,97 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             }
         }
 
+        [Test]
+        public void GraphClusteringUsesConfiguredKeywordsForStableGroupMeaning()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                settings.clusterJoinThreshold = 0.62f;
+                settings.clusterNeighborCount = 2;
+                settings.minClusterMembers = 3;
+                settings.minClusterCohesion = 0.5f;
+                settings.minClusterPairwiseSimilarity = 0.62f;
+                var categories = new List<FirstContactBootstrapCategoryDefinition>
+                {
+                    new()
+                    {
+                        id = "signal",
+                        categoryDisplayName = "SIGNAL",
+                        meaningDisplayName = "[SIGNAL?]",
+                        descriptorText = "visible electrical signals",
+                        clusterLabelKeywords = new List<string> { "spark" }
+                    }
+                };
+
+                var embedding = new FirstContactEmbeddingService(null, settings);
+                var memory = new FirstContactSemanticMemory(embedding, settings, null, categories);
+                memory.AddCard(CreateCard("spark", Unit(1f, 0f, 0f)));
+                memory.AddCard(CreateCard("arc", Unit(0.99f, 0.1f, 0f)));
+                memory.AddCard(CreateCard("flash", Unit(0.99f, -0.1f, 0f)));
+
+                Assert.AreEqual(1, memory.StableClusters.Count);
+                Assert.AreEqual("[SIGNAL?]", memory.StableClusters[0].DisplayName);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
         private static SemanticCardRecord CreateCard(string label, float[] vector)
         {
             return new SemanticCardRecord
             {
                 Label = label,
                 Embedding = vector,
-                Source = FirstContactCardSource.DecodeSample
+                Source = FirstContactCardSource.BootstrapProbe
             };
+        }
+
+        private static FirstContactSemanticMapSnapshot CreateMapSnapshot(params string[] nodeIds)
+        {
+            var snapshot = new FirstContactSemanticMapSnapshot();
+            for (int i = 0; i < nodeIds.Length; i++)
+            {
+                snapshot.Nodes.Add(new FirstContactSemanticMapNode
+                {
+                    Id = nodeIds[i],
+                    Label = nodeIds[i],
+                    Kind = FirstContactSemanticMapNodeKind.Card,
+                    Position = new Vector2(-0.4f + i * 0.4f, 0f),
+                    IsActive = i == 0
+                });
+            }
+
+            return snapshot;
+        }
+
+        private static void SetPrivateField<T>(object target, string fieldName, T value)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(field, $"Missing field: {fieldName}");
+            field.SetValue(target, value);
+        }
+
+        private static T GetPrivateField<T>(object target, string fieldName)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(field, $"Missing field: {fieldName}");
+            return (T)field.GetValue(target);
+        }
+
+        private static void InvokePrivateMethod(object target, string methodName)
+        {
+            MethodInfo method = target.GetType().GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(method, $"Missing method: {methodName}");
+            method.Invoke(target, null);
         }
 
         private static bool HasClusterWithLabels(

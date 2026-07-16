@@ -17,6 +17,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField] private TerminalDisplay terminalDisplay;
         [Tooltip("터미널 화면 안에 표시할 의미 공간 그래픽입니다. 비워 두면 런타임에 자동 생성합니다.")]
         [SerializeField] private FirstContactSemanticMapGraphic mapGraphic;
+        [Tooltip("프리팹에서 배치한 의미 맵 RectTransform을 유지합니다. 비활성화하면 스타일 에셋의 비율로 런타임 배치합니다.")]
+        [SerializeField] private bool preserveAuthoredMapLayout = true;
 
         private readonly FirstContactSemanticMapLabelLayer _labelLayer = new();
         private RectTransform _mapRect;
@@ -317,7 +319,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             mapGraphic = mapObject.GetComponent<FirstContactSemanticMapGraphic>();
             _mapRect = mapGraphic.rectTransform;
             EnsureLabelRoot();
-            ConfigureCurrentLayout();
+            ConfigureCurrentLayout(force: true);
             mapGraphic.ApplyStyle(_style);
             mapGraphic.Clear();
             return mapGraphic;
@@ -382,9 +384,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             terminalDisplay?.SetContentTopInsetNormalized(mode.terminalTextTopInset);
         }
 
-        private void ConfigureCurrentLayout()
+        private void ConfigureCurrentLayout(bool force = false)
         {
-            if (_mapRect == null)
+            if (_mapRect == null || (preserveAuthoredMapLayout && !force))
             {
                 return;
             }

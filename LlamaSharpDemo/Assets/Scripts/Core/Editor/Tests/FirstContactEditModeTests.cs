@@ -5,6 +5,7 @@ using DoodleDiplomacy.Gameplay.FirstContact;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace DoodleDiplomacy.Core.Editor.Tests
 {
@@ -308,6 +309,186 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             finally
             {
                 Object.DestroyImmediate(style);
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void SemanticMapDisplayPreservesAuthoredPrefabLayout()
+        {
+            var terminalObject = new GameObject("Terminal", typeof(RectTransform), typeof(Canvas));
+            try
+            {
+                var screenObject = new GameObject("Screen", typeof(RectTransform));
+                screenObject.transform.SetParent(terminalObject.transform, false);
+
+                TerminalDisplay terminal = terminalObject.AddComponent<TerminalDisplay>();
+                SetPrivateField(terminal, "screenPanel", screenObject);
+                SetPrivateField(terminal, "enableScroll", false);
+
+                var mapObject = new GameObject(
+                    "SemanticMap",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(FirstContactSemanticMapGraphic));
+                mapObject.transform.SetParent(screenObject.transform, false);
+                RectTransform mapRect = mapObject.GetComponent<RectTransform>();
+                mapRect.anchorMin = new Vector2(0.17f, 0.29f);
+                mapRect.anchorMax = new Vector2(0.83f, 0.71f);
+                mapRect.offsetMin = new Vector2(12f, 18f);
+                mapRect.offsetMax = new Vector2(-24f, -30f);
+
+                FirstContactSemanticMapDisplay display =
+                    terminalObject.AddComponent<FirstContactSemanticMapDisplay>();
+                SetPrivateField(display, "mapGraphic", mapObject.GetComponent<FirstContactSemanticMapGraphic>());
+
+                Vector2 anchorMin = mapRect.anchorMin;
+                Vector2 anchorMax = mapRect.anchorMax;
+                Vector2 offsetMin = mapRect.offsetMin;
+                Vector2 offsetMax = mapRect.offsetMax;
+
+                display.ShowFullMap(CreateMapSnapshot("C:first"));
+
+                Assert.AreEqual(anchorMin, mapRect.anchorMin);
+                Assert.AreEqual(anchorMax, mapRect.anchorMax);
+                Assert.AreEqual(offsetMin, mapRect.offsetMin);
+                Assert.AreEqual(offsetMax, mapRect.offsetMax);
+            }
+            finally
+            {
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void BrainwaveDisplayPreservesAuthoredPrefabLayout()
+        {
+            var terminalObject = new GameObject("Terminal", typeof(RectTransform), typeof(Canvas));
+            try
+            {
+                var screenObject = new GameObject("Screen", typeof(RectTransform));
+                screenObject.transform.SetParent(terminalObject.transform, false);
+
+                TerminalDisplay terminal = terminalObject.AddComponent<TerminalDisplay>();
+                SetPrivateField(terminal, "screenPanel", screenObject);
+                SetPrivateField(terminal, "enableScroll", false);
+
+                var graphObject = new GameObject(
+                    "BrainwaveGraph",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(BrainwaveGraphDisplay));
+                graphObject.transform.SetParent(screenObject.transform, false);
+                RectTransform graphRect = graphObject.GetComponent<RectTransform>();
+                graphRect.anchorMin = new Vector2(0.11f, 0.73f);
+                graphRect.anchorMax = new Vector2(0.89f, 0.91f);
+                graphRect.offsetMin = new Vector2(9f, 15f);
+                graphRect.offsetMax = new Vector2(-21f, -27f);
+
+                TerminalBrainwaveDisplay display =
+                    terminalObject.AddComponent<TerminalBrainwaveDisplay>();
+                SetPrivateField(display, "brainwaveGraph", graphObject.GetComponent<BrainwaveGraphDisplay>());
+
+                Vector2 anchorMin = graphRect.anchorMin;
+                Vector2 anchorMax = graphRect.anchorMax;
+                Vector2 offsetMin = graphRect.offsetMin;
+                Vector2 offsetMax = graphRect.offsetMax;
+
+                display.PlaySearching("layout-test", 0, 1234);
+
+                Assert.AreEqual(anchorMin, graphRect.anchorMin);
+                Assert.AreEqual(anchorMax, graphRect.anchorMax);
+                Assert.AreEqual(offsetMin, graphRect.offsetMin);
+                Assert.AreEqual(offsetMax, graphRect.offsetMax);
+            }
+            finally
+            {
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void ProbePreviewSwitchesAuthoredSlotsWithoutChangingTheirLayouts()
+        {
+            var host = new GameObject("ProbePreviewDisplay");
+            var texture = new Texture2D(4, 2);
+            try
+            {
+                FirstContactProbePreviewDisplay display =
+                    host.AddComponent<FirstContactProbePreviewDisplay>();
+                RectTransform reviewRoot = CreateProbePreviewSlot(
+                    host.transform,
+                    "Review",
+                    new Vector2(0.12f, 0.5f),
+                    new Vector2(0.88f, 0.93f),
+                    out RawImage reviewImage,
+                    out AspectRatioFitter reviewAspect);
+                RectTransform dispatchRoot = CreateProbePreviewSlot(
+                    host.transform,
+                    "Dispatch",
+                    new Vector2(0.54f, 0.36f),
+                    new Vector2(0.93f, 0.76f),
+                    out RawImage dispatchImage,
+                    out AspectRatioFitter dispatchAspect);
+                display.ConfigureReview(reviewRoot, reviewImage, reviewAspect, null);
+                display.ConfigureDispatch(dispatchRoot, dispatchImage, dispatchAspect, null);
+
+                Vector2 reviewAnchorMin = reviewRoot.anchorMin;
+                Vector2 reviewAnchorMax = reviewRoot.anchorMax;
+                Vector2 dispatchAnchorMin = dispatchRoot.anchorMin;
+                Vector2 dispatchAnchorMax = dispatchRoot.anchorMax;
+
+                Assert.IsTrue(display.Show(texture, useDispatchLayout: false, scanActive: false));
+                Assert.IsTrue(reviewRoot.gameObject.activeSelf);
+                Assert.IsFalse(dispatchRoot.gameObject.activeSelf);
+                Assert.AreSame(texture, reviewImage.texture);
+                Assert.AreEqual(2f, reviewAspect.aspectRatio);
+
+                Assert.IsTrue(display.Show(texture, useDispatchLayout: true, scanActive: false));
+                Assert.IsFalse(reviewRoot.gameObject.activeSelf);
+                Assert.IsTrue(dispatchRoot.gameObject.activeSelf);
+                Assert.AreSame(texture, dispatchImage.texture);
+                Assert.AreEqual(2f, dispatchAspect.aspectRatio);
+                Assert.AreEqual(reviewAnchorMin, reviewRoot.anchorMin);
+                Assert.AreEqual(reviewAnchorMax, reviewRoot.anchorMax);
+                Assert.AreEqual(dispatchAnchorMin, dispatchRoot.anchorMin);
+                Assert.AreEqual(dispatchAnchorMax, dispatchRoot.anchorMax);
+
+                display.Clear();
+                Assert.IsFalse(reviewRoot.gameObject.activeSelf);
+                Assert.IsFalse(dispatchRoot.gameObject.activeSelf);
+                Assert.IsNull(reviewImage.texture);
+                Assert.IsNull(dispatchImage.texture);
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void TerminalScreenPlaneEditorFindsScreenFromEditableLayoutChild()
+        {
+            var terminalObject = new GameObject("Terminal");
+            try
+            {
+                var canvasObject = new GameObject("TerminalCanvas", typeof(RectTransform));
+                canvasObject.transform.SetParent(terminalObject.transform, false);
+                var screenObject = new GameObject("ScreenPanel", typeof(RectTransform));
+                screenObject.transform.SetParent(canvasObject.transform, false);
+                var layoutObject = new GameObject("EditableTerminalLayout", typeof(RectTransform));
+                layoutObject.transform.SetParent(screenObject.transform, false);
+                var childObject = new GameObject("ProbePreview_Dispatch", typeof(RectTransform));
+                childObject.transform.SetParent(layoutObject.transform, false);
+
+                Assert.IsTrue(global::TerminalScreenPlaneLayoutEditor.TryGetScreenRect(
+                    childObject.transform,
+                    out RectTransform resolvedScreen));
+                Assert.AreSame(screenObject.GetComponent<RectTransform>(), resolvedScreen);
+            }
+            finally
+            {
                 Object.DestroyImmediate(terminalObject);
             }
         }
@@ -894,6 +1075,33 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             }
 
             return snapshot;
+        }
+
+        private static RectTransform CreateProbePreviewSlot(
+            Transform parent,
+            string name,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            out RawImage image,
+            out AspectRatioFitter aspect)
+        {
+            var rootObject = new GameObject(name, typeof(RectTransform));
+            rootObject.transform.SetParent(parent, false);
+            RectTransform root = rootObject.GetComponent<RectTransform>();
+            root.anchorMin = anchorMin;
+            root.anchorMax = anchorMax;
+
+            var imageObject = new GameObject(
+                "Image",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(RawImage),
+                typeof(AspectRatioFitter));
+            imageObject.transform.SetParent(root, false);
+            image = imageObject.GetComponent<RawImage>();
+            aspect = imageObject.GetComponent<AspectRatioFitter>();
+            aspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            return root;
         }
 
         private static void SetPrivateField<T>(object target, string fieldName, T value)

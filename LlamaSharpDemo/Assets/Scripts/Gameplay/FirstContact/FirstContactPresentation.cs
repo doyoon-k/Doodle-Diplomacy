@@ -4,7 +4,6 @@ using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Devices;
 using DoodleDiplomacy.Localization;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
@@ -17,10 +16,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private readonly FirstContactSemanticMapDisplay _semanticMapDisplay;
         private readonly FirstContactDebugSettings _debugSettings;
         private readonly FirstContactPresentationSettings _presentationSettings;
-        private GameObject _probePreviewRoot;
-        private RawImage _probePreviewImage;
-        private AspectRatioFitter _probePreviewAspect;
-        private FirstContactProbePreviewScanline _probePreviewScanline;
+        private readonly FirstContactProbePreviewDisplay _probePreviewDisplay;
 
         public FirstContactTerminalPresenter(
             TerminalDisplay terminalDisplay,
@@ -38,6 +34,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 : ScriptableObject.CreateInstance<FirstContactPresentationSettings>();
             _semanticMapDisplay = ResolveSemanticMapDisplay(terminalDisplay);
             _semanticMapDisplay?.SetStyle(_presentationSettings.semanticMapStyle);
+            _probePreviewDisplay = ResolveProbePreviewDisplay(terminalDisplay, _presentationSettings);
         }
 
         public void Clear()
@@ -610,168 +607,23 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void ShowProbePreview(Texture probeTexture, ProbePreviewLayout layout, bool scanActive)
         {
-            if (_terminalDisplay == null || probeTexture == null)
+            if (_terminalDisplay == null ||
+                probeTexture == null ||
+                _probePreviewDisplay == null ||
+                !_probePreviewDisplay.Show(
+                    probeTexture,
+                    layout == ProbePreviewLayout.Dispatch,
+                    scanActive))
             {
                 return;
             }
 
-            RawImage image = EnsureProbePreview();
-            if (image == null)
-            {
-                return;
-            }
-
-            ApplyProbePreviewLayout(layout);
-            image.texture = probeTexture;
-            if (_probePreviewAspect != null)
-            {
-                _probePreviewAspect.aspectRatio = Mathf.Max(0.01f, probeTexture.width / (float)Mathf.Max(1, probeTexture.height));
-            }
-
-            _probePreviewScanline?.SetScanning(scanActive);
-            _probePreviewRoot.SetActive(true);
-            if (layout == ProbePreviewLayout.Dispatch)
-            {
-                _terminalDisplay.SetContentTopInsetNormalized(GetProbePreviewTextTopInset(layout));
-            }
-            else if (layout == ProbePreviewLayout.Review)
-            {
-                _terminalDisplay.SetContentTopInsetNormalized(GetProbePreviewTextTopInset(layout));
-            }
+            _terminalDisplay.SetContentTopInsetNormalized(GetProbePreviewTextTopInset(layout));
         }
 
         private void ClearProbePreview()
         {
-            _probePreviewScanline?.SetScanning(false);
-            if (_probePreviewImage != null)
-            {
-                _probePreviewImage.texture = null;
-            }
-
-            if (_probePreviewRoot != null)
-            {
-                _probePreviewRoot.SetActive(false);
-            }
-        }
-
-        private RawImage EnsureProbePreview()
-        {
-            if (_probePreviewImage != null)
-            {
-                return _probePreviewImage;
-            }
-
-            RectTransform screenRect = _terminalDisplay.ScreenRectTransform;
-            if (screenRect == null)
-            {
-                return null;
-            }
-
-            _probePreviewRoot = new GameObject(
-                "FirstContactProbePreview",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
-            _probePreviewRoot.transform.SetParent(screenRect, false);
-
-            RectTransform rootRect = (RectTransform)_probePreviewRoot.transform;
-            rootRect.anchorMin = new Vector2(0.12f, 0.50f);
-            rootRect.anchorMax = new Vector2(0.88f, 0.93f);
-            rootRect.offsetMin = Vector2.zero;
-            rootRect.offsetMax = Vector2.zero;
-
-            Image background = _probePreviewRoot.GetComponent<Image>();
-            background.color = new Color(0.01f, 0.015f, 0.012f, 0.88f);
-            background.raycastTarget = false;
-
-            GameObject imageObject = new(
-                "Image",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(RawImage),
-                typeof(AspectRatioFitter));
-            imageObject.transform.SetParent(_probePreviewRoot.transform, false);
-
-            RectTransform imageRect = (RectTransform)imageObject.transform;
-            imageRect.anchorMin = new Vector2(0.04f, 0.06f);
-            imageRect.anchorMax = new Vector2(0.96f, 0.94f);
-            imageRect.offsetMin = Vector2.zero;
-            imageRect.offsetMax = Vector2.zero;
-
-            _probePreviewImage = imageObject.GetComponent<RawImage>();
-            _probePreviewImage.color = Color.white;
-            _probePreviewImage.raycastTarget = false;
-
-            _probePreviewAspect = imageObject.GetComponent<AspectRatioFitter>();
-            _probePreviewAspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            _probePreviewAspect.aspectRatio = 1f;
-
-            GameObject scanObject = new(
-                "Scanline",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
-            scanObject.transform.SetParent(_probePreviewRoot.transform, false);
-
-            RectTransform scanRect = (RectTransform)scanObject.transform;
-            scanRect.anchorMin = new Vector2(0.04f, 0.5f);
-            scanRect.anchorMax = new Vector2(0.96f, 0.5f);
-            scanRect.offsetMin = new Vector2(0f, -1.5f);
-            scanRect.offsetMax = new Vector2(0f, 1.5f);
-
-            Image scanImage = scanObject.GetComponent<Image>();
-            scanImage.color = new Color(0.35f, 1f, 0.5f, 0.58f);
-            scanImage.raycastTarget = false;
-
-            _probePreviewScanline = _probePreviewRoot.AddComponent<FirstContactProbePreviewScanline>();
-            _probePreviewScanline.Configure(scanRect);
-            _probePreviewScanline.SetScanning(false);
-
-            _probePreviewRoot.SetActive(false);
-            return _probePreviewImage;
-        }
-
-        private void ApplyProbePreviewLayout(ProbePreviewLayout layout)
-        {
-            if (_probePreviewRoot == null)
-            {
-                return;
-            }
-
-            RectTransform rootRect = (RectTransform)_probePreviewRoot.transform;
-            rootRect.anchorMin = GetProbePreviewAnchorMin(layout);
-            rootRect.anchorMax = GetProbePreviewAnchorMax(layout);
-
-            rootRect.offsetMin = Vector2.zero;
-            rootRect.offsetMax = Vector2.zero;
-        }
-
-        private Vector2 GetProbePreviewAnchorMin(ProbePreviewLayout layout)
-        {
-            if (_presentationSettings == null)
-            {
-                return layout == ProbePreviewLayout.Dispatch
-                    ? new Vector2(0.54f, 0.36f)
-                    : new Vector2(0.12f, 0.5f);
-            }
-
-            return layout == ProbePreviewLayout.Dispatch
-                ? _presentationSettings.probeDispatchAnchorMin
-                : _presentationSettings.probeReviewAnchorMin;
-        }
-
-        private Vector2 GetProbePreviewAnchorMax(ProbePreviewLayout layout)
-        {
-            if (_presentationSettings == null)
-            {
-                return layout == ProbePreviewLayout.Dispatch
-                    ? new Vector2(0.93f, 0.76f)
-                    : new Vector2(0.88f, 0.93f);
-            }
-
-            return layout == ProbePreviewLayout.Dispatch
-                ? _presentationSettings.probeDispatchAnchorMax
-                : _presentationSettings.probeReviewAnchorMax;
+            _probePreviewDisplay?.Clear();
         }
 
         private float GetProbePreviewTextTopInset(ProbePreviewLayout layout)
@@ -830,51 +682,29 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 : terminalDisplay.gameObject.AddComponent<FirstContactSemanticMapDisplay>();
         }
 
+        private static FirstContactProbePreviewDisplay ResolveProbePreviewDisplay(
+            TerminalDisplay terminalDisplay,
+            FirstContactPresentationSettings presentationSettings)
+        {
+            if (terminalDisplay == null)
+            {
+                return null;
+            }
+
+            FirstContactProbePreviewDisplay display =
+                terminalDisplay.GetComponent<FirstContactProbePreviewDisplay>() ??
+                terminalDisplay.GetComponentInChildren<FirstContactProbePreviewDisplay>(true);
+            return display != null
+                ? display
+                : FirstContactProbePreviewDisplay.CreateRuntime(
+                    terminalDisplay.ScreenRectTransform,
+                    presentationSettings);
+        }
+
         private enum ProbePreviewLayout
         {
             Review,
             Dispatch
-        }
-    }
-
-    internal sealed class FirstContactProbePreviewScanline : MonoBehaviour
-    {
-        private RectTransform _line;
-        private bool _scanning;
-        private float _phase;
-
-        public void Configure(RectTransform line)
-        {
-            _line = line;
-        }
-
-        public void SetScanning(bool scanning)
-        {
-            _scanning = scanning;
-            _phase = 0f;
-            if (_line != null)
-            {
-                _line.gameObject.SetActive(scanning);
-            }
-        }
-
-        private void Update()
-        {
-            if (!_scanning || _line == null)
-            {
-                return;
-            }
-
-            RectTransform parent = _line.parent as RectTransform;
-            if (parent == null)
-            {
-                return;
-            }
-
-            float height = Mathf.Max(1f, parent.rect.height);
-            _phase = (_phase + Time.deltaTime * 0.72f) % 1f;
-            float y = Mathf.Lerp((height * 0.42f) - 2f, (-height * 0.42f) + 2f, _phase);
-            _line.anchoredPosition = new Vector2(0f, y);
         }
     }
 

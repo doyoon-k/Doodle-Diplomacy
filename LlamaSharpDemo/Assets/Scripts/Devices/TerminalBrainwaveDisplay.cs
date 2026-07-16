@@ -18,6 +18,8 @@ namespace DoodleDiplomacy.Devices
         [Header("Layout")]
         [Tooltip("Create the brainwave graph object automatically when no graph reference is assigned.")]
         [SerializeField] private bool autoCreateGraph = true;
+        [Tooltip("Keep the assigned graph RectTransform exactly as authored in the prefab. Disable this only for ratio-driven runtime layout.")]
+        [SerializeField] private bool preserveAuthoredGraphLayout = true;
         [Tooltip("Fraction of the terminal screen height reserved for the waveform area.")]
         [SerializeField, Range(0.2f, 0.7f)] private float graphHeightRatio = 0.22f;
         [Tooltip("Fraction of the terminal screen height used as the top inset for terminal text while brainwaves are active.")]
@@ -257,7 +259,7 @@ namespace DoodleDiplomacy.Devices
             graphObject.transform.SetAsFirstSibling();
 
             brainwaveGraph = graphObject.GetComponent<BrainwaveGraphDisplay>();
-            ConfigureGraphLayout();
+            ConfigureGraphLayout(force: true);
             ConfigureGraphSignalShape();
             brainwaveGraph.Clear();
             return brainwaveGraph;
@@ -276,9 +278,9 @@ namespace DoodleDiplomacy.Devices
             }
         }
 
-        private void ConfigureGraphLayout()
+        private void ConfigureGraphLayout(bool force = false)
         {
-            if (brainwaveGraph == null)
+            if (brainwaveGraph == null || (preserveAuthoredGraphLayout && !force))
             {
                 return;
             }

@@ -43,6 +43,10 @@ namespace DoodleDiplomacy.Devices
         [Tooltip("Color of the player's drawing signal in single-signal and semantic comparison modes.")]
         [SerializeField] private Color drawingSignalColor = new(0.35f, 0.9f, 1f, 0.95f);
 
+        [Header("Editor Preview")]
+        [Tooltip("Draws a representative waveform while editing the terminal prefab. This preview is never rendered in Play Mode.")]
+        [SerializeField] private bool showEditorPreview = true;
+
         [Header("Comparison Capture")]
         [Tooltip("Seconds used to record the player's visual probe trace over the pre-existing unknown trace.")]
         [SerializeField, Min(0.1f)] private float comparisonCaptureDuration = 1.25f;
@@ -486,7 +490,8 @@ namespace DoodleDiplomacy.Devices
         {
             vh.Clear();
 
-            if (!_hasSignal)
+            bool drawEditorPreview = !Application.isPlaying && showEditorPreview && !_hasSignal;
+            if (!_hasSignal && !drawEditorPreview)
             {
                 return;
             }
@@ -500,6 +505,12 @@ namespace DoodleDiplomacy.Devices
             if (drawGrid)
             {
                 DrawGrid(vh, rect);
+            }
+
+            if (drawEditorPreview)
+            {
+                DrawEditorPreview(vh, rect);
+                return;
             }
 
             if (_isComparisonMode)
@@ -535,6 +546,67 @@ namespace DoodleDiplomacy.Devices
             DrawChannel(vh, rect, GetChannelCenterYNormalized(0), 0, channelAColor);
             DrawChannel(vh, rect, GetChannelCenterYNormalized(1), 1, channelBColor);
             DrawChannel(vh, rect, GetChannelCenterYNormalized(2), 2, channelCColor);
+        }
+
+        private void DrawEditorPreview(VertexHelper vh, Rect rect)
+        {
+            DrawEditorPreviewChannel(vh, rect, 0.72f, 0.065f, 1.35f, 0.2f, channelAColor);
+            DrawEditorPreviewChannel(vh, rect, 0.5f, 0.085f, 1.75f, 1.7f, channelBColor);
+            DrawEditorPreviewChannel(vh, rect, 0.28f, 0.055f, 2.1f, 3.1f, channelCColor);
+        }
+
+        private void DrawEditorPreviewChannel(
+            VertexHelper vh,
+            Rect rect,
+            float centerYNormalized,
+            float amplitude,
+            float frequency,
+            float phase,
+            Color previewColor)
+        {
+            int count = Mathf.Max(32, sampleCount);
+            Vector2 previous = SampleEditorPreviewPoint(
+                rect,
+                0,
+                count,
+                centerYNormalized,
+                amplitude,
+                frequency,
+                phase);
+
+            for (int i = 1; i < count; i++)
+            {
+                Vector2 next = SampleEditorPreviewPoint(
+                    rect,
+                    i,
+                    count,
+                    centerYNormalized,
+                    amplitude,
+                    frequency,
+                    phase);
+                AddLine(vh, previous, next, lineThickness, previewColor);
+                previous = next;
+            }
+        }
+
+        private static Vector2 SampleEditorPreviewPoint(
+            Rect rect,
+            int index,
+            int count,
+            float centerYNormalized,
+            float amplitude,
+            float frequency,
+            float phase)
+        {
+            float normalizedX = index / (float)(count - 1);
+            float x = Mathf.Lerp(rect.xMin, rect.xMax, normalizedX);
+            float wave =
+                Mathf.Sin((normalizedX * frequency * Mathf.PI * 2f) + phase) * amplitude +
+                Mathf.Sin((normalizedX * frequency * 2.73f * Mathf.PI * 2f) + (phase * 0.57f)) *
+                amplitude *
+                0.32f;
+            float centerY = Mathf.Lerp(rect.yMin, rect.yMax, centerYNormalized);
+            return new Vector2(x, centerY + (wave * rect.height));
         }
 
         private void GenerateProfile(

@@ -863,6 +863,76 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uC758\uBBF8: {meaning}"
+  - key: first_contact.terminal.line.calibration_complete
+    sourceText: CALIBRATION COMPLETE
+    translations:
+    - locale: ko-KR
+      text: "\uBCF4\uC815 \uC644\uB8CC"
+  - key: first_contact.terminal.category.danger
+    sourceText: DANGER
+    translations:
+    - locale: ko-KR
+      text: 위험
+  - key: first_contact.terminal.category.protection
+    sourceText: PROTECTION
+    translations:
+    - locale: ko-KR
+      text: 보호
+  - key: first_contact.terminal.category.food
+    sourceText: FOOD
+    translations:
+    - locale: ko-KR
+      text: 음식
+  - key: first_contact.terminal.category.tool
+    sourceText: TOOL
+    translations:
+    - locale: ko-KR
+      text: 도구
+  - key: first_contact.terminal.meaning.danger
+    sourceText: '[DANGER?]'
+    translations:
+    - locale: ko-KR
+      text: '[위험?]'
+  - key: first_contact.terminal.meaning.protection
+    sourceText: '[PROTECTION?]'
+    translations:
+    - locale: ko-KR
+      text: '[보호?]'
+  - key: first_contact.terminal.meaning.food
+    sourceText: '[FOOD?]'
+    translations:
+    - locale: ko-KR
+      text: '[음식?]'
+  - key: first_contact.terminal.meaning.tool
+    sourceText: '[TOOL?]'
+    translations:
+    - locale: ko-KR
+      text: '[도구?]'
+  - key: first_contact.terminal.meaning.unknown
+    sourceText: '[MEANING?]'
+    translations:
+    - locale: ko-KR
+      text: '[의미?]'
+  - key: first_contact.terminal.category.danger.descriptor
+    sourceText: concrete visible subjects whose ordinary identity is a source or instrument of harm, threat, injury, poisoning, fire, explosion, attack, or other direct hazard
+    translations:
+    - locale: ko-KR
+      text: 일반적인 정체성이 위해, 위협, 부상, 중독, 화재, 폭발, 공격 또는 기타 직접적인 위험의 원인이나 수단인 구체적이고 눈에 보이는 대상
+  - key: first_contact.terminal.category.protection.descriptor
+    sourceText: concrete visible subjects whose ordinary identity is protection, defense, shelter, guarding, or blocking harm
+    translations:
+    - locale: ko-KR
+      text: 일반적인 정체성이 보호, 방어, 피난, 경계 또는 위해 차단인 구체적이고 눈에 보이는 대상
+  - key: first_contact.terminal.category.food.descriptor
+    sourceText: concrete visible subjects whose ordinary identity is something eaten, drunk, prepared as a meal, or used as food
+    translations:
+    - locale: ko-KR
+      text: 일반적인 정체성이 먹거나 마시거나 식사로 준비되거나 식품으로 사용되는 구체적이고 눈에 보이는 대상
+  - key: first_contact.terminal.category.tool.descriptor
+    sourceText: concrete visible subjects whose ordinary identity is a tool, instrument, device, or implement for doing work
+    translations:
+    - locale: ko-KR
+      text: 일반적인 정체성이 작업을 수행하는 데 쓰이는 도구, 기구, 장치 또는 작업용 물품인 구체적이고 눈에 보이는 대상
   - key: first_contact.terminal.line.translator_ready
     sourceText: TRANSLATOR READY
     translations:

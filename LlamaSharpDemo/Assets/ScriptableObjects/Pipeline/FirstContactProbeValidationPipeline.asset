@@ -20,9 +20,12 @@ MonoBehaviour:
     llmProfile: {fileID: 11400000, guid: a42e093df78b4d1894b0aa86b61043fb, type: 2}
     userPromptTemplate: 'Validate this probe drawing conservatively.
 
-      SOURCE_LOCALE: {{source_locale}}
+      UI_LOCALE: {{source_locale}}
 
-      ORIGINAL_PLAYER_LABEL: {{probe_display_label}}'
+      ORIGINAL_PLAYER_LABEL: {{probe_display_label}}
+
+      The original label may use a language different from UI_LOCALE. Interpret the
+      original text directly without translating or rewriting it.'
     jsonMaxRetries: 1
     jsonRetryDelaySeconds: 0.1
     useVision: 1

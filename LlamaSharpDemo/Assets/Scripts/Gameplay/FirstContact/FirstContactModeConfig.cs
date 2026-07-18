@@ -72,7 +72,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Tooltip("English source/fallback shown after MEANING: once this CATEGORY is stable. Its localization key is generated as first_contact.terminal.meaning.{id}.")]
         public string meaningDisplayName;
         [TextArea(2, 5)]
-        [Tooltip("Concrete-subject description supplied to embedding and CATEGORY-fit analysis. This is gameplay data, not terminal copy.")]
+        [Tooltip("English source/fallback for embedding and CATEGORY-fit analysis. Its localization key is generated as first_contact.terminal.category.{id}.descriptor.")]
         public string descriptorText;
         [Tooltip("Optional label keywords used to name a stable semantic GROUP with this CATEGORY's MEANING on the map.")]
         public List<string> clusterLabelKeywords = new();

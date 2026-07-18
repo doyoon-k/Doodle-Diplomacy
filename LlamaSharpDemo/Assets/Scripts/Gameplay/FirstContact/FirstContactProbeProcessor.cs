@@ -180,8 +180,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             var state = new PipelineState();
             state.SetString("category_id", category.Id);
-            state.SetString("category_display_name", category.DisplayName);
-            state.SetString("category_definition", category.DescriptorText);
+            state.SetString("category_display_name", category.LocalizedDisplayName);
+            state.SetString("category_definition", category.LocalizedDescriptorText);
             state.SetString("probe_label", card?.CanonicalLabel ?? string.Empty);
             state.SetString(
                 "probe_display_label",

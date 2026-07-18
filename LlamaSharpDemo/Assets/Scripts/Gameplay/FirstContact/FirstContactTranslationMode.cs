@@ -248,7 +248,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             var descriptors = new string[categories.Count];
             for (int i = 0; i < categories.Count; i++)
             {
-                descriptors[i] = categories[i].DescriptorText;
+                descriptors[i] = categories[i].LocalizedDescriptorText;
             }
 
             IReadOnlyList<EmbeddingResult> results = null;
@@ -265,7 +265,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
                 Debug.LogWarning(
                     $"[FirstContactTranslationMode] Bootstrap category descriptor embedding failed. " +
-                    $"category={categories[i].Id} descriptor='{categories[i].DescriptorText}' error='{result.Error}'",
+                    $"category={categories[i].Id} locale='{L10n.CurrentLocale}' " +
+                    $"descriptor='{categories[i].LocalizedDescriptorText}' error='{result.Error}'",
                     this);
             }
         }
@@ -826,7 +827,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 category.DisplayName,
                 category.TraceCount,
                 category.RequiredTraceCount,
-                category.Meaning,
                 mapSnapshot,
                 GetSemanticSettings(),
                 instant: false);

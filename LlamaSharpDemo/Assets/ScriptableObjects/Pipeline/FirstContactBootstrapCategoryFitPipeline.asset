@@ -23,9 +23,13 @@ MonoBehaviour:
 
       Category definition: {{category_definition}}
 
-      Source locale: {{source_locale}}
+      UI locale: {{source_locale}}
 
-      Original player label: {{probe_display_label}}'
+      Original player label: {{probe_display_label}}
+
+      The category name and definition are localized for the UI locale. The original
+      player label may use another language. Compare their meanings directly without
+      translating or rewriting the player label.'
     embeddingOutputKey: embedding
     failOnEmptyEmbeddingInput: 1
     jsonMaxRetries: 3

@@ -48,7 +48,11 @@ MonoBehaviour:
 
     Rules:
 
-    - The original player label and its expected locale are the only semantic evidence.
+    - The original player label is the only semantic evidence. The supplied locale
+    is the current UI locale, not a guarantee about the label language.
+
+    - The label may use a language different from the UI locale or mix languages.
+    Interpret the original text directly.
 
     - The original text was entered as a drawing label. If a short standalone word
     genuinely has both a concrete noun sense and a verb or command sense, prefer

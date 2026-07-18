@@ -126,8 +126,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string original = JsonSerializer.Serialize(
                 state.GetString("probe_display_label", string.Empty),
                 PromptJsonOptions);
-            return $"Expected source locale: {sourceLocale}" +
-                   $"\nOriginal player label JSON string: {original}";
+            return $"Current UI locale (not necessarily the label language): {sourceLocale}" +
+                   $"\nOriginal player label JSON string: {original}" +
+                   "\nThe label may use another language or mix languages. Interpret the original text directly without translating or rewriting it.";
         }
 
         private static string BuildCorrectionPrompt(

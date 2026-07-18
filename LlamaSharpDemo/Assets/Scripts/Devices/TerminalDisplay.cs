@@ -105,6 +105,12 @@ namespace DoodleDiplomacy.Devices
         private RectTransform _panelRect;
         private RectTransform _textRect;
         private RectTransform _textViewportRect;
+        private bool _hasAuthoredTextViewportLayout;
+        private Vector2 _authoredTextViewportAnchorMin;
+        private Vector2 _authoredTextViewportAnchorMax;
+        private Vector2 _authoredTextViewportOffsetMin;
+        private Vector2 _authoredTextViewportOffsetMax;
+        private Vector2 _authoredTextViewportPivot;
         private bool _scrollInitialized;
         private float _contentTopInsetNormalized;
         private Vector4 _baseTextMargin;
@@ -568,6 +574,10 @@ namespace DoodleDiplomacy.Devices
             {
                 Transform existingViewport = _panelRect.Find(TextViewportName);
                 _textViewportRect = existingViewport as RectTransform;
+                if (_textViewportRect != null)
+                {
+                    CaptureAuthoredTextViewportLayout();
+                }
             }
 
             if (_textViewportRect == null)
@@ -584,6 +594,19 @@ namespace DoodleDiplomacy.Devices
                 _textViewportRect.gameObject.AddComponent<RectMask2D>();
 
             ApplyTextViewportLayout();
+        }
+
+        private void CaptureAuthoredTextViewportLayout()
+        {
+            if (_textViewportRect == null)
+                return;
+
+            _hasAuthoredTextViewportLayout = true;
+            _authoredTextViewportAnchorMin = _textViewportRect.anchorMin;
+            _authoredTextViewportAnchorMax = _textViewportRect.anchorMax;
+            _authoredTextViewportOffsetMin = _textViewportRect.offsetMin;
+            _authoredTextViewportOffsetMax = _textViewportRect.offsetMax;
+            _authoredTextViewportPivot = _textViewportRect.pivot;
         }
 
         private void EnsureTextInputConfigured()
@@ -781,6 +804,9 @@ namespace DoodleDiplomacy.Devices
 
         private float GetTextVisibleHeight()
         {
+            if (_textViewportRect != null)
+                return Mathf.Max(1f, _textViewportRect.rect.height);
+
             if (_panelRect == null)
                 return 1f;
 
@@ -791,6 +817,19 @@ namespace DoodleDiplomacy.Devices
         {
             if (_textViewportRect == null)
                 return;
+
+            if (_hasAuthoredTextViewportLayout)
+            {
+                _textViewportRect.anchorMin = _authoredTextViewportAnchorMin;
+                _textViewportRect.anchorMax = _authoredTextViewportAnchorMax;
+                _textViewportRect.pivot = _authoredTextViewportPivot;
+                _textViewportRect.offsetMin = _authoredTextViewportOffsetMin;
+
+                Vector2 offsetMax = _authoredTextViewportOffsetMax;
+                offsetMax.y -= GetContentTopInsetPixels();
+                _textViewportRect.offsetMax = offsetMax;
+                return;
+            }
 
             _textViewportRect.anchorMin = Vector2.zero;
             _textViewportRect.anchorMax = Vector2.one;

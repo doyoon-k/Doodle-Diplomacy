@@ -4,13 +4,13 @@
 
 The First Contact terminal is an in-world analysis device. It should feel like a machine printing sparse signal-state output, not like a tutorial UI explaining mechanics to the player.
 
-The player learns the loop through repeated terminal patterns:
+The player learns category calibration through repeated terminal patterns:
 
 ```text
-PROBE -> TRACE -> GROUP -> MEANING
+CATEGORY -> PROBE -> TRACE -> GROUP -> CALIBRATION
 ```
 
-The player draws concrete objects. The system records alien response traces, clusters similar responses, and opens rough meanings from stable groups.
+The player draws concrete objects. The system records alien response traces, clusters similar responses, and calibrates each known bootstrap category against a stable group. `MEANING` is reserved for interpretations produced from alien signals rather than echoing a category the player was already given.
 
 ## Core Voice
 
@@ -54,6 +54,7 @@ Use these terms consistently in player-facing terminal text.
 | `GROUP` | A cluster of similar alien response traces. | Stability state, e.g. `GROUP: FORMING`. |
 | `MEANING` | The interpreted meaning opened by a stable group. | Result line, e.g. `MEANING: [THREAT?]`. |
 | `CATEGORY` | A bootstrap target type the player is currently trying to sample. | Goal line, e.g. `CATEGORY: DEFENSE`. |
+| `CALIBRATION` | Confirmation that a known bootstrap category has enough stable response traces. | Completion line, e.g. `CALIBRATION COMPLETE`. |
 
 ## Game Glossary
 
@@ -69,6 +70,7 @@ Use this glossary for First Contact player-facing copy and localization.
 | `MEANING` | `의미` | The rough interpretation opened by a stable group. | Do not use as a bootstrap goal. |
 | `CATEGORY` | `분류` | The current bootstrap target type. | Keep raw category names uppercase unless explicitly localized. |
 | `SIGNAL` | `신호` | The waveform or response signal shown by the device. | Use with `표본` as `시각 표본 신호`. |
+| `CALIBRATION` | `보정` | Confirmation that a known bootstrap category has been linked to a stable response group. | Use `보정 완료` on category completion. |
 
 Avoid these as player-facing terminal terms:
 
@@ -169,7 +171,7 @@ PRESS ENTER TO CONTINUE
 
 ### Cluster Trace
 
-Shown when the response group becomes stable enough to open a meaning candidate.
+Shown when the response group for a known bootstrap category becomes stable enough to complete calibration.
 
 ```text
 [CLUSTER TRACE]
@@ -177,7 +179,7 @@ Shown when the response group becomes stable enough to open a meaning candidate.
 CATEGORY: THREAT
 TRACE: 03/03
 GROUP: STABLE
-MEANING: [THREAT?]
+CALIBRATION COMPLETE
 
 PRESS ENTER TO CONTINUE
 ```
@@ -220,11 +222,13 @@ GROUP: FORMING
 TRACE: 01/03
 ```
 
-## Meaning And Category Distinction
+## Meaning, Category, And Calibration Distinction
 
 `CATEGORY` is the current bootstrap goal. It can be shown before the player draws.
 
-`MEANING` is the interpretation produced after the response group stabilizes.
+`CALIBRATION` confirms that enough stable response traces have been linked to that known category.
+
+`MEANING` is an interpretation produced when the calibrated map is later applied to an alien signal. Do not echo the known category as a newly discovered meaning on bootstrap completion.
 
 Example:
 
@@ -241,10 +245,10 @@ Later:
 [CLUSTER TRACE]
 CATEGORY: DEFENSE
 GROUP: STABLE
-MEANING: [DEFENSE?]
+CALIBRATION COMPLETE
 ```
 
-Do not use `MEANING` as a goal label before the group stabilizes.
+Later translated alien output may show an uncertain interpretation such as `MEANING: [DEFENSE?]` when that is genuinely derived from a signal.
 
 ## Localization Rules
 
@@ -263,6 +267,7 @@ Before committing terminal UX work:
 - No player-facing `TOKEN`.
 - Terminal body uses bracket headers and `KEY: VALUE` lines.
 - Category probe prompts say `DRAW RELATED OBJECT`, not a fixed object name.
+- Bootstrap category completion says `CALIBRATION COMPLETE` and does not echo `CATEGORY` as `MEANING`.
 - Concrete example lists are not shown in terminal by default.
 - New player-facing strings use localization keys.
 - Science-officer prose is separate from terminal body text.

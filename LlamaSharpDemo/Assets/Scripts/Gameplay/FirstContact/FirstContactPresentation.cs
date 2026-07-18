@@ -156,7 +156,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string category,
             int traceCount,
             int requiredTraceCount,
-            string meaning,
             FirstContactSemanticMapSnapshot mapSnapshot,
             FirstContactSemanticSettings semanticSettings,
             bool instant = false)
@@ -170,7 +169,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
                     L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n" +
                 T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
-                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", LocalizeMeaning(categoryId, meaning))) +
+                T("line.calibration_complete", "CALIBRATION COMPLETE") +
                 BuildContinuePrompt();
             _terminalDisplay?.ShowText(text, instant);
         }

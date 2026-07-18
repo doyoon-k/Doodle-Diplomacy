@@ -12,3 +12,170 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e10f2785cb4b45ffbc2be49e10766b00, type: 3}
   m_Name: FirstContactSemanticMapStyle
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactSemanticMapStyle
+  miniMap:
+    mapHeightRatio: 0.28
+    terminalTextTopInset: 0.31
+    labelFontSize: 22.5
+    labelWidth: 192
+    labelHeight: 30
+    labelOffsetMultiplier: 0.85
+    gridVerticalLineCount: 5
+    gridHorizontalLineCount: 3
+    gridLineThickness: 0.8
+    bootstrapSignalMinimumThickness: 0.8
+    bootstrapSignalMaximumThickness: 2.8
+    normalLinkMinimumThickness: 1
+    normalLinkMaximumThickness: 2.6
+    activeLinkThicknessBonus: 0.8
+    confirmedLinkMinimumThickness: 1.8
+    confirmedLinkMaximumThickness: 3.8
+    rejectedLinkMinimumThickness: 0.5
+    rejectedLinkMaximumThickness: 1.4
+    candidateLinkMinimumThickness: 0.8
+    candidateLinkMaximumThickness: 2.2
+    categoryFieldPaddingRatio: 0.065
+    categoryFieldMinimumRadiusRatio: 0.12
+    categoryFieldMinimumVerticalRadiusMultiplier: 0.72
+    categoryFieldRingThickness: 1.8
+    categoryFieldInnerRingThickness: 0.8
+    clusterRadiusRatio: 0.055
+    clusterRingThickness: 1.6
+    clusterPulseRingThickness: 2.2
+    clusterLockRingThickness: 1.5
+    cardNodeRadiusRatio: 0.018
+    stableClusterNodeRadiusRatio: 0.018
+    bootstrapCategoryNodeRadiusRatio: 0.02
+  fullMap:
+    mapHeightRatio: 0.62
+    terminalTextTopInset: 0.66
+    labelFontSize: 21
+    labelWidth: 285
+    labelHeight: 42
+    labelOffsetMultiplier: 1.2
+    gridVerticalLineCount: 8
+    gridHorizontalLineCount: 5
+    gridLineThickness: 1.1
+    bootstrapSignalMinimumThickness: 1.2
+    bootstrapSignalMaximumThickness: 4.2
+    normalLinkMinimumThickness: 1.4
+    normalLinkMaximumThickness: 4.5
+    activeLinkThicknessBonus: 1.5
+    confirmedLinkMinimumThickness: 2.8
+    confirmedLinkMaximumThickness: 6.2
+    rejectedLinkMinimumThickness: 0.7
+    rejectedLinkMaximumThickness: 2.1
+    candidateLinkMinimumThickness: 1.1
+    candidateLinkMaximumThickness: 3.6
+    categoryFieldPaddingRatio: 0.09
+    categoryFieldMinimumRadiusRatio: 0.18
+    categoryFieldMinimumVerticalRadiusMultiplier: 0.72
+    categoryFieldRingThickness: 2.8
+    categoryFieldInnerRingThickness: 1.2
+    clusterRadiusRatio: 0.075
+    clusterRingThickness: 2.4
+    clusterPulseRingThickness: 3.4
+    clusterLockRingThickness: 2.2
+    cardNodeRadiusRatio: 0.021
+    stableClusterNodeRadiusRatio: 0.022
+    bootstrapCategoryNodeRadiusRatio: 0.024
+  minimumMapPadding: 8
+  mapHorizontalPaddingRatio: 0.045
+  mapVerticalPaddingRatio: 0.08
+  backgroundColor: {r: 0, g: 0.035, b: 0.012, a: 0.72}
+  gridColor: {r: 0.08, g: 0.38, b: 0.15, a: 0.3}
+  cardColor: {r: 0.36, g: 0.92, b: 1, a: 0.96}
+  activeCardColor: {r: 1, g: 0.95, b: 0.45, a: 1}
+  detachedActiveCardColor: {r: 0.52, g: 0.84, b: 1, a: 0.96}
+  detachedCardColor: {r: 0.3, g: 0.66, b: 0.92, a: 0.66}
+  clusterColor: {r: 0.72, g: 0.5, b: 1, a: 0.78}
+  bootstrapCategoryColor: {r: 0.78, g: 1, b: 0.42, a: 0.82}
+  stableBootstrapCategoryColor: {r: 1, g: 0.86, b: 0.28, a: 0.94}
+  fallbackNodeColor: {r: 1, g: 1, b: 1, a: 1}
+  weakLinkColor: {r: 0.22, g: 0.8, b: 0.42, a: 0.36}
+  strongLinkColor: {r: 0.8, g: 1, b: 0.55, a: 0.88}
+  confirmedFormationLinkColor: {r: 0.72, g: 1, b: 0.72, a: 0.82}
+  rejectedFormationLinkColor: {r: 0.44, g: 0.72, b: 0.95, a: 1}
+  candidateFormationLinkColor: {r: 0.46, g: 0.96, b: 1, a: 1}
+  bootstrapSignalMinimumAlpha: 0.08
+  bootstrapSignalMaximumAlpha: 0.58
+  activeLinkMinimumAlpha: 0.95
+  confirmedFormationMinimumAlpha: 0.88
+  rejectedFormationMinimumAlpha: 0.08
+  rejectedFormationMaximumAlpha: 0.34
+  candidateFormationMinimumAlpha: 0.18
+  candidateFormationMaximumAlpha: 0.76
+  categoryFieldMinimumFillAlpha: 0.055
+  categoryFieldFillAlpha: 0.13
+  stableCategoryFieldFillAlpha: 0.18
+  categoryFieldMinimumRingAlpha: 0.32
+  categoryFieldRingAlpha: 0.62
+  stableCategoryFieldRingAlpha: 0.82
+  categoryFieldInnerRingMaximumAlpha: 0.36
+  categoryFieldInnerRingAlphaMultiplier: 0.55
+  categoryFieldInnerRingRadiusMultiplier: 0.86
+  stableClusterFillAlpha: 0.16
+  clusterPulseAlpha: 0.55
+  clusterLockPulseAlpha: 0.32
+  pulseVisibilityThreshold: 0.001
+  clusterLockPulseThreshold: 1.05
+  activeNodeBaseScale: 1.6
+  activeNodePulseScale: 0.35
+  clusterPulseRingBaseScale: 1.08
+  clusterPulseRingPulseScale: 0.22
+  clusterLockRingBaseScale: 1.62
+  clusterLockRingPulseScale: 0.18
+  nodeGlowAlpha: 0.28
+  nodePulseAlpha: 0.98
+  nodeOuterPulseAlphaMultiplier: 0.58
+  nodeGlowBaseScale: 1.28
+  nodeGlowPulseScale: 0.16
+  nodePulseRingBaseScale: 1.55
+  nodePulseRingPulseScale: 0.42
+  nodeOuterPulseRingBaseScale: 2.25
+  nodeOuterPulseRingPulseScale: 0.78
+  categoryTraceRingRadiusMultiplier: 1.75
+  categoryTraceRingMinimumThickness: 1.4
+  categoryTraceRingThicknessMultiplier: 0.14
+  activeNodeRingScale: 1.65
+  activeNodeRingMinimumThickness: 2.4
+  activeNodeRingThicknessMultiplier: 0.22
+  nodePulseRingMinimumThickness: 2.8
+  nodePulseRingThicknessMultiplier: 0.28
+  nodeOuterPulseRingMinimumThickness: 1.9
+  nodeOuterPulseRingThicknessMultiplier: 0.17
+  showMiniMapLabels: 1
+  labelOffset: 12
+  labelFontStyle: 1
+  labelAlignment: 514
+  labelAutoSizing: 1
+  labelMinimumSizeRatio: 0.65
+  labelMinimumFontSize: 10
+  labelOverflowMode: 1
+  labelEdgePadding: 2
+  activeLabelColor: {r: 0.95, g: 1, b: 0.68, a: 0.98}
+  clusterLabelColor: {r: 0.85, g: 0.7, b: 1, a: 0.9}
+  stableBootstrapCategoryLabelColor: {r: 0.98, g: 0.9, b: 0.48, a: 0.96}
+  bootstrapCategoryLabelColor: {r: 0.72, g: 0.95, b: 0.52, a: 0.86}
+  cardLabelColor: {r: 0.45, g: 0.92, b: 1, a: 0.82}
+  fallbackLabelColor: {r: 1, g: 1, b: 1, a: 1}
+  bootstrapDetachedLabelOffset: {x: -9.65, y: -2.75}
+  bootstrapActiveLabelOffset: {x: -9.65, y: -2.75}
+  bootstrapCardLabelOffset: {x: -9.65, y: -2.75}
+  clusterLabelOffset: {x: -9.65, y: -2.75}
+  categoryLabelOffset: {x: -9.65, y: -2.75}
+  defaultLabelOffset: {x: -9.65, y: -2.75}
+  geometry:
+    minimumLineThickness: 0.25
+    minimumEllipseRadius: 1
+    minimumSegments: 12
+    categoryFieldFillSegments: 48
+    categoryFieldRingSegments: 54
+    clusterSegments: 32
+    clusterPulseSegments: 36
+    clusterLockSegments: 42
+    nodeSegments: 20
+    categoryTraceRingSegments: 28
+    nodeGlowSegments: 24
+    nodePulseSegments: 32
+    nodeOuterPulseSegments: 36
+    activeNodeRingSegments: 28

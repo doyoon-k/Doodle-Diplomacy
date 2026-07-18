@@ -23,7 +23,10 @@ MonoBehaviour:
 
     Rules:
 
-    - The original player label and source locale are the only label evidence.
+    - The CATEGORY name and definition are localized for the current UI locale.
+
+    - The original player label may use a language different from the UI locale or
+    mix languages. Interpret it directly without translating or rewriting it.
 
     - The game is training a response group from concrete visual samples. A label
     is evidence of the drawn subject identity, not an argument for how to classify

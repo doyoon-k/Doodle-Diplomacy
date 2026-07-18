@@ -9,34 +9,34 @@ EditorUserSettings:
       value: 18134705175a055722080a3115371d4a0d55006876786860616b0471b8b07a68ffab74f9ee2a3a30300cea1a11320d0beb1a0c25f7060f494b4cc80018eb09361fc211cb1f862d19c51d19dcc413d6ade0d8ddfcddf9f4d9d29195fcfde6ebeae6f0a9c9afa6f8c5b89ff7a1aacececac4eba4d7c9d28bda
       flags: 0
     RecentlyUsedSceneGuid-0:
-      value: 53090d0003575e0a5e0f5a7147740944471640722f2923322c2d1863e7b6356e
-      flags: 0
-    RecentlyUsedSceneGuid-1:
       value: 0108505152055e585c595a7a41740c444f154b2f742927637e781b30bbb4366b
       flags: 0
-    RecentlyUsedSceneGuid-2:
+    RecentlyUsedSceneGuid-1:
       value: 00080750530c0b0a5958582347705a444e4e1b787c2c7e36782d1f35e1b9616e
       flags: 0
-    RecentlyUsedSceneGuid-3:
+    RecentlyUsedSceneGuid-2:
       value: 0608555203045c58585c5c2411770e4412151c282929726174794436e3e46261
       flags: 0
-    RecentlyUsedSceneGuid-4:
+    RecentlyUsedSceneGuid-3:
       value: 5b0305055404585d5f565b7b497006444515407d7a7e72637a7e1c67e6e2306e
       flags: 0
-    RecentlyUsedSceneGuid-5:
+    RecentlyUsedSceneGuid-4:
       value: 50070d5503050f030f5d0a204972084440164e7d797e7e637e7e1e62e3b93569
       flags: 0
-    RecentlyUsedSceneGuid-6:
+    RecentlyUsedSceneGuid-5:
       value: 5b060d5751070b0b595e5b74147a0c441416192e282b27697f7d4d35b0e5603c
       flags: 0
-    RecentlyUsedSceneGuid-7:
-      value: 07035752075758590858087744205c4714134e2f7f792336782c1837b2b9663d
-      flags: 0
-    RecentlyUsedSceneGuid-8:
+    RecentlyUsedSceneGuid-6:
       value: 50530d5f5d54505a5f560976442509154f161c7b2a2c206178781867b7b6373e
       flags: 0
-    RecentlyUsedSceneGuid-9:
+    RecentlyUsedSceneGuid-7:
       value: 020957055c570a090f0d5b21417508441515487a2d7b716674714960b7b9666d
+      flags: 0
+    RecentlyUsedSceneGuid-8:
+      value: 07035752075758590858087744205c4714134e2f7f792336782c1837b2b9663d
+      flags: 0
+    RecentlyUsedSceneGuid-9:
+      value: 5a0005530702080a0e0a597316275a4447154973292c7f33757b4c35b2b7356e
       flags: 0
     lightmappingBakingProfile:
       value: 51

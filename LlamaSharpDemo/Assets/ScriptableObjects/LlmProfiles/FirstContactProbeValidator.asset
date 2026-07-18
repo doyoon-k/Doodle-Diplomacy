@@ -16,7 +16,9 @@ MonoBehaviour:
   stream: 0
   keepAlive: 
   systemPromptTemplate: 'Validate a human probe drawing for a first-contact translation
-    device. The original player label and source locale are the only label evidence.
+    device. The original player label is the only label evidence. The supplied locale
+    is the current UI locale, not a guarantee about the label language. The label may
+    use a different language or mix languages; interpret the original text directly.
     Do not create a semantic label for the drawing. Do not translate anything.
     Return only JSON:
 
@@ -38,7 +40,7 @@ MonoBehaviour:
     action, emotion, story, or abstract concept instead of one concrete object.
 
     - label_match compares the image to the visible subject identity in the original
-    player label according to the supplied source locale.
+    player label. Do not assume the label uses the UI locale.
 
     - Separate subject identity from classification claims. Subject identity is
     the concrete visible thing being named. A classification claim is wording

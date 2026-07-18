@@ -55,6 +55,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return L10n.T($"first_contact.terminal.meaning.{suffix}", fallback);
         }
 
+        public static string LocalizeCategoryDescriptor(string categoryId, string descriptorFallback)
+        {
+            string fallback = descriptorFallback?.Trim() ?? string.Empty;
+            string suffix = BuildKeySuffix(categoryId);
+            return string.IsNullOrWhiteSpace(suffix)
+                ? fallback
+                : L10n.T($"first_contact.terminal.category.{suffix}.descriptor", fallback);
+        }
+
         private static string BuildKeySuffix(string value)
         {
             if (string.IsNullOrWhiteSpace(value))

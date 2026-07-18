@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DoodleDiplomacy.Devices;
 using DoodleDiplomacy.Gameplay.FirstContact;
+using DoodleDiplomacy.Localization;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
@@ -111,6 +112,37 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.AreEqual("food", session.ActiveCategory.Id);
             session.AdvanceCategory();
             Assert.IsTrue(session.IsComplete);
+        }
+
+        [Test]
+        public void BootstrapCategoryResolvesDisplayMeaningAndDescriptorFromCurrentLocale()
+        {
+            string originalLocale = L10n.CurrentLocale;
+            var definition = new FirstContactBootstrapCategoryDefinition
+            {
+                id = "danger",
+                categoryDisplayName = "DANGER",
+                meaningDisplayName = "[DANGER?]",
+                descriptorText = "concrete visible subjects whose ordinary identity is a source or instrument of harm, threat, injury, poisoning, fire, explosion, attack, or other direct hazard"
+            };
+            var category = new FirstContactBootstrapCategoryState(definition, 3);
+
+            try
+            {
+                L10n.SetLocale("ko-KR", persist: false);
+                Assert.AreEqual("위험", category.LocalizedDisplayName);
+                Assert.AreEqual("[위험?]", category.LocalizedMeaning);
+                StringAssert.StartsWith("일반적인 정체성이", category.LocalizedDescriptorText);
+
+                L10n.SetLocale("en-US", persist: false);
+                Assert.AreEqual("DANGER", category.LocalizedDisplayName);
+                Assert.AreEqual("[DANGER?]", category.LocalizedMeaning);
+                Assert.AreEqual(definition.DescriptorText, category.LocalizedDescriptorText);
+            }
+            finally
+            {
+                L10n.SetLocale(originalLocale, persist: false);
+            }
         }
 
         [Test]
@@ -1049,6 +1081,44 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             }
         }
 
+        [Test]
+        public void GraphClusteringUsesBootstrapCategoryIdForNonEnglishLabels()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                settings.clusterJoinThreshold = 0.62f;
+                settings.clusterNeighborCount = 2;
+                settings.minClusterMembers = 3;
+                settings.minClusterCohesion = 0.5f;
+                settings.minClusterPairwiseSimilarity = 0.62f;
+                var categories = new List<FirstContactBootstrapCategoryDefinition>
+                {
+                    new()
+                    {
+                        id = "food",
+                        categoryDisplayName = "FOOD",
+                        meaningDisplayName = "[FOOD?]",
+                        descriptorText = "visible food",
+                        clusterLabelKeywords = new List<string> { "apple" }
+                    }
+                };
+
+                var embedding = new FirstContactEmbeddingService(null, settings);
+                var memory = new FirstContactSemanticMemory(embedding, settings, null, categories);
+                memory.AddCard(CreateBootstrapCard("사과", "food", Unit(1f, 0f, 0f)));
+                memory.AddCard(CreateBootstrapCard("빵", "food", Unit(0.99f, 0.1f, 0f)));
+                memory.AddCard(CreateBootstrapCard("케이크", "food", Unit(0.99f, -0.1f, 0f)));
+
+                Assert.AreEqual(1, memory.StableClusters.Count);
+                Assert.AreEqual("[FOOD?]", memory.StableClusters[0].DisplayName);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
         private static SemanticCardRecord CreateCard(string label, float[] vector)
         {
             return new SemanticCardRecord
@@ -1057,6 +1127,16 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 Embedding = vector,
                 Source = FirstContactCardSource.BootstrapProbe
             };
+        }
+
+        private static SemanticCardRecord CreateBootstrapCard(
+            string label,
+            string categoryId,
+            float[] vector)
+        {
+            SemanticCardRecord card = CreateCard(label, vector);
+            card.BootstrapCategoryId = categoryId;
+            return card;
         }
 
         private static FirstContactSemanticMapSnapshot CreateMapSnapshot(params string[] nodeIds)

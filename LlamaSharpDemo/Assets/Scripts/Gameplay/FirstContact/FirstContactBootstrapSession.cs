@@ -96,6 +96,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string DisplayName { get; }
         public string Meaning { get; }
         public string DescriptorText { get; }
+        public string LocalizedDisplayName => FirstContactTerminalLocalization
+            .LocalizeBootstrapCategory(Id, DisplayName);
+        public string LocalizedMeaning => FirstContactTerminalLocalization
+            .LocalizeMeaning(Id, Meaning);
+        public string LocalizedDescriptorText => FirstContactTerminalLocalization
+            .LocalizeCategoryDescriptor(Id, DescriptorText);
         public int RequiredTraceCount { get; }
         public List<SemanticCardRecord> Cards { get; } = new();
         public List<SemanticCardRecord> DetachedCards { get; } = new();

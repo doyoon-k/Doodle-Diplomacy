@@ -526,6 +526,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private string InferClusterName(SemanticClusterRecord cluster)
         {
+            string dominantCategoryId = FindDominantBootstrapCategoryId(cluster);
+            if (!string.IsNullOrWhiteSpace(dominantCategoryId))
+            {
+                for (int categoryIndex = 0; categoryIndex < _bootstrapCategories.Count; categoryIndex++)
+                {
+                    FirstContactBootstrapCategoryDefinition category = _bootstrapCategories[categoryIndex];
+                    if (category != null &&
+                        string.Equals(category.Id, dominantCategoryId, StringComparison.Ordinal))
+                    {
+                        return category.MeaningDisplayName;
+                    }
+                }
+            }
+
             for (int categoryIndex = 0; categoryIndex < _bootstrapCategories.Count; categoryIndex++)
             {
                 FirstContactBootstrapCategoryDefinition category = _bootstrapCategories[categoryIndex];
@@ -545,6 +559,41 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return $"[{cluster.Id}]";
+        }
+
+        private static string FindDominantBootstrapCategoryId(SemanticClusterRecord cluster)
+        {
+            if (cluster?.Members == null || cluster.Members.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+            int categorizedMemberCount = 0;
+            string dominantId = string.Empty;
+            int dominantCount = 0;
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                string categoryId = cluster.Members[i]?.BootstrapCategoryId?.Trim() ?? string.Empty;
+                if (categoryId.Length == 0)
+                {
+                    continue;
+                }
+
+                categorizedMemberCount++;
+                counts.TryGetValue(categoryId, out int count);
+                count++;
+                counts[categoryId] = count;
+                if (count > dominantCount)
+                {
+                    dominantId = categoryId;
+                    dominantCount = count;
+                }
+            }
+
+            return dominantCount > 0 && dominantCount * 2 > categorizedMemberCount
+                ? dominantId
+                : string.Empty;
         }
 
         public bool TryCreateWaveformProfile(

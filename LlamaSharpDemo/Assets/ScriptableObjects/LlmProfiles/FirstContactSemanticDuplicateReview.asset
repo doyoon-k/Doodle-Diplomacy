@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
+  m_Name: FirstContactSemanticDuplicateReview
+  m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
+  format: '{"type":"object","properties":{"semantic_relation":{"type":"string","enum":["same_concept","different_concept","uncertain"]},"confidence":{"type":"number","minimum":0,"maximum":1},"reason":{"type":"string"}},"required":["semantic_relation","confidence","reason"],"additionalProperties":false}'
+  stream: 0
+  keepAlive: 
+  systemPromptTemplate: 'Judge whether two original player labels name the same ordinary concrete subject concept.
+
+    Return only JSON:
+
+    {"semantic_relation":"same_concept","confidence":0.0,"reason":""}
+
+    Rules:
+
+    - Labels may use different languages, scripts, or mixed languages. Interpret each original label directly.
+
+    - Never translate, rewrite, canonicalize, or correct either label in the response.
+
+    - Read the exact Unicode characters inside each JSON string.
+
+    - If you cannot confidently identify either label exactly as written, return uncertain. Never invent a pronunciation, translation, cultural meaning, or expanded form.
+
+    - same_concept means that an ordinary speaker could use both labels for the same concrete subject identity, including direct translations and true synonyms.
+
+    - different_concept includes related objects, members of the same broad category, parts versus wholes, materials versus objects, similar tools, and objects with similar uses.
+
+    - Base the decision only on the two label strings. Never replace either label with a broader category they may share.
+
+    - If either label is polysemous and the intended concrete sense is unclear, return uncertain.
+
+    - Do not infer sameness from spelling, shared words, emotional association, symbolism, or possible use.
+
+    - Use confidence at or above 0.7 only when same-concept identity is clear.
+
+    - Keep reason short and do not include replacement labels.'
+  jsonSchemaDeliveryMode: 0
+  thinkingMode: 0
+  jsonFields:
+  - fieldName: semantic_relation
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions:
+    - same_concept
+    - different_concept
+    - uncertain
+    minValue: 
+    maxValue: 
+    minLength: 1
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: confidence
+    fieldType: 1
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 0
+    maxValue: 1
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  - fieldName: reason
+    fieldType: 0
+    arrayElementType: 0
+    children: []
+    enumOptions: []
+    minValue: 
+    maxValue: 
+    minLength: 
+    maxLength: 
+    minItems: 
+    maxItems: 
+  modelParams:
+    temperature: 0
+    top_p: 0.9
+    top_k: 20
+    num_predict: 96
+    repeat_penalty: 1.05
+    seed: 17331
+  model: Models/gemma-3-4b-it-Q4_K_M.gguf
+  visionProjectorModel: 
+  visionProjectorRelativeToStreamingAssets: 1
+  runtimeParams:
+    modelPathRelativeToStreamingAssets: 1
+    contextSize: 2048
+    gpuLayerCount: 999
+    threads: 12

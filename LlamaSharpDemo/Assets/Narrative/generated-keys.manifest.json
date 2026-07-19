@@ -1,0 +1,214 @@
+{
+    "entries": [
+        {
+            "key": "first_contact.placeholder.intro.news",
+            "scenarioId": "first_contact_day1",
+            "beatId": "intro_news_card"
+        },
+        {
+            "key": "first_contact.placeholder.intro.pizza",
+            "scenarioId": "first_contact_day1",
+            "beatId": "intro_pizza_card"
+        },
+        {
+            "key": "first_contact.placeholder.intro.elevator",
+            "scenarioId": "first_contact_day1",
+            "beatId": "intro_elevator_card"
+        },
+        {
+            "key": "first_contact.placeholder.intro.briefing",
+            "scenarioId": "first_contact_day1",
+            "beatId": "intro_briefing_card"
+        },
+        {
+            "key": "first_contact.narrative.preflight_intro",
+            "scenarioId": "first_contact_day1",
+            "beatId": "preflight_intro"
+        },
+        {
+            "key": "first_contact.narrative.tablet_tools",
+            "scenarioId": "first_contact_day1",
+            "beatId": "tablet_tools"
+        },
+        {
+            "key": "first_contact.narrative.tablet_style",
+            "scenarioId": "first_contact_day1",
+            "beatId": "tablet_style"
+        },
+        {
+            "key": "first_contact.narrative.tablet_history_and_send",
+            "scenarioId": "first_contact_day1",
+            "beatId": "tablet_history_and_send"
+        },
+        {
+            "key": "first_contact.narrative.preflight_drawing",
+            "scenarioId": "first_contact_day1",
+            "beatId": "preflight_drawing"
+        },
+        {
+            "key": "first_contact.narrative.preflight_passed",
+            "scenarioId": "first_contact_day1",
+            "beatId": "preflight_passed"
+        },
+        {
+            "key": "first_contact.narrative.delegation_arrival",
+            "scenarioId": "first_contact_day1",
+            "beatId": "delegation_arrival"
+        },
+        {
+            "key": "first_contact.narrative.first_category",
+            "scenarioId": "first_contact_day1",
+            "beatId": "first_category"
+        },
+        {
+            "key": "first_contact.narrative.first_drawing",
+            "scenarioId": "first_contact_day1",
+            "beatId": "first_drawing"
+        },
+        {
+            "key": "first_contact.narrative.first_label",
+            "scenarioId": "first_contact_day1",
+            "beatId": "first_label"
+        },
+        {
+            "key": "first_contact.narrative.first_trace",
+            "scenarioId": "first_contact_day1",
+            "beatId": "first_trace"
+        },
+        {
+            "key": "first_contact.narrative.more_samples",
+            "scenarioId": "first_contact_day1",
+            "beatId": "more_samples"
+        },
+        {
+            "key": "first_contact.narrative.category_calibrated",
+            "scenarioId": "first_contact_day1",
+            "beatId": "category_calibrated"
+        },
+        {
+            "key": "first_contact.narrative.bootstrap_calibrated",
+            "scenarioId": "first_contact_day1",
+            "beatId": "bootstrap_calibrated"
+        },
+        {
+            "key": "first_contact.narrative.translation_succeeded",
+            "scenarioId": "first_contact_day1",
+            "beatId": "translation_succeeded"
+        },
+        {
+            "key": "first_contact.doctor_hwang.bootstrap_duplicate_probe",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_bootstrap_duplicate_probe"
+        },
+        {
+            "key": "first_contact.doctor_hwang.bootstrap_category_mismatch",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_bootstrap_category_mismatch"
+        },
+        {
+            "key": "first_contact.doctor_hwang.pattern_meaning_requested",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_pattern_meaning_requested"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_blank",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_blank"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_text_or_symbol",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_text_or_symbol"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_scene_or_action",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_scene_or_action"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_multiple_objects",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_multiple_objects"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_unresolved_object",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_unresolved_object"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_label_mismatch",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_label_mismatch"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_label_action_or_abstract",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_label_action_or_abstract"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_label_broad_category",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_label_broad_category"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_label_multiple_subjects",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_label_multiple_subjects"
+        },
+        {
+            "key": "first_contact.doctor_hwang.probe_label_classification_claim",
+            "scenarioId": "first_contact_day1",
+            "beatId": "doctor_hwang_probe_label_classification_claim"
+        },
+        {
+            "key": "alien.reaction.mutter.very_dissatisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_mutter_very_dissatisfied"
+        },
+        {
+            "key": "alien.reaction.mutter.dissatisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_mutter_dissatisfied"
+        },
+        {
+            "key": "alien.reaction.mutter.neutral",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_mutter_neutral"
+        },
+        {
+            "key": "alien.reaction.mutter.satisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_mutter_satisfied"
+        },
+        {
+            "key": "alien.reaction.mutter.very_satisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_mutter_very_satisfied"
+        },
+        {
+            "key": "alien.reaction.narration.very_dissatisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_narration_very_dissatisfied"
+        },
+        {
+            "key": "alien.reaction.narration.dissatisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_narration_dissatisfied"
+        },
+        {
+            "key": "alien.reaction.narration.neutral",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_narration_neutral"
+        },
+        {
+            "key": "alien.reaction.narration.satisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_narration_satisfied"
+        },
+        {
+            "key": "alien.reaction.narration.very_satisfied",
+            "scenarioId": "first_contact_day1",
+            "beatId": "alien_narration_very_satisfied"
+        }
+    ]
+}

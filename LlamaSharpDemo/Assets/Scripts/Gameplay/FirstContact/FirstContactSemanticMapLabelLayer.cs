@@ -48,14 +48,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int i = 0; i < snapshot.Nodes.Count; i++)
             {
                 FirstContactSemanticMapNode node = snapshot.Nodes[i];
-                if (!ShouldShowLabel(node, fullMode))
+                if (!ShouldShowLabel(node))
                 {
                     continue;
                 }
 
                 TextMeshProUGUI label = GetOrCreateLabel(labelIndex++);
                 ConfigureLabelStyle(label, style, mode);
-                UpdateLabel(label, node, fullMode, style);
+                UpdateLabel(label, node, style);
                 Vector2 point = FirstContactSemanticMapGraphic.MapToLocal(node.Position, rect, style);
                 Vector2 offset = ResolveLabelOffset(node, style, mode);
                 label.rectTransform.anchoredPosition = ClampLabelPosition(
@@ -68,27 +68,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             HideLabelsFrom(labelIndex);
         }
 
-        private static bool ShouldShowLabel(FirstContactSemanticMapNode node, bool fullMode)
+        private static bool ShouldShowLabel(FirstContactSemanticMapNode node)
         {
             if (node == null)
             {
                 return false;
             }
 
-            if (node.Kind == FirstContactSemanticMapNodeKind.Card &&
-                !string.IsNullOrWhiteSpace(node.BootstrapCategoryId))
-            {
-                return node.IsActive;
-            }
-
-            if (fullMode)
-            {
-                return true;
-            }
-
-            return node.IsActive ||
-                   node.Kind == FirstContactSemanticMapNodeKind.StableCluster ||
-                   node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory;
+            return true;
         }
 
         private TextMeshProUGUI GetOrCreateLabel(int labelIndex)
@@ -145,10 +132,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private static void UpdateLabel(
             TextMeshProUGUI label,
             FirstContactSemanticMapNode node,
-            bool fullMode,
             FirstContactSemanticMapStyle style)
         {
-            string text = BuildLabelText(node, fullMode);
+            string text = BuildLabelText(node);
             if (!string.Equals(label.text, text, StringComparison.Ordinal))
             {
                 label.text = text;
@@ -167,7 +153,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
-        private static string BuildLabelText(FirstContactSemanticMapNode node, bool fullMode)
+        private static string BuildLabelText(FirstContactSemanticMapNode node)
         {
             if (node == null)
             {
@@ -178,7 +164,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 FirstContactSemanticMapNodeKind.StableCluster => BuildStableClusterLabel(node),
                 FirstContactSemanticMapNodeKind.BootstrapCategory => BuildBootstrapCategoryLabel(node),
-                FirstContactSemanticMapNodeKind.Card => fullMode || node.IsActive ? node.Label : string.Empty,
+                FirstContactSemanticMapNodeKind.Card => node.Label,
                 _ => node.Label
             };
         }
@@ -198,12 +184,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static string LocalizedGroupLabel()
         {
-            return L10n.T("first_contact.terminal.semantic_map.group", "GROUP").ToUpperInvariant();
+            return L10n.T("first_contact.terminal.semantic_map.group", "PATTERN").ToUpperInvariant();
         }
 
         private static string LocalizedGroupUnknownLabel()
         {
-            return L10n.T("first_contact.terminal.semantic_map.group_unknown", "[GROUP-??]").ToUpperInvariant();
+            return L10n.T("first_contact.terminal.semantic_map.group_unknown", "[PATTERN-??]").ToUpperInvariant();
         }
 
         private static string BuildBootstrapCategoryLabel(FirstContactSemanticMapNode node)

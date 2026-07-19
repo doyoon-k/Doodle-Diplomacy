@@ -1,0 +1,459 @@
+{
+    "entries": [
+        {
+            "key": "dialogue.advance.first",
+            "screenId": "dialogue.shared",
+            "surface": "dialogue"
+        },
+        {
+            "key": "dialogue.advance.repeat",
+            "screenId": "dialogue.shared",
+            "surface": "dialogue"
+        },
+        {
+            "key": "first_contact.placeholder.intro.footer",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.terminal.category.danger",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.category.danger.descriptor",
+            "screenId": "",
+            "surface": "internal"
+        },
+        {
+            "key": "first_contact.terminal.category.food",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.category.food.descriptor",
+            "screenId": "",
+            "surface": "internal"
+        },
+        {
+            "key": "first_contact.terminal.category.protection",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.category.protection.descriptor",
+            "screenId": "",
+            "surface": "internal"
+        },
+        {
+            "key": "first_contact.terminal.category.tool",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.category.tool.descriptor",
+            "screenId": "",
+            "surface": "internal"
+        },
+        {
+            "key": "first_contact.terminal.channel.local_preflight",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.channel.probe_sequence",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.choice.draw_related_object",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.choice.redraw",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.choice.retry",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.cluster.forming",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.cluster.stable",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.cluster.unchanged",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.cluster.unstable",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.fallback.unknown",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.analysis_error",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.bootstrap_complete",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.cluster_trace",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.incoming_transmission",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.input_rejected",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.probe_channel_open",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.probe_dispatch",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.probe_preflight",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.probe_review",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.probe_sequence",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.signal_capture",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.header.translation_buffer",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.calibration_complete",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.category",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.channel",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.correction_required",
+            "screenId": "first_contact.terminal.probe_review",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.draw_related_object",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.group",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.image_captured",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.input_status",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.label_required",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.meaning",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.meaning_map_seeded",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.preflight_complete",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.probe_check_in_progress",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.probe_check_overridden",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.probe_check_passed",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.probe_label",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.probe_label_input_prefix",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.raw_signal",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.redraw_escape",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.response_channel_closed",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.response_channel_open",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.response_channel_waiting",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.submit_enter",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.trace_count",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.trace_duplicate",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.trace_isolated",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.line.translator_ready",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.meaning.danger",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.meaning.food",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.meaning.protection",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.meaning.tool",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.meaning.unknown",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.prompt.check_drawing",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.prompt.continue",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.prompt.select",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.prompt.send_drawing",
+            "screenId": "first_contact.terminal",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.reason.draw_one_object",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.reason.draw_one_object_only",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.reason.draw_something",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.reason.object_not_clear",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.reason.scene_or_action_detected",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.reason.text_or_symbol_detected",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.semantic_map.group",
+            "screenId": "first_contact.semantic_map",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.semantic_map.group_unknown",
+            "screenId": "first_contact.semantic_map",
+            "surface": "terminal"
+        },
+        {
+            "key": "first_contact.terminal.status.analysis_unavailable",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.status.label_action_or_abstract",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.status.label_broad_category",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.status.label_classification_claim",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.status.label_mismatch",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "first_contact.terminal.status.label_multiple_subjects",
+            "screenId": "first_contact.feedback",
+            "surface": "system"
+        },
+        {
+            "key": "speaker.alien",
+            "screenId": "dialogue.shared",
+            "surface": "dialogue"
+        },
+        {
+            "key": "speaker.doctor_hwang",
+            "screenId": "dialogue.shared",
+            "surface": "dialogue"
+        },
+        {
+            "key": "ui.settings.back",
+            "screenId": "settings",
+            "surface": "menu"
+        },
+        {
+            "key": "ui.settings.language",
+            "screenId": "settings",
+            "surface": "menu"
+        },
+        {
+            "key": "ui.settings.title",
+            "screenId": "settings",
+            "surface": "menu"
+        },
+        {
+            "key": "ui.title.game_title",
+            "screenId": "title.main",
+            "surface": "menu"
+        },
+        {
+            "key": "ui.title.settings",
+            "screenId": "title.main",
+            "surface": "menu"
+        },
+        {
+            "key": "ui.title.start",
+            "screenId": "title.main",
+            "surface": "menu"
+        }
+    ]
+}

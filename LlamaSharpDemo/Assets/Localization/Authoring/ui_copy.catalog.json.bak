@@ -1,0 +1,1681 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "game_ui",
+  "title": "Doodle Diplomacy UI Copy",
+  "sourceLocale": "en-US",
+  "locales": [
+    "en-US",
+    "ko-KR"
+  ],
+  "screens": [
+    {
+      "id": "title.main",
+      "title": "타이틀 화면",
+      "surface": "menu",
+      "description": "게임 시작과 설정 진입 메뉴"
+    },
+    {
+      "id": "settings",
+      "title": "설정",
+      "surface": "menu",
+      "description": "언어를 포함한 설정 화면"
+    },
+    {
+      "id": "first_contact.intro",
+      "title": "첫 접촉 인트로",
+      "surface": "caption",
+      "description": "임시 인트로 카드와 진행 안내"
+    },
+    {
+      "id": "first_contact.terminal",
+      "title": "첫 접촉 터미널",
+      "surface": "terminal",
+      "description": "PROBE / TRACE / GROUP 상태를 표시하는 장치 화면"
+    },
+    {
+      "id": "first_contact.feedback",
+      "title": "표본 판독 결과",
+      "surface": "system",
+      "description": "표본 검사와 오류 상태 문구"
+    },
+    {
+      "id": "first_contact.semantic_map",
+      "title": "의미 지도",
+      "surface": "terminal",
+      "description": "군집과 의미 지도 시각화"
+    },
+    {
+      "id": "dialogue.shared",
+      "title": "대화 공통",
+      "surface": "dialogue",
+      "description": "화자명과 대화 진행 안내"
+    }
+  ],
+  "terms": [
+    {
+      "id": "probe",
+      "sourceTerm": "Drawing Data",
+      "targetTerm": "그림 데이터",
+      "definition": "플레이어가 그려 외계 반응을 수집하는 그림 한 장.",
+      "notes": "한국어 터미널에서는 ‘표본’, 설명 대사에서는 필요할 때 ‘시각 표본’. ‘탐침’은 사용하지 않음.",
+      "status": "final"
+    },
+    {
+      "id": "probe_label",
+      "sourceTerm": "DRAWING LABEL",
+      "targetTerm": "그림 라벨",
+      "definition": "플레이어가 그림에 입력한 사물 이름.",
+      "notes": "화면에 보이는 라벨은 현지화할 수 있음.",
+      "status": "final"
+    },
+    {
+      "id": "visual_probe",
+      "sourceTerm": "VISUAL DATA",
+      "targetTerm": "시각 데이터",
+      "definition": "외계 반응을 얻기 위해 보내는 그림.",
+      "notes": "설명 대사에서 bare ‘표본’이 모호할 때 사용.",
+      "status": "final"
+    },
+    {
+      "id": "trace",
+      "sourceTerm": "REACTION",
+      "targetTerm": "반응",
+      "definition": "표본 하나에 대해 기록된 외계 반응 하나.",
+      "notes": "터미널에서는 짧게 유지.",
+      "status": "final"
+    },
+    {
+      "id": "group",
+      "sourceTerm": "GROUP",
+      "targetTerm": "군집",
+      "definition": "서로 비슷한 반응 추적의 묶음.",
+      "notes": "안정 상태를 표시할 때 사용.",
+      "status": "final"
+    },
+    {
+      "id": "meaning",
+      "sourceTerm": "MEANING",
+      "targetTerm": "의미",
+      "definition": "안정된 군집을 실제 외계 신호에 적용해 얻은 해석.",
+      "notes": "이미 알려준 분류 목표를 되풀이하는 용도로 사용하지 않음.",
+      "status": "final"
+    },
+    {
+      "id": "category",
+      "sourceTerm": "CATEGORY",
+      "targetTerm": "분류",
+      "definition": "현재 표본을 모으는 보정 목표 유형.",
+      "notes": "내부 용어 SELECT-ONE을 플레이어에게 노출하지 않음.",
+      "status": "final"
+    },
+    {
+      "id": "signal",
+      "sourceTerm": "SIGNAL",
+      "targetTerm": "신호",
+      "definition": "장치가 수신한 파형 또는 반응 신호.",
+      "notes": "설명 대사에서는 ‘시각 표본 신호’ 사용 가능.",
+      "status": "final"
+    },
+    {
+      "id": "calibration",
+      "sourceTerm": "CALIBRATION",
+      "targetTerm": "보정",
+      "definition": "알려진 분류와 안정된 군집의 연결 완료.",
+      "notes": "분류 완료 화면은 ‘보정 완료’로 표시.",
+      "status": "final"
+    }
+  ],
+  "entries": [
+    {
+      "key": "dialogue.advance.first",
+      "sourceText": "[ SPACE ]  NEXT  ▼",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ SPACE ]  다음  ▼",
+          "status": "final"
+        }
+      ],
+      "domain": "dialogue",
+      "surface": "dialogue",
+      "screenId": "dialogue.shared",
+      "context": "dialogue · advance · first",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "dialogue.advance.repeat",
+      "sourceText": "[ SPACE ]  ▼",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ SPACE ]  ▼",
+          "status": "final"
+        }
+      ],
+      "domain": "dialogue",
+      "surface": "dialogue",
+      "screenId": "dialogue.shared",
+      "context": "dialogue · advance · repeat",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.placeholder.intro.footer",
+      "sourceText": "TEMPORARY GEOMETRIC CUTSCENE  •  SPACE: ADVANCE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "임시 도형 컷신  •  스페이스: 넘기기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "placeholder · intro · footer",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.danger",
+      "sourceText": "DANGER",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "위험",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · category · danger",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.danger.descriptor",
+      "sourceText": "concrete visible subjects whose ordinary identity is a source or",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "일반적인 정체성이 위해, 위협, 부상, 중독, 화재, 폭발, 공격 또는 기타 직접적인 위험의 원인이나 수단인 구체적이고 눈에 보이는 대상",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.model",
+      "surface": "internal",
+      "screenId": "",
+      "context": "category · danger · descriptor",
+      "status": "final",
+      "audience": "internal",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.food",
+      "sourceText": "FOOD",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "음식",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · category · food",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.food.descriptor",
+      "sourceText": "concrete visible subjects whose ordinary identity is something eaten,",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "일반적인 정체성이 먹거나 마시거나 식사로 준비되거나 식품으로 사용되는 구체적이고 눈에 보이는 대상",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.model",
+      "surface": "internal",
+      "screenId": "",
+      "context": "category · food · descriptor",
+      "status": "final",
+      "audience": "internal",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.protection",
+      "sourceText": "PROTECTION",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "보호",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · category · protection",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.protection.descriptor",
+      "sourceText": "concrete visible subjects whose ordinary identity is protection,",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "일반적인 정체성이 보호, 방어, 피난, 경계 또는 위해 차단인 구체적이고 눈에 보이는 대상",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.model",
+      "surface": "internal",
+      "screenId": "",
+      "context": "category · protection · descriptor",
+      "status": "final",
+      "audience": "internal",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.tool",
+      "sourceText": "TOOL",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "도구",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · category · tool",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.category.tool.descriptor",
+      "sourceText": "concrete visible subjects whose ordinary identity is a tool, instrument,",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "일반적인 정체성이 작업을 수행하는 데 쓰이는 도구, 기구, 장치 또는 작업용 물품인 구체적이고 눈에 보이는 대상",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.model",
+      "surface": "internal",
+      "screenId": "",
+      "context": "category · tool · descriptor",
+      "status": "final",
+      "audience": "internal",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.channel.local_preflight",
+      "sourceText": "LOCAL PREFLIGHT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "내부 사전 점검",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · channel · local preflight",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.channel.probe_sequence",
+      "sourceText": "PROBE SEQUENCE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "표본 시퀀스",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · channel · probe sequence",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.choice.draw_related_object",
+      "sourceText": "DRAW RELATED OBJECT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "관련 사물 그리기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · choice · draw related object",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.choice.redraw",
+      "sourceText": "REDRAW",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "다시 그리기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · choice · redraw",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.choice.retry",
+      "sourceText": "RETRY",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "재시도",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · choice · retry",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.cluster.forming",
+      "sourceText": "FORMING",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "형성 중",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · cluster · forming",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.cluster.stable",
+      "sourceText": "STABLE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "안정",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · cluster · stable",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.cluster.unchanged",
+      "sourceText": "UNCHANGED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "변화 없음",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · cluster · unchanged",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.cluster.unstable",
+      "sourceText": "UNSTABLE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "불안정",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · cluster · unstable",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.fallback.unknown",
+      "sourceText": "UNKNOWN",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "알 수 없음",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · fallback · unknown",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.analysis_error",
+      "sourceText": "[ANALYSIS ERROR]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[분석 오류]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · analysis error",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.bootstrap_complete",
+      "sourceText": "[BOOTSTRAP COMPLETE]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[부트스트랩 완료]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · bootstrap complete",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.cluster_trace",
+      "sourceText": "[CLUSTER TRACE]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[반응 패턴 추적]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · cluster trace",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.incoming_transmission",
+      "sourceText": "[INCOMING TRANSMISSION]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[수신 중인 전송]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · incoming transmission",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.input_rejected",
+      "sourceText": "[INPUT REJECTED]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[입력 거부]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · input rejected",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.probe_channel_open",
+      "sourceText": "[PROBE CHANNEL OPEN]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[표본 채널 개방]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · probe channel open",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.probe_dispatch",
+      "sourceText": "[PROBE DISPATCH]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[표본 송신]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · probe dispatch",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.probe_preflight",
+      "sourceText": "[PROBE PREFLIGHT]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[표본 사전 점검]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · probe preflight",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.probe_review",
+      "sourceText": "[PROBE REVIEW]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[표본 검토]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · probe review",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.probe_sequence",
+      "sourceText": "[PROBE SEQUENCE]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[표본 시퀀스]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · probe sequence",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.signal_capture",
+      "sourceText": "[SIGNAL CAPTURE]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[신호 포착]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · signal capture",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.header.translation_buffer",
+      "sourceText": "[TRANSLATION BUFFER]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[번역 버퍼]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · header · translation buffer",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.calibration_complete",
+      "sourceText": "CALIBRATION COMPLETE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "보정 완료",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · calibration complete",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.category",
+      "sourceText": "CATEGORY: {category}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "분류: {category}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · category",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.channel",
+      "sourceText": "CHANNEL: {channel}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "채널: {channel}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · channel",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.draw_related_object",
+      "sourceText": "DRAW RELATED OBJECT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "관련 사물을 그리십시오",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · draw related object",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.group",
+      "sourceText": "GROUP: {group}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "반응 패턴: {group}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · group",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.image_captured",
+      "sourceText": "IMAGE CAPTURED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이미지 캡처됨",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · image captured",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.input_status",
+      "sourceText": "STATUS: {status}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "상태: {status}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · input status",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.label_required",
+      "sourceText": "LABEL REQUIRED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "라벨 필요",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · label required",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.meaning",
+      "sourceText": "MEANING: {meaning}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "의미: {meaning}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · meaning",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.meaning_map_seeded",
+      "sourceText": "MEANING MAP SEEDED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "의미 지도 초기화됨",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · meaning map seeded",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.preflight_complete",
+      "sourceText": "PREFLIGHT COMPLETE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "사전 점검 완료",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · preflight complete",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.probe_check_in_progress",
+      "sourceText": "PROBE CHECK: IN PROGRESS",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "표본 확인: 진행 중",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · probe check in progress",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.probe_check_overridden",
+      "sourceText": "PROBE CHECK: OVERRIDDEN",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "표본 검사: 수동 승인",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · probe check overridden",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.probe_check_passed",
+      "sourceText": "PROBE CHECK: PASSED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "표본 확인: 통과",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · probe check passed",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.probe_label",
+      "sourceText": "PROBE LABEL: {label}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "표본 라벨: {label}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · probe label",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.probe_label_input_prefix",
+      "sourceText": "PROBE LABEL: ",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "표본 라벨: ",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · probe label input prefix",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.raw_signal",
+      "sourceText": "SIGNAL: {signal}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "신호: {signal}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · raw signal",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.redraw_escape",
+      "sourceText": "REDRAW: ESC",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "다시 그리기: ESC",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · redraw escape",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.response_channel_closed",
+      "sourceText": "RESPONSE CHANNEL: CLOSED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "반응 채널: 닫힘",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · response channel closed",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.response_channel_open",
+      "sourceText": "RESPONSE CHANNEL: OPEN",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "응답 채널: 개방",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · response channel open",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.response_channel_waiting",
+      "sourceText": "RESPONSE CHANNEL: WAITING",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "응답 채널: 대기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · response channel waiting",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.submit_enter",
+      "sourceText": "SUBMIT: ENTER",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "제출: ENTER",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · submit enter",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.trace_count",
+      "sourceText": "TRACE: {count}/{required}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "추적: {count}/{required}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · trace count",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.trace_duplicate",
+      "sourceText": "TRACE: DUPLICATE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "추적: 중복",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · trace duplicate",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.trace_isolated",
+      "sourceText": "TRACE: ISOLATED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "추적: 고립",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · trace isolated",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.line.translator_ready",
+      "sourceText": "TRANSLATOR READY",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "번역기 준비됨",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · line · translator ready",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.meaning.danger",
+      "sourceText": "[DANGER?]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[위험?]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · meaning · danger",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.meaning.food",
+      "sourceText": "[FOOD?]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[음식?]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · meaning · food",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.meaning.protection",
+      "sourceText": "[PROTECTION?]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[보호?]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · meaning · protection",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.meaning.tool",
+      "sourceText": "[TOOL?]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[도구?]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · meaning · tool",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.meaning.unknown",
+      "sourceText": "[MEANING?]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[의미?]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · meaning · unknown",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.prompt.check_drawing",
+      "sourceText": "PRESS ENTER TO CHECK",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "ENTER: 검사",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · prompt · check drawing",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.prompt.continue",
+      "sourceText": "PRESS ENTER TO CONTINUE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "계속하려면 ENTER",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · prompt · continue",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.prompt.select",
+      "sourceText": "PRESS ENTER TO SELECT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "선택하려면 ENTER",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · prompt · select",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.prompt.send_drawing",
+      "sourceText": "PRESS ENTER TO SEND",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "보내려면 ENTER",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal",
+      "context": "terminal · prompt · send drawing",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.reason.draw_one_object",
+      "sourceText": "DRAW ONE OBJECT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "사물 하나를 그리십시오",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · reason · draw one object",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.reason.draw_one_object_only",
+      "sourceText": "DRAW ONE OBJECT ONLY",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "사물은 하나만 그리십시오",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · reason · draw one object only",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.reason.draw_something",
+      "sourceText": "DRAW SOMETHING",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "무언가를 그리십시오",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · reason · draw something",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.reason.label_mismatch",
+      "sourceText": "LABEL MISMATCH",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "라벨 불일치",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · reason · label mismatch",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.reason.object_not_clear",
+      "sourceText": "OBJECT NOT CLEAR",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "사물 판독 불가",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · reason · object not clear",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.reason.scene_or_action_detected",
+      "sourceText": "SCENE OR ACTION DETECTED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "장면 또는 행동 감지됨",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · reason · scene or action detected",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.reason.text_or_symbol_detected",
+      "sourceText": "TEXT OR SYMBOL DETECTED",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "문자 또는 기호 감지됨",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · reason · text or symbol detected",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.semantic_map.group",
+      "sourceText": "GROUP",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "의미 패턴",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.semantic_map",
+      "context": "terminal · semantic map · group",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.semantic_map.group_unknown",
+      "sourceText": "[GROUP-??]",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[반응 패턴-??]",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.semantic_map",
+      "context": "terminal · semantic map · group unknown",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.status.analysis_unavailable",
+      "sourceText": "ANALYSIS UNAVAILABLE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "분석 사용 불가",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · status · analysis unavailable",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.status.category_mismatch",
+      "sourceText": "CATEGORY MISMATCH",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "분류 불일치",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · status · category mismatch",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.status.label_action_or_abstract",
+      "sourceText": "LABEL: ACTION OR ABSTRACT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "라벨: 행동 또는 추상 개념",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · status · label action or abstract",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.status.label_broad_category",
+      "sourceText": "LABEL: CATEGORY TOO BROAD",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "라벨: 분류가 너무 넓음",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · status · label broad category",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.status.label_classification_claim",
+      "sourceText": "LABEL: REMOVE CLAIM",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "라벨: 주관적 표현 제거",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · status · label classification claim",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.terminal.status.label_multiple_subjects",
+      "sourceText": "LABEL: MULTIPLE SUBJECTS",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "라벨: 사물이 여러 개 검출",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "system",
+      "screenId": "first_contact.feedback",
+      "context": "terminal · status · label multiple subjects",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "speaker.alien",
+      "sourceText": "Alien",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "외계인",
+          "status": "final"
+        }
+      ],
+      "domain": "dialogue",
+      "surface": "dialogue",
+      "screenId": "dialogue.shared",
+      "context": "speaker · alien",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "speaker.doctor_hwang",
+      "sourceText": "Dr. Hwang",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "황 박사",
+          "status": "final"
+        }
+      ],
+      "domain": "dialogue",
+      "surface": "dialogue",
+      "screenId": "dialogue.shared",
+      "context": "speaker · doctor hwang",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "ui.settings.back",
+      "sourceText": "Back",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "뒤로",
+          "status": "final"
+        }
+      ],
+      "domain": "ui.settings",
+      "surface": "menu",
+      "screenId": "settings",
+      "context": "ui · settings · back",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "ui.settings.language",
+      "sourceText": "Language",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "언어",
+          "status": "final"
+        }
+      ],
+      "domain": "ui.settings",
+      "surface": "menu",
+      "screenId": "settings",
+      "context": "ui · settings · language",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "ui.settings.title",
+      "sourceText": "Settings",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "설정",
+          "status": "final"
+        }
+      ],
+      "domain": "ui.settings",
+      "surface": "menu",
+      "screenId": "settings",
+      "context": "ui · settings · title",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "ui.title.game_title",
+      "sourceText": "DOODLE DIPLOMACY",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "DOODLE DIPLOMACY",
+          "status": "final"
+        }
+      ],
+      "domain": "ui.title",
+      "surface": "menu",
+      "screenId": "title.main",
+      "context": "Main menu game title",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "ui.title.settings",
+      "sourceText": "SETTINGS",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "설정",
+          "status": "final"
+        }
+      ],
+      "domain": "ui.title",
+      "surface": "menu",
+      "screenId": "title.main",
+      "context": "ui · title · settings",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "ui.title.start",
+      "sourceText": "START",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "시작",
+          "status": "final"
+        }
+      ],
+      "domain": "ui.title",
+      "surface": "menu",
+      "screenId": "title.main",
+      "context": "ui · title · start",
+      "status": "final",
+      "tags": []
+    }
+  ]
+}

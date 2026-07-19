@@ -143,6 +143,7 @@ namespace DoodleDiplomacy.Devices
 
         public bool IsTyping() => _isTyping;
         public bool IsTextInputActive => _textInputActive;
+        public float ContentTopInsetNormalized => _contentTopInsetNormalized;
         public string TextInputValue => textInputField != null ? textInputField.text ?? string.Empty : string.Empty;
         public string TextInputDisplayValue => textInputValueText != null
             ? textInputValueText.text ?? string.Empty

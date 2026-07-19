@@ -18,7 +18,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public const string ContractErrorKey = "label_analysis_contract_error";
 
         public const string AcceptDecision = "accept";
-        public const string NotConcreteDecision = "not_concrete";
         public const string ActionOrAbstractDecision = "action_or_abstract";
         public const string BroadCategoryDecision = "broad_category";
         public const string MultipleSubjectsDecision = "multiple_subjects";
@@ -95,7 +94,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     }
                     break;
 
-                case NotConcreteDecision:
                 case ActionOrAbstractDecision:
                 case BroadCategoryDecision:
                 case MultipleSubjectsDecision:
@@ -140,7 +138,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private static bool IsKnownDecision(string value)
         {
             return value == AcceptDecision ||
-                   value == NotConcreteDecision ||
                    value == ActionOrAbstractDecision ||
                    value == BroadCategoryDecision ||
                    value == MultipleSubjectsDecision ||

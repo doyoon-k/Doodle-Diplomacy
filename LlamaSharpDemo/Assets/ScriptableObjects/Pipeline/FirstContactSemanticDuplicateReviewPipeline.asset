@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
+  m_Name: FirstContactSemanticDuplicateReviewPipeline
+  m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
+  displayName: FirstContactSemanticDuplicateReviewPipeline
+  description: Reviews only embedding gray-zone pairs to decide whether two multilingual original labels name the same concrete concept.
+  steps:
+  - stepName: FirstContactSemanticDuplicateReview
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: 0debb9ac5f584780bf51f1be0aa5ab4e, type: 2}
+    embeddingProfile: {fileID: 0}
+    userPromptTemplate: 'Label A (original JSON string): {{left_label_json}}
+
+      Label B (original JSON string): {{right_label_json}}
+
+      Decide only whether the two original labels name the same ordinary concrete subject concept.'
+    embeddingOutputKey: embedding
+    failOnEmptyEmbeddingInput: 1
+    jsonMaxRetries: 2
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: 
+    customAsset: {fileID: 0}
+    customLinkParameters: []
+    editorPosition: {x: -160, y: -40}
+    guid: 4318bfa5-aaf1-4b0e-892f-004408f4a108
+    nextStepGuid: 
+  layoutSettings:
+    inputNodePosition: {x: -420, y: 0}
+    outputNodePosition: {x: 680, y: -40}
+    inputPositionInitialized: 1
+    outputPositionInitialized: 1
+    viewPosition: {x: 0, y: 0, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
+    viewInitialized: 1
+    snapshotPositions:
+    - {x: 0, y: 0}
+    snapshotPositionsInitialized: 1

@@ -141,26 +141,9 @@ namespace DoodleDiplomacy.Localization
 
         public static string T(string key, string fallback, params L10nArg[] args)
         {
+            UiCopyTrace.Record(key);
             string text = Resolve(key, fallback);
             return Format(text, args);
-        }
-
-        public static string Label(string canonicalLabel)
-        {
-            if (string.IsNullOrWhiteSpace(canonicalLabel))
-            {
-                return string.Empty;
-            }
-
-            string normalizedLabel = canonicalLabel.Trim();
-            if (TryFormatCompoundLabel(normalizedLabel, out string compoundLabel))
-            {
-                return compoundLabel;
-            }
-
-            normalizedLabel = normalizedLabel.ToLowerInvariant();
-            string key = $"label.{BuildKeySuffix(normalizedLabel)}";
-            return T(key, canonicalLabel);
         }
 
         private static string Resolve(string key, string fallback)
@@ -205,70 +188,6 @@ namespace DoodleDiplomacy.Localization
             }
 
             return result;
-        }
-
-        private static bool TryFormatCompoundLabel(string label, out string text)
-        {
-            text = string.Empty;
-            const string separator = " and ";
-            int separatorIndex = label.IndexOf(separator, StringComparison.OrdinalIgnoreCase);
-            if (separatorIndex < 0)
-            {
-                return false;
-            }
-
-            var translatedParts = new List<string>();
-            int startIndex = 0;
-            while (separatorIndex >= 0)
-            {
-                AddTranslatedLabelPart(label, startIndex, separatorIndex - startIndex, translatedParts);
-                startIndex = separatorIndex + separator.Length;
-                separatorIndex = label.IndexOf(separator, startIndex, StringComparison.OrdinalIgnoreCase);
-            }
-
-            AddTranslatedLabelPart(label, startIndex, label.Length - startIndex, translatedParts);
-            if (translatedParts.Count <= 1)
-            {
-                return false;
-            }
-
-            text = string.Join(T("label.conjunction.and", " and "), translatedParts);
-            return !string.IsNullOrWhiteSpace(text);
-        }
-
-        private static void AddTranslatedLabelPart(
-            string label,
-            int startIndex,
-            int length,
-            ICollection<string> translatedParts)
-        {
-            if (length <= 0)
-            {
-                return;
-            }
-
-            string part = label.Substring(startIndex, length).Trim();
-            if (!string.IsNullOrWhiteSpace(part))
-            {
-                translatedParts.Add(Label(part));
-            }
-        }
-
-        private static string BuildKeySuffix(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            char[] chars = value.Trim().ToLowerInvariant().ToCharArray();
-            for (int i = 0; i < chars.Length; i++)
-            {
-                char c = chars[i];
-                chars[i] = char.IsLetterOrDigit(c) ? c : '_';
-            }
-
-            return new string(chars).Trim('_');
         }
 
         private static string NormalizeLocale(string locale)

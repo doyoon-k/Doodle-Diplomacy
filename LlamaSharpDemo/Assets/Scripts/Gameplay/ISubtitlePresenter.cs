@@ -4,6 +4,8 @@ namespace DoodleDiplomacy.Gameplay
     {
         void Show(string characterName, string text);
         void SetText(string text);
+        void SetAdvancePromptVisible(bool visible);
+        bool ConsumeAdvanceRequest();
         void Hide();
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using DoodleDiplomacy.Devices;
+using DoodleDiplomacy.Dialogue;
 using DoodleDiplomacy.Gameplay.FirstContact;
 using DoodleDiplomacy.Localization;
 using NUnit.Framework;
@@ -26,7 +27,6 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                         categoryDisplayName = "DANGER",
                         meaningDisplayName = "[DANGER?]",
                         descriptorText = "visible hazards",
-                        clusterLabelKeywords = new List<string> { "blade" },
                         requiredTraceCount = 0
                     },
                     new()
@@ -47,7 +47,6 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 Assert.AreEqual("shelter", categories[1].Id);
                 Assert.AreEqual(3, categories[0].ResolveRequiredTraceCount(3));
                 Assert.AreEqual(4, categories[1].ResolveRequiredTraceCount(3));
-                Assert.IsTrue(categories[0].MatchesClusterLabel("ceremonial blade"));
 
                 config.bootstrapCategories[1].id = "danger";
                 Assert.IsFalse(config.TryGetBootstrapCategories(out _, out error));
@@ -146,16 +145,57 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
-        public void BootstrapMapBuilderKeepsOnlyTheActiveCategoryContext()
+        public void LocalizationSettingsResolveArbitraryConfiguredLocalesAndDirection()
         {
-            var definition = new FirstContactBootstrapCategoryDefinition
+            GameLocalizationSettings settings = ScriptableObject.CreateInstance<GameLocalizationSettings>();
+            try
+            {
+                FieldInfo localesField = typeof(GameLocalizationSettings).GetField(
+                    "supportedLocales",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsNotNull(localesField);
+                localesField.SetValue(settings, new List<SupportedLocaleDefinition>
+                {
+                    new("en-US", "English", "English"),
+                    new("ja-JP", "Japanese", "日本語"),
+                    new(
+                        "ar-SA",
+                        "Arabic",
+                        "العربية",
+                        textDirection: LocalizedTextDirection.RightToLeft)
+                });
+
+                Assert.AreEqual("Japanese", settings.GetLanguageName("ja"));
+                Assert.AreEqual("日本語", settings.GetLanguageNativeName("ja-JP"));
+                Assert.AreEqual("Arabic", settings.GetLanguageName("ar-EG"));
+                Assert.IsTrue(settings.IsRightToLeft("ar"));
+                Assert.IsFalse(settings.IsRightToLeft("ja-JP"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void BootstrapMapBuilderKeepsPreviousCategoryContext()
+        {
+            var dangerDefinition = new FirstContactBootstrapCategoryDefinition
             {
                 id = "danger",
                 categoryDisplayName = "Danger",
                 meaningDisplayName = "Threat",
                 descriptorText = "visible hazards"
             };
-            var category = new FirstContactBootstrapCategoryState(definition, 2);
+            var foodDefinition = new FirstContactBootstrapCategoryDefinition
+            {
+                id = "food",
+                categoryDisplayName = "Food",
+                meaningDisplayName = "Food",
+                descriptorText = "visible food"
+            };
+            var dangerCategory = new FirstContactBootstrapCategoryState(dangerDefinition, 2);
+            var foodCategory = new FirstContactBootstrapCategoryState(foodDefinition, 2);
             var activeCard = new SemanticCardRecord
             {
                 Id = "active",
@@ -176,6 +216,10 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 BootstrapCategoryEvaluated = true,
                 BootstrapCategoryAccepted = true
             };
+            foodCategory.RecordProbe(
+                unrelatedCard,
+                new FirstContactBootstrapProbeFit(1f, true, true),
+                categoryAccepted: true);
             var settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
             try
             {
@@ -187,15 +231,37 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                     new List<SemanticCardRecord> { activeCard, unrelatedCard },
                     new List<SemanticClusterRecord>(),
                     activeCard,
-                    category,
+                    new List<FirstContactBootstrapCategoryState> { dangerCategory, foodCategory },
+                    dangerCategory,
                     includeActiveCard: true,
                     settings);
 
                 Assert.IsNotNull(snapshot.FindNode("B:danger"));
+                Assert.IsNotNull(snapshot.FindNode("B:food"));
                 Assert.IsNotNull(snapshot.FindNode("C:active"));
-                Assert.IsNull(snapshot.FindNode("C:other"));
-                Assert.AreEqual(2, snapshot.Nodes.Count);
-                Assert.AreEqual(1, snapshot.Links.Count);
+                Assert.IsNotNull(snapshot.FindNode("C:other"));
+                Assert.IsTrue(snapshot.FindNode("B:danger").IsActive);
+                Assert.IsFalse(snapshot.FindNode("B:food").IsActive);
+                Assert.AreEqual(4, snapshot.Nodes.Count);
+                Assert.AreEqual(2, snapshot.Links.Count);
+
+                Vector2 dangerCategoryPosition = snapshot.FindNode("B:danger").Position;
+                Vector2 dangerCardPosition = snapshot.FindNode("C:active").Position;
+                FirstContactSemanticMapSnapshot nextCategorySnapshot = builder.Build(
+                    new List<SemanticCardRecord> { activeCard, unrelatedCard },
+                    new List<SemanticClusterRecord>(),
+                    unrelatedCard,
+                    new List<FirstContactBootstrapCategoryState> { dangerCategory, foodCategory },
+                    foodCategory,
+                    includeActiveCard: true,
+                    settings);
+
+                Assert.IsNotNull(nextCategorySnapshot.FindNode("B:danger"));
+                Assert.IsNotNull(nextCategorySnapshot.FindNode("C:active"));
+                Assert.AreEqual(dangerCategoryPosition, nextCategorySnapshot.FindNode("B:danger").Position);
+                Assert.AreEqual(dangerCardPosition, nextCategorySnapshot.FindNode("C:active").Position);
+                Assert.IsFalse(nextCategorySnapshot.FindNode("B:danger").IsActive);
+                Assert.IsTrue(nextCategorySnapshot.FindNode("B:food").IsActive);
             }
             finally
             {
@@ -238,6 +304,38 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 Assert.AreSame(firstLabel, reusedLabels[0]);
                 Assert.IsTrue(reusedLabels[0].gameObject.activeSelf);
                 Assert.IsFalse(reusedLabels[1].gameObject.activeSelf);
+            }
+            finally
+            {
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void SemanticMiniMapKeepsLabelsForInactiveCards()
+        {
+            var terminalObject = new GameObject("Terminal", typeof(RectTransform), typeof(Canvas));
+            try
+            {
+                var screenObject = new GameObject("Screen", typeof(RectTransform));
+                screenObject.transform.SetParent(terminalObject.transform, false);
+                ((RectTransform)screenObject.transform).sizeDelta = new Vector2(1024f, 512f);
+
+                TerminalDisplay terminal = terminalObject.AddComponent<TerminalDisplay>();
+                SetPrivateField(terminal, "screenPanel", screenObject);
+                SetPrivateField(terminal, "enableScroll", false);
+                FirstContactSemanticMapDisplay display =
+                    terminalObject.AddComponent<FirstContactSemanticMapDisplay>();
+
+                display.ShowMiniMap(CreateMapSnapshot("C:first", "C:previous"));
+
+                FirstContactSemanticMapGraphic graphic =
+                    terminalObject.GetComponentInChildren<FirstContactSemanticMapGraphic>(true);
+                Assert.IsNotNull(graphic);
+                TextMeshProUGUI[] labels = graphic.GetComponentsInChildren<TextMeshProUGUI>(true);
+                Assert.AreEqual(2, labels.Length);
+                Assert.IsTrue(labels[0].gameObject.activeSelf);
+                Assert.IsTrue(labels[1].gameObject.activeSelf);
             }
             finally
             {
@@ -337,6 +435,48 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 Assert.AreEqual(style.mapHorizontalPaddingRatio, graphic.rectTransform.anchorMin.x);
                 Assert.AreEqual(1f - style.miniMap.mapHeightRatio, graphic.rectTransform.anchorMin.y);
                 Assert.AreEqual(0, graphic.GetComponentsInChildren<TextMeshProUGUI>(true).Length);
+            }
+            finally
+            {
+                Object.DestroyImmediate(style);
+                Object.DestroyImmediate(terminalObject);
+            }
+        }
+
+        [Test]
+        public void SemanticMapDisplayRestoresTextInsetWhenLayoutIsAlreadyCached()
+        {
+            var terminalObject = new GameObject("Terminal", typeof(RectTransform), typeof(Canvas));
+            FirstContactSemanticMapStyle style =
+                ScriptableObject.CreateInstance<FirstContactSemanticMapStyle>();
+            try
+            {
+                var screenObject = new GameObject("Screen", typeof(RectTransform));
+                screenObject.transform.SetParent(terminalObject.transform, false);
+                ((RectTransform)screenObject.transform).sizeDelta = new Vector2(1024f, 512f);
+
+                TerminalDisplay terminal = terminalObject.AddComponent<TerminalDisplay>();
+                SetPrivateField(terminal, "screenPanel", screenObject);
+                SetPrivateField(terminal, "enableScroll", false);
+                FirstContactSemanticMapDisplay display =
+                    terminalObject.AddComponent<FirstContactSemanticMapDisplay>();
+                style.fullMap.terminalTextTopInset = 0.66f;
+                display.SetStyle(style);
+
+                FirstContactSemanticMapSnapshot snapshot = CreateMapSnapshot("C:first");
+                display.ShowFullMap(snapshot);
+                Assert.AreEqual(
+                    0.66f,
+                    terminal.ContentTopInsetNormalized,
+                    0.001f);
+
+                terminal.SetContentTopInsetNormalized(0f);
+                display.ShowFullMap(snapshot);
+
+                Assert.AreEqual(
+                    0.66f,
+                    terminal.ContentTopInsetNormalized,
+                    0.001f);
             }
             finally
             {
@@ -536,12 +676,52 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 "first_contact.terminal.status.label_classification_claim",
                 feedback.StatusKey);
             Assert.AreEqual(
-                "first_contact.officer.probe_label_classification_claim",
-                feedback.OfficerLineKey);
+                "first_contact.doctor_hwang.probe_label_classification_claim",
+                feedback.GuidanceLineKey);
+
+            FirstContactProbeLabelFeedback mismatchFeedback =
+                FirstContactProbeFeedback.ResolveLabelIssue(
+                    FirstContactProbeLabelIssue.LabelMismatch);
+            Assert.AreEqual(
+                "first_contact.terminal.status.label_mismatch",
+                mismatchFeedback.StatusKey);
+            Assert.AreEqual(
+                "first_contact.doctor_hwang.probe_label_mismatch",
+                mismatchFeedback.GuidanceLineKey);
             Assert.IsTrue(FirstContactProbeFeedback.IsFatalValidationFailure(
                 "GamePipelineRunner is missing."));
             Assert.IsFalse(FirstContactProbeFeedback.IsFatalValidationFailure(
                 "Temporary model response failure."));
+            Assert.AreEqual(
+                "first_contact.terminal.reason.scene_or_action_detected",
+                FirstContactProbeFeedback.GetRedrawPromptLocalizationKey("SCENE OR ACTION DETECTED"));
+        }
+
+        [Test]
+        public void ProbeLabelMismatchDoesNotRequestDrawingRedraw()
+        {
+            var settings = ScriptableObject.CreateInstance<FirstContactVlmSettings>();
+            try
+            {
+                var validation = new FirstContactProbeValidationResult
+                {
+                    IsBlank = false,
+                    ObjectCount = 1,
+                    HasTextOrSymbol = false,
+                    IsSceneOrAction = false,
+                    LabelMatch = "mismatch"
+                };
+
+                Assert.IsFalse(FirstContactProbeFeedback.TryGetContentRedrawPrompt(
+                    validation,
+                    settings,
+                    out _,
+                    out _));
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
         }
 
         [Test]
@@ -559,25 +739,24 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 Assert.IsTrue(state.TrySetSubmittedLabel("knife", "Knife"));
                 Assert.IsTrue(state.TryApplyLabelAnalysis(new FirstContactProbeLabelResult
                 {
-                    CanonicalLabel = "blade",
-                    TranslationAvailable = true
+                    NormalizedLabel = "knife"
                 }));
 
                 FirstContactProbeDraft draft = state.CreateDraft();
                 Assert.AreSame(texture, draft.Texture);
                 Assert.AreSame(pngBytes, state.PngBytes);
-                Assert.AreEqual("blade", draft.CanonicalLabel);
-                Assert.AreEqual("Knife", draft.DisplayLabel);
-                Assert.IsTrue(draft.TranslationAvailable);
+                Assert.AreEqual("knife", draft.NormalizedLabel);
+                Assert.AreEqual("Knife", draft.OriginalLabel);
+                Assert.IsFalse(draft.TranslationAvailable);
                 Assert.AreEqual("Knife", state.PreferredLabel);
 
                 Assert.IsFalse(state.TrySetSubmittedLabel(string.Empty, "Invalid"));
-                Assert.AreEqual("blade", state.CanonicalLabel);
-                Assert.AreEqual("Knife", state.DisplayLabel);
+                Assert.AreEqual("knife", state.NormalizedLabel);
+                Assert.AreEqual("Knife", state.OriginalLabel);
                 Assert.IsFalse(state.TryApplyLabelAnalysis(
                     FirstContactProbeLabelResult.Failed("analysis failed")));
-                Assert.AreEqual("blade", state.CanonicalLabel);
-                Assert.IsTrue(state.TranslationAvailable);
+                Assert.AreEqual("knife", state.NormalizedLabel);
+                Assert.IsFalse(state.TranslationAvailable);
 
                 Assert.IsFalse(state.TryApplyCapture(
                     FirstContactProbeCaptureResult.Failed("capture failed")));
@@ -928,17 +1107,21 @@ namespace DoodleDiplomacy.Core.Editor.Tests
 
             Assert.IsFalse(result.IsSuccess);
             Assert.IsFalse(result.FitsCategory);
-            Assert.AreEqual("uncertain", result.EvidenceType);
+            Assert.AreEqual(
+                FirstContactBootstrapCategoryFitResult.UncertainDecision,
+                result.Decision);
         }
 
-        [TestCase("symbolic_or_contextual")]
-        [TestCase("neutral_or_generic")]
-        [TestCase("uncertain")]
-        public void CategoryFitPreservesAuthoredRejectionEvidence(string evidenceType)
+        [TestCase(
+            FirstContactBootstrapCategoryFitResult.CategoryMismatchDecision)]
+        [TestCase(
+            FirstContactBootstrapCategoryFitResult.ContextualOnlyDecision)]
+        [TestCase(
+            FirstContactBootstrapCategoryFitResult.UncertainDecision)]
+        public void CategoryFitUsesSharedMismatchGuidance(string decision)
         {
             var state = new PipelineState();
-            state.SetString("fits_category", "true");
-            state.SetString("evidence_type", evidenceType);
+            state.SetString("decision", decision);
             state.SetString("reason", "model detail");
 
             bool parsed = FirstContactBootstrapCategoryFitResult.TryFromPipelineState(
@@ -947,7 +1130,70 @@ namespace DoodleDiplomacy.Core.Editor.Tests
 
             Assert.IsTrue(parsed);
             Assert.IsFalse(result.FitsCategory);
-            Assert.AreEqual(evidenceType, result.EvidenceType);
+            Assert.AreEqual(decision, result.Decision);
+            Assert.AreEqual(
+                "first_contact.doctor_hwang.bootstrap_category_mismatch",
+                FirstContactProbeFeedback.ResolveCategoryGuidanceLine(result));
+        }
+
+        [Test]
+        public void CategoryFitOrdinaryMatchIsTheOnlyAcceptedDecision()
+        {
+            var state = new PipelineState();
+            state.SetString(
+                "decision",
+                FirstContactBootstrapCategoryFitResult.OrdinaryMatchDecision);
+            state.SetString("reason", "ordinary identity belongs to category");
+
+            bool parsed = FirstContactBootstrapCategoryFitResult.TryFromPipelineState(
+                state,
+                out FirstContactBootstrapCategoryFitResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsTrue(result.FitsCategory);
+            Assert.AreEqual(
+                FirstContactBootstrapCategoryFitResult.OrdinaryMatchDecision,
+                result.Decision);
+        }
+
+        [Test]
+        public void CategoryFitRejectsLegacyConflictingOutput()
+        {
+            var state = new PipelineState();
+            state.SetString("fits_category", "true");
+            state.SetString("evidence_type", "neutral_or_generic");
+            state.SetString("reason", "legacy contradictory output");
+
+            bool parsed = FirstContactBootstrapCategoryFitResult.TryFromPipelineState(
+                state,
+                out FirstContactBootstrapCategoryFitResult result);
+
+            Assert.IsFalse(parsed);
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsFalse(result.FitsCategory);
+            StringAssert.Contains("no decision", result.Error);
+        }
+
+        [Test]
+        public void CategoryFitPromptAllowsOverlappingCategoriesWithoutConcreteExamples()
+        {
+            const string profilePath =
+                "Assets/ScriptableObjects/LlmProfiles/FirstContactBootstrapCategoryFit.asset";
+            LlmGenerationProfile profile =
+                UnityEditor.AssetDatabase.LoadAssetAtPath<LlmGenerationProfile>(profilePath);
+
+            Assert.IsNotNull(profile);
+            string prompt = profile.systemPromptTemplate;
+            StringAssert.Contains("CATEGORY values are not exclusive", prompt);
+            StringAssert.Contains("may be ordinary_match for multiple CATEGORY values", prompt);
+            StringAssert.Contains("intrinsic physical nature", prompt);
+            StringAssert.DoesNotContain("Examples:", prompt);
+            StringAssert.DoesNotContain("FOOD with", prompt);
+            StringAssert.DoesNotContain("TOOL with", prompt);
+            StringAssert.DoesNotContain("knife", prompt.ToLowerInvariant());
+            StringAssert.DoesNotContain("belongs somewhere else", prompt);
+            Assert.Less(prompt.Length, 4000);
         }
 
         [Test]
@@ -983,6 +1229,198 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             {
                 Object.DestroyImmediate(settings);
             }
+        }
+
+        [Test]
+        public void DuplicateDetectorTreatsSameLabelAcrossSubmissionCategoriesAsCertain()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                settings.bootstrapDuplicateSemanticThreshold = 0.96f;
+                var embedding = new FirstContactEmbeddingService(null, settings);
+                var recorded = new SemanticCardRecord
+                {
+                    OriginalLabel = "배",
+                    NormalizedLabel = "배",
+                    BootstrapCategoryId = "food",
+                    Embedding = Unit(1f, 0f, 0f)
+                };
+                var candidate = new SemanticCardRecord
+                {
+                    OriginalLabel = "배",
+                    NormalizedLabel = "배",
+                    BootstrapCategoryId = "vehicle",
+                    Embedding = Unit(1f, 0f, 0f)
+                };
+
+                bool duplicateFound = FirstContactProbeDuplicateDetector.TryFindDuplicate(
+                    candidate,
+                    new List<SemanticCardRecord> { recorded },
+                    embedding,
+                    settings,
+                    out SemanticCardRecord duplicate,
+                    out FirstContactProbeDuplicateDetector.MatchEvidence evidence);
+
+                Assert.IsTrue(duplicateFound);
+                Assert.AreSame(recorded, duplicate);
+                Assert.AreEqual(
+                    FirstContactProbeDuplicateDetector.MatchKind.SameLabel,
+                    evidence.Kind);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void DuplicateDetectorTreatsSameNormalizedLabelAsCertain()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                var recorded = new SemanticCardRecord
+                {
+                    OriginalLabel = "Apple",
+                    NormalizedLabel = "apple",
+                    BootstrapCategoryId = "danger"
+                };
+                var candidate = new SemanticCardRecord
+                {
+                    OriginalLabel = " apple ",
+                    NormalizedLabel = "apple",
+                    BootstrapCategoryId = "food"
+                };
+
+                bool duplicateFound = FirstContactProbeDuplicateDetector.TryFindDuplicate(
+                    candidate,
+                    new List<SemanticCardRecord> { recorded },
+                    null,
+                    settings,
+                    out SemanticCardRecord duplicate,
+                    out FirstContactProbeDuplicateDetector.MatchEvidence evidence);
+
+                Assert.IsTrue(duplicateFound);
+                Assert.AreSame(recorded, duplicate);
+                Assert.AreEqual(
+                    FirstContactProbeDuplicateDetector.MatchKind.SameLabel,
+                    evidence.Kind);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void DuplicateDetectorReturnsGrayZoneCandidatesAcrossSubmissionCategories()
+        {
+            FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
+            try
+            {
+                settings.enableSemanticDuplicateLlmReview = true;
+                settings.bootstrapDuplicateSemanticReviewThreshold = 0.75f;
+                settings.bootstrapDuplicateSemanticThreshold = 0.95f;
+                settings.semanticDuplicateReviewMaxCandidates = 3;
+                var embedding = new FirstContactEmbeddingService(null, settings);
+                var candidate = new SemanticCardRecord
+                {
+                    OriginalLabel = "사과",
+                    BootstrapCategoryId = "food",
+                    Embedding = Unit(1f, 0f, 0f)
+                };
+                var weaker = new SemanticCardRecord
+                {
+                    OriginalLabel = "pear",
+                    BootstrapCategoryId = "food",
+                    Embedding = Unit(0.8f, 0.6f, 0f)
+                };
+                var stronger = new SemanticCardRecord
+                {
+                    OriginalLabel = "apple",
+                    BootstrapCategoryId = "food",
+                    Embedding = Unit(0.9f, 0.435f, 0f)
+                };
+                var conflicting = new SemanticCardRecord
+                {
+                    OriginalLabel = "apple company",
+                    BootstrapCategoryId = "organization",
+                    Embedding = Unit(0.94f, 0.341f, 0f)
+                };
+
+                IReadOnlyList<FirstContactProbeDuplicateDetector.ReviewCandidate> candidates =
+                    FirstContactProbeDuplicateDetector.FindReviewCandidates(
+                        candidate,
+                        new List<SemanticCardRecord> { weaker, conflicting, stronger },
+                        embedding,
+                        settings);
+
+                Assert.AreEqual(3, candidates.Count);
+                Assert.AreSame(conflicting, candidates[0].Card);
+                Assert.AreSame(stronger, candidates[1].Card);
+                Assert.AreSame(weaker, candidates[2].Card);
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void SemanticDuplicateReviewRequiresClearSameConceptConfidence()
+        {
+            var state = new PipelineState();
+            state.SetString("semantic_relation", "same_concept");
+            state.SetString("confidence", "0.82");
+            state.SetString("reason", "Direct translations.");
+
+            bool parsed = FirstContactSemanticDuplicateReviewResult.TryFromPipelineState(
+                state,
+                out FirstContactSemanticDuplicateReviewResult result);
+
+            Assert.IsTrue(parsed);
+            Assert.IsTrue(result.ConfirmsDuplicate);
+            Assert.AreEqual(0.82f, result.Confidence, 0.001f);
+        }
+
+        [Test]
+        public void SemanticDuplicateReviewPromptContainsLabelsOnly()
+        {
+            const string pipelinePath =
+                "Assets/ScriptableObjects/Pipeline/FirstContactSemanticDuplicateReviewPipeline.asset";
+            const string profilePath =
+                "Assets/ScriptableObjects/LlmProfiles/FirstContactSemanticDuplicateReview.asset";
+            PromptPipelineAsset pipeline =
+                UnityEditor.AssetDatabase.LoadAssetAtPath<PromptPipelineAsset>(pipelinePath);
+            LlmGenerationProfile profile =
+                UnityEditor.AssetDatabase.LoadAssetAtPath<LlmGenerationProfile>(profilePath);
+
+            Assert.IsNotNull(pipeline);
+            Assert.IsNotNull(profile);
+            Assert.AreEqual(1, pipeline.steps.Count);
+            string prompt = pipeline.steps[0].userPromptTemplate;
+            StringAssert.Contains("{{left_label_json}}", prompt);
+            StringAssert.Contains("{{right_label_json}}", prompt);
+            StringAssert.DoesNotContain("CATEGORY", prompt);
+            StringAssert.DoesNotContain("category_id", prompt);
+            StringAssert.DoesNotContain("source_locale", prompt);
+            StringAssert.DoesNotContain("semantic_similarity", prompt);
+            StringAssert.Contains("only on the two label strings", profile.systemPromptTemplate);
+            StringAssert.DoesNotContain("CATEGORY", profile.systemPromptTemplate);
+        }
+
+        [Test]
+        public void SemanticDuplicatePromptSerializationPreservesUnicodeLabels()
+        {
+            MethodInfo serializeMethod = typeof(FirstContactProbeProcessor).GetMethod(
+                "SerializePromptLabel",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.IsNotNull(serializeMethod);
+            string serialized = (string)serializeMethod.Invoke(null, new object[] { "체리" });
+            Assert.AreEqual("\"체리\"", serialized);
+            StringAssert.DoesNotContain("\\u", serialized);
         }
 
         [Test]
@@ -1044,7 +1482,7 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
-        public void GraphClusteringUsesConfiguredKeywordsForStableGroupMeaning()
+        public void RejectedPatternRemainsUnassignedUntilPlayerNamesIt()
         {
             FirstContactSemanticSettings settings = ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
             try
@@ -1061,19 +1499,33 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                         id = "signal",
                         categoryDisplayName = "SIGNAL",
                         meaningDisplayName = "[SIGNAL?]",
-                        descriptorText = "visible electrical signals",
-                        clusterLabelKeywords = new List<string> { "spark" }
+                        descriptorText = "visible electrical signals"
                     }
                 };
 
                 var embedding = new FirstContactEmbeddingService(null, settings);
                 var memory = new FirstContactSemanticMemory(embedding, settings, null, categories);
-                memory.AddCard(CreateCard("spark", Unit(1f, 0f, 0f)));
-                memory.AddCard(CreateCard("arc", Unit(0.99f, 0.1f, 0f)));
-                memory.AddCard(CreateCard("flash", Unit(0.99f, -0.1f, 0f)));
+                memory.AddCard(CreateBootstrapCard("spark", "signal", Unit(1f, 0f, 0f), accepted: false));
+                memory.AddCard(CreateBootstrapCard("arc", "signal", Unit(0.99f, 0.1f, 0f), accepted: false));
+                memory.AddCard(CreateBootstrapCard("flash", "signal", Unit(0.99f, -0.1f, 0f), accepted: false));
 
                 Assert.AreEqual(1, memory.StableClusters.Count);
-                Assert.AreEqual("[SIGNAL?]", memory.StableClusters[0].DisplayName);
+                SemanticClusterRecord cluster = memory.StableClusters[0];
+                Assert.IsTrue(cluster.RequiresMeaningAssignment);
+                Assert.AreEqual("[PATTERN-??]", cluster.DisplayName);
+                Assert.IsTrue(memory.TryAssignMeaning(cluster.Id, "전기 신호"));
+                Assert.AreEqual("전기 신호", cluster.DisplayName);
+                Assert.IsTrue(cluster.MeaningAssignedByPlayer);
+
+                memory.AddCard(CreateBootstrapCard(
+                    "lightning",
+                    "signal",
+                    Unit(0.98f, 0f, 0.1f),
+                    accepted: false));
+
+                Assert.AreEqual(1, memory.StableClusters.Count);
+                Assert.AreEqual("전기 신호", memory.StableClusters[0].DisplayName);
+                Assert.IsTrue(memory.StableClusters[0].MeaningAssignedByPlayer);
             }
             finally
             {
@@ -1099,8 +1551,7 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                         id = "food",
                         categoryDisplayName = "FOOD",
                         meaningDisplayName = "[FOOD?]",
-                        descriptorText = "visible food",
-                        clusterLabelKeywords = new List<string> { "apple" }
+                        descriptorText = "visible food"
                     }
                 };
 
@@ -1119,6 +1570,107 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             }
         }
 
+        [Test]
+        public void CalibrationProfileTranslatesOnlyCalibratedCategories()
+        {
+            var profile = new FirstContactCalibrationProfile();
+            Assert.IsTrue(profile.Calibrate("danger", "DANGER"));
+            Assert.IsTrue(profile.Calibrate("food", "FOOD"));
+
+            FirstContactTranslationResult result = profile.Translate(
+                new List<FirstContactAlienSignalSegment>
+                {
+                    new() { categoryId = "danger", rawSignal = "[KRR]", meaningFallback = "DANGER" },
+                    new() { categoryId = "intent", rawSignal = "[VOR]", meaningFallback = "INTENT" },
+                    new() { categoryId = "food", rawSignal = "[THA]", meaningFallback = "FOOD" }
+                });
+
+            Assert.AreEqual(2, result.TranslatedSegmentCount);
+            Assert.AreEqual(1, result.UnknownSegmentCount);
+            Assert.IsTrue(result.HasTranslation);
+            StringAssert.Contains("[VOR]", result.RenderedMeaning);
+            StringAssert.DoesNotContain("[KRR]", result.RenderedMeaning);
+            StringAssert.DoesNotContain("[THA]", result.RenderedMeaning);
+        }
+
+        [Test]
+        public void OnboardingMemoryEmitsEachGuidanceCueOnlyOncePerSession()
+        {
+            var memory = new FirstContactOnboardingMemory();
+
+            Assert.IsTrue(memory.TryMarkFirst("first_drawing"));
+            Assert.IsFalse(memory.TryMarkFirst("first_drawing"));
+
+            memory.Reset();
+
+            Assert.IsTrue(memory.TryMarkFirst("first_drawing"));
+        }
+
+        [Test]
+        public void EncounterDirectorCreatesRequiredSignalAudioSource()
+        {
+            var host = new GameObject("FirstContactEncounterDirectorTest");
+            FirstContactNarrativeSettings settings =
+                ScriptableObject.CreateInstance<FirstContactNarrativeSettings>();
+            try
+            {
+                settings.createPlaceholderGeometry = false;
+                FirstContactEncounterDirector director =
+                    host.AddComponent<FirstContactEncounterDirector>();
+                director.Configure(null, settings);
+
+                Assert.DoesNotThrow(director.BeginSession);
+                Assert.IsNotNull(host.GetComponent<AudioSource>());
+            }
+            finally
+            {
+                Object.DestroyImmediate(settings);
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void SubtitleAdvancePromptUsesFullFirstHintThenCompactRepeatHint()
+        {
+            string originalLocale = L10n.CurrentLocale;
+            var panel = new GameObject(
+                "SubtitleAdvancePromptTest",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image));
+            try
+            {
+                SubtitleDisplay display = panel.AddComponent<SubtitleDisplay>();
+                SetPrivateField(display, "panel", panel);
+                L10n.SetLocale("ko-KR", persist: false);
+
+                display.Show("황 박사", "테스트 대사");
+                display.SetAdvancePromptVisible(true);
+
+                TextMeshProUGUI prompt = panel.transform
+                    .Find("DialogueAdvancePrompt")
+                    ?.GetComponent<TextMeshProUGUI>();
+                Assert.IsNotNull(prompt);
+                Assert.IsTrue(display.IsAdvancePromptVisible);
+                StringAssert.Contains("SPACE", prompt.text);
+                StringAssert.Contains("다음", prompt.text);
+
+                display.SetAdvancePromptVisible(false);
+                display.SetAdvancePromptVisible(true);
+                StringAssert.Contains("SPACE", prompt.text);
+                StringAssert.DoesNotContain("다음", prompt.text);
+
+                InvokePrivateMethod(display, "HandlePanelClicked");
+                Assert.IsTrue(display.ConsumeAdvanceRequest());
+                Assert.IsFalse(display.ConsumeAdvanceRequest());
+            }
+            finally
+            {
+                L10n.SetLocale(originalLocale, persist: false);
+                Object.DestroyImmediate(panel);
+            }
+        }
+
         private static SemanticCardRecord CreateCard(string label, float[] vector)
         {
             return new SemanticCardRecord
@@ -1132,10 +1684,13 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         private static SemanticCardRecord CreateBootstrapCard(
             string label,
             string categoryId,
-            float[] vector)
+            float[] vector,
+            bool accepted = true)
         {
             SemanticCardRecord card = CreateCard(label, vector);
             card.BootstrapCategoryId = categoryId;
+            card.BootstrapCategoryEvaluated = true;
+            card.BootstrapCategoryAccepted = accepted;
             return card;
         }
 

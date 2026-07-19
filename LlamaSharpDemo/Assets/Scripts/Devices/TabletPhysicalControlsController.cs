@@ -149,6 +149,12 @@ namespace DoodleDiplomacy.Devices
         [Tooltip("Button tint used for the clear-canvas control.")]
         [SerializeField] private Color clearButtonColor = new(0.80f, 0.36f, 0.18f, 1f);
 
+        [Header("Tutorial Highlight")]
+        [Tooltip("Bright diagnostic-lamp color used while Dr. Hwang explains a control group.")]
+        [SerializeField] private Color tutorialHighlightColor = new(1f, 0.82f, 0.25f, 1f);
+        [Min(0.1f)]
+        [SerializeField] private float tutorialHighlightPulseSpeed = 1.8f;
+
         private readonly int[] _brushSizePresets = { TabletControlCommands.SmallBrushSize, TabletControlCommands.MediumBrushSize, TabletControlCommands.LargeBrushSize };
         private MaterialPropertyBlock _rendererPropertyBlock;
         private Texture2D _spectrumTexture;
@@ -159,6 +165,8 @@ namespace DoodleDiplomacy.Devices
         private float _spectrumPositionNormalized;
         private Color _selectedColor = Color.black;
         private IDrawingControlFeature _drawingControls;
+        private TabletTutorialHighlightGroup _tutorialHighlightGroup;
+        private bool _tutorialInputLocked;
 
         private void SetDrawingBoard(DrawingBoardController targetDrawingBoard)
         {
@@ -278,6 +286,13 @@ namespace DoodleDiplomacy.Devices
                 return;
             }
 
+            if (_tutorialInputLocked)
+            {
+                SetBoardInteractionLocked(true);
+                RefreshVisuals();
+                return;
+            }
+
             if (inputCamera == null)
             {
                 return;
@@ -314,14 +329,14 @@ namespace DoodleDiplomacy.Devices
             if (_controlsActive == shouldEnable)
             {
                 SetControlsVisible(true);
-                SetControlCollidersEnabled(_controlsActive);
+                SetControlCollidersEnabled(_controlsActive && !_tutorialInputLocked);
                 RefreshVisuals();
                 return;
             }
 
             _controlsActive = shouldEnable;
             SetControlsVisible(true);
-            SetControlCollidersEnabled(_controlsActive);
+            SetControlCollidersEnabled(_controlsActive && !_tutorialInputLocked);
             if (!_controlsActive)
             {
                 EndPointerCapture();
@@ -332,6 +347,24 @@ namespace DoodleDiplomacy.Devices
                 SetBoardInteractionLocked(false);
             }
 
+            RefreshVisuals();
+        }
+
+        public void SetTutorialHighlight(
+            TabletTutorialHighlightGroup group,
+            bool lockControlInput = true)
+        {
+            _tutorialHighlightGroup = group;
+            _tutorialInputLocked = group != TabletTutorialHighlightGroup.None && lockControlInput;
+            SetControlCollidersEnabled(_controlsActive && !_tutorialInputLocked);
+            RefreshVisuals();
+        }
+
+        public void ClearTutorialHighlight()
+        {
+            _tutorialHighlightGroup = TabletTutorialHighlightGroup.None;
+            _tutorialInputLocked = false;
+            SetControlCollidersEnabled(_controlsActive);
             RefreshVisuals();
         }
 
@@ -679,8 +712,46 @@ namespace DoodleDiplomacy.Devices
             SetRendererColor(undoButtonRenderer, _drawingControls.CanUndo ? neutralButtonColor : disabledButtonColor);
             SetRendererColor(redoButtonRenderer, _drawingControls.CanRedo ? neutralButtonColor : disabledButtonColor);
             SetRendererColor(clearButtonRenderer, clearButtonColor);
+            SetRendererColor(spectrumRenderer, Color.white);
             SetRendererColor(spectrumKnobRenderer, _selectedColor);
             RefreshButtonOverlayVisuals();
+            ApplyTutorialHighlight();
+        }
+
+        private void ApplyTutorialHighlight()
+        {
+            if (_tutorialHighlightGroup == TabletTutorialHighlightGroup.None)
+            {
+                return;
+            }
+
+            float wave = 0.5f + 0.5f * Mathf.Sin(
+                Time.unscaledTime * Mathf.PI * 2f * tutorialHighlightPulseSpeed);
+            Color pulseColor = Color.Lerp(
+                tutorialHighlightColor,
+                Color.white,
+                Mathf.SmoothStep(0f, 1f, wave) * 0.38f);
+
+            switch (_tutorialHighlightGroup)
+            {
+                case TabletTutorialHighlightGroup.Tools:
+                    SetRendererColor(brushButtonRenderer, pulseColor);
+                    SetRendererColor(fillButtonRenderer, pulseColor);
+                    SetRendererColor(eraserButtonRenderer, pulseColor);
+                    break;
+                case TabletTutorialHighlightGroup.Style:
+                    SetRendererColor(sizeSmallRenderer, pulseColor);
+                    SetRendererColor(sizeMediumRenderer, pulseColor);
+                    SetRendererColor(sizeLargeRenderer, pulseColor);
+                    SetRendererColor(spectrumRenderer, pulseColor);
+                    SetRendererColor(spectrumKnobRenderer, pulseColor);
+                    break;
+                case TabletTutorialHighlightGroup.HistoryAndSend:
+                    SetRendererColor(undoButtonRenderer, pulseColor);
+                    SetRendererColor(redoButtonRenderer, pulseColor);
+                    SetRendererColor(clearButtonRenderer, pulseColor);
+                    break;
+            }
         }
 
         private void EnsureButtonIconOverlays()

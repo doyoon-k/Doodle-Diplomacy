@@ -53,6 +53,7 @@ namespace DoodleDiplomacy.Character
         public UnityEvent OnReactionComplete = new();
 
         private Coroutine _reactionRoutine;
+        private Coroutine _animationOnlyRoutine;
         private const string DefaultReactionSpeaker = "Alien";
 
         private static readonly Dictionary<SatisfactionLevel, string> MutterMap = new()
@@ -88,10 +89,7 @@ namespace DoodleDiplomacy.Character
 
         public void PlayReaction(SatisfactionLevel satisfaction)
         {
-            if (_reactionRoutine != null)
-            {
-                StopCoroutine(_reactionRoutine);
-            }
+            StopActiveReactionRoutines();
 
             _reactionRoutine = StartCoroutine(ReactionRoutine(satisfaction, null, null, null));
         }
@@ -102,16 +100,32 @@ namespace DoodleDiplomacy.Character
             string mutterOverride,
             string narrationOverride)
         {
-            if (_reactionRoutine != null)
-            {
-                StopCoroutine(_reactionRoutine);
-            }
+            StopActiveReactionRoutines();
 
             _reactionRoutine = StartCoroutine(ReactionRoutine(
                 satisfaction,
                 speakerOverride,
                 mutterOverride,
                 narrationOverride));
+        }
+
+        public void PlayAnimationOnly(
+            SatisfactionLevel satisfaction,
+            float holdSeconds,
+            bool returnToIdle = true)
+        {
+            StopActiveReactionRoutines();
+            _animationOnlyRoutine = StartCoroutine(AnimationOnlyRoutine(
+                satisfaction,
+                holdSeconds,
+                returnToIdle));
+        }
+
+        public void StopReaction()
+        {
+            StopActiveReactionRoutines();
+            subtitleDisplay?.Hide();
+            PlayIdleIfAvailable();
         }
 
         public void OnGameStateChanged(GameState state) { }
@@ -198,6 +212,52 @@ namespace DoodleDiplomacy.Character
             OnReactionComplete?.Invoke();
         }
 
+        private IEnumerator AnimationOnlyRoutine(
+            SatisfactionLevel satisfaction,
+            float holdSeconds,
+            bool returnToIdle)
+        {
+            float resolvedDuration = Mathf.Max(0f, holdSeconds);
+            if (TryResolveBinding(satisfaction, out ReactionAnimationBinding binding, out _) &&
+                TryPlayBinding(binding) &&
+                resolvedDuration <= 0f &&
+                binding.clip != null)
+            {
+                resolvedDuration = Mathf.Max(0f, binding.clip.length);
+            }
+
+            if (resolvedDuration > 0f)
+            {
+                yield return new WaitForSeconds(resolvedDuration);
+            }
+            else
+            {
+                yield return null;
+            }
+
+            if (returnToIdle)
+            {
+                PlayIdleIfAvailable();
+            }
+
+            _animationOnlyRoutine = null;
+        }
+
+        private void StopActiveReactionRoutines()
+        {
+            if (_reactionRoutine != null)
+            {
+                StopCoroutine(_reactionRoutine);
+                _reactionRoutine = null;
+            }
+
+            if (_animationOnlyRoutine != null)
+            {
+                StopCoroutine(_animationOnlyRoutine);
+                _animationOnlyRoutine = null;
+            }
+        }
+
         private bool ShowSubtitleIfNotEmpty(string speaker, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -225,27 +285,33 @@ namespace DoodleDiplomacy.Character
                 yield return null;
             }
 
-            while (!GetDialogueAdvanceThisFrame())
+            subtitleDisplay?.SetAdvancePromptVisible(true);
+            while (!GetDialogueAdvanceThisFrame() &&
+                   subtitleDisplay?.ConsumeAdvanceRequest() != true)
             {
                 yield return null;
             }
+
+            subtitleDisplay?.SetAdvancePromptVisible(false);
         }
 
         private static bool GetDialogueAdvanceThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+            return (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
+                   (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame);
 #else
-            return Input.GetMouseButtonDown(0);
+            return Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space);
 #endif
         }
 
         private static bool IsDialogueAdvancePressed()
         {
 #if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null && Mouse.current.leftButton.isPressed;
+            return (Mouse.current != null && Mouse.current.leftButton.isPressed) ||
+                   (Keyboard.current != null && Keyboard.current.spaceKey.isPressed);
 #else
-            return Input.GetMouseButton(0);
+            return Input.GetMouseButton(0) || Input.GetKey(KeyCode.Space);
 #endif
         }
 

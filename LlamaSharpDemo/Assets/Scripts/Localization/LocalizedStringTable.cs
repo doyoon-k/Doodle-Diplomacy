@@ -36,6 +36,11 @@ namespace DoodleDiplomacy.Localization
             return entry.TryGetLocalized(locale, out text);
         }
 
+        public void InvalidateRuntimeCache()
+        {
+            _entriesByKey = null;
+        }
+
         private bool TryGetEntry(string key, out LocalizedStringEntry entry)
         {
             entry = null;
@@ -69,7 +74,7 @@ namespace DoodleDiplomacy.Localization
 
         private void OnValidate()
         {
-            _entriesByKey = null;
+            InvalidateRuntimeCache();
         }
     }
 

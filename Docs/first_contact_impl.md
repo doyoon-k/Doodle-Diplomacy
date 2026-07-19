@@ -22,10 +22,10 @@ GameScene
 │   ├─ Room                 — 회담장 환경 (바닥, 벽, 조명 등)
 │   ├─ SharedMonitor        — 공유 모니터 3D 오브젝트 + SharedMonitorDisplay
 │   ├─ PlayerTable          — 테이블 + 태블릿 거치대
-│   └─ InterpreterDesk      — 과학장교 책상 + 터미널 오브젝트
+│   └─ InterpreterDesk      — 황 박사 책상 + 터미널 오브젝트
 ├─ Characters
 │   ├─ Adjutant             — 부관 3D모델 + PortraitDisplay + InteractableObject
-│   ├─ ScienceOfficer       — 과학장교 3D모델 + PortraitDisplay
+│   ├─ DoctorHwang          — 황 박사 3D모델 + PortraitDisplay
 │   └─ AlienGroup
 │       ├─ AlienLeader      — 외계인 대표 + PortraitDisplay + InteractableObject
 │       └─ AlienFollowers   — 외계인 수행원들

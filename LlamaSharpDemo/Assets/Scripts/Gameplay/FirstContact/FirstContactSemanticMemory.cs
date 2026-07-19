@@ -78,7 +78,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             if (_debugSettings != null && _debugSettings.logClusterUpdates)
             {
                 Debug.Log(
-                    $"[FirstContactSemanticMemory] Card '{card.Label}' mapped to {cluster?.Id ?? "NO-CLUSTER"} " +
+                    $"[FirstContactSemanticMemory] Card '{card.OriginalLabel}' mapped to {cluster?.Id ?? "NO-CLUSTER"} " +
                     $"members={cluster?.Members.Count ?? 0} stable={cluster?.IsStable ?? false}");
             }
         }
@@ -99,6 +99,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return null;
+        }
+
+        public bool TryAssignMeaning(string clusterId, string meaning)
+        {
+            SemanticClusterRecord cluster = FindCluster(clusterId);
+            string normalizedMeaning = FirstContactProbeProcessor.NormalizePlayerLabelText(meaning);
+            if (cluster == null || !cluster.IsStable || string.IsNullOrWhiteSpace(normalizedMeaning))
+            {
+                return false;
+            }
+
+            cluster.ProvisionalName = normalizedMeaning;
+            cluster.MeaningAssignedByPlayer = true;
+            return true;
         }
 
         private void RebuildClustersFromGraph(SemanticCardRecord activeCard)
@@ -412,7 +426,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             cluster.Members.Clear();
             cluster.Centroid = null;
-            cluster.ProvisionalName = string.Empty;
+            if (!cluster.MeaningAssignedByPlayer)
+            {
+                cluster.ProvisionalName = string.Empty;
+            }
             cluster.IsStable = false;
             cluster.Cohesion = 0f;
         }
@@ -423,6 +440,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 Id = $"CLUSTER-{_nextClusterIndex++:00}",
                 ProvisionalName = string.Empty,
+                MeaningAssignedByPlayer = false,
                 IsStable = false,
                 Cohesion = 0f
             };
@@ -521,12 +539,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             cluster.IsStable = true;
-            cluster.ProvisionalName = InferClusterName(cluster);
+            if (!cluster.MeaningAssignedByPlayer)
+            {
+                cluster.ProvisionalName = InferClusterName(cluster);
+            }
         }
 
         private string InferClusterName(SemanticClusterRecord cluster)
         {
-            string dominantCategoryId = FindDominantBootstrapCategoryId(cluster);
+            string dominantCategoryId = FindDominantAcceptedBootstrapCategoryId(cluster);
             if (!string.IsNullOrWhiteSpace(dominantCategoryId))
             {
                 for (int categoryIndex = 0; categoryIndex < _bootstrapCategories.Count; categoryIndex++)
@@ -540,28 +561,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
             }
 
-            for (int categoryIndex = 0; categoryIndex < _bootstrapCategories.Count; categoryIndex++)
-            {
-                FirstContactBootstrapCategoryDefinition category = _bootstrapCategories[categoryIndex];
-                if (category == null)
-                {
-                    continue;
-                }
-
-                for (int i = 0; i < cluster.Members.Count; i++)
-                {
-                    string label = cluster.Members[i].Label ?? string.Empty;
-                    if (category.MatchesClusterLabel(label))
-                    {
-                        return category.MeaningDisplayName;
-                    }
-                }
-            }
-
-            return $"[{cluster.Id}]";
+            return string.Empty;
         }
 
-        private static string FindDominantBootstrapCategoryId(SemanticClusterRecord cluster)
+        private static string FindDominantAcceptedBootstrapCategoryId(SemanticClusterRecord cluster)
         {
             if (cluster?.Members == null || cluster.Members.Count == 0)
             {
@@ -574,7 +577,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             int dominantCount = 0;
             for (int i = 0; i < cluster.Members.Count; i++)
             {
-                string categoryId = cluster.Members[i]?.BootstrapCategoryId?.Trim() ?? string.Empty;
+                SemanticCardRecord member = cluster.Members[i];
+                if (member == null ||
+                    !member.BootstrapCategoryEvaluated ||
+                    !member.BootstrapCategoryAccepted)
+                {
+                    continue;
+                }
+
+                string categoryId = member.BootstrapCategoryId?.Trim() ?? string.Empty;
                 if (categoryId.Length == 0)
                 {
                     continue;
@@ -609,7 +620,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             return TryCreateWaveformProfile(
                 card.Embedding,
-                card.Label,
+                card.OriginalLabel,
                 Mathf.Max(1, card.ProbeIndex + 1),
                 sessionSeed,
                 out profile);

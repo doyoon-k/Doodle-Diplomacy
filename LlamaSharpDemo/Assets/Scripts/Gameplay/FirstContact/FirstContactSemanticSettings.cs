@@ -48,13 +48,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Tooltip("튜토리얼 카테고리 설명 임베딩과의 적합도를 표시/디버그할 때 참고하는 보조 기준입니다. 카테고리 거절은 별도 판정 파이프라인이 처리합니다.")]
         [Range(-1f, 1f)] public float bootstrapMinCategoryDescriptorFit = 0.6f;
         [Tooltip("부트스트랩 전체 표본에서 라벨 임베딩이 이 값 이상 같으면 의미 중복으로 처리합니다. 서로 다른 유사 사물을 막지 않도록 높게 유지합니다.")]
-        [Range(0.8f, 1f)] public float bootstrapDuplicateSemanticThreshold = 0.9f;
+        [Range(0.8f, 1f)] public float bootstrapDuplicateSemanticThreshold = 0.96f;
+        [Tooltip("라벨 임베딩이 이 값 이상이지만 확정 중복 기준보다 낮으면, 가까운 후보만 LLM 의미 확인 대상으로 보냅니다.")]
+        [Range(0f, 1f)] public float bootstrapDuplicateSemanticReviewThreshold = 0.75f;
+        [Tooltip("켜면 확정과 거절 사이의 애매한 의미 유사도만 제한적으로 LLM이 재검토합니다.")]
+        public bool enableSemanticDuplicateLlmReview = true;
+        [Tooltip("새 표본 하나당 LLM 의미 재검토 대상으로 유지할 가장 가까운 기존 카드 수입니다.")]
+        [Min(1)] public int semanticDuplicateReviewMaxCandidates = 3;
 
         [Header("Semantic Map")]
         [Tooltip("켜면 그림 제출 후 터미널에 세션 기반 의미공간 맵과 공명 피드백을 표시합니다.")]
         public bool showSemanticMapFeedback = true;
-        [Tooltip("의미공간 맵에 표시할 최근 그림 카드의 최대 개수입니다.")]
-        [Min(1)] public int semanticMapMaxCards = 18;
         [Tooltip("새 노드가 추가될 때 의미공간 배치를 안정화하기 위해 수행할 반복 계산 횟수입니다.")]
         [Min(1)] public int semanticMapLayoutIterations = 28;
         [Tooltip("두 의미 노드가 이 유사도 이상 가까울 때 서로 끌어당깁니다.")]
@@ -85,7 +89,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             minClusterMembers = Math.Max(2, minClusterMembers);
             bootstrapMinTraceCount = Math.Max(2, bootstrapMinTraceCount);
             bootstrapDuplicateSemanticThreshold = Mathf.Clamp(bootstrapDuplicateSemanticThreshold, 0.8f, 1f);
-            semanticMapMaxCards = Math.Max(1, semanticMapMaxCards);
+            bootstrapDuplicateSemanticReviewThreshold = Mathf.Clamp(
+                bootstrapDuplicateSemanticReviewThreshold,
+                0f,
+                bootstrapDuplicateSemanticThreshold);
+            semanticDuplicateReviewMaxCandidates = Math.Max(1, semanticDuplicateReviewMaxCandidates);
             semanticMapLayoutIterations = Math.Max(1, semanticMapLayoutIterations);
             semanticMapAttractionStrength = Mathf.Clamp01(semanticMapAttractionStrength);
             semanticMapRepulsionStrength = Mathf.Clamp01(semanticMapRepulsionStrength);

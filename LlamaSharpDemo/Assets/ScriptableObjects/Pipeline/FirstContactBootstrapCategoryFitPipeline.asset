@@ -19,17 +19,15 @@ MonoBehaviour:
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: 7b71e3b89bb347b4b8e226c42e178c1c, type: 2}
     embeddingProfile: {fileID: 0}
-    userPromptTemplate: 'Category: {{category_display_name}}
+    userPromptTemplate: 'CATEGORY_NAME: {{category_display_name}}
 
-      Category definition: {{category_definition}}
+      CATEGORY_DEFINITION: {{category_definition}}
 
-      UI locale: {{source_locale}}
+      UI_LOCALE: {{source_locale}}
 
-      Original player label: {{probe_display_label}}
+      ORIGINAL_SUBJECT_LABEL: {{probe_display_label}}
 
-      The category name and definition are localized for the UI locale. The original
-      player label may use another language. Compare their meanings directly without
-      translating or rewriting the player label.'
+      Classify ORIGINAL_SUBJECT_LABEL against CATEGORY_DEFINITION.'
     embeddingOutputKey: embedding
     failOnEmptyEmbeddingInput: 1
     jsonMaxRetries: 3

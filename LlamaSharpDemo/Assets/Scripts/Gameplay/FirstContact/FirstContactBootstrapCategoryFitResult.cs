@@ -1,31 +1,31 @@
 using System;
+using System.Globalization;
 using DoodleDiplomacy.Core;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
     public sealed class FirstContactBootstrapCategoryFitResult
     {
-        private const string FitsCategoryKey = "fits_category";
-        private const string EvidenceTypeKey = "evidence_type";
-        public const string OrdinaryIdentityEvidence = "ordinary_identity";
-        public const string SymbolicOrContextualEvidence = "symbolic_or_contextual";
-        public const string NeutralOrGenericEvidence = "neutral_or_generic";
-        public const string UncertainEvidence = "uncertain";
+        private const string DecisionKey = "decision";
+        public const string OrdinaryMatchDecision = "ordinary_match";
+        public const string CategoryMismatchDecision = "category_mismatch";
+        public const string ContextualOnlyDecision = "contextual_only";
+        public const string UncertainDecision = "uncertain";
         private const string ReasonKey = "reason";
 
-        public bool FitsCategory = true;
-        public string EvidenceType = string.Empty;
+        public string Decision = UncertainDecision;
         public string Reason = string.Empty;
         public string Error = string.Empty;
 
         public bool IsSuccess => string.IsNullOrWhiteSpace(Error);
+        public bool FitsCategory =>
+            string.Equals(Decision, OrdinaryMatchDecision, StringComparison.Ordinal);
 
         public static FirstContactBootstrapCategoryFitResult Accepted(string reason = null)
         {
             return new FirstContactBootstrapCategoryFitResult
             {
-                FitsCategory = true,
-                EvidenceType = OrdinaryIdentityEvidence,
+                Decision = OrdinaryMatchDecision,
                 Reason = reason ?? string.Empty
             };
         }
@@ -34,8 +34,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             return new FirstContactBootstrapCategoryFitResult
             {
-                FitsCategory = false,
-                EvidenceType = UncertainEvidence,
+                Decision = UncertainDecision,
                 Error = string.IsNullOrWhiteSpace(message)
                     ? "Bootstrap category fit processing failed."
                     : message.Trim()
@@ -60,75 +59,136 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
-            if (!TryReadBool(state, FitsCategoryKey, out bool fitsCategory))
+            if (!state.TryGetString(DecisionKey, out string rawDecision) ||
+                string.IsNullOrWhiteSpace(rawDecision))
             {
-                result = Failed("Category fit pipeline returned no fits_category.");
+                result = Failed("Category fit pipeline returned no decision.");
                 return false;
             }
 
-            if (!state.TryGetString(EvidenceTypeKey, out string evidenceType) ||
-                string.IsNullOrWhiteSpace(evidenceType))
+            string decision = NormalizeDecision(rawDecision);
+            if (string.IsNullOrWhiteSpace(decision))
             {
-                evidenceType = UncertainEvidence;
-            }
-
-            evidenceType = NormalizeEvidenceType(evidenceType);
-            if (!string.Equals(evidenceType, OrdinaryIdentityEvidence, StringComparison.Ordinal))
-            {
-                fitsCategory = false;
+                result = Failed(
+                    $"Category fit pipeline returned an invalid decision: '{rawDecision?.Trim()}'.");
+                return false;
             }
 
             state.TryGetString(ReasonKey, out string reason);
             result = new FirstContactBootstrapCategoryFitResult
             {
-                FitsCategory = fitsCategory,
-                EvidenceType = evidenceType,
+                Decision = decision,
                 Reason = reason?.Trim() ?? string.Empty
             };
             return true;
         }
 
-        private static string NormalizeEvidenceType(string evidenceType)
+        private static string NormalizeDecision(string decision)
         {
-            evidenceType = evidenceType?.Trim().ToLowerInvariant() ?? string.Empty;
-            return evidenceType switch
+            decision = decision?.Trim().ToLowerInvariant() ?? string.Empty;
+            return decision switch
             {
-                OrdinaryIdentityEvidence => OrdinaryIdentityEvidence,
-                SymbolicOrContextualEvidence => SymbolicOrContextualEvidence,
-                NeutralOrGenericEvidence => NeutralOrGenericEvidence,
-                _ => UncertainEvidence
+                OrdinaryMatchDecision => OrdinaryMatchDecision,
+                CategoryMismatchDecision => CategoryMismatchDecision,
+                ContextualOnlyDecision => ContextualOnlyDecision,
+                UncertainDecision => UncertainDecision,
+                _ => string.Empty
+            };
+        }
+    }
+
+    public sealed class FirstContactSemanticDuplicateReviewResult
+    {
+        public const string SameConcept = "same_concept";
+        public const string DifferentConcept = "different_concept";
+        public const string Uncertain = "uncertain";
+
+        private const string RelationKey = "semantic_relation";
+        private const string ConfidenceKey = "confidence";
+        private const string ReasonKey = "reason";
+
+        public string Relation = Uncertain;
+        public float Confidence;
+        public string Reason = string.Empty;
+        public string Error = string.Empty;
+
+        public bool IsSuccess => string.IsNullOrWhiteSpace(Error);
+        public bool ConfirmsDuplicate =>
+            string.Equals(Relation, SameConcept, StringComparison.Ordinal) && Confidence >= 0.7f;
+
+        public static FirstContactSemanticDuplicateReviewResult Failed(string message)
+        {
+            return new FirstContactSemanticDuplicateReviewResult
+            {
+                Error = string.IsNullOrWhiteSpace(message)
+                    ? "Semantic duplicate review failed."
+                    : message.Trim()
             };
         }
 
-        private static bool TryReadBool(PipelineState state, string key, out bool value)
+        public static bool TryFromPipelineState(
+            PipelineState state,
+            out FirstContactSemanticDuplicateReviewResult result)
         {
-            value = false;
-            if (state == null || !state.TryGetString(key, out string text))
+            result = null;
+            if (state == null)
             {
+                result = Failed("Semantic duplicate pipeline returned no state.");
                 return false;
             }
 
-            text = text?.Trim();
-            if (bool.TryParse(text, out value))
+            if (state.TryGetString(PromptPipelineConstants.ErrorKey, out string pipelineError) &&
+                !string.IsNullOrWhiteSpace(pipelineError))
             {
-                return true;
+                result = Failed(pipelineError);
+                return false;
             }
 
-            if (string.Equals(text, "1", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(text, "yes", StringComparison.OrdinalIgnoreCase))
+            if (!state.TryGetString(RelationKey, out string relation))
             {
-                value = true;
-                return true;
+                result = Failed("Semantic duplicate pipeline returned no semantic_relation.");
+                return false;
             }
 
-            if (string.Equals(text, "0", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(text, "no", StringComparison.OrdinalIgnoreCase))
+            string rawRelation = relation?.Trim() ?? string.Empty;
+            relation = NormalizeRelation(rawRelation);
+            if (string.Equals(relation, Uncertain, StringComparison.Ordinal) &&
+                !string.Equals(rawRelation, Uncertain, StringComparison.OrdinalIgnoreCase))
             {
-                value = false;
-                return true;
+                result = Failed("Semantic duplicate pipeline returned an invalid semantic_relation.");
+                return false;
             }
 
-            return false;
+            float confidence = 0f;
+            if (state.TryGetString(ConfidenceKey, out string confidenceText))
+            {
+                float.TryParse(
+                    confidenceText?.Trim(),
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out confidence);
+            }
+
+            state.TryGetString(ReasonKey, out string reason);
+            result = new FirstContactSemanticDuplicateReviewResult
+            {
+                Relation = relation,
+                Confidence = Math.Max(0f, Math.Min(1f, confidence)),
+                Reason = reason?.Trim() ?? string.Empty
+            };
+            return true;
+        }
+
+        private static string NormalizeRelation(string relation)
+        {
+            relation = relation?.Trim().ToLowerInvariant() ?? string.Empty;
+            return relation switch
+            {
+                SameConcept => SameConcept,
+                DifferentConcept => DifferentConcept,
+                Uncertain => Uncertain,
+                _ => Uncertain
+            };
         }
     }
 }

@@ -11,8 +11,6 @@ namespace DoodleDiplomacy.UI
     public class TitleScreenController : MonoBehaviour
     {
         private const string FirstPlayKey = "DD_HasPlayed";
-        private const string EnglishLocale = "en-US";
-        private const string KoreanLocale = "ko-KR";
 
         [Header("UI References")]
         [Tooltip("Root canvas or panel shown while the game is in the title state.")]
@@ -41,6 +39,7 @@ namespace DoodleDiplomacy.UI
         [SerializeField] private GameplayModeHost gameplayModeHost;
 
         private bool _subscribedToHost;
+        private LocaleSelectionButtonList _localeButtons;
 
         private void Awake()
         {
@@ -50,6 +49,11 @@ namespace DoodleDiplomacy.UI
             }
 
             EnsureSettingsUi();
+            _localeButtons = new LocaleSelectionButtonList(
+                englishButton,
+                koreanButton,
+                closeSettingsButton,
+                SelectLocale);
             RegisterButtonListeners();
             RefreshLocalizedText();
             HideSettings();
@@ -112,8 +116,6 @@ namespace DoodleDiplomacy.UI
         {
             startButton?.onClick.AddListener(OnStartClicked);
             settingsButton?.onClick.AddListener(ShowSettings);
-            englishButton?.onClick.AddListener(() => SelectLocale(EnglishLocale));
-            koreanButton?.onClick.AddListener(() => SelectLocale(KoreanLocale));
             closeSettingsButton?.onClick.AddListener(HideSettings);
         }
 
@@ -121,8 +123,8 @@ namespace DoodleDiplomacy.UI
         {
             startButton?.onClick.RemoveListener(OnStartClicked);
             settingsButton?.onClick.RemoveListener(ShowSettings);
-            englishButton?.onClick.RemoveAllListeners();
-            koreanButton?.onClick.RemoveAllListeners();
+            _localeButtons?.Dispose();
+            _localeButtons = null;
             closeSettingsButton?.onClick.RemoveListener(HideSettings);
         }
 
@@ -162,12 +164,20 @@ namespace DoodleDiplomacy.UI
 
         private void RefreshLocalizedText()
         {
+            UiCopyTrace.BeginScreen("title.main", "menu");
             SetButtonText(startButton, L10n.T("ui.title.start", "START"));
             SetButtonText(settingsButton, L10n.T("ui.title.settings", "SETTINGS"));
-            SetButtonText(englishButton, L10n.T("ui.settings.english", "English"));
-            SetButtonText(koreanButton, L10n.T("ui.settings.korean", "Korean"));
+            UiCopyTrace.EndScreen();
+
+            _localeButtons?.Refresh();
+
+            bool settingsVisible = settingsPanel != null && settingsPanel.activeInHierarchy;
+            if (settingsVisible)
+            {
+                UiCopyTrace.BeginScreen("settings", "menu");
+            }
+
             SetButtonText(closeSettingsButton, L10n.T("ui.settings.back", "Back"));
-            RefreshLocaleSelectionVisuals();
 
             TextMeshProUGUI title = settingsPanel != null
                 ? settingsPanel.transform.Find("Panel/Title")?.GetComponent<TextMeshProUGUI>()
@@ -184,12 +194,11 @@ namespace DoodleDiplomacy.UI
             {
                 languageLabel.text = L10n.T("ui.settings.language", "Language");
             }
-        }
 
-        private void RefreshLocaleSelectionVisuals()
-        {
-            SetSelected(englishButton, GameLocalizationSettings.LocaleEquals(L10n.CurrentLocale, EnglishLocale));
-            SetSelected(koreanButton, GameLocalizationSettings.LocaleEquals(L10n.CurrentLocale, KoreanLocale));
+            if (settingsVisible)
+            {
+                UiCopyTrace.EndScreen();
+            }
         }
 
         private static void SetSelected(Button button, bool selected)

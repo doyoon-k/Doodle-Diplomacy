@@ -89,6 +89,9 @@ ExecutableBuild
 openrouter_config.json
 openrouter_config.example.json
 
+# Local authoring tool dependencies
+Tools/NarrativeDesk/node_modules/
+
 LlamaSharpDemo/Assets/StreamingAssets/Models.zip
 
 LlamaSharpDemo/Assets/StreamingAssets/SDModels (2).zip

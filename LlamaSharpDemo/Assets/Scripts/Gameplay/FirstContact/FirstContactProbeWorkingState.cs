@@ -7,24 +7,26 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public FirstContactCardSource Source { get; private set; }
         public Texture2D Texture { get; private set; }
         public byte[] PngBytes { get; private set; }
-        public string CanonicalLabel { get; private set; } = string.Empty;
-        public string DisplayLabel { get; private set; } = string.Empty;
-        public bool TranslationAvailable { get; private set; }
+        public string NormalizedLabel { get; private set; } = string.Empty;
+        public string OriginalLabel { get; private set; } = string.Empty;
+
+        public string CanonicalLabel => NormalizedLabel;
+        public string DisplayLabel => OriginalLabel;
+        public bool TranslationAvailable => false;
 
         public bool HasCapture => Texture != null && PngBytes != null && PngBytes.Length > 0;
 
-        public string PreferredLabel => !string.IsNullOrWhiteSpace(DisplayLabel)
-            ? DisplayLabel
-            : CanonicalLabel;
+        public string PreferredLabel => !string.IsNullOrWhiteSpace(OriginalLabel)
+            ? OriginalLabel
+            : NormalizedLabel;
 
         public void Reset(FirstContactCardSource source)
         {
             Source = source;
             Texture = null;
             PngBytes = null;
-            CanonicalLabel = string.Empty;
-            DisplayLabel = string.Empty;
-            TranslationAvailable = false;
+            NormalizedLabel = string.Empty;
+            OriginalLabel = string.Empty;
         }
 
         public bool TryApplyCapture(FirstContactProbeCaptureResult result)
@@ -39,28 +41,26 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return true;
         }
 
-        public bool TrySetSubmittedLabel(string canonicalLabel, string displayLabel)
+        public bool TrySetSubmittedLabel(string normalizedLabel, string originalLabel)
         {
-            if (string.IsNullOrWhiteSpace(canonicalLabel) || string.IsNullOrWhiteSpace(displayLabel))
+            if (string.IsNullOrWhiteSpace(normalizedLabel) || string.IsNullOrWhiteSpace(originalLabel))
             {
                 return false;
             }
 
-            CanonicalLabel = canonicalLabel;
-            DisplayLabel = displayLabel;
-            TranslationAvailable = false;
+            NormalizedLabel = normalizedLabel;
+            OriginalLabel = originalLabel;
             return true;
         }
 
         public bool TryApplyLabelAnalysis(FirstContactProbeLabelResult result)
         {
-            if (result?.IsSuccess != true || string.IsNullOrWhiteSpace(result.CanonicalLabel))
+            if (result?.IsSuccess != true || string.IsNullOrWhiteSpace(result.NormalizedLabel))
             {
                 return false;
             }
 
-            CanonicalLabel = result.CanonicalLabel;
-            TranslationAvailable = result.TranslationAvailable;
+            NormalizedLabel = result.NormalizedLabel;
             return true;
         }
 
@@ -68,9 +68,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             return new FirstContactProbeDraft(
                 Texture,
-                CanonicalLabel,
-                DisplayLabel,
-                TranslationAvailable);
+                NormalizedLabel,
+                OriginalLabel);
         }
     }
 }

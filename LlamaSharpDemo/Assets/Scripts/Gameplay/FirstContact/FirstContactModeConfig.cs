@@ -17,6 +17,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public FirstContactVlmSettings vlmSettings;
         [Tooltip("First Contact 모드의 디버그 로그와 터미널 디버그 표시 설정입니다.")]
         public FirstContactDebugSettings debugSettings;
+        [Tooltip("인트로 연결, 황 박사 대사, 외계인 반응, 자동번역 시연을 구성하는 연출 설정입니다.")]
+        public FirstContactNarrativeSettings narrativeSettings;
 
         [Header("Bootstrap Categories")]
         [Tooltip("The ordered CATEGORY targets collected during First Contact bootstrap. Reorder this list to change the probe sequence.")]
@@ -74,8 +76,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [TextArea(2, 5)]
         [Tooltip("English source/fallback for embedding and CATEGORY-fit analysis. Its localization key is generated as first_contact.terminal.category.{id}.descriptor.")]
         public string descriptorText;
-        [Tooltip("Optional label keywords used to name a stable semantic GROUP with this CATEGORY's MEANING on the map.")]
-        public List<string> clusterLabelKeywords = new();
         [Min(0)]
         [Tooltip("Accepted TRACE count for this CATEGORY. Set to 0 to use Semantic Settings > Bootstrap Min Trace Count.")]
         public int requiredTraceCount;
@@ -84,26 +84,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string CategoryDisplayName => categoryDisplayName?.Trim() ?? string.Empty;
         public string MeaningDisplayName => meaningDisplayName?.Trim() ?? string.Empty;
         public string DescriptorText => descriptorText?.Trim() ?? string.Empty;
-
-        public bool MatchesClusterLabel(string label)
-        {
-            if (string.IsNullOrWhiteSpace(label) || clusterLabelKeywords == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < clusterLabelKeywords.Count; i++)
-            {
-                string keyword = clusterLabelKeywords[i];
-                if (!string.IsNullOrWhiteSpace(keyword) &&
-                    label.IndexOf(keyword.Trim(), StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
 
         public int ResolveRequiredTraceCount(int defaultTraceCount)
         {

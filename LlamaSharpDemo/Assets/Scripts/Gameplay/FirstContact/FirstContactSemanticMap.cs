@@ -104,7 +104,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             settings ??= ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
             var snapshot = new FirstContactSemanticMapSnapshot();
             string activeCardNodeId = BuildCardNodeId(activeCard);
-            AddCardNodes(snapshot, cards, activeCard, settings.semanticMapMaxCards, activeCardNodeId);
+            AddCardNodes(snapshot, cards, activeCard, activeCardNodeId);
             AddStableClusterNodes(snapshot, clusters);
 
             if (snapshot.Nodes.Count == 0)
@@ -139,7 +139,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticMapSnapshot snapshot,
             IReadOnlyList<SemanticCardRecord> cards,
             SemanticCardRecord activeCard,
-            int maxCards,
             string activeCardNodeId)
         {
             if (cards == null)
@@ -152,9 +151,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
-            int count = Mathf.Max(1, maxCards);
-            int start = Mathf.Max(0, cards.Count - count);
-            for (int i = start; i < cards.Count; i++)
+            for (int i = 0; i < cards.Count; i++)
             {
                 AddCardNode(snapshot, cards[i], activeCardNodeId);
             }
@@ -197,16 +194,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static string ResolveCardDisplayLabel(SemanticCardRecord card)
         {
-            if (!string.IsNullOrWhiteSpace(card?.LocalizedLabel))
+            if (!string.IsNullOrWhiteSpace(card?.OriginalLabel))
             {
-                return card.LocalizedLabel.Trim().ToUpperInvariant();
+                return card.OriginalLabel.Trim().ToUpperInvariant();
             }
 
             if (LlmLocalizationSettings.IsEnglishLocale(L10n.CurrentLocale))
             {
-                return string.IsNullOrWhiteSpace(card?.Label)
+                return string.IsNullOrWhiteSpace(card?.NormalizedLabel)
                     ? "CARD"
-                    : card.Label.Trim().ToUpperInvariant();
+                    : card.NormalizedLabel.Trim().ToUpperInvariant();
             }
 
             return L10n.T("first_contact.terminal.fallback.unknown", "UNKNOWN").ToUpperInvariant();

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using DoodleDiplomacy.Gameplay;
 using DoodleDiplomacy.Localization;
@@ -13,24 +14,39 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     {
         public FirstContactProbeDraft(
             Texture2D texture,
+            string normalizedLabel,
+            string originalLabel)
+        {
+            Texture = texture;
+            NormalizedLabel = normalizedLabel ?? string.Empty;
+            OriginalLabel = originalLabel ?? string.Empty;
+        }
+
+        public FirstContactProbeDraft(
+            Texture2D texture,
             string canonicalLabel,
             string displayLabel,
             bool translationAvailable)
+            : this(texture, canonicalLabel, displayLabel)
         {
-            Texture = texture;
-            CanonicalLabel = canonicalLabel ?? string.Empty;
-            DisplayLabel = displayLabel ?? string.Empty;
-            TranslationAvailable = translationAvailable;
         }
 
         public Texture2D Texture { get; }
-        public string CanonicalLabel { get; }
-        public string DisplayLabel { get; }
-        public bool TranslationAvailable { get; }
+        public string NormalizedLabel { get; }
+        public string OriginalLabel { get; }
+
+        public string CanonicalLabel => NormalizedLabel;
+        public string DisplayLabel => OriginalLabel;
+        public bool TranslationAvailable => false;
     }
 
     public sealed class FirstContactProbeProcessor
     {
+        private static readonly JsonSerializerOptions PromptJsonOptions = new JsonSerializerOptions
+        {
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
         private readonly GamePipelineRunner _pipelineRunner;
         private readonly FirstContactVlmSettings _settings;
 
@@ -74,10 +90,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             state.SetString("probe_display_label", normalizedDisplayLabel);
             state.SetString(
                 "probe_display_label_json",
-                JsonSerializer.Serialize(normalizedDisplayLabel));
+                SerializePromptLabel(normalizedDisplayLabel));
             state.SetString("probe_label", normalizedDisplayLabel);
+            state.SetString("normalized_label", NormalizeProbeLabel(normalizedDisplayLabel));
+            // Retained for compatibility with existing pipeline assets and older saved states.
             state.SetString("canonical_label", normalizedDisplayLabel);
-            state.SetString("translation_available", "false");
             state.SetString(PromptPipelineConstants.SourceLocaleKey, sourceLocale ?? string.Empty);
             state.SetString(PromptPipelineConstants.TargetLocaleKey, "en-US");
             state.SetString(PromptPipelineConstants.TargetLanguageKey, "English");
@@ -101,15 +118,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield break;
             }
 
-            string canonicalLabel = NormalizeProbeLabel(labelResult.CanonicalLabel);
-            if (string.IsNullOrWhiteSpace(canonicalLabel))
+            string normalizedLabel = NormalizeProbeLabel(labelResult.NormalizedLabel);
+            if (string.IsNullOrWhiteSpace(normalizedLabel))
             {
                 onComplete?.Invoke(FirstContactProbeLabelResult.Failed(
-                    "Canonical label is empty."));
+                    "Normalized label is empty."));
                 yield break;
             }
 
-            labelResult.CanonicalLabel = canonicalLabel;
+            labelResult.NormalizedLabel = normalizedLabel;
             onComplete?.Invoke(labelResult);
         }
 
@@ -182,13 +199,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             state.SetString("category_id", category.Id);
             state.SetString("category_display_name", category.LocalizedDisplayName);
             state.SetString("category_definition", category.LocalizedDescriptorText);
-            state.SetString("probe_label", card?.CanonicalLabel ?? string.Empty);
+            state.SetString("probe_label", card?.NormalizedLabel ?? string.Empty);
             state.SetString(
                 "probe_display_label",
-                card?.LocalizedLabel ?? card?.CanonicalLabel ?? string.Empty);
-            state.SetString(
-                "translation_available",
-                card?.TranslationAvailable == true ? "true" : "false");
+                card?.OriginalLabel ?? card?.NormalizedLabel ?? string.Empty);
             state.SetString(PromptPipelineConstants.SourceLocaleKey, sourceLocale ?? string.Empty);
 
             bool done = false;
@@ -210,6 +224,62 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             onComplete?.Invoke(fitResult ?? FirstContactBootstrapCategoryFitResult.Failed(
                 "Category fit pipeline unstable."));
+        }
+
+        public IEnumerator EvaluateSemanticDuplicate(
+            SemanticCardRecord left,
+            SemanticCardRecord right,
+            Action<FirstContactSemanticDuplicateReviewResult> onComplete)
+        {
+            if (left == null || right == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticDuplicateReviewResult.Failed(
+                    "Semantic duplicate candidates are missing."));
+                yield break;
+            }
+
+            if (_settings?.semanticDuplicateReviewPipeline == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticDuplicateReviewResult.Failed(
+                    "Semantic duplicate review pipeline is not assigned."));
+                yield break;
+            }
+
+            if (_pipelineRunner == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticDuplicateReviewResult.Failed(
+                    "GamePipelineRunner is missing."));
+                yield break;
+            }
+
+            var state = new PipelineState();
+            state.SetString("left_label_json", SerializePromptLabel(ResolveOriginalLabel(left)));
+            state.SetString("right_label_json", SerializePromptLabel(ResolveOriginalLabel(right)));
+
+            bool done = false;
+            PipelineState finalState = null;
+            _pipelineRunner.RunPipeline(_settings.semanticDuplicateReviewPipeline, state, result =>
+            {
+                finalState = result;
+                done = true;
+            });
+            yield return new WaitUntil(() => done);
+
+            if (FirstContactSemanticDuplicateReviewResult.TryFromPipelineState(
+                    finalState,
+                    out FirstContactSemanticDuplicateReviewResult reviewResult))
+            {
+                onComplete?.Invoke(reviewResult);
+                yield break;
+            }
+
+            onComplete?.Invoke(reviewResult ?? FirstContactSemanticDuplicateReviewResult.Failed(
+                "Semantic duplicate review pipeline unstable."));
+        }
+
+        private static string SerializePromptLabel(string label)
+        {
+            return JsonSerializer.Serialize(label ?? string.Empty, PromptJsonOptions);
         }
 
         public static string NormalizeProbeLabel(string label)
@@ -235,6 +305,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 return trimmed;
             }
+        }
+
+        private static string ResolveOriginalLabel(SemanticCardRecord card)
+        {
+            return !string.IsNullOrWhiteSpace(card?.OriginalLabel)
+                ? card.OriginalLabel.Trim()
+                : card?.NormalizedLabel?.Trim() ?? string.Empty;
         }
 
         private IEnumerator Validate(
@@ -269,15 +346,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     ? "reference_image"
                     : _settings.imageStateKey,
                 draft.Texture);
-            state.SetString("probe_label", draft.CanonicalLabel);
+            state.SetString("probe_label", draft.NormalizedLabel);
             state.SetString(
                 "probe_display_label",
-                string.IsNullOrWhiteSpace(draft.DisplayLabel)
-                    ? draft.CanonicalLabel
-                    : draft.DisplayLabel);
-            state.SetString(
-                "translation_available",
-                draft.TranslationAvailable ? "true" : "false");
+                string.IsNullOrWhiteSpace(draft.OriginalLabel)
+                    ? draft.NormalizedLabel
+                    : draft.OriginalLabel);
             state.SetString(PromptPipelineConstants.SourceLocaleKey, sourceLocale ?? string.Empty);
 
             bool done = false;

@@ -16,61 +16,25 @@ MonoBehaviour:
   semanticSettings: {fileID: 11400000, guid: a40cbbaa6b2545a08aa1c9386c3e8d5c, type: 2}
   vlmSettings: {fileID: 11400000, guid: fee400980e5644f7a2b2b317d09ea54e, type: 2}
   debugSettings: {fileID: 11400000, guid: cf140cc69780409f99b23a454a1b3b27, type: 2}
+  narrativeSettings: {fileID: 11400000, guid: 7c29ab7f6e0d4d45ae7a3f40ba190d5e, type: 2}
   bootstrapCategories:
   - id: danger
     categoryDisplayName: DANGER
     meaningDisplayName: '[DANGER?]'
     descriptorText: concrete visible subjects whose ordinary identity is a source or instrument of harm, threat, injury, poisoning, fire, explosion, attack, or other direct hazard
-    clusterLabelKeywords:
-    - gun
-    - weapon
-    - knife
-    - sword
-    - missile
-    - fire
-    - monster
-    - bomb
     requiredTraceCount: 0
   - id: protection
     categoryDisplayName: PROTECTION
     meaningDisplayName: '[PROTECTION?]'
     descriptorText: concrete visible subjects whose ordinary identity is protection, defense, shelter, guarding, or blocking harm
-    clusterLabelKeywords:
-    - shield
-    - wall
-    - helmet
-    - bunker
-    - armor
-    - lock
-    - door
-    - fence
     requiredTraceCount: 0
   - id: food
     categoryDisplayName: FOOD
     meaningDisplayName: '[FOOD?]'
     descriptorText: concrete visible subjects whose ordinary identity is something eaten, drunk, prepared as a meal, or used as food
-    clusterLabelKeywords:
-    - apple
-    - bread
-    - rice
-    - meat
-    - fish
-    - fruit
-    - banana
-    - egg
-    - cake
     requiredTraceCount: 0
   - id: tool
     categoryDisplayName: TOOL
     meaningDisplayName: '[TOOL?]'
     descriptorText: concrete visible subjects whose ordinary identity is a tool, instrument, device, or implement for doing work
-    clusterLabelKeywords:
-    - hammer
-    - wrench
-    - saw
-    - shovel
-    - needle
-    - key
-    - scissors
-    - tool
     requiredTraceCount: 0

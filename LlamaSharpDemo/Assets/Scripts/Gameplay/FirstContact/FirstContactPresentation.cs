@@ -10,6 +10,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     public sealed class FirstContactTerminalPresenter
     {
         public static string ProbeLabelInputPrefix => T("line.probe_label_input_prefix", "PROBE LABEL: ");
+        public static string PatternMeaningInputPrefix => T("line.meaning_input_prefix", "MEANING: ");
 
         private readonly TerminalDisplay _terminalDisplay;
         private readonly TerminalBrainwaveDisplay _brainwaveDisplay;
@@ -52,17 +53,52 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             int selectedIndex,
             bool instant = true)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.probe_sequence", "terminal");
             ClearVisualOverlays();
             string text =
                 Header("probe_sequence", "[PROBE SEQUENCE]") + "\n\n" +
                 T("line.category", "CATEGORY: {category}", L10n.Arg("category", LocalizeCategory(categoryId, category))) + "\n" +
-                T("line.group", "GROUP: {group}", L10n.Arg("group", BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
+                T("line.group", "PATTERN: {group}", L10n.Arg("group", BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n" +
                 T("line.trace_count", "TRACE: {count}/{required}",
                     L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
                     L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n\n" +
                 BuildChoiceLine(0, selectedIndex, T("choice.draw_related_object", "DRAW RELATED OBJECT")) +
                 BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
+        }
+
+        public void ShowPreflightReady(bool instant = false)
+        {
+            UiCopyTrace.BeginScreen("first_contact.terminal.preflight", "terminal");
+            ClearVisualOverlays();
+            string text =
+                Header("probe_preflight", "[PROBE PREFLIGHT]") + "\n\n" +
+                T("line.response_channel_closed", "RESPONSE CHANNEL: CLOSED") + "\n\n" +
+                T("line.draw_one_object", "DRAW ONE OBJECT") + "\n" +
+                T("prompt.check_drawing", "PRESS ENTER TO CHECK") + TerminalDisplay.CursorMarker;
+            _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
+        }
+
+        public void ShowPreflightComplete(
+            string label,
+            bool technicalOverride,
+            bool instant = false)
+        {
+            UiCopyTrace.BeginScreen("first_contact.terminal.preflight_complete", "terminal");
+            ClearVisualOverlays();
+            string safeLabel = NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant();
+            string text =
+                Header("probe_preflight", "[PROBE PREFLIGHT]") + "\n\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
+                (technicalOverride
+                    ? T("line.probe_check_overridden", "PROBE CHECK: OVERRIDDEN")
+                    : T("line.probe_check_passed", "PROBE CHECK: PASSED")) + "\n" +
+                T("line.response_channel_closed", "RESPONSE CHANNEL: CLOSED") + "\n\n" +
+                T("line.preflight_complete", "PREFLIGHT COMPLETE");
+            _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowBootstrapProbeChannelOpen(
@@ -72,6 +108,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             int requiredTraceCount,
             bool instant = false)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.probe_channel", "terminal");
             ClearVisualOverlays();
             string text =
                 Header("probe_channel_open", "[PROBE CHANNEL OPEN]") + "\n\n" +
@@ -81,6 +118,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n\n" +
                 T("line.draw_related_object", "DRAW RELATED OBJECT");
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowBootstrapSignalCapture(
@@ -97,9 +135,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             bool becameStable,
             bool stable,
             FirstContactClusterFormationEvent clusterFormation = default,
+            bool requiresMeaningAssignment = false,
             bool duplicate = false,
             bool instant = false)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.signal_capture", "terminal");
             _brainwaveDisplay?.Clear();
             ShowBootstrapResultMap(
                 beforeMapSnapshot,
@@ -118,13 +158,30 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string text;
             if (semanticClusterTrace)
             {
-                text =
-                    Header("cluster_trace", "[CLUSTER TRACE]") + "\n\n" +
-                    T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
-                    T("line.category", "CATEGORY: {category}", L10n.Arg("category", safeCategory)) + "\n" +
-                    T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
-                    T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", LocalizeMeaning(clusterFormation.Meaning))) +
-                    BuildContinuePrompt();
+                if (requiresMeaningAssignment)
+                {
+                    text =
+                        Header("pattern_discovered", "[NEW RESPONSE PATTERN]") + "\n\n" +
+                        T("line.group", "PATTERN: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
+                        T("line.trace_total",
+                            "TRACES: {count}",
+                            L10n.Arg("count", Mathf.Max(0, clusterFormation.MemberCount).ToString("00"))) + "\n" +
+                        T(
+                            "line.meaning",
+                            "MEANING: {meaning}",
+                            L10n.Arg("meaning", T("meaning.unassigned", "UNASSIGNED"))) +
+                        BuildContinuePrompt();
+                }
+                else
+                {
+                    text =
+                        Header("cluster_trace", "[RESPONSE ANALYSIS]") + "\n\n" +
+                        T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
+                        T("line.category", "CATEGORY: {category}", L10n.Arg("category", safeCategory)) + "\n" +
+                        T("line.group", "PATTERN: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
+                        T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", LocalizeMeaning(clusterFormation.Meaning))) +
+                        BuildContinuePrompt();
+                }
             }
             else
             {
@@ -132,7 +189,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     Header("signal_capture", "[SIGNAL CAPTURE]") + "\n\n" +
                     T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n" +
                     T("line.category", "CATEGORY: {category}", L10n.Arg("category", safeCategory)) + "\n" +
-                    T("line.group", "GROUP: {group}", L10n.Arg("group", rejected || duplicate ? T("cluster.unchanged", "UNCHANGED") : BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n";
+                    T("line.group", "PATTERN: {group}", L10n.Arg("group", rejected || duplicate ? T("cluster.unchanged", "UNCHANGED") : BuildGroupState(traceCount, requiredTraceCount, stable))) + "\n";
                 if (rejected)
                 {
                 }
@@ -149,6 +206,56 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
+        }
+
+        public void ShowPatternMeaningEntry(
+            SemanticClusterRecord cluster,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            string meaningInput,
+            string status,
+            bool instant = false)
+        {
+            UiCopyTrace.BeginScreen("first_contact.terminal.meaning_assignment", "terminal");
+            _brainwaveDisplay?.Clear();
+            ShowFullMap(mapSnapshot, semanticSettings);
+            string renderedMeaning = (meaningInput ?? string.Empty).ToUpperInvariant() + TerminalDisplay.CursorMarker;
+            string text =
+                Header("meaning_assignment", "[MEANING ASSIGNMENT]") + "\n\n" +
+                T("line.group", "PATTERN: {group}", L10n.Arg("group", BuildPatternDisplayId(cluster))) + "\n" +
+                T("line.samples", "SAMPLES: {samples}", L10n.Arg("samples", BuildMemberLine(cluster))) + "\n" +
+                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", renderedMeaning));
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                text += "\n" + T("line.input_status", "STATUS: {status}", L10n.Arg("status", status.Trim().ToUpperInvariant()));
+            }
+
+            text += "\n\n" + T("line.submit_enter", "SUBMIT: ENTER");
+            _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
+        }
+
+        public void ShowPatternMeaningRegistered(
+            SemanticClusterRecord cluster,
+            FirstContactSemanticMapSnapshot mapSnapshot,
+            FirstContactSemanticSettings semanticSettings,
+            bool instant = false)
+        {
+            UiCopyTrace.BeginScreen("first_contact.terminal.meaning_registered", "terminal");
+            _brainwaveDisplay?.Clear();
+            ShowFullMap(mapSnapshot, semanticSettings);
+            string meaning = NormalizeTerminalLine(
+                cluster?.ProvisionalName,
+                T("meaning.unassigned", "UNASSIGNED")).ToUpperInvariant();
+            string text =
+                Header("meaning_registered", "[MEANING REGISTERED]") + "\n\n" +
+                T("line.group", "PATTERN: {group}", L10n.Arg("group", BuildPatternDisplayId(cluster))) + "\n" +
+                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", meaning)) + "\n\n" +
+                T("line.meaning_map_updated", "MEANING MAP UPDATED") +
+                BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowBootstrapClusterTrace(
@@ -160,22 +267,25 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticSettings semanticSettings,
             bool instant = false)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.cluster_trace", "terminal");
             _brainwaveDisplay?.Clear();
             ShowFullMap(mapSnapshot, semanticSettings);
             string text =
-                Header("cluster_trace", "[CLUSTER TRACE]") + "\n\n" +
+                Header("cluster_trace", "[RESPONSE ANALYSIS]") + "\n\n" +
                 T("line.category", "CATEGORY: {category}", L10n.Arg("category", LocalizeCategory(categoryId, category))) + "\n" +
                 T("line.trace_count", "TRACE: {count}/{required}",
                     L10n.Arg("count", Mathf.Max(0, traceCount).ToString("00")),
                     L10n.Arg("required", Mathf.Max(1, requiredTraceCount).ToString("00"))) + "\n" +
-                T("line.group", "GROUP: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
+                T("line.group", "PATTERN: {group}", L10n.Arg("group", T("cluster.stable", "STABLE"))) + "\n" +
                 T("line.calibration_complete", "CALIBRATION COMPLETE") +
                 BuildContinuePrompt();
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowBootstrapComplete(bool instant = false)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.bootstrap_complete", "terminal");
             ClearVisualOverlays();
             string text =
                 Header("bootstrap_complete", "[BOOTSTRAP COMPLETE]") + "\n\n" +
@@ -183,6 +293,34 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 T("line.meaning_map_seeded", "MEANING MAP SEEDED") +
                 BuildContinuePrompt();
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
+        }
+
+        public void ShowTranslationDemonstration(
+            string rawSignal,
+            string renderedMeaning,
+            int unresolvedCount,
+            bool instant = false)
+        {
+            UiCopyTrace.BeginScreen("first_contact.terminal.translation", "terminal");
+            ClearVisualOverlays();
+            string safeRawSignal = NormalizeTerminalLine(
+                rawSignal,
+                T("fallback.unknown", "UNKNOWN"));
+            string safeMeaning = NormalizeTerminalLine(
+                renderedMeaning,
+                T("meaning.unknown", "[MEANING?]"));
+            string text =
+                Header("incoming_transmission", "[INCOMING TRANSMISSION]") + "\n\n" +
+                T("line.raw_signal", "SIGNAL: {signal}", L10n.Arg("signal", safeRawSignal)) + "\n" +
+                T("line.meaning", "MEANING: {meaning}", L10n.Arg("meaning", safeMeaning)) + "\n" +
+                T(
+                    "line.unresolved_count",
+                    "UNRESOLVED: {count}",
+                    L10n.Arg("count", Mathf.Max(0, unresolvedCount).ToString("00"))) +
+                BuildContinuePrompt();
+            _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowProbeDispatching(
@@ -195,10 +333,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             int streamSeed,
             bool instant = false)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.probe_dispatch", "terminal");
             ClearVisualOverlays();
             ShowProbePreview(probeTexture, ProbePreviewLayout.Dispatch, scanActive: true);
             PlayProbeDispatchSignal(dispatchSignalProfile, streamSeed, completeLoop: false);
             _terminalDisplay?.ShowText(BuildProbeDispatchText(source, unknownId, label, category, accepted: false), instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowProbeDispatchAccepted(
@@ -211,10 +351,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             int streamSeed,
             bool instant = false)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.probe_dispatch", "terminal");
             ClearVisualOverlays();
             ShowProbePreview(probeTexture, ProbePreviewLayout.Dispatch, scanActive: false);
             PlayProbeDispatchSignal(dispatchSignalProfile, streamSeed, completeLoop: true);
             _terminalDisplay?.ShowText(BuildProbeDispatchText(source, unknownId, label, category, accepted: true), instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowProbeLabelEntry(
@@ -225,28 +367,33 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string status,
             bool instant = false)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.probe_review", "terminal");
             ClearVisualOverlays();
             ShowProbePreview(probeTexture);
 
             string renderedLabelInput = (labelInput ?? string.Empty) + TerminalDisplay.CursorMarker;
-            string text =
-                Header("probe_review", "[PROBE REVIEW]") + "\n\n" +
-                T("line.image_captured", "IMAGE CAPTURED") + "\n" +
-                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", renderedLabelInput)) + "\n" +
-                T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel()));
+            string text = Header("probe_review", "[PROBE REVIEW]") + "\n\n";
             if (!string.IsNullOrWhiteSpace(status))
             {
-                text += "\n" + T("line.input_status", "STATUS: {status}", L10n.Arg("status", status.Trim().ToUpperInvariant()));
+                text += T("line.correction_required",
+                    "CHECK REQUIRED: {status}",
+                    L10n.Arg("status", status.Trim().ToUpperInvariant())) + "\n\n";
             }
 
+            text +=
+                T("line.image_captured", "IMAGE CAPTURED") + "\n" +
+                T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", renderedLabelInput)) + "\n" +
+                T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source)));
             text += "\n\n" +
                 T("line.submit_enter", "SUBMIT: ENTER") + "\n" +
                 T("line.redraw_escape", "REDRAW: ESC");
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen();
         }
 
         public void ShowInputRejected(string reason, int selectedIndex, bool instant = true)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.input_rejected", "terminal");
             ClearVisualOverlays();
             string text =
                 Header("input_rejected", "[INPUT REJECTED]") + "\n\n" +
@@ -254,10 +401,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 BuildChoiceLine(0, selectedIndex, T("choice.redraw", "REDRAW")) +
                 BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen("event");
         }
 
         public void ShowAnalysisError(string status, int selectedIndex, bool instant = true)
         {
+            UiCopyTrace.BeginScreen("first_contact.terminal.analysis_error", "terminal");
             ClearVisualOverlays();
             string safeStatus = string.IsNullOrWhiteSpace(status)
                 ? T("status.analysis_unavailable", "ANALYSIS UNAVAILABLE")
@@ -269,6 +418,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 BuildChoiceLine(1, selectedIndex, T("choice.retry", "RETRY")) +
                 BuildSelectPrompt();
             _terminalDisplay?.ShowText(text, instant);
+            UiCopyTrace.EndScreen("event");
         }
 
         private static string BuildChoiceLine(int choiceIndex, int selectedIndex, string label)
@@ -313,9 +463,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 .ToUpperInvariant();
         }
 
-        private static string BuildChannelLabel()
+        private static string BuildChannelLabel(FirstContactCardSource source = FirstContactCardSource.BootstrapProbe)
         {
-            return T("channel.probe_sequence", "PROBE SEQUENCE");
+            return source == FirstContactCardSource.PreflightProbe
+                ? T("channel.local_preflight", "LOCAL PREFLIGHT")
+                : T("channel.probe_sequence", "PROBE SEQUENCE");
         }
 
         private static string BuildProbeDispatchText(
@@ -326,8 +478,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             bool accepted)
         {
             string safeLabel = NormalizeTerminalLine(label, T("fallback.unknown", "UNKNOWN")).ToUpperInvariant();
+            bool preflight = source == FirstContactCardSource.PreflightProbe;
             string text =
-                Header("probe_dispatch", "[PROBE DISPATCH]") + "\n\n" +
+                (preflight
+                    ? Header("probe_preflight", "[PROBE PREFLIGHT]")
+                    : Header("probe_dispatch", "[PROBE DISPATCH]")) + "\n\n" +
                 T("line.probe_label", "PROBE LABEL: {label}", L10n.Arg("label", safeLabel)) + "\n";
 
             if (!string.IsNullOrWhiteSpace(category))
@@ -336,14 +491,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
             else
             {
-                text += T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel())) + "\n";
+                text += T("line.channel", "CHANNEL: {channel}", L10n.Arg("channel", BuildChannelLabel(source))) + "\n";
             }
 
-            text += accepted
-                ? T("line.probe_check_passed", "PROBE CHECK: PASSED") + "\n" +
-                  T("line.response_channel_open", "RESPONSE CHANNEL: OPEN")
-                : T("line.probe_check_in_progress", "PROBE CHECK: IN PROGRESS") + "\n" +
-                  T("line.response_channel_waiting", "RESPONSE CHANNEL: WAITING");
+            if (preflight)
+            {
+                text += (accepted
+                    ? T("line.probe_check_passed", "PROBE CHECK: PASSED")
+                    : T("line.probe_check_in_progress", "PROBE CHECK: IN PROGRESS")) + "\n" +
+                    T("line.response_channel_closed", "RESPONSE CHANNEL: CLOSED");
+            }
+            else
+            {
+                text += accepted
+                    ? T("line.probe_check_passed", "PROBE CHECK: PASSED") + "\n" +
+                      T("line.response_channel_open", "RESPONSE CHANNEL: OPEN")
+                    : T("line.probe_check_in_progress", "PROBE CHECK: IN PROGRESS") + "\n" +
+                      T("line.response_channel_waiting", "RESPONSE CHANNEL: WAITING");
+            }
             return text;
         }
 
@@ -359,9 +524,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return string.Empty;
             }
 
-            return string.IsNullOrWhiteSpace(card.LocalizedLabel)
-                ? ResolveDynamicLabelFallback(card.Label).ToUpperInvariant()
-                : card.LocalizedLabel.Trim().ToUpperInvariant();
+            return string.IsNullOrWhiteSpace(card.OriginalLabel)
+                ? ResolveDynamicLabelFallback(card.NormalizedLabel).ToUpperInvariant()
+                : card.OriginalLabel.Trim().ToUpperInvariant();
         }
 
         private static string BuildMemberLine(SemanticClusterRecord cluster)
@@ -381,9 +546,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     continue;
                 }
 
-                string label = !string.IsNullOrWhiteSpace(member.LocalizedLabel)
-                    ? member.LocalizedLabel.Trim()
-                    : ResolveDynamicLabelFallback(member.Label);
+                string label = !string.IsNullOrWhiteSpace(member.OriginalLabel)
+                    ? member.OriginalLabel.Trim()
+                    : ResolveDynamicLabelFallback(member.NormalizedLabel);
                 if (string.IsNullOrWhiteSpace(label))
                 {
                     continue;
@@ -398,6 +563,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return line;
+        }
+
+        private static string BuildPatternDisplayId(SemanticClusterRecord cluster)
+        {
+            string id = cluster?.Id?.Trim() ?? string.Empty;
+            int separator = id.LastIndexOf('-');
+            return separator >= 0 && separator + 1 < id.Length
+                ? id.Substring(separator + 1).ToUpperInvariant()
+                : NormalizeTerminalLine(id, "??").ToUpperInvariant();
         }
 
         private static string BuildGroupState(int traceCount, int requiredTraceCount, bool stable)

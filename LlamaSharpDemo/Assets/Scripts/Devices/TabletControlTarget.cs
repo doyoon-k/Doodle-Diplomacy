@@ -1,5 +1,13 @@
 namespace DoodleDiplomacy.Devices
 {
+    public enum TabletTutorialHighlightGroup
+    {
+        None = 0,
+        Tools = 1,
+        Style = 2,
+        HistoryAndSend = 3
+    }
+
     internal enum TabletControlTarget
     {
         None = 0,

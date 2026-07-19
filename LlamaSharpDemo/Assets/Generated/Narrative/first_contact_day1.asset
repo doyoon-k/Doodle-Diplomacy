@@ -1,0 +1,1342 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74dc3bf9560f4914ad623fe79b14ee0d, type: 3}
+  m_Name: first_contact_day1
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Narrative.NarrativeScenarioAsset
+  schemaVersion: 1
+  scenarioId: first_contact_day1
+  title: "First Contact \u2014 Day 1"
+  sourceLocale: en-US
+  locales:
+  - en-US
+  - ko-KR
+  sections:
+  - id: intro_bridge
+    title: Intro bridge
+    order: 0
+    summary: Temporary cards bridge the finished briefing script into the playable
+      encounter.
+  - id: preflight
+    title: Tablet preflight
+    order: 5
+    summary: Dr. Hwang checks the president's drawing and walks through the local
+      probe controls before the delegation enters.
+  - id: arrival
+    title: Delegation arrival
+    order: 10
+    summary: The alien delegation enters and Dr. Hwang hands control to the player.
+  - id: bootstrap
+    title: Translator calibration
+    order: 20
+    summary: The player submits labeled drawings and builds stable response groups.
+  - id: reactive_guidance
+    title: Reactive guidance
+    order: 30
+    summary: Dr. Hwang explains validation results and how each submitted sample
+      affects calibration.
+  - id: alien_reactions
+    title: Alien reactions
+    order: 40
+    summary: Short reaction captions selected by alien satisfaction.
+  - id: translation_proof
+    title: Automatic translation proof
+    order: 50
+    summary: A new signal is translated using the categories calibrated by the player.
+  beats:
+  - id: intro_news_card
+    sectionId: intro_bridge
+    order: 0
+    enabled: 1
+    type: caption
+    status: placeholder
+    runtimeCue: 
+    triggerEvent: encounter.opening.card.0
+    condition: first play and placeholder montage enabled
+    repeat: once-per-session
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: first_contact.placeholder.intro.news
+    sourceText: REDMOND UFO NEWS
+    advance: automatic-or-player
+    minimumSeconds: 0.9
+    situation: A temporary storyboard card stands in for the moving-car news scene.
+    beforeAction: First Contact mode begins.
+    afterAction: Advance to the pizza restaurant card.
+    stageDirection: Full-screen geometric news card.
+    tags:
+    - intro
+    - placeholder
+    - caption
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB808\uB4DC\uBA3C\uB4DC UFO \uC18D\uBCF4"
+      status: final
+  - id: intro_pizza_card
+    sectionId: intro_bridge
+    order: 10
+    enabled: 1
+    type: caption
+    status: placeholder
+    runtimeCue: 
+    triggerEvent: encounter.opening.card.1
+    condition: first play and placeholder montage enabled
+    repeat: once-per-session
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: first_contact.placeholder.intro.pizza
+    sourceText: ZAUCER PIZZA
+    advance: automatic-or-player
+    minimumSeconds: 0.9
+    situation: The presidential party reaches the restaurant hiding the facility
+      entrance.
+    beforeAction: The news card closes.
+    afterAction: Advance to the classified elevator card.
+    stageDirection: Geometric pizza sign and concealed doorway.
+    tags:
+    - intro
+    - placeholder
+    - caption
+    localizedTexts:
+    - locale: ko-KR
+      text: "Zaucer \uD53C\uC790 \uBE44\uBC00 \uC785\uAD6C"
+      status: final
+  - id: intro_elevator_card
+    sectionId: intro_bridge
+    order: 20
+    enabled: 1
+    type: caption
+    status: placeholder
+    runtimeCue: 
+    triggerEvent: encounter.opening.card.2
+    condition: first play and placeholder montage enabled
+    repeat: once-per-session
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: first_contact.placeholder.intro.elevator
+    sourceText: CLASSIFIED ELEVATOR
+    advance: automatic-or-player
+    minimumSeconds: 0.9
+    situation: The hidden elevator descends to the underground facility.
+    beforeAction: The restaurant storeroom opens.
+    afterAction: Advance to the translator briefing card.
+    stageDirection: Sealed industrial elevator descending.
+    tags:
+    - intro
+    - placeholder
+    - caption
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF9\uBE44 \uC9C0\uD558 \uC5D8\uB9AC\uBCA0\uC774\uD130"
+      status: final
+  - id: intro_briefing_card
+    sectionId: intro_bridge
+    order: 30
+    enabled: 1
+    type: caption
+    status: placeholder
+    runtimeCue: 
+    triggerEvent: encounter.opening.card.3
+    condition: first play and placeholder montage enabled
+    repeat: once-per-session
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: first_contact.placeholder.intro.briefing
+    sourceText: TRANSLATOR BRIEFING
+    advance: automatic-or-player
+    minimumSeconds: 0.9
+    situation: Dr. Hwang finishes the briefing immediately before gameplay.
+    beforeAction: The party enters the underground briefing room.
+    afterAction: Cut to the live meeting room and begin the tablet preflight.
+    stageDirection: Projector silhouette and translator diagram.
+    tags:
+    - intro
+    - placeholder
+    - caption
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC5B4 \uBC88\uC5ED\uAE30 \uBE0C\uB9AC\uD551"
+      status: final
+  - id: preflight_intro
+    sectionId: preflight
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PreflightIntro
+    triggerEvent: preflight.started
+    condition: first play and preflight enabled
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.preflight_intro
+    sourceText: 'Before they arrive, I need to see whether you can produce a usable
+      visual probe. '
+    advance: player
+    minimumSeconds: 0.3
+    situation: The delegation is still outside while Dr. Hwang begins a local equipment
+      check.
+    beforeAction: The briefing ends and the tablet comes into view.
+    afterAction: The drawing tools illuminate.
+    stageDirection: Keep the tablet and its physical controls in frame.
+    tags:
+    - onboarding
+    - preflight
+    - tablet
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB370\uC774\uD130 \uC218\uC9D1\uC744 \uC2DC\uC791\uD558\uAE30 \uC804\uC5D0
+        \uC800\uB791 \uBA3C\uC800 \uC5F0\uC2B5\uC744 \uD574\uBCF4\uC2DC\uC8E0 \uAC01\uD558. "
+      status: final
+  - id: tablet_tools
+    sectionId: preflight
+    order: 10
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: TabletTools
+    triggerEvent: preflight.controls.tools
+    condition: first play and preflight enabled
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.tablet_tools
+    sourceText: The three illuminated controls are the brush, fill, and eraser.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The brush, fill, and eraser controls pulse together.
+    beforeAction: The local preflight channel is shown on the terminal.
+    afterAction: The line-width and color controls illuminate.
+    stageDirection: Pulse only the three tool controls.
+    tags:
+    - onboarding
+    - preflight
+    - controls
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC9C0\uAE08 \uC810\uB4F1\uB41C \uC138 \uBC84\uD2BC\uC740 \uD39C, \uCC44\uC6B0\uAE30,
+        \uC9C0\uC6B0\uAC1C\uC785\uB2C8\uB2E4."
+      status: final
+  - id: tablet_style
+    sectionId: preflight
+    order: 20
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: TabletStyle
+    triggerEvent: preflight.controls.style
+    condition: first play and preflight enabled
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.tablet_style
+    sourceText: These buttons change line width. Use the slider beside them to choose
+      a color.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The line-width buttons and color spectrum pulse together.
+    beforeAction: Dr. Hwang finishes identifying the tools.
+    afterAction: The history and clear controls illuminate.
+    stageDirection: Pulse the size buttons, spectrum, and color knob.
+    tags:
+    - onboarding
+    - preflight
+    - controls
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774 \uBC84\uD2BC\uB4E4\uC740 \uC120 \uAD75\uAE30\uB97C \uBC14\uAFB8\uACE0,
+        \uC606\uC758 \uC2AC\uB77C\uC774\uB354\uB85C \uC0C9\uC744 \uACE0\uB97C \uC218
+        \uC788\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: tablet_history_and_send
+    sectionId: preflight
+    order: 30
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: TabletHistoryAndSend
+    triggerEvent: preflight.controls.history_and_send
+    condition: first play and preflight enabled
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.tablet_history_and_send
+    sourceText: Use these to undo, redo, or clear the canvas. When the drawing is
+      ready, press Enter.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The undo, redo, and clear controls pulse together.
+    beforeAction: Dr. Hwang finishes identifying the style controls.
+    afterAction: All tutorial highlights turn off and the canvas unlocks.
+    stageDirection: Pulse the undo, redo, and clear controls.
+    tags:
+    - onboarding
+    - preflight
+    - controls
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uCABD\uC740 \uC21C\uC11C\uB300\uB85C \uC804\uCCB4 \uC0AD\uC81C,
+        \uC2E4\uD589 \uCDE8\uC18C, \uB2E4\uC2DC \uC2E4\uD589\uC785\uB2C8\uB2E4."
+      status: final
+  - id: preflight_drawing
+    sectionId: preflight
+    order: 40
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PreflightDrawing
+    triggerEvent: preflight.canvas.unlocked
+    condition: first play and preflight enabled
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.preflight_drawing
+    sourceText: Draw one concrete object. No words, symbols, scenes, or extra objects.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The drawing surface is unlocked for the practice probe.
+    beforeAction: The control walkthrough finishes.
+    afterAction: The player draws and submits a local practice probe.
+    stageDirection: Leave the tablet unobstructed after the subtitle closes.
+    tags:
+    - onboarding
+    - preflight
+    - drawing
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC0AC\uBB3C\uC744 \uC544\uBB34\uAC70\uB098 \uB531 \uD558\uB098\uB9CC
+        \uADF8\uB824\uC8FC\uC2ED\uC2DC\uC624.\n\uAE00\uC790\uB098 \uAE30\uD638, \uBCF5\uC7A1\uD55C
+        \uC7A5\uBA74\uC740 \uC548 \uB429\uB2C8\uB2E4.\n\uC0C9\uAE54\uB3C4 \uC0AC\uC6A9\uD574\uC11C
+        \uADF8\uB824 \uC8FC\uC2DC\uBA74 \uC54C\uC544\uBCF4\uAE30\uAC00 \uC27D\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: preflight_passed
+    sectionId: preflight
+    order: 50
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PreflightPassed
+    triggerEvent: preflight.completed
+    condition: practice probe passed or local analysis was overridden
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.preflight_passed
+    sourceText: Good enough. We have seen what we need; the practice sample will
+      not be recorded.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The practice probe has cleared the local validation path without opening
+      the alien response channel.
+    beforeAction: The preflight result appears on the terminal.
+    afterAction: The alien delegation enters and the real calibration round begins.
+    stageDirection: Hold on the preflight result, then cut to the delegation entrance.
+    tags:
+    - onboarding
+    - preflight
+    - completion
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC88B\uC2B5\uB2C8\uB2E4. \uC0DD\uAC01\uBCF4\uB2E4 \uAF64 \uC798 \uADF8\uB9AC\uC2DC\uB294\uAD70\uC694,
+        \uAC01\uD558."
+      status: final
+  - id: delegation_arrival
+    sectionId: arrival
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: DelegationArrival
+    triggerEvent: encounter.opening.delegation_seated
+    condition: first play
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.delegation_arrival
+    sourceText: The delegation is in position. The terminal will record their response.
+    advance: automatic
+    minimumSeconds: 1.2
+    situation: The suited aliens have taken their seats across the table.
+    beforeAction: Camera finishes the delegation entrance.
+    afterAction: Control returns and the terminal becomes the next obvious focus.
+    stageDirection: Dr. Hwang speaks from beside the analysis terminal.
+    tags:
+    - onboarding
+    - arrival
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC778 \uB300\uD45C\uB2E8\uC774 \uC790\uB9AC\uC5D0 \uC549\uC558\uC2B5\uB2C8\uB2E4.
+        \uC774\uC81C \uD130\uBBF8\uB110\uB85C \uC800\uB4E4\uC758 \uBC18\uC751\uC744
+        \uAE30\uB85D\uD558\uACA0\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: first_category
+    sectionId: bootstrap
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FirstCategory
+    triggerEvent: terminal.category.opened
+    condition: first category with zero traces
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.first_category
+    sourceText: We will begin with {category}. Select the terminal when you are ready.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The player has selected a calibration category for the first time.
+    beforeAction: A category channel is opened on the terminal.
+    afterAction: The player opens the drawing surface.
+    stageDirection: Keep the terminal visible behind the subtitle.
+    tags:
+    - onboarding
+    - category
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC6B0\uC120 {category} \uCE74\uD14C\uACE0\uB9AC \uB370\uC774\uD130\uBD80\uD130
+        \uC218\uC9D1\uD558\uACA0\uC2B5\uB2C8\uB2E4. \uC900\uBE44\uB418\uBA74 \uD130\uBBF8\uB110\uC5D0\uC11C
+        \uC5D4\uD130\uB97C \uB20C\uB7EC \uC2DC\uC791\uD574 \uC8FC\uC2ED\uC2DC\uC624."
+      status: final
+  - id: first_drawing
+    sectionId: bootstrap
+    order: 10
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FirstDrawing
+    triggerEvent: drawing.surface.opened
+    condition: first drawing opened
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.first_drawing
+    sourceText: Draw one concrete object in the {category} category. One object only.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The drawing tablet is ready for the first sample.
+    beforeAction: The player opens the sample channel.
+    afterAction: The player draws a single object.
+    stageDirection: Do not cover the active canvas.
+    tags:
+    - onboarding
+    - drawing
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uAC01\uD558\uAC00 {category}\uC5D0 \uD574\uB2F9\uD55C\uB2E4\uACE0 \uC0DD\uAC01\uD558\uC2DC\uB294
+        \uAD6C\uCCB4\uC801\uC778 \uC0AC\uBB3C \uD558\uB098\uB97C \uADF8\uB9AC\uC2ED\uC2DC\uC624.
+        \uD558\uB098\uB9CC\uC785\uB2C8\uB2E4."
+      status: final
+  - id: first_label
+    sectionId: bootstrap
+    order: 20
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FirstLabel
+    triggerEvent: sample.label.opened
+    condition: first label input opened
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.first_label
+    sourceText: Enter the name of the object. The machine needs the label to compare
+      the signal.
+    advance: player
+    minimumSeconds: 0.3
+    situation: A drawing exists but the system still needs its human label.
+    beforeAction: The player confirms the drawing.
+    afterAction: The player labels and transmits the sample.
+    stageDirection: Focus remains on the terminal label field.
+    tags:
+    - onboarding
+    - label
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB9B0 \uC0AC\uBB3C\uC758 \uC774\uB984\uC744 \uC785\uB825\uD558\uC2ED\uC2DC\uC624.
+        \uC2E0\uD638\uB97C \uBE44\uAD50\uD558\uB824\uBA74 \uD45C\uBCF8 \uB77C\uBCA8\uC774
+        \uD544\uC694\uD569\uB2C8\uB2E4."
+      status: final
+  - id: first_trace
+    sectionId: bootstrap
+    order: 30
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FirstTrace
+    triggerEvent: terminal.trace.accepted
+    condition: first accepted trace
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.first_trace
+    sourceText: One response trace recorded. Different objects in the same category
+      should form a group.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The first useful alien response trace has appeared.
+    beforeAction: The aliens react to the transmitted sample.
+    afterAction: The player prepares another distinct sample in the same category.
+    stageDirection: Camera has returned to the terminal trace display.
+    tags:
+    - onboarding
+    - trace
+    - group
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uBC18\uC751 \uC2E0\uD638 \uD558\uB098\uAC00 \uAE30\uB85D\uB410\uC2B5\uB2C8\uB2E4.
+        \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978 \uC0AC\uBB3C\uB4E4\uC744 \uBCF4\uB0B4\uBA74
+        \uBE44\uC2B7\uD55C \uC2E0\uD638\uB07C\uB9AC \uBC18\uC751 \uD328\uD134\uC744
+        \uAD00\uCC30\uD560 \uC218 \uC788\uC744 \uAC81\uB2C8\uB2E4."
+      status: final
+  - id: more_samples
+    sectionId: bootstrap
+    order: 40
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: MoreSamples
+    triggerEvent: terminal.trace.accepted
+    condition: second accepted trace
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.more_samples
+    sourceText: Good. We need {remaining} more different sample to stabilize the
+      group.
+    advance: automatic
+    minimumSeconds: 1.2
+    situation: A response group is forming but is not stable yet.
+    beforeAction: A second distinct sample is accepted.
+    afterAction: The player submits the remaining sample.
+    stageDirection: Short confirmation over the terminal.
+    tags:
+    - onboarding
+    - trace
+    - group
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC88B\uC2B5\uB2C8\uB2E4. \uB2E4\uB978 \uD45C\uBCF8 {remaining}\uAC1C\uB9CC
+        \uB354 \uC788\uC73C\uBA74 \uBC18\uC751 \uD328\uD134\uC744 \uD2B9\uC815\uD574\uB0BC
+        \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: category_calibrated
+    sectionId: bootstrap
+    order: 50
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: CategoryCalibrated
+    triggerEvent: terminal.group.stable
+    condition: required traces accepted for current category
+    repeat: once-per-category
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.category_calibrated
+    sourceText: The {category} response group is stable. Calibration is complete.
+    advance: automatic
+    minimumSeconds: 1.2
+    situation: The category display has reached 03/03 and GROUP is stable.
+    beforeAction: The aliens give a positive group reaction.
+    afterAction: The player selects another uncalibrated category.
+    stageDirection: Return from the alien reaction shot to the terminal before the
+      line.
+    tags:
+    - calibration
+    - group
+    - milestone
+    localizedTexts:
+    - locale: ko-KR
+      text: "{category} \uBC18\uC751 \uD328\uD134\uC744 \uD2B9\uC815 \uD588\uC2B5\uB2C8\uB2E4.
+        \uC774\uC81C {category} \uCE74\uD14C\uACE0\uB9AC\uC5D0 \uD574\uB2F9\uD558\uB294
+        \uB2E8\uC5B4\uB294 \uBC88\uC5ED\uD560 \uC218 \uC788\uACA0\uB124\uC694."
+      status: final
+  - id: bootstrap_calibrated
+    sectionId: translation_proof
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BootstrapCalibrated
+    triggerEvent: terminal.bootstrap.complete
+    condition: all bootstrap categories calibrated
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.bootstrap_calibrated
+    sourceText: All {count} categories are calibrated. Let us see whether it can
+      translate a new signal.
+    advance: player
+    minimumSeconds: 0.3
+    situation: Every bootstrap category is stable and the translator can be tested.
+    beforeAction: The final category completes calibration.
+    afterAction: An unsolicited alien signal arrives.
+    stageDirection: Hold on the terminal before cutting to the aliens.
+    tags:
+    - translation
+    - milestone
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uCD1D {count}\uAC1C \uBD84\uB958\uC758 \uBCF4\uC815\uC774 \uB05D\uB0AC\uC2B5\uB2C8\uB2E4.
+        \uC774\uC81C \uCC98\uC74C \uB4E3\uB294 \uC2E0\uD638\uB3C4 \uBC88\uC5ED\uD558\uB294\uC9C0
+        \uD655\uC778\uD574 \uBCF4\uC8E0."
+      status: final
+  - id: translation_succeeded
+    sectionId: translation_proof
+    order: 10
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: TranslationSucceeded
+    triggerEvent: terminal.translation.complete
+    condition: automatic demonstration result displayed
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.narrative.translation_succeeded
+    sourceText: It worked. Known categories are translating automatically; the unfamiliar
+      part remains unresolved.
+    advance: player
+    minimumSeconds: 0.3
+    situation: The terminal has translated known semantic segments in a brand-new
+      signal.
+    beforeAction: The raw alien signal resolves category by category.
+    afterAction: Normal First Contact play continues with proven translation.
+    stageDirection: Let the translated terminal result remain visible.
+    tags:
+    - translation
+    - payoff
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB410\uC2B5\uB2C8\uB2E4. \uBCF4\uC815\uB41C \uBD84\uB958\uB294 \uC790\uB3D9\uC73C\uB85C
+        \uBC88\uC5ED\uB410\uACE0, \uBAA8\uB974\uB294 \uBD80\uBD84\uB9CC \uC2E0\uD638
+        \uADF8\uB300\uB85C \uB0A8\uC558\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: doctor_hwang_bootstrap_duplicate_probe
+    sectionId: reactive_guidance
+    order: 0
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.duplicate
+    condition: the label repeats a sample already accepted for this category
+    repeat: first-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.bootstrap_duplicate_probe
+    sourceText: The same sample repeats the same response. Try a different object
+      in the same category.
+    advance: player
+    minimumSeconds: 0
+    situation: A duplicate cannot add a new point to the response group.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - sample
+    - duplicate
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uAC19\uC740 \uADF8\uB9BC\uC740 \uAC19\uC740 \uBC18\uC751\uB9CC \uBC18\uBCF5\uD569\uB2C8\uB2E4.
+        \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978 \uC0AC\uBB3C \uADF8\uB9BC\uC744
+        \uBCF4\uB0B4 \uC8FC\uC138\uC694."
+      status: final
+  - id: doctor_hwang_bootstrap_category_mismatch
+    sectionId: reactive_guidance
+    order: 10
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.recorded.category_mismatch
+    condition: the response is recorded but the sample does not advance the active
+      category trace
+    repeat: first-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.bootstrap_category_mismatch
+    sourceText: The aliens responded and the data was recorded, but the drawing does
+      not appear to belong to {category}.
+    advance: player
+    minimumSeconds: 0
+    situation: Any category mismatch, contextual-only relation, or uncertain relation
+      is recorded without advancing the active category trace.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - sample
+    - category
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB9BC\uC5D0 \uBC18\uC751\uD574\uC11C \uB370\uC774\uD130\uB3C4
+        \uC218\uC9D1\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uD558\uC9C0\uB9CC {category}\uC5D0
+        \uD574\uB2F9\uD558\uB294 \uADF8\uB9BC\uC740 \uC544\uB2CC \uBAA8\uC591\uC785\uB2C8\uB2E4."
+      status: final
+  - id: doctor_hwang_pattern_meaning_requested
+    sectionId: reactive_guidance
+    order: 20
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: pattern.meaning.requested
+    condition: an off-category response pattern becomes stable without an assigned
+      meaning
+    repeat: first-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.pattern_meaning_requested
+    sourceText: A new response pattern is stable, but its meaning is unknown. Compare
+      the samples and enter the meaning you want the translator to use.
+    advance: player
+    minimumSeconds: 0
+    situation: A stable off-category pattern needs a player-authored meaning before
+      the translator can use it.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - pattern
+    - meaning
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC0C8\uB85C\uC6B4 \uBC18\uC751 \uD328\uD134\uC774 \uAD00\uCC30 \uB418\uC5C8\uC2B5\uB2C8\uB2E4.
+        \uC81C\uCD9C\uD558\uC168\uB358 \uB77C\uBCA8\uB4E4\uC744 \uBCF4\uACE0 \uCE74\uD14C\uACE0\uB9AC\uC5D0
+        \uC774\uB984\uC744 \uBD99\uC5EC\uC8FC\uC2ED\uC2DC\uC624."
+      status: final
+  - id: doctor_hwang_probe_blank
+    sectionId: reactive_guidance
+    order: 50
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.blank
+    condition: the drawing surface contains too little visible information
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_blank
+    sourceText: The drawing is too empty to read. Draw one visible object.
+    advance: player
+    minimumSeconds: 0
+    situation: The vision check cannot find a drawing.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - drawing
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB9BC\uC744 \uC548\uADF8\uB9AC\uC2E0 \uAC83 \uAC19\uC2B5\uB2C8\uB2E4.
+        \uADF8\uB9BC\uC744 \uD558\uB098 \uADF8\uB824\uC8FC\uC2DC\uC9C0\uC694."
+      status: final
+  - id: doctor_hwang_probe_text_or_symbol
+    sectionId: reactive_guidance
+    order: 60
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.text_or_symbol
+    condition: the drawing contains writing or symbolic notation
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_text_or_symbol
+    sourceText: The sample includes text or symbols. Draw the object without writing.
+    advance: player
+    minimumSeconds: 0
+    situation: Written language would contaminate the visual concept sample.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - drawing
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB9BC\uC5D0 \uAE00\uC790\uB098 \uAE30\uD638\uAC00 \uB4E4\uC5B4
+        \uC788\uC2B5\uB2C8\uB2E4. \uC21C\uC218\uD55C \uC0AC\uBB3C\uC758 \uADF8\uB9BC\uB9CC\uC744
+        \uC81C\uCD9C\uD574\uC57C \uC815\uD655\uD55C \uB370\uC774\uD130\uB97C \uC5BB\uC744
+        \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: doctor_hwang_probe_scene_or_action
+    sectionId: reactive_guidance
+    order: 70
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.scene_or_action
+    condition: the drawing depicts a scene or action instead of one object
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_scene_or_action
+    sourceText: This looks like a scene or action. Draw one object by itself.
+    advance: player
+    minimumSeconds: 0
+    situation: The sample needs one concrete subject rather than an event.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - drawing
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774 \uADF8\uB9BC\uC740 \uC7A5\uBA74\uC774\uB098 \uD589\uB3D9\uC73C\uB85C
+        \uBCF4\uC785\uB2C8\uB2E4. \n\uC21C\uC218\uD55C \uC0AC\uBB3C\uC758 \uADF8\uB9BC\uB9CC
+        \uADF8\uB824\uC8FC\uC154\uC57C \uC815\uD655\uD55C \uB370\uC774\uD130\uB97C
+        \uC5BB\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: doctor_hwang_probe_multiple_objects
+    sectionId: reactive_guidance
+    order: 80
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.multiple_objects
+    condition: more than one distinct object is visible
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_multiple_objects
+    sourceText: More than one object is detected. Leave only one object.
+    advance: player
+    minimumSeconds: 0
+    situation: Multiple concepts would produce an ambiguous alien response.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - drawing
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC0AC\uBB3C\uC774 \uB458 \uC774\uC0C1 \uAC10\uC9C0\uB429\uB2C8\uB2E4.
+        \n\uD558\uB098\uB9CC \uB0A8\uACA8 \uC8FC\uC154\uC57C \uC815\uD655\uD55C \uB370\uC774\uD130\uB97C
+        \uC5BB\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: doctor_hwang_probe_unresolved_object
+    sectionId: reactive_guidance
+    order: 90
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.unresolved_object
+    condition: the vision check cannot identify one concrete object
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_unresolved_object
+    sourceText: The device cannot read one clear object. Draw one concrete object.
+    advance: player
+    minimumSeconds: 0
+    situation: The drawing does not resolve into a useful single subject.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - drawing
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC5B4...\uBB58 \uADF8\uB9AC\uC2E0\uAC74\uC9C0 \uC798 \uBAA8\uB974\uACA0\uC2B5\uB2C8\uB2E4.
+        \uB2E4\uC2DC \uD55C\uBC88 \uADF8\uB824\uC8FC\uC2E4 \uC218 \uC788\uACA0\uC2B5\uB2C8\uAE4C?\n\uC0C9\uAE54\uB3C4
+        \uC798 \uC0AC\uC6A9\uD558\uC2DC\uBA74 \uB354 \uC54C\uC544\uBCF4\uAE30 \uC27D\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: doctor_hwang_probe_label_mismatch
+    sectionId: reactive_guidance
+    order: 100
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.label_correction.label_mismatch
+    condition: the written label does not describe the drawing
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_label_mismatch
+    sourceText: The label does not match the drawing. Enter the name of the subject
+      shown in the drawing.
+    advance: player
+    minimumSeconds: 0
+    situation: The visual sample is preserved while the player corrects a mismatched
+      label.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - label
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB77C\uBCA8\uC774 \uADF8\uB9BC\uACFC \uC77C\uCE58\uD558\uC9C0 \uC54A\uB294
+        \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uADF8\uB9BC\uC5D0 \uB9DE\uB294 \uB300\uC0C1\uC758
+        \uC774\uB984\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+      status: final
+  - id: doctor_hwang_probe_label_action_or_abstract
+    sectionId: reactive_guidance
+    order: 120
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.label_action_or_abstract
+    condition: the label names an action or abstract idea
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_label_action_or_abstract
+    sourceText: The label names an action or abstract idea. Enter the name of one
+      concrete visible subject.
+    advance: player
+    minimumSeconds: 0
+    situation: The input is not a name for a visible subject.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - label
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB77C\uBCA8\uC774 \uD589\uB3D9\uC774\uB098 \uCD94\uC0C1\uC801\uC778
+        \uAC1C\uB150\uC744 \uB098\uD0C0\uB0C5\uB2C8\uB2E4. \uB208\uC5D0 \uBCF4\uC774\uB294
+        \uAD6C\uCCB4\uC801\uC778 \uB300\uC0C1 \uD558\uB098\uC758 \uC774\uB984\uC744
+        \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+      status: final
+  - id: doctor_hwang_probe_label_broad_category
+    sectionId: reactive_guidance
+    order: 130
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.label_broad_category
+    condition: the label is a category rather than a specific subject
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_label_broad_category
+    sourceText: The label is a broad category. Enter one specific subject name.
+    advance: player
+    minimumSeconds: 0
+    situation: The label repeats a broad category instead of naming the drawing.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - label
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB77C\uBCA8\uC774 \uB108\uBB34 \uB113\uC740 \uBD84\uB958\uB97C \uB098\uD0C0\uB0C5\uB2C8\uB2E4.
+        \uAD6C\uCCB4\uC801\uC778 \uB300\uC0C1 \uD558\uB098\uC758 \uC774\uB984\uC744
+        \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+      status: final
+  - id: doctor_hwang_probe_label_multiple_subjects
+    sectionId: reactive_guidance
+    order: 140
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.label_multiple_subjects
+    condition: the label names more than one subject
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_label_multiple_subjects
+    sourceText: The label names multiple subjects. Enter only one subject name.
+    advance: player
+    minimumSeconds: 0
+    situation: One label would map the alien response to several concepts.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - label
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB77C\uBCA8\uC5D0 \uB300\uC0C1\uC774 \uC5EC\uB7EC \uAC1C \uD3EC\uD568\uB418\uC5B4
+        \uC788\uC2B5\uB2C8\uB2E4. \uB300\uC0C1 \uD558\uB098\uC758 \uC774\uB984\uB9CC
+        \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+      status: final
+  - id: doctor_hwang_probe_label_classification_claim
+    sectionId: reactive_guidance
+    order: 150
+    enabled: 1
+    type: reactive
+    status: final
+    runtimeCue: 
+    triggerEvent: sample.rejected.label_classification_claim
+    condition: the label argues how the subject should be interpreted
+    repeat: every-occurrence
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.doctor_hwang.probe_label_classification_claim
+    sourceText: Remove wording that argues how the subject should be classified,
+      valued, or understood. Keep only the subject name.
+    advance: player
+    minimumSeconds: 0
+    situation: The label contains an interpretive claim instead of a neutral name.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - reactive
+    - label
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB300\uC0C1\uC744 \uC5B4\uB5BB\uAC8C \uBD84\uB958\uD558\uAC70\uB098
+        \uD3C9\uAC00\uD574\uC57C \uD558\uB294\uC9C0 \uC8FC\uC7A5\uD558\uB294 \uD45C\uD604\uC744
+        \uBE7C\uACE0 \uB300\uC0C1 \uC774\uB984\uB9CC \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+      status: final
+  - id: alien_mutter_very_dissatisfied
+    sectionId: alien_reactions
+    order: 0
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.very_dissatisfied
+    condition: 'reaction subtitle variant: mutter'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.mutter.very_dissatisfied
+    sourceText: The aliens are conferring with each other...
+    advance: automatic
+    minimumSeconds: 0
+    situation: The delegation strongly dislikes the previous exchange.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - mutter
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC778\uB4E4\uC774 \uC11C\uB85C \uD611\uC758\uD558\uACE0
+        \uC788\uC2B5\uB2C8\uB2E4..."
+      status: final
+  - id: alien_mutter_dissatisfied
+    sectionId: alien_reactions
+    order: 10
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.dissatisfied
+    condition: 'reaction subtitle variant: mutter'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.mutter.dissatisfied
+    sourceText: The aliens exchange glances...
+    advance: automatic
+    minimumSeconds: 0
+    situation: The delegation is dissatisfied.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - mutter
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC778\uB4E4\uC774 \uC2DC\uC120\uC744 \uC8FC\uACE0\uBC1B\uC2B5\uB2C8\uB2E4..."
+      status: final
+  - id: alien_mutter_neutral
+    sectionId: alien_reactions
+    order: 20
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.neutral
+    condition: 'reaction subtitle variant: mutter'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.mutter.neutral
+    sourceText: The aliens observe quietly...
+    advance: automatic
+    minimumSeconds: 0
+    situation: The delegation offers no strong reaction.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - mutter
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC778\uB4E4\uC774 \uC870\uC6A9\uD788 \uAD00\uCC30\uD569\uB2C8\uB2E4..."
+      status: final
+  - id: alien_mutter_satisfied
+    sectionId: alien_reactions
+    order: 30
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.satisfied
+    condition: 'reaction subtitle variant: mutter'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.mutter.satisfied
+    sourceText: The aliens murmur amongst themselves...
+    advance: automatic
+    minimumSeconds: 0
+    situation: The delegation gives a positive response.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - mutter
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC778\uB4E4\uC774 \uB0AE\uAC8C \uC6C5\uC131\uAC70\uB9BD\uB2C8\uB2E4..."
+      status: final
+  - id: alien_mutter_very_satisfied
+    sectionId: alien_reactions
+    order: 40
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.very_satisfied
+    condition: 'reaction subtitle variant: mutter'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.mutter.very_satisfied
+    sourceText: The aliens react with visible excitement!
+    advance: automatic
+    minimumSeconds: 0
+    situation: The delegation is visibly excited.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - mutter
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC778\uB4E4\uC774 \uB208\uC5D0 \uB744\uAC8C \uD765\uBD84\uD55C
+        \uBC18\uC751\uC744 \uBCF4\uC785\uB2C8\uB2E4!"
+      status: final
+  - id: alien_narration_very_dissatisfied
+    sectionId: alien_reactions
+    order: 50
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.very_dissatisfied
+    condition: 'reaction subtitle variant: narration'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.narration.very_dissatisfied
+    sourceText: They seem very displeased...
+    advance: automatic
+    minimumSeconds: 0
+    situation: Narrated interpretation of a very negative response.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - narration
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB4E4\uC740 \uB9E4\uC6B0 \uBD88\uCF8C\uD574 \uBCF4\uC785\uB2C8\uB2E4..."
+      status: final
+  - id: alien_narration_dissatisfied
+    sectionId: alien_reactions
+    order: 60
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.dissatisfied
+    condition: 'reaction subtitle variant: narration'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.narration.dissatisfied
+    sourceText: They do not appear to like it.
+    advance: automatic
+    minimumSeconds: 0
+    situation: Narrated interpretation of a negative response.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - narration
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB4E4\uC740 \uB9C8\uC74C\uC5D0 \uB4E4\uC5B4 \uD558\uC9C0 \uC54A\uB294
+        \uAC83 \uAC19\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: alien_narration_neutral
+    sectionId: alien_reactions
+    order: 70
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.neutral
+    condition: 'reaction subtitle variant: narration'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.narration.neutral
+    sourceText: Not much of a reaction.
+    advance: automatic
+    minimumSeconds: 0
+    situation: Narrated interpretation of a neutral response.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - narration
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uBC18\uC751\uC740 \uD06C\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: alien_narration_satisfied
+    sectionId: alien_reactions
+    order: 80
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.satisfied
+    condition: 'reaction subtitle variant: narration'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.narration.satisfied
+    sourceText: A positive response.
+    advance: automatic
+    minimumSeconds: 0
+    situation: Narrated interpretation of a positive response.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - narration
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uAE0D\uC815\uC801\uC778 \uBC18\uC751\uC785\uB2C8\uB2E4."
+      status: final
+  - id: alien_narration_very_satisfied
+    sectionId: alien_reactions
+    order: 90
+    enabled: 1
+    type: reaction
+    status: final
+    runtimeCue: 
+    triggerEvent: alien.reaction.very_satisfied
+    condition: 'reaction subtitle variant: narration'
+    repeat: contextual
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: alien.reaction.narration.very_satisfied
+    sourceText: They seem quite impressed!
+    advance: automatic
+    minimumSeconds: 0
+    situation: Narrated interpretation of a very positive response.
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - alien
+    - reaction
+    - narration
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB4E4\uC740 \uAF64 \uAE4A\uC740 \uC778\uC0C1\uC744 \uBC1B\uC740
+        \uAC83 \uAC19\uC2B5\uB2C8\uB2E4!"
+      status: final
+  localizationEntries: []

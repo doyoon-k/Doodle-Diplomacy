@@ -1,0 +1,177 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1c09a7d2c7b4e5aa6d915e1274b8c01, type: 3}
+  m_Name: FirstContactNarrativeSettings
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactNarrativeSettings
+  narrativeScenario: {fileID: 11400000, guid: d0b69c3fbbd2ce942aeac9dc289e7b18, type: 2}
+  enableEncounterOpening: 1
+  playPlaceholderIntroMontage: 1
+  createPlaceholderGeometry: 1
+  enablePreflightTutorial: 1
+  placeholderIntroCardSeconds: 0.9
+  delegationEntranceSeconds: 1.8
+  delegationEntranceDistance: 1.75
+  firstTransmissionMonitorSeconds: 1.1
+  repeatedTransmissionMonitorSeconds: 0.35
+  firstAlienReactionSeconds: 3
+  repeatedAlienReactionSeconds: 2
+  categoryCalibrationReactionSeconds: 0.9
+  translationSignalSeconds: 1.35
+  cues:
+  - cue: 0
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.delegation_arrival
+    textFallback: The delegation is in position. The terminal will record their response.
+    minimumSeconds: 1.2
+    waitForAdvance: 0
+  - cue: 1
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.first_category
+    textFallback: We will begin with {category}. Select the terminal when you are
+      ready.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 2
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.first_drawing
+    textFallback: Draw one concrete object in the {category} category. One object
+      only.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 3
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.first_label
+    textFallback: Enter the name of the object. The machine needs the label to compare
+      the signal.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 4
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.first_trace
+    textFallback: One response trace recorded. Different objects in the same category
+      should reveal a shared response pattern.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 5
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.more_samples
+    textFallback: Good. We need {remaining} more different sample to stabilize the
+      response pattern.
+    minimumSeconds: 1.2
+    waitForAdvance: 0
+  - cue: 6
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.category_calibrated
+    textFallback: The {category} response pattern is stable. Calibration is complete.
+    minimumSeconds: 1.2
+    waitForAdvance: 0
+  - cue: 7
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.bootstrap_calibrated
+    textFallback: All {count} categories are calibrated. Let us see whether it can
+      translate a new signal.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 8
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.translation_succeeded
+    textFallback: It worked. Known categories are translating automatically; the
+      unfamiliar part remains unresolved.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 9
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.preflight_intro
+    textFallback: Before they arrive, I need to see whether you can produce a usable
+      visual probe.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 10
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.tablet_tools
+    textFallback: The three illuminated controls are the brush, fill, and eraser.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 11
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.tablet_style
+    textFallback: These buttons change line width. Use the slider beside them to
+      choose a color.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 12
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.tablet_history_and_send
+    textFallback: Use these to undo, redo, or clear the canvas. When the drawing
+      is ready, press Enter.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 13
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.preflight_drawing
+    textFallback: Draw any one concrete object you like. No words, symbols, scenes,
+      or extra objects.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  - cue: 14
+    dialogueSequence: {fileID: 0}
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    textLocalizationKey: first_contact.narrative.preflight_passed
+    textFallback: Good enough. We have seen what we need; the practice sample will
+      not be recorded.
+    minimumSeconds: 0.3
+    waitForAdvance: 1
+  translationDemoSegments:
+  - categoryId: danger
+    rawSignal: '[KRR]'
+    meaningFallback: DANGER
+  - categoryId: food
+    rawSignal: '[THA]'
+    meaningFallback: FOOD
+  - categoryId: intent
+    rawSignal: '[VOR]'
+    meaningFallback: INTENT
+  - categoryId: protection
+    rawSignal: '[QEL]'
+    meaningFallback: PROTECTION
+  - categoryId: tool
+    rawSignal: '[NAA]'
+    meaningFallback: TOOL

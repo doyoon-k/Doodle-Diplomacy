@@ -7,7 +7,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 {
     public enum FirstContactCardSource
     {
-        BootstrapProbe
+        BootstrapProbe,
+        PreflightProbe
     }
 
     internal static class FirstContactTerminalLocalization
@@ -87,10 +88,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string Id;
         public Texture2D Texture;
         public byte[] PngBytes;
-        public string Label;
-        public string CanonicalLabel;
-        public string LocalizedLabel;
-        public bool TranslationAvailable;
+        public string OriginalLabel;
+        public string NormalizedLabel;
         public float[] Embedding;
         public DoodleDiplomacy.Devices.BrainwaveSemanticProfile WaveformProfile;
         public FirstContactCardSource Source;
@@ -102,6 +101,32 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string DuplicateOfCardId;
         public string ClusterId;
         public int ProbeIndex;
+
+        // Compatibility aliases for older callers and save migrations. The player-entered
+        // label remains authoritative; no translated canonical label is stored anymore.
+        public string Label
+        {
+            get => OriginalLabel;
+            set => OriginalLabel = value;
+        }
+
+        public string CanonicalLabel
+        {
+            get => NormalizedLabel;
+            set => NormalizedLabel = value;
+        }
+
+        public string LocalizedLabel
+        {
+            get => OriginalLabel;
+            set => OriginalLabel = value;
+        }
+
+        public bool TranslationAvailable
+        {
+            get => false;
+            set { }
+        }
     }
 
     public sealed class SemanticClusterRecord
@@ -110,10 +135,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public readonly List<SemanticCardRecord> Members = new();
         public float[] Centroid;
         public string ProvisionalName;
+        public bool MeaningAssignedByPlayer;
         public bool IsStable;
         public float Cohesion;
 
-        public string DisplayName => string.IsNullOrWhiteSpace(ProvisionalName) ? $"[{Id}]" : ProvisionalName.Trim();
+        public bool HasMeaning => !string.IsNullOrWhiteSpace(ProvisionalName);
+        public bool RequiresMeaningAssignment => IsStable && !HasMeaning;
+        public string DisplayName => HasMeaning ? ProvisionalName.Trim() : "[PATTERN-??]";
     }
 
     public readonly struct FirstContactClusterFormationEdge
@@ -222,6 +250,39 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
     public static class FirstContactProbeDuplicateDetector
     {
+        public enum MatchKind
+        {
+            None,
+            IdenticalImage,
+            SameLabel,
+            StrongSemanticMatch
+        }
+
+        public readonly struct MatchEvidence
+        {
+            public MatchEvidence(MatchKind kind, float semanticSimilarity)
+            {
+                Kind = kind;
+                SemanticSimilarity = semanticSimilarity;
+            }
+
+            public MatchKind Kind { get; }
+            public float SemanticSimilarity { get; }
+            public bool IsCertain => Kind != MatchKind.None;
+        }
+
+        public readonly struct ReviewCandidate
+        {
+            public ReviewCandidate(SemanticCardRecord card, float semanticSimilarity)
+            {
+                Card = card;
+                SemanticSimilarity = semanticSimilarity;
+            }
+
+            public SemanticCardRecord Card { get; }
+            public float SemanticSimilarity { get; }
+        }
+
         public static bool TryFindDuplicate(
             SemanticCardRecord candidate,
             IReadOnlyList<SemanticCardRecord> recordedCards,
@@ -229,7 +290,25 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticSettings settings,
             out SemanticCardRecord duplicate)
         {
+            return TryFindDuplicate(
+                candidate,
+                recordedCards,
+                embeddingService,
+                settings,
+                out duplicate,
+                out _);
+        }
+
+        public static bool TryFindDuplicate(
+            SemanticCardRecord candidate,
+            IReadOnlyList<SemanticCardRecord> recordedCards,
+            FirstContactEmbeddingService embeddingService,
+            FirstContactSemanticSettings settings,
+            out SemanticCardRecord duplicate,
+            out MatchEvidence evidence)
+        {
             duplicate = null;
+            evidence = default;
             if (candidate == null || recordedCards == null)
             {
                 return false;
@@ -238,7 +317,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             float semanticThreshold = settings != null
                 ? settings.bootstrapDuplicateSemanticThreshold
                 : 0.96f;
-            string candidateLabel = NormalizeLabel(candidate.Label);
+            string candidateLabel = ResolveNormalizedLabel(candidate);
 
             for (int i = 0; i < recordedCards.Count; i++)
             {
@@ -248,31 +327,82 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(candidateLabel) &&
-                    string.Equals(candidateLabel, NormalizeLabel(recorded.Label), StringComparison.Ordinal))
-                {
-                    duplicate = recorded;
-                    return true;
-                }
-
                 if (HaveIdenticalPng(candidate.PngBytes, recorded.PngBytes))
                 {
                     duplicate = recorded;
+                    evidence = new MatchEvidence(MatchKind.IdenticalImage, 1f);
+                    return true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(candidateLabel) &&
+                    string.Equals(candidateLabel, ResolveNormalizedLabel(recorded), StringComparison.Ordinal))
+                {
+                    duplicate = recorded;
+                    evidence = new MatchEvidence(MatchKind.SameLabel, 1f);
                     return true;
                 }
 
                 if (embeddingService != null &&
                     candidate.Embedding != null &&
-                    recorded.Embedding != null &&
-                    embeddingService.Similarity(candidate.Embedding, recorded.Embedding) >=
-                    semanticThreshold)
+                    recorded.Embedding != null)
                 {
-                    duplicate = recorded;
-                    return true;
+                    float similarity = embeddingService.Similarity(candidate.Embedding, recorded.Embedding);
+                    if (similarity >= semanticThreshold)
+                    {
+                        duplicate = recorded;
+                        evidence = new MatchEvidence(MatchKind.StrongSemanticMatch, similarity);
+                        return true;
+                    }
                 }
             }
 
             return false;
+        }
+
+        public static IReadOnlyList<ReviewCandidate> FindReviewCandidates(
+            SemanticCardRecord candidate,
+            IReadOnlyList<SemanticCardRecord> recordedCards,
+            FirstContactEmbeddingService embeddingService,
+            FirstContactSemanticSettings settings)
+        {
+            var candidates = new List<ReviewCandidate>();
+            if (candidate?.Embedding == null ||
+                recordedCards == null ||
+                embeddingService == null ||
+                settings == null ||
+                !settings.enableSemanticDuplicateLlmReview)
+            {
+                return candidates;
+            }
+
+            float reviewThreshold = Mathf.Min(
+                settings.bootstrapDuplicateSemanticReviewThreshold,
+                settings.bootstrapDuplicateSemanticThreshold);
+            float certainThreshold = settings.bootstrapDuplicateSemanticThreshold;
+            for (int i = 0; i < recordedCards.Count; i++)
+            {
+                SemanticCardRecord recorded = recordedCards[i];
+                if (recorded?.Embedding == null ||
+                    ReferenceEquals(recorded, candidate))
+                {
+                    continue;
+                }
+
+                float similarity = embeddingService.Similarity(candidate.Embedding, recorded.Embedding);
+                if (similarity >= reviewThreshold && similarity < certainThreshold)
+                {
+                    candidates.Add(new ReviewCandidate(recorded, similarity));
+                }
+            }
+
+            candidates.Sort((left, right) => right.SemanticSimilarity.CompareTo(left.SemanticSimilarity));
+            int maxCandidates = Mathf.Max(1, settings.semanticDuplicateReviewMaxCandidates);
+            if (candidates.Count > maxCandidates)
+            {
+                candidates.RemoveRange(maxCandidates, candidates.Count - maxCandidates);
+            }
+
+            return candidates;
         }
 
         private static bool HaveIdenticalPng(byte[] left, byte[] right)
@@ -293,8 +423,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return true;
         }
 
-        private static string NormalizeLabel(string label)
+        private static string ResolveNormalizedLabel(SemanticCardRecord card)
         {
+            string label = !string.IsNullOrWhiteSpace(card?.NormalizedLabel)
+                ? card.NormalizedLabel
+                : card?.OriginalLabel;
             return string.IsNullOrWhiteSpace(label)
                 ? string.Empty
                 : FirstContactEmbeddingService.NormalizeText(label);

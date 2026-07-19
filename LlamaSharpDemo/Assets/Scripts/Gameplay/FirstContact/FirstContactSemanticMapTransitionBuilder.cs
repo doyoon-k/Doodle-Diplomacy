@@ -554,13 +554,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static string LocalizedGroupLabel()
         {
-            return L10n.T("first_contact.terminal.semantic_map.group", "GROUP").ToUpperInvariant();
+            return L10n.T("first_contact.terminal.semantic_map.group", "PATTERN").ToUpperInvariant();
         }
 
         private static string LocalizedGroupUnknownLabel()
         {
-            return L10n.T("first_contact.terminal.semantic_map.group_unknown", "[GROUP-??]").ToUpperInvariant();
+            return L10n.T("first_contact.terminal.semantic_map.group_unknown", "[PATTERN-??]").ToUpperInvariant();
         }
     }
 }
-

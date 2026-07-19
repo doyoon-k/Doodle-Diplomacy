@@ -216,7 +216,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 SemanticCardRecord candidate = cards[i];
                 if (candidate != null &&
                     string.Equals(
-                        NormalizeCardLabel(candidate.Label),
+                        ResolveNormalizedLabel(candidate),
                         normalizedLabel,
                         StringComparison.Ordinal))
                 {
@@ -233,6 +233,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             return string.IsNullOrWhiteSpace(label)
                 ? string.Empty
                 : label.Trim().ToLowerInvariant();
+        }
+
+        private static string ResolveNormalizedLabel(SemanticCardRecord card)
+        {
+            return !string.IsNullOrWhiteSpace(card?.NormalizedLabel)
+                ? FirstContactEmbeddingService.NormalizeText(card.NormalizedLabel)
+                : NormalizeCardLabel(card?.OriginalLabel);
         }
     }
 }

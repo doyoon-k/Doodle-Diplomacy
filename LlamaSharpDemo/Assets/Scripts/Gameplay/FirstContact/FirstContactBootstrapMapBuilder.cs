@@ -23,7 +23,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             IReadOnlyList<SemanticCardRecord> cards,
             IReadOnlyList<SemanticClusterRecord> clusters,
             SemanticCardRecord activeCard,
-            FirstContactBootstrapCategoryState category,
+            IReadOnlyList<FirstContactBootstrapCategoryState> categories,
+            FirstContactBootstrapCategoryState activeCategory,
             bool includeActiveCard,
             FirstContactSemanticSettings settings)
         {
@@ -32,22 +33,38 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 clusters,
                 activeCard,
                 settings);
-            if (category == null)
+            if (activeCategory == null)
             {
                 return snapshot;
             }
 
             string activeCardNodeId = FirstContactSemanticMapLayout.BuildCardNodeId(activeCard);
-            HashSet<string> relevantClusterNodeIds = BuildRelevantClusterNodeIds(clusters, category);
+            HashSet<string> relevantClusterNodeIds = BuildRelevantClusterNodeIds(clusters);
             PruneSnapshot(
                 snapshot,
-                category,
                 activeCardNodeId,
                 includeActiveCard,
                 relevantClusterNodeIds);
             snapshot.Links.Clear();
-            AddCategoryNode(snapshot, category);
-            ShapeCategoryNodes(snapshot, category, activeCardNodeId);
+
+            int categoryCount = categories?.Count ?? 0;
+            for (int categoryIndex = 0; categoryIndex < categoryCount; categoryIndex++)
+            {
+                FirstContactBootstrapCategoryState category = categories[categoryIndex];
+                if (!ShouldShowCategory(category, activeCategory))
+                {
+                    continue;
+                }
+
+                AddCategoryNode(
+                    snapshot,
+                    category,
+                    ReferenceEquals(category, activeCategory),
+                    ResolveCategoryPosition(categoryIndex, categoryCount));
+                ShapeCategoryNodes(snapshot, category, categoryIndex);
+            }
+
+            ShapeDetachedNodes(snapshot, activeCardNodeId);
             return snapshot;
         }
 
@@ -63,11 +80,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         }
 
         private static HashSet<string> BuildRelevantClusterNodeIds(
-            IReadOnlyList<SemanticClusterRecord> clusters,
-            FirstContactBootstrapCategoryState category)
+            IReadOnlyList<SemanticClusterRecord> clusters)
         {
             var clusterNodeIds = new HashSet<string>(StringComparer.Ordinal);
-            if (category == null || clusters == null)
+            if (clusters == null)
             {
                 return clusterNodeIds;
             }
@@ -77,13 +93,34 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 SemanticClusterRecord cluster = clusters[i];
                 if (cluster != null &&
                     cluster.IsStable &&
-                    HasDetachedCategoryMember(cluster, category))
+                    HasAnyDetachedMember(cluster))
                 {
                     clusterNodeIds.Add(FirstContactSemanticMapLayout.BuildClusterNodeId(cluster));
                 }
             }
 
             return clusterNodeIds;
+        }
+
+        private static bool HasAnyDetachedMember(SemanticClusterRecord cluster)
+        {
+            if (cluster == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                SemanticCardRecord member = cluster.Members[i];
+                if (member != null &&
+                    member.BootstrapCategoryEvaluated &&
+                    !member.BootstrapCategoryAccepted)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool HasDetachedCategoryMember(
@@ -115,12 +152,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static void PruneSnapshot(
             FirstContactSemanticMapSnapshot snapshot,
-            FirstContactBootstrapCategoryState category,
             string activeCardNodeId,
             bool includeActiveCard,
             ISet<string> relevantClusterNodeIds)
         {
-            if (snapshot == null || category == null)
+            if (snapshot == null)
             {
                 return;
             }
@@ -128,22 +164,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int i = snapshot.Nodes.Count - 1; i >= 0; i--)
             {
                 FirstContactSemanticMapNode node = snapshot.Nodes[i];
-                bool keepCurrentCategoryCard =
-                    node != null &&
-                    node.Kind == FirstContactSemanticMapNodeKind.Card &&
-                    string.Equals(
-                        node.BootstrapCategoryId,
-                        category.Id,
-                        StringComparison.Ordinal);
-                bool keepRelevantCluster =
-                    node != null &&
-                    node.Kind == FirstContactSemanticMapNodeKind.StableCluster &&
-                    relevantClusterNodeIds != null &&
-                    relevantClusterNodeIds.Contains(node.Id);
-                bool keep = keepCurrentCategoryCard || keepRelevantCluster;
-                if (keepCurrentCategoryCard &&
+                bool keep = node != null;
+                if (node?.Kind == FirstContactSemanticMapNodeKind.Card &&
                     !includeActiveCard &&
                     string.Equals(node.Id, activeCardNodeId, StringComparison.Ordinal))
+                {
+                    keep = false;
+                }
+
+                if (node?.Kind == FirstContactSemanticMapNodeKind.StableCluster &&
+                    (relevantClusterNodeIds == null || !relevantClusterNodeIds.Contains(node.Id)))
                 {
                     keep = false;
                 }
@@ -157,7 +187,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void AddCategoryNode(
             FirstContactSemanticMapSnapshot snapshot,
-            FirstContactBootstrapCategoryState category)
+            FirstContactBootstrapCategoryState category,
+            bool isActive,
+            Vector2 position)
         {
             if (snapshot == null || category == null)
             {
@@ -181,9 +213,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     .LocalizeMeaning(category.Id, category.Meaning)
                     .ToUpperInvariant(),
                 Kind = FirstContactSemanticMapNodeKind.BootstrapCategory,
-                Position = new Vector2(0.36f, 0.06f),
+                Position = position,
                 Embedding = centroid,
-                IsActive = true,
+                IsActive = isActive,
                 Marker = '*',
                 BootstrapCategoryId = category.Id,
                 TraceCount = category.TraceCount,
@@ -195,7 +227,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private static void ShapeCategoryNodes(
             FirstContactSemanticMapSnapshot snapshot,
             FirstContactBootstrapCategoryState category,
-            string activeCardNodeId)
+            int categoryIndex)
         {
             if (snapshot == null || category == null)
             {
@@ -209,8 +241,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             var acceptedNodes = new List<FirstContactSemanticMapNode>();
-            var detachedNodes = new List<FirstContactSemanticMapNode>();
-            var clusterNodes = new List<FirstContactSemanticMapNode>();
             for (int i = 0; i < snapshot.Nodes.Count; i++)
             {
                 FirstContactSemanticMapNode node = snapshot.Nodes[i];
@@ -219,13 +249,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     continue;
                 }
 
-                if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster)
-                {
-                    clusterNodes.Add(node);
-                    continue;
-                }
-
                 if (node.Kind != FirstContactSemanticMapNodeKind.Card ||
+                    node.IsBootstrapDetached ||
                     !string.Equals(
                         node.BootstrapCategoryId,
                         category.Id,
@@ -234,39 +259,54 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     continue;
                 }
 
-                if (node.IsBootstrapDetached)
-                {
-                    detachedNodes.Add(node);
-                }
-                else
-                {
-                    acceptedNodes.Add(node);
-                }
-            }
-
-            for (int i = 0; i < clusterNodes.Count; i++)
-            {
-                clusterNodes[i].Position = ResolveDetachedClusterPosition(i);
+                acceptedNodes.Add(node);
             }
 
             for (int i = 0; i < acceptedNodes.Count; i++)
             {
                 FirstContactSemanticMapNode node = acceptedNodes[i];
-                float angle = ResolveAcceptedAngle(i);
+                float angle = ResolveAcceptedAngle(i, categoryIndex);
                 Vector2 orbit = new(Mathf.Cos(angle), Mathf.Sin(angle));
                 float distance = Mathf.Lerp(
-                    0.42f,
-                    0.5f,
+                    0.18f,
+                    0.24f,
                     Mathf.Clamp01((acceptedNodes.Count - 1) / 4f));
                 node.Position = ClampPosition(categoryNode.Position + orbit * distance);
                 AddLinkIfMissing(snapshot, node.Id, categoryNode.Id, 0.72f);
             }
+        }
+
+        private static void ShapeDetachedNodes(
+            FirstContactSemanticMapSnapshot snapshot,
+            string activeCardNodeId)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            var clusterNodes = new List<FirstContactSemanticMapNode>();
+            for (int i = 0; i < snapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                if (node?.Kind == FirstContactSemanticMapNodeKind.StableCluster)
+                {
+                    node.Position = ResolveDetachedClusterPosition(clusterNodes.Count);
+                    clusterNodes.Add(node);
+                }
+            }
 
             var clusterMemberIndices = new Dictionary<string, int>(StringComparer.Ordinal);
             int looseDetachedIndex = 0;
-            for (int i = 0; i < detachedNodes.Count; i++)
+            for (int i = 0; i < snapshot.Nodes.Count; i++)
             {
-                FirstContactSemanticMapNode node = detachedNodes[i];
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                if (node?.Kind != FirstContactSemanticMapNodeKind.Card ||
+                    !node.IsBootstrapDetached)
+                {
+                    continue;
+                }
+
                 bool active = string.Equals(node.Id, activeCardNodeId, StringComparison.Ordinal);
                 string clusterNodeId = FirstContactSemanticMapLayout.BuildClusterNodeId(node.SecondaryLabel);
                 FirstContactSemanticMapNode clusterNode = snapshot.FindNode(clusterNodeId);
@@ -287,7 +327,32 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
-        private static float ResolveAcceptedAngle(int index)
+        private static bool ShouldShowCategory(
+            FirstContactBootstrapCategoryState category,
+            FirstContactBootstrapCategoryState activeCategory)
+        {
+            return category != null &&
+                   (ReferenceEquals(category, activeCategory) ||
+                    category.TraceCount > 0 ||
+                    category.DetachedCards.Count > 0 ||
+                    category.IsStable);
+        }
+
+        private static Vector2 ResolveCategoryPosition(int index, int categoryCount)
+        {
+            int safeCount = Mathf.Max(1, categoryCount);
+            int safeIndex = Mathf.Clamp(index, 0, safeCount - 1);
+            if (safeCount == 1)
+            {
+                return new Vector2(0.36f, 0.06f);
+            }
+
+            float radius = safeCount <= 2 ? 0.46f : 0.6f;
+            float angle = (135f - safeIndex * (360f / safeCount)) * Mathf.Deg2Rad;
+            return ClampPosition(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
+        }
+
+        private static float ResolveAcceptedAngle(int index, int categoryIndex)
         {
             float degree = index switch
             {
@@ -299,17 +364,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 5 => 14f,
                 _ => 140f + index * 137.5f
             };
+            degree -= Mathf.Max(0, categoryIndex) * 17f;
             return degree * Mathf.Deg2Rad;
         }
 
         private static Vector2 ResolveDetachedClusterPosition(int index)
         {
             int safeIndex = Mathf.Max(0, index);
-            int column = safeIndex % 2;
-            int row = safeIndex / 2;
-            Vector2 basePosition = new(-0.54f, 0.08f);
-            Vector2 offset = new(column * 0.46f, -row * 0.46f);
-            return ClampPosition(basePosition + offset);
+            if (safeIndex == 0)
+            {
+                return Vector2.zero;
+            }
+
+            float angle = (90f + (safeIndex - 1) * 137.5f) * Mathf.Deg2Rad;
+            float radius = 0.2f + ((safeIndex - 1) / 5) * 0.18f;
+            return ClampPosition(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
         }
 
         private static Vector2 ResolveDetachedClusterMemberPosition(
@@ -327,7 +396,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 5 => 8f,
                 _ => 180f + index * 137.5f
             };
-            float radius = active ? 0.32f : 0.26f;
+            float radius = active ? 0.22f : 0.17f;
             Vector2 orbit = new(
                 Mathf.Cos(degree * Mathf.Deg2Rad),
                 Mathf.Sin(degree * Mathf.Deg2Rad));
@@ -337,13 +406,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private static Vector2 ResolveDetachedPosition(int index, bool active)
         {
             int safeIndex = Mathf.Max(0, index);
-            int column = safeIndex % 3;
-            int row = safeIndex / 3;
-            Vector2 basePosition = active
-                ? new Vector2(-0.58f, -0.22f)
-                : new Vector2(-0.72f, -0.42f);
-            Vector2 offset = new(column * 0.24f, -row * 0.22f);
-            return ClampPosition(basePosition + offset);
+            float angle = (215f + safeIndex * 137.5f) * Mathf.Deg2Rad;
+            float radius = active ? 0.25f : 0.32f + (safeIndex / 7) * 0.12f;
+            return ClampPosition(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius);
         }
 
         private static void AddLinkIfMissing(

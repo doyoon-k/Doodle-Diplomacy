@@ -163,7 +163,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             bool accepted,
             bool becameStable)
         {
-            ClearLabels();
             const float duration = 1.35f;
             float elapsed = 0f;
             while (elapsed < duration)
@@ -177,7 +176,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     accepted,
                     becameStable,
                     progress);
-                Show(frame, fullMode: true, rebuildLabels: false);
+                Show(frame, fullMode: true, rebuildLabels: true);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
@@ -192,7 +191,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticMapSnapshot afterSnapshot,
             FirstContactClusterFormationEvent formation)
         {
-            ClearLabels();
             float duration = formation.BecameStable ? 2.12f : formation.IsIsolated ? 1.28f : 1.62f;
             float elapsed = 0f;
             while (elapsed < duration)
@@ -371,6 +369,19 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void ApplyDisplayLayoutIfNeeded(bool fullMode)
         {
+            FirstContactSemanticMapModeStyle mode =
+                FirstContactSemanticMapStyle.GetOrDefault(_style).GetMode(fullMode);
+
+            // Other terminal overlays reset their text inset when they clear. Restore it on
+            // every map presentation even when the map RectTransform layout is already cached.
+            if (terminalDisplay != null &&
+                !Mathf.Approximately(
+                    terminalDisplay.ContentTopInsetNormalized,
+                    mode.terminalTextTopInset))
+            {
+                terminalDisplay.SetContentTopInsetNormalized(mode.terminalTextTopInset);
+            }
+
             if (_displayLayoutApplied && _displayLayoutFullMode == fullMode)
             {
                 return;
@@ -379,9 +390,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _displayLayoutApplied = true;
             _displayLayoutFullMode = fullMode;
             ConfigureCurrentLayout();
-            FirstContactSemanticMapModeStyle mode =
-                FirstContactSemanticMapStyle.GetOrDefault(_style).GetMode(fullMode);
-            terminalDisplay?.SetContentTopInsetNormalized(mode.terminalTextTopInset);
         }
 
         private void ConfigureCurrentLayout(bool force = false)

@@ -8,12 +8,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         menuName = "DoodleDiplomacy/First Contact/VLM Settings")]
     public sealed class FirstContactVlmSettings : ScriptableObject
     {
-        [Tooltip("플레이어가 입력한 라벨을 내부 영어 의미 라벨로 정규화하고, 단일 사물 라벨인지 검사하는 파이프라인입니다.")]
+        [Tooltip("플레이어가 입력한 원문 라벨을 번역하거나 재작성하지 않고, 단일 사물 라벨인지 검사하는 파이프라인입니다.")]
         public PromptPipelineAsset probeLabelPipeline;
         [Tooltip("First Contact 전용 시각 표본 검수 파이프라인입니다. 의미 라벨을 만들지 않고 규약/라벨 일치 여부만 확인합니다.")]
         public PromptPipelineAsset probeValidationPipeline;
         [Tooltip("부트스트랩 CATEGORY에 표본 라벨이 명백히 맞지 않는지 판단하는 파이프라인입니다. 임베딩 점수는 보조 신호로만 사용합니다.")]
         public PromptPipelineAsset bootstrapCategoryFitPipeline;
+        [Tooltip("임베딩 점수가 중간 구간인 가까운 라벨 두 개가 같은 구체적 의미인지 제한적으로 확인하는 파이프라인입니다.")]
+        public PromptPipelineAsset semanticDuplicateReviewPipeline;
         [Tooltip("VLM 파이프라인에 그림 이미지를 넣을 때 사용할 state key입니다.")]
         public string imageStateKey = "reference_image";
         [Tooltip("PNG 캡처가 일시적으로 실패했을 때 내부적으로 다시 시도할 횟수입니다. 플레이어에게는 표시하지 않습니다.")]

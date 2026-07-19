@@ -19,4 +19,4 @@ MonoBehaviour:
   sceneName: GameScene
   unloadPreviousScene: 1
   autoStartSession: 1
-  startSessionWithIntro: 0
+  startSessionWithIntro: 1

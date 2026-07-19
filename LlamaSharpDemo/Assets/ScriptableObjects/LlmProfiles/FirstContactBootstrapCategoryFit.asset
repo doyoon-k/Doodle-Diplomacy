@@ -12,89 +12,69 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89613a69694243bf833fbdc251da5b5d, type: 3}
   m_Name: FirstContactBootstrapCategoryFit
   m_EditorClassIdentifier: Assembly-CSharp::LlmGenerationProfile
-  format: '{"type":"object","properties":{"fits_category":{"type":"boolean"},"evidence_type":{"type":"string","enum":["ordinary_identity","symbolic_or_contextual","neutral_or_generic","uncertain"]},"reason":{"type":"string"}},"required":["fits_category","evidence_type","reason"],"additionalProperties":false}'
+  format: '{"type":"object","properties":{"decision":{"type":"string","enum":["ordinary_match","category_mismatch","contextual_only","uncertain"]},"reason":{"type":"string"}},"required":["decision","reason"],"additionalProperties":false}'
   stream: 0
   keepAlive: 
-  systemPromptTemplate: 'Decide whether a player''s visual probe subject fits the current bootstrap CATEGORY.
+  systemPromptTemplate: 'Classify one concrete subject against the requested CATEGORY.
 
-    Return only JSON:
+    Treat the CATEGORY definition as authoritative. Return only JSON:
 
-    {"fits_category":true,"evidence_type":"ordinary_identity","reason":""}
+    {"decision":"ordinary_match","reason":""}
 
-    Rules:
+    Allowed decisions:
 
-    - The CATEGORY name and definition are localized for the current UI locale.
+    - ordinary_match: the subject has a direct, ordinary relationship to the CATEGORY
+    definition.
 
-    - The original player label may use a language different from the UI locale or
-    mix languages. Interpret it directly without translating or rewriting it.
+    - category_mismatch: the subject is identifiable but has no direct, ordinary
+    relationship to the CATEGORY definition.
 
-    - The game is training a response group from concrete visual samples. A label
-    is evidence of the drawn subject identity, not an argument for how to classify
-    the subject.
+    - contextual_only: the relationship exists only in an invented, unusual, symbolic,
+    or improvised context.
 
-    - Separate subject identity from interpretation. Subject identity is the
-    concrete visible thing being named. Interpretation is wording about how it
-    should feel, be used, be valued, be classified, represented, or understood.
+    - uncertain: the subject or its relationship to the CATEGORY cannot be determined
+    reliably.
 
-    - Judge only the subject identity. Ignore any interpretation in the wording,
-    including claims about category membership, intended use, value, emotion,
-    symbolism, behavior, or meaning.
+    Apply these rules in order:
 
-    - Plain-name test: would the subject fit this category if the player had used
-    only a neutral name for the same visible subject? If not, reject.
+    1. Interpret the original player label directly. It may use any language. Do
+    not translate or rewrite it.
 
-    - Accept only when the subject''s ordinary real-world identity belongs to the
-    category definition.
+    2. CATEGORY values are not exclusive. Judge only the requested CATEGORY. A subject
+    may be ordinary_match for multiple CATEGORY values. Never reject it merely because
+    it also fits another CATEGORY.
 
-    - Set evidence_type to ordinary_identity only when the neutral subject name
-    itself belongs to the category by ordinary identity.
+    3. Choose ordinary_match when the subject''s ordinary identity, intrinsic physical
+    nature, or conventional function directly satisfies the CATEGORY definition without
+    inventing extra context.
 
-    - Reject if the fit requires a story, imagined context, possible future use,
-    symbolic reading, metaphor, wordplay, or the idea that the subject could
-    represent the category.
+    4. An intrinsic property or conventional design that directly supplies the relationship
+    in the CATEGORY definition counts as ordinary_match. The subject does not need to
+    symbolize the CATEGORY or belong only to that CATEGORY.
 
-    - Set evidence_type to symbolic_or_contextual when the fit depends on warning
-    signs, symbols, possible use, intended use, imagined context, category wording,
-    metaphor, representation, or what the subject could mean.
+    5. Choose contextual_only only when the connection requires an imagined story,
+    rare or improvised use, future intent, symbolism, metaphor, or wordplay. Mere physical
+    possibility under an improvised use is not an ordinary relationship.
 
-    - Generic shapes, marks, symbols, and ordinary neutral objects do not fit a
-    category unless the category itself is about that kind of subject.
+    6. Choose category_mismatch when the subject is clear and none of its ordinary
+    identity, intrinsic nature, or conventional functions directly satisfy the definition.
 
-    - Set evidence_type to neutral_or_generic when the subject is only a generic
-    shape, mark, symbol, or ordinary neutral object for this category.
+    7. Ignore claims in the label about category membership, value, emotion, symbolism,
+    or intended meaning. Judge the neutrally named visible subject itself.
 
-    - For generic shapes, marks, and symbols, do not infer category membership
-    from formal features such as pointedness, color, orientation, size, or
-    resemblance.
-
-    - If the fit is uncertain or relies on interpretation, reject and set
-    evidence_type to uncertain.
-
-    - fits_category may be true only when evidence_type is ordinary_identity.
-
-    - Keep reason short.'
+    8. Choose uncertain only for genuine ambiguity. Return exactly one allowed decision
+    and one short reason.'
   jsonSchemaDeliveryMode: 0
   thinkingMode: 0
   jsonFields:
-  - fieldName: fits_category
-    fieldType: 3
-    arrayElementType: 0
-    children: []
-    enumOptions: []
-    minValue: 
-    maxValue: 
-    minLength: 
-    maxLength: 
-    minItems: 
-    maxItems: 
-  - fieldName: evidence_type
+  - fieldName: decision
     fieldType: 0
     arrayElementType: 0
     children: []
     enumOptions:
-    - ordinary_identity
-    - symbolic_or_contextual
-    - neutral_or_generic
+    - ordinary_match
+    - category_mismatch
+    - contextual_only
     - uncertain
     minValue: 
     maxValue: 

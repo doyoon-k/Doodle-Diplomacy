@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Narrative Desk — Doodle Diplomacy</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">ND</span>
+        <div><strong>Narrative Desk</strong><small>Doodle Diplomacy · local authoring</small></div>
+      </div>
+      <nav class="mode-tabs" aria-label="저작 모드">
+        <button type="button" data-mode="dialogue" class="active">대사 흐름</button>
+        <button type="button" data-mode="copy">UI 문구</button>
+        <button type="button" data-mode="terms">용어집</button>
+      </nav>
+      <div class="top-actions">
+        <span id="unityStatus" class="connection"><i></i> Unity 연결 대기</span>
+        <span id="saveStatus" class="save-status">불러오는 중…</span>
+        <button id="validateButton" class="ghost">검사</button>
+        <button id="saveButton" class="primary">저장 <kbd>Ctrl S</kbd></button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="scenario-pane">
+        <label id="sourceEyebrow" class="eyebrow">SCENARIO</label>
+        <select id="scenarioSelect" aria-label="시나리오"></select>
+        <div id="catalogIdentity" class="catalog-identity hidden"></div>
+        <div id="scenarioMeta" class="scenario-meta"></div>
+        <label id="sectionEyebrow" class="eyebrow section-heading">FLOW</label>
+        <nav id="sectionList" class="section-list"></nav>
+        <div class="sidebar-footer">
+          <button id="showAllButton" class="ghost full">전체 비트 보기</button>
+          <p id="syncDescription">저장하면 Unity가 JSON을 감지해 실행용 에셋과 번역표를 자동 갱신합니다.</p>
+        </div>
+      </aside>
+
+      <section class="beats-pane">
+        <div class="filters">
+          <input id="searchInput" type="search" placeholder="대사, 키, 상황 검색…" />
+          <select id="typeFilter" aria-label="유형 필터">
+            <option value="">모든 유형</option><option>dialogue</option><option>caption</option>
+            <option>reactive</option><option>reaction</option><option>system</option>
+          </select>
+          <select id="statusFilter" aria-label="상태 필터">
+            <option value="">모든 상태</option><option>draft</option><option>review</option>
+            <option>final</option><option>placeholder</option>
+          </select>
+          <button id="addBeatButton" class="icon-button" title="새 비트">＋</button>
+        </div>
+        <button id="activeTrace" class="active-trace hidden" type="button"></button>
+        <button id="activeUiTrace" class="active-trace ui-trace hidden" type="button"></button>
+        <div id="beatList" class="beat-list"></div>
+      </section>
+
+      <aside class="editor-pane">
+        <div id="emptyEditor" class="empty-state">
+          <div class="empty-symbol">⌁</div>
+          <strong>비트를 선택하세요</strong>
+          <p>발생 시점, 전후 행동, 대사와 번역을 한 화면에서 편집할 수 있습니다.</p>
+        </div>
+        <form id="beatEditor" class="hidden" autocomplete="off">
+          <div class="editor-heading">
+            <div><label class="eyebrow">SELECTED BEAT</label><h1 id="beatTitle"></h1></div>
+            <div class="editor-actions">
+              <button id="moveUpButton" type="button" class="icon-button" title="위로">↑</button>
+              <button id="moveDownButton" type="button" class="icon-button" title="아래로">↓</button>
+              <button id="duplicateButton" type="button" class="icon-button" title="복제">⧉</button>
+              <button id="deleteButton" type="button" class="icon-button danger" title="삭제">×</button>
+            </div>
+          </div>
+
+          <div class="field-grid two">
+            <label>ID<input data-field="id" /></label>
+            <label>섹션<select data-field="sectionId" id="sectionField"></select></label>
+            <label>유형<select data-field="type"><option>dialogue</option><option>caption</option><option>reactive</option><option>reaction</option><option>system</option></select></label>
+            <label>상태<select data-field="status"><option>draft</option><option>review</option><option>final</option><option>placeholder</option></select></label>
+          </div>
+
+          <details open>
+            <summary>게임 속 위치와 조건</summary>
+            <div class="field-stack">
+              <label>이 상황은 무엇인가<textarea data-field="situation" rows="2"></textarea></label>
+              <div class="field-grid two">
+                <label>발생 이벤트<input data-field="triggerEvent" /></label>
+                <label>실행 큐<input data-field="runtimeCue" placeholder="런타임 직접 연결 시" /></label>
+              </div>
+              <label>조건<input data-field="condition" /></label>
+              <div class="field-grid two">
+                <label>직전 행동<textarea data-field="beforeAction" rows="2"></textarea></label>
+                <label>직후 행동<textarea data-field="afterAction" rows="2"></textarea></label>
+              </div>
+              <label>무대 지시<textarea data-field="stageDirection" rows="2"></textarea></label>
+            </div>
+          </details>
+
+          <details open>
+            <summary>화자와 진행</summary>
+            <div class="field-grid two">
+              <label>화자 ID<input data-field="speakerId" /></label>
+              <label>표시 이름 기본값<input data-field="speakerFallback" /></label>
+              <label>화자 번역 키<input data-field="speakerLocalizationKey" /></label>
+              <label>대사 번역 키<input data-field="localizationKey" /></label>
+              <label>진행<select data-field="advance"><option value="player">플레이어 입력</option><option value="automatic">자동</option><option value="automatic-or-player">자동 또는 입력</option></select></label>
+              <label>최소 표시 시간<input data-field="minimumSeconds" type="number" min="0" step="0.1" /></label>
+              <label>반복 규칙<input data-field="repeat" /></label>
+              <label>태그<input data-field="tags" placeholder="쉼표로 구분" /></label>
+            </div>
+          </details>
+
+          <details open class="copy-section">
+            <summary>대사와 번역</summary>
+            <div id="localeEditors" class="locale-editors"></div>
+            <div id="placeholderChips" class="chips"></div>
+          </details>
+
+          <section class="preview-card">
+            <div class="preview-toolbar">
+              <strong>인게임 미리보기</strong>
+              <select id="previewLocale"></select>
+              <button id="previewUnityButton" type="button" class="ghost">Unity에서 보기</button>
+            </div>
+            <div class="subtitle-preview"><b id="previewSpeaker"></b><p id="previewText"></p><span>[ SPACE ] ▼</span></div>
+          </section>
+        </form>
+
+        <form id="copyEditor" class="hidden" autocomplete="off">
+          <div class="editor-heading">
+            <div><label class="eyebrow">SELECTED UI COPY</label><h1 id="copyTitle"></h1></div>
+            <div class="editor-actions">
+              <button id="duplicateCopyButton" type="button" class="icon-button" title="복제">⧉</button>
+              <button id="deleteCopyButton" type="button" class="icon-button danger" title="삭제">×</button>
+            </div>
+          </div>
+          <div class="field-grid two">
+            <label>현지화 키<input data-copy-field="key" /></label>
+            <label>화면<select data-copy-field="screenId" id="copyScreenField"></select></label>
+            <label>표시 방식<select data-copy-field="surface"><option>terminal</option><option>menu</option><option>hud</option><option>dialogue</option><option>caption</option><option>system</option><option>label</option></select></label>
+            <label>상태<select data-copy-field="status"><option>draft</option><option>review</option><option>final</option></select></label>
+            <label>도메인<input data-copy-field="domain" /></label>
+            <label>태그<input data-copy-field="tags" placeholder="쉼표로 구분" /></label>
+          </div>
+          <details open>
+            <summary>사용 맥락</summary>
+            <label>이 문구가 언제, 어디에 보이는가<textarea data-copy-field="context" rows="3"></textarea></label>
+            <div id="copyUsage" class="usage-strip"></div>
+          </details>
+          <details open class="copy-section">
+            <summary>문구와 번역</summary>
+            <div id="copyLocaleEditors" class="locale-editors"></div>
+            <div id="copyPlaceholderChips" class="chips"></div>
+          </details>
+          <section class="preview-card">
+            <div class="preview-toolbar">
+              <strong>화면 구성 미리보기</strong>
+              <span class="preview-note">선택 문구와 같은 화면의 이웃 문구</span>
+              <select id="copyPreviewLocale"></select>
+              <button id="copyPreviewUnityButton" type="button" class="ghost">Unity 언어 적용</button>
+            </div>
+            <div id="uiCopyPreview" class="surface-preview"></div>
+          </section>
+        </form>
+
+        <form id="termEditor" class="hidden" autocomplete="off">
+          <div class="editor-heading">
+            <div><label class="eyebrow">SELECTED TERM</label><h1 id="termTitle"></h1></div>
+            <div class="editor-actions">
+              <button id="duplicateTermButton" type="button" class="icon-button" title="복제">⧉</button>
+              <button id="deleteTermButton" type="button" class="icon-button danger" title="삭제">×</button>
+            </div>
+          </div>
+          <div class="field-grid two">
+            <label>ID<input data-term-field="id" /></label>
+            <label>상태<select data-term-field="status"><option>draft</option><option>review</option><option>final</option></select></label>
+            <label>영문 기준어<input data-term-field="sourceTerm" /></label>
+            <label>한국어 권장어<input data-term-field="targetTerm" /></label>
+          </div>
+          <details open>
+            <summary>정의와 사용 규칙</summary>
+            <div class="field-stack">
+              <label>뜻<textarea data-term-field="definition" rows="4"></textarea></label>
+              <label>사용·금지 규칙<textarea data-term-field="notes" rows="5"></textarea></label>
+            </div>
+          </details>
+          <section class="term-preview">
+            <small>권장 표기</small><strong id="termPreviewSource"></strong><span>→</span><strong id="termPreviewTarget"></strong>
+          </section>
+        </form>
+      </aside>
+    </main>
+
+    <footer class="bottombar">
+      <button id="issuesToggle" class="footer-tab">검사 결과 <span id="issueCount">0</span></button>
+      <button id="traceToggle" class="footer-tab">라이브 추적 <span id="traceCount">0</span></button>
+      <div class="checkpoint-actions">
+        <span>문맥 미리보기</span>
+        <select id="checkpointSelect">
+          <option value="delegation_arrival">대표단 착석</option>
+          <option value="first_category">첫 분류 선택</option>
+          <option value="first_drawing">첫 그림 입력</option>
+          <option value="first_trace">첫 추적 기록</option>
+          <option value="category_calibrated">분류 보정 완료</option>
+          <option value="bootstrap_calibrated">전체 보정 완료</option>
+          <option value="translation_succeeded">자동 번역 성공</option>
+        </select>
+        <button id="checkpointButton" class="ghost">Unity에서 재생</button>
+      </div>
+    </footer>
+    <section id="drawer" class="drawer hidden"><div class="drawer-header"><strong id="drawerTitle"></strong><button id="drawerClose" class="icon-button">×</button></div><div id="drawerBody"></div></section>
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

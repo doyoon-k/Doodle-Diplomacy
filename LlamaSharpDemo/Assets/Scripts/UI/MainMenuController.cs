@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using DoodleDiplomacy.Localization;
 using TMPro;
 using UnityEngine;
@@ -5,13 +8,12 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Events;
 
 namespace DoodleDiplomacy.UI
 {
     public sealed class MainMenuController : MonoBehaviour
     {
-        private const string EnglishLocale = "en-US";
-        private const string KoreanLocale = "ko-KR";
         private const string FirstPlayKey = "DD_HasPlayed";
 
         [Header("Scene Flow")]
@@ -42,11 +44,18 @@ namespace DoodleDiplomacy.UI
         [Tooltip("Button that closes the settings panel.")]
         [SerializeField] private Button closeSettingsButton;
 
+        private LocaleSelectionButtonList _localeButtons;
+
         private void Awake()
         {
             EnsureCamera();
             EnsureEventSystem();
             EnsureUi();
+            _localeButtons = new LocaleSelectionButtonList(
+                englishButton,
+                koreanButton,
+                closeSettingsButton,
+                SelectLocale);
             RegisterButtonListeners();
             HideSettings();
             RefreshLocalizedText();
@@ -72,8 +81,6 @@ namespace DoodleDiplomacy.UI
         {
             startButton?.onClick.AddListener(StartGame);
             settingsButton?.onClick.AddListener(ShowSettings);
-            englishButton?.onClick.AddListener(() => SelectLocale(EnglishLocale));
-            koreanButton?.onClick.AddListener(() => SelectLocale(KoreanLocale));
             closeSettingsButton?.onClick.AddListener(HideSettings);
         }
 
@@ -81,8 +88,8 @@ namespace DoodleDiplomacy.UI
         {
             startButton?.onClick.RemoveListener(StartGame);
             settingsButton?.onClick.RemoveListener(ShowSettings);
-            englishButton?.onClick.RemoveAllListeners();
-            koreanButton?.onClick.RemoveAllListeners();
+            _localeButtons?.Dispose();
+            _localeButtons = null;
             closeSettingsButton?.onClick.RemoveListener(HideSettings);
         }
 
@@ -131,15 +138,24 @@ namespace DoodleDiplomacy.UI
 
         private void RefreshLocalizedText()
         {
+            UiCopyTrace.BeginScreen("title.main", "menu");
             if (titleText != null)
             {
-                titleText.text = "DOODLE DIPLOMACY";
+                titleText.text = L10n.T("ui.title.game_title", "DOODLE DIPLOMACY");
             }
 
             SetButtonText(startButton, L10n.T("ui.title.start", "START"));
             SetButtonText(settingsButton, L10n.T("ui.title.settings", "SETTINGS"));
-            SetButtonText(englishButton, L10n.T("ui.settings.english", "English"));
-            SetButtonText(koreanButton, L10n.T("ui.settings.korean", "Korean"));
+            UiCopyTrace.EndScreen();
+
+            _localeButtons?.Refresh();
+
+            bool settingsVisible = settingsPanel != null && settingsPanel.activeInHierarchy;
+            if (settingsVisible)
+            {
+                UiCopyTrace.BeginScreen("settings", "menu");
+            }
+
             SetButtonText(closeSettingsButton, L10n.T("ui.settings.back", "Back"));
 
             if (settingsTitleText != null)
@@ -152,13 +168,10 @@ namespace DoodleDiplomacy.UI
                 languageLabelText.text = L10n.T("ui.settings.language", "Language");
             }
 
-            RefreshLocaleSelectionVisuals();
-        }
-
-        private void RefreshLocaleSelectionVisuals()
-        {
-            SetSelected(englishButton, GameLocalizationSettings.LocaleEquals(L10n.CurrentLocale, EnglishLocale));
-            SetSelected(koreanButton, GameLocalizationSettings.LocaleEquals(L10n.CurrentLocale, KoreanLocale));
+            if (settingsVisible)
+            {
+                UiCopyTrace.EndScreen();
+            }
         }
 
         private void EnsureUi()
@@ -411,6 +424,330 @@ namespace DoodleDiplomacy.UI
             camera.orthographic = true;
             camera.orthographicSize = 5f;
             camera.cullingMask = 0;
+        }
+    }
+
+    internal sealed class LocaleSelectionButtonList : IDisposable
+    {
+        private readonly struct LocaleSpec
+        {
+            public LocaleSpec(
+                string locale,
+                string englishName,
+                string nativeName,
+                TMP_FontAsset font,
+                LocalizedTextDirection direction)
+            {
+                Locale = locale ?? string.Empty;
+                EnglishName = englishName ?? string.Empty;
+                NativeName = nativeName ?? string.Empty;
+                Font = font;
+                Direction = direction;
+            }
+
+            public string Locale { get; }
+            public string EnglishName { get; }
+            public string NativeName { get; }
+            public TMP_FontAsset Font { get; }
+            public LocalizedTextDirection Direction { get; }
+        }
+
+        private sealed class Binding
+        {
+            public Button Button;
+            public LocaleSpec Locale;
+            public UnityAction Listener;
+            public Color UnselectedColor;
+        }
+
+        private readonly List<Binding> _bindings = new();
+        private readonly Action<string> _onSelected;
+
+        public LocaleSelectionButtonList(
+            Button englishButton,
+            Button koreanButton,
+            Button closeButton,
+            Action<string> onSelected)
+        {
+            _onSelected = onSelected;
+            Build(englishButton, koreanButton, closeButton);
+        }
+
+        public void Refresh()
+        {
+            for (int i = 0; i < _bindings.Count; i++)
+            {
+                Binding binding = _bindings[i];
+                bool selected = GameLocalizationSettings.LocaleEquals(
+                    L10n.CurrentLocale,
+                    binding.Locale.Locale);
+                Image image = binding.Button != null ? binding.Button.GetComponent<Image>() : null;
+                if (image != null)
+                {
+                    image.color = selected
+                        ? new Color(0.27f, 0.41f, 0.36f, 0.98f)
+                        : binding.UnselectedColor;
+                }
+
+                TextMeshProUGUI label = binding.Button != null
+                    ? binding.Button.GetComponentInChildren<TextMeshProUGUI>(includeInactive: true)
+                    : null;
+                if (label == null)
+                {
+                    continue;
+                }
+
+                label.text = string.IsNullOrWhiteSpace(binding.Locale.NativeName)
+                    ? binding.Locale.EnglishName
+                    : binding.Locale.NativeName;
+                if (binding.Locale.Font != null)
+                {
+                    label.font = binding.Locale.Font;
+                }
+
+                label.isRightToLeftText =
+                    binding.Locale.Direction == LocalizedTextDirection.RightToLeft;
+                label.alignment = TextAlignmentOptions.Center;
+            }
+        }
+
+        public void Dispose()
+        {
+            for (int i = 0; i < _bindings.Count; i++)
+            {
+                Binding binding = _bindings[i];
+                if (binding.Button != null && binding.Listener != null)
+                {
+                    binding.Button.onClick.RemoveListener(binding.Listener);
+                }
+            }
+
+            _bindings.Clear();
+        }
+
+        private void Build(Button englishButton, Button koreanButton, Button closeButton)
+        {
+            var availableButtons = new List<Button>();
+            if (englishButton != null)
+            {
+                availableButtons.Add(englishButton);
+            }
+
+            if (koreanButton != null && koreanButton != englishButton)
+            {
+                availableButtons.Add(koreanButton);
+            }
+
+            if (availableButtons.Count == 0)
+            {
+                return;
+            }
+
+            List<LocaleSpec> locales = BuildLocaleSpecs();
+            Transform parent = availableButtons[0].transform.parent;
+            Transform languageButtonParent = locales.Count > 2
+                ? CreateScrollableLanguageList(parent, availableButtons, closeButton)
+                : parent;
+            Button template = availableButtons[0];
+            var usedButtons = new HashSet<Button>();
+
+            for (int i = 0; i < locales.Count; i++)
+            {
+                LocaleSpec locale = locales[i];
+                Button button = FindMatchingLegacyButton(locale.Locale, englishButton, koreanButton, usedButtons);
+                if (button == null)
+                {
+                    button = availableButtons.FirstOrDefault(candidate => !usedButtons.Contains(candidate));
+                }
+
+                if (button == null)
+                {
+                    button = UnityEngine.Object.Instantiate(template, languageButtonParent);
+                    button.name = $"Locale_{SanitizeName(locale.Locale)}";
+                    button.onClick.RemoveAllListeners();
+                }
+                else if (button.transform.parent != languageButtonParent)
+                {
+                    button.transform.SetParent(languageButtonParent, false);
+                }
+
+                usedButtons.Add(button);
+                string selectedLocale = locale.Locale;
+                UnityAction listener = () => _onSelected?.Invoke(selectedLocale);
+                button.onClick.AddListener(listener);
+                Image image = button.GetComponent<Image>();
+                _bindings.Add(new Binding
+                {
+                    Button = button,
+                    Locale = locale,
+                    Listener = listener,
+                    UnselectedColor = image != null
+                        ? image.color
+                        : new Color(0.11f, 0.14f, 0.16f, 0.96f)
+                });
+            }
+
+            for (int i = 0; i < availableButtons.Count; i++)
+            {
+                if (!usedButtons.Contains(availableButtons[i]))
+                {
+                    availableButtons[i].gameObject.SetActive(false);
+                }
+            }
+
+            Refresh();
+        }
+
+        private static List<LocaleSpec> BuildLocaleSpecs()
+        {
+            var locales = new List<LocaleSpec>();
+            IReadOnlyList<SupportedLocaleDefinition> configured = L10n.Settings?.SupportedLocales;
+            if (configured != null)
+            {
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < configured.Count; i++)
+                {
+                    SupportedLocaleDefinition entry = configured[i];
+                    if (string.IsNullOrWhiteSpace(entry.Locale) || !seen.Add(entry.Locale))
+                    {
+                        continue;
+                    }
+
+                    locales.Add(new LocaleSpec(
+                        entry.Locale,
+                        entry.EnglishName,
+                        entry.NativeName,
+                        entry.Font,
+                        entry.TextDirection));
+                }
+            }
+
+            if (locales.Count == 0)
+            {
+                locales.Add(new LocaleSpec("en-US", "English", "English", null, LocalizedTextDirection.LeftToRight));
+                locales.Add(new LocaleSpec("ko-KR", "Korean", "한국어", null, LocalizedTextDirection.LeftToRight));
+            }
+
+            return locales;
+        }
+
+        private static Button FindMatchingLegacyButton(
+            string locale,
+            Button englishButton,
+            Button koreanButton,
+            ISet<Button> used)
+        {
+            if (GameLocalizationSettings.LocaleEquals(locale, "en-US") &&
+                englishButton != null &&
+                !used.Contains(englishButton))
+            {
+                return englishButton;
+            }
+
+            if (GameLocalizationSettings.LocaleEquals(locale, "ko-KR") &&
+                koreanButton != null &&
+                !used.Contains(koreanButton))
+            {
+                return koreanButton;
+            }
+
+            return null;
+        }
+
+        private static Transform CreateScrollableLanguageList(
+            Transform panel,
+            IReadOnlyList<Button> existingButtons,
+            Button closeButton)
+        {
+            if (panel is RectTransform panelRect && panelRect.sizeDelta.y < 480f)
+            {
+                panelRect.sizeDelta = new Vector2(panelRect.sizeDelta.x, 480f);
+            }
+
+            int siblingIndex = existingButtons
+                .Where(button => button != null)
+                .Select(button => button.transform.GetSiblingIndex())
+                .DefaultIfEmpty(0)
+                .Min();
+
+            GameObject scrollObject = new(
+                "LanguageScroll",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(ScrollRect),
+                typeof(LayoutElement));
+            scrollObject.transform.SetParent(panel, false);
+            scrollObject.transform.SetSiblingIndex(siblingIndex);
+            Image scrollImage = scrollObject.GetComponent<Image>();
+            scrollImage.color = new Color(0f, 0f, 0f, 0.12f);
+            LayoutElement scrollLayout = scrollObject.GetComponent<LayoutElement>();
+            scrollLayout.preferredHeight = 164f;
+            scrollLayout.flexibleWidth = 1f;
+
+            GameObject viewportObject = new(
+                "Viewport",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(RectMask2D));
+            viewportObject.transform.SetParent(scrollObject.transform, false);
+            RectTransform viewport = (RectTransform)viewportObject.transform;
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.offsetMin = new Vector2(4f, 4f);
+            viewport.offsetMax = new Vector2(-4f, -4f);
+            viewportObject.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.01f);
+
+            GameObject contentObject = new(
+                "Content",
+                typeof(RectTransform),
+                typeof(VerticalLayoutGroup),
+                typeof(ContentSizeFitter));
+            contentObject.transform.SetParent(viewportObject.transform, false);
+            RectTransform content = (RectTransform)contentObject.transform;
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0.5f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = Vector2.zero;
+
+            VerticalLayoutGroup layout = contentObject.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = 8f;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            ContentSizeFitter fitter = contentObject.GetComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            ScrollRect scroll = scrollObject.GetComponent<ScrollRect>();
+            scroll.viewport = viewport;
+            scroll.content = content;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 24f;
+
+            for (int i = 0; i < existingButtons.Count; i++)
+            {
+                existingButtons[i]?.transform.SetParent(content, false);
+            }
+
+            if (closeButton != null)
+            {
+                closeButton.transform.SetAsLastSibling();
+            }
+
+            return content;
+        }
+
+        private static string SanitizeName(string value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? "Unknown"
+                : value.Trim().Replace('-', '_').Replace(' ', '_');
         }
     }
 }

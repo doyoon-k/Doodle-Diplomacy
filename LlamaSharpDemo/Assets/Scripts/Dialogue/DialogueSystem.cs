@@ -46,17 +46,26 @@ namespace DoodleDiplomacy.Dialogue
 
         private void OnDestroy()
         {
+            UnsubscribeSubtitleAdvance();
             if (Instance == this) Instance = null;
+        }
+
+        private void OnEnable()
+        {
+            SubscribeSubtitleAdvance();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeSubtitleAdvance();
         }
 
         private void Update()
         {
-            if (!GetAdvanceThisFrame()) return;
-
-            if (_isTyping)
-                _clickedWhileTyping = true;
-            else
-                _clickPending = true;
+            if (GetAdvanceThisFrame())
+            {
+                HandleAdvanceRequested();
+            }
         }
 
         public void PlaySequence(DialogueSequence sequence)
@@ -93,6 +102,9 @@ namespace DoodleDiplomacy.Dialogue
                 _playbackCoroutine = null;
             }
             _isTyping = false;
+            _clickedWhileTyping = false;
+            _clickPending = false;
+            subtitleDisplay?.SetAdvancePromptVisible(false);
             HideAll();
         }
 
@@ -118,22 +130,40 @@ namespace DoodleDiplomacy.Dialogue
 
             if (line.displayMode == DisplayMode.WorldSpace)
             {
-                worldSpaceDialogue?.Show("", null);
-                textSetter = t => worldSpaceDialogue?.SetText(t);
+                if (worldSpaceDialogue != null)
+                {
+                    worldSpaceDialogue.Show("", null);
+                }
+
+                textSetter = t =>
+                {
+                    if (worldSpaceDialogue != null)
+                    {
+                        worldSpaceDialogue.SetText(t);
+                    }
+                };
             }
             else
             {
-                subtitleDisplay?.Show(speaker, "");
-                textSetter = t => subtitleDisplay?.SetText(t);
+                if (subtitleDisplay != null)
+                {
+                    subtitleDisplay.Show(speaker, "");
+                }
+
+                textSetter = t =>
+                {
+                    if (subtitleDisplay != null)
+                    {
+                        subtitleDisplay.SetText(t);
+                    }
+                };
             }
 
             yield return StartCoroutine(TypeText(text, textSetter));
 
             if (requireSpaceAdvanceForAllLines)
             {
-                _clickPending = false;
-                while (!_clickPending) yield return null;
-                _clickPending = false;
+                yield return WaitForManualAdvance(line.displayMode == DisplayMode.Subtitle);
                 yield break;
             }
 
@@ -141,9 +171,7 @@ namespace DoodleDiplomacy.Dialogue
             switch (line.advanceType)
             {
                 case AdvanceType.Click:
-                    _clickPending = false;
-                    while (!_clickPending) yield return null;
-                    _clickPending = false;
+                    yield return WaitForManualAdvance(line.displayMode == DisplayMode.Subtitle);
                     break;
 
                 case AdvanceType.Wait:
@@ -193,6 +221,55 @@ namespace DoodleDiplomacy.Dialogue
 
             setter?.Invoke(fullText);
             _isTyping = false;
+        }
+
+        private IEnumerator WaitForManualAdvance(bool showSubtitlePrompt)
+        {
+            _clickPending = false;
+            if (showSubtitlePrompt && subtitleDisplay != null)
+            {
+                subtitleDisplay.SetAdvancePromptVisible(true);
+            }
+
+            while (!_clickPending)
+            {
+                yield return null;
+            }
+
+            _clickPending = false;
+            if (subtitleDisplay != null)
+            {
+                subtitleDisplay.SetAdvancePromptVisible(false);
+            }
+        }
+
+        private void HandleAdvanceRequested()
+        {
+            if (_isTyping)
+            {
+                _clickedWhileTyping = true;
+            }
+            else
+            {
+                _clickPending = true;
+            }
+        }
+
+        private void SubscribeSubtitleAdvance()
+        {
+            if (subtitleDisplay != null)
+            {
+                subtitleDisplay.AdvanceRequested -= HandleAdvanceRequested;
+                subtitleDisplay.AdvanceRequested += HandleAdvanceRequested;
+            }
+        }
+
+        private void UnsubscribeSubtitleAdvance()
+        {
+            if (subtitleDisplay != null)
+            {
+                subtitleDisplay.AdvanceRequested -= HandleAdvanceRequested;
+            }
         }
 
         public static string ResolveLocalizedSpeaker(DialogueLineData line, IReadOnlyList<L10nArg> args = null)
@@ -257,8 +334,16 @@ namespace DoodleDiplomacy.Dialogue
 
         private void HideAll()
         {
-            worldSpaceDialogue?.Hide();
-            subtitleDisplay?.Hide();
+            if (worldSpaceDialogue != null)
+            {
+                worldSpaceDialogue.Hide();
+            }
+
+            if (subtitleDisplay != null)
+            {
+                subtitleDisplay.SetAdvancePromptVisible(false);
+                subtitleDisplay.Hide();
+            }
         }
 
         private bool GetAdvanceThisFrame()

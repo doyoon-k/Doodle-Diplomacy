@@ -13,21 +13,11 @@ MonoBehaviour:
   m_Name: LocalizedStringTable
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Localization.LocalizedStringTable
   entries:
-  - key: speaker.science_officer
-    sourceText: Science Officer
-    translations:
-    - locale: ko-KR
-      text: "\uACFC\uD559 \uC7A5\uAD50"
   - key: speaker.alien
     sourceText: Alien
     translations:
     - locale: ko-KR
       text: "\uC678\uACC4\uC778"
-  - key: speaker.system
-    sourceText: System
-    translations:
-    - locale: ko-KR
-      text: "\uC2DC\uC2A4\uD15C"
   - key: alien.reaction.mutter.very_dissatisfied
     sourceText: The aliens are conferring with each other...
     translations:
@@ -102,392 +92,11 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uC5B8\uC5B4"
-  - key: ui.settings.english
-    sourceText: English
-    translations:
-    - locale: ko-KR
-      text: English
-  - key: ui.settings.korean
-    sourceText: Korean
-    translations:
-    - locale: ko-KR
-      text: "\uD55C\uAD6D\uC5B4"
   - key: ui.settings.back
     sourceText: Back
     translations:
     - locale: ko-KR
       text: "\uB4A4\uB85C"
-  - key: ui.day1.submit
-    sourceText: Submit
-    translations:
-    - locale: ko-KR
-      text: "\uC81C\uCD9C"
-  - key: ui.day1.confirm
-    sourceText: Confirm
-    translations:
-    - locale: ko-KR
-      text: "\uD655\uC778"
-  - key: ui.day1.redraw
-    sourceText: Redraw
-    translations:
-    - locale: ko-KR
-      text: "\uB2E4\uC2DC \uADF8\uB9AC\uAE30"
-  - key: day1.opening.1
-    sourceText: Mr. President, draw one simple picture on the tablet.
-    translations:
-    - locale: ko-KR
-      text: "\uB300\uD1B5\uB839\uB2D8, \uC678\uACC4\uC778 \uB300\uD45C\uB2E8\uC774
-        \uB3C4\uCC29\uD588\uC2B5\uB2C8\uB2E4."
-  - key: day1.opening.2
-    sourceText: The delegation will only see the completed image. Not the drawing
-      process.
-    translations:
-    - locale: ko-KR
-      text: "\uB9D0\uC500 \uB4DC\uB9B0\uB300\uB85C \uAC04\uB2E8\uD55C \uB2E8\uC77C
-        \uC0AC\uBB3C\uC744 \uADF8\uB9AC\uC2DC\uBA74 \uC800\uB4E4\uC774 \uADF8\uB9BC\uC744
-        \uBCFC \uB54C \uBC1C\uC0DD\uD558\uB294 \uB1CC\uD30C\uB97C \uCE21\uC815\uD574
-        \uC6B0\uB9AC\uC758 \uC5B8\uC5B4\uC640 \uB9E4\uD551\uD558\uB294 \uACFC\uC815\uC785\uB2C8\uB2E4."
-  - key: day1.opening.3
-    sourceText: The apparatus will classify the image before transmission. Once the
-      label is confirmed, we will show it to them and record the response.
-    translations:
-    - locale: ko-KR
-      text: "\uC624\uC9C1 \uD55C\uAC00\uC9C0 \uC885\uB958\uC758 \uC0AC\uBB3C\uC744
-        \uC0C9\uAE54\uACFC \uD568\uAED8 \uBA85\uD655\uD55C \uD615\uD0DC\uB85C \uADF8\uB824\uC8FC\uC2DC\uBA74
-        \uB354 \uC815\uD655\uD55C \uB370\uC774\uD130\uB97C \uC5BB\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
-  - key: day1.tablet_blank
-    sourceText: The tablet is blank, Mr. President. Please draw one picture by itself.
-    translations:
-    - locale: ko-KR
-      text: "\uD0DC\uBE14\uB9BF\uC774 \uBE44\uC5B4 \uC788\uC2B5\uB2C8\uB2E4, \uB300\uD1B5\uB839\uB2D8.
-        \uC798\uBABB \uB204\uB974\uC2E0\uAC78\uAE4C\uC694?"
-  - key: day1.scanning
-    sourceText: Scanning drawing. Hold transmission.
-    translations:
-    - locale: ko-KR
-      text: "\uADF8\uB9BC\uC744 \uC2A4\uCE94 \uC911\uC785\uB2C8\uB2E4. "
-  - key: day1.classification_unstable_1
-    sourceText: Classification unstable. The response data would be contaminated.
-      Please redraw.
-    translations:
-    - locale: ko-KR
-      text: "\uADF8\uB9BC\uC774 \uBD88\uBD84\uBA85\uD569\uB2C8\uB2E4."
-  - key: day1.classification_unstable_2
-    sourceText: Let's begin
-    translations:
-    - locale: ko-KR
-      text: "\uADF8\uB7FC \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4."
-  - key: day1.written_text_detected
-    sourceText: Written text, letters, or symbols detected. The apparatus cannot
-      calibrate language input this way. Please draw one picture instead.
-    translations:
-    - locale: ko-KR
-      text: "\uBB38\uC790\uB85C \uC18C\uD1B5\uD560 \uC218 \uC788\uC5C8\uC73C\uBA74
-        \uC800\uB3C4 \uC815\uB9D0 \uC88B\uACA0\uB124\uC694. \uC0AC\uBB3C \uADF8\uB9BC\uC744
-        \uADF8\uB824\uC8FC\uC154\uC57C \uBC88\uC5ED\uAE30\uB97C \uB9CC\uB4E4 \uC218
-        \uC788\uC2B5\uB2C8\uB2E4 \uB300\uD1B5\uB839\uB2D8."
-  - key: day1.non_stimulus_detected
-    sourceText: The apparatus cannot calibrate blank marks, simple lines, dots, islands,
-      letters, written symbols, or basic geometric shapes. Please draw one recognizable
-      object.
-    translations:
-    - locale: ko-KR
-      text: "\uC0AC\uBB3C\uC744 \uD558\uB098 \uADF8\uB824\uC8FC\uC2ED\uC2DC\uC624."
-  - key: day1.action_or_scene_detected
-    sourceText: 'Action or scene detected: {label}. Day 1 calibration only accepts
-      still objects or repeated copies of one object.'
-    translations:
-    - locale: ko-KR
-      text: "\uBCF5\uC7A1\uD55C \uC7A5\uBA74\uC740 \uB1CC\uD30C \uAC10\uC9C0 \uACB0\uACFC\uB97C
-        \uBD80\uC815\uD655\uD558\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4. \uB2E8\uC77C \uC0AC\uBB3C\uC744
-        \uD558\uB098\uB9CC \uADF8\uB824\uC8FC\uC154\uC57C \uD569\uB2C8\uB2E4."
-  - key: day1.multiple_objects_detected
-    sourceText: 'Multiple object types detected: {label}. Please draw one recognizable
-      concept, or repeated copies of the same thing.'
-    translations:
-    - locale: ko-KR
-      text: "{label} \uB4E4\uC744 \uADF8\uB9AC\uC2E0\uAC74\uAC00\uC694? \uC9C0\uAE08
-        \uB2E8\uACC4\uC5D0\uC11C\uB294 \uD558\uB098\uC758 \uC885\uB958\uC758 \uC0AC\uBB3C\uB9CC
-        \uADF8\uB824\uC8FC\uC154\uC57C \uC815\uD655\uD55C \uB1CC\uD30C \uB9E4\uD551
-        \uB370\uC774\uD130\uB97C \uC5BB\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4 \uAC01\uD558."
-  - key: day1.identifies_drawing
-    sourceText: 'The apparatus identifies this drawing as: {label}. Confirm the transmission
-      label.'
-    translations:
-    - locale: ko-KR
-      text: "{label}\uC744 \uADF8\uB9AC\uC2E0 \uAC8C \uB9DE\uB098\uC694? "
-  - key: day1.previous_image_not_transmitted
-    sourceText: Understood. The previous image will not be transmitted.
-    translations:
-    - locale: ko-KR
-      text: "\uC54C\uACA0\uC2B5\uB2C8\uB2E4. \uC900\uBE44\uAC00 \uC644\uB8CC\uB418\uBA74
-        \uC81C\uCD9C\uD574\uC8FC\uC2ED\uC2DC\uC624."
-  - key: day1.terminal.transmission_active
-    sourceText: 'TRANSMISSION ACTIVE
-
-      DRAWING: {label}
-
-      RESPONSE MONITORING
-      ONLINE'
-    translations:
-    - locale: ko-KR
-      text: "\uC1A1\uC2E0 \uD65C\uC131\uD654\n\uADF8\uB9BC: {label}\n\uC751\uB2F5
-        \uAC10\uC2DC \uC628\uB77C\uC778"
-  - key: day1.transmission_label_confirmed
-    sourceText: 'Transmission label confirmed: {label}. Presenting drawing to the
-      delegation.'
-    translations:
-    - locale: ko-KR
-      text: "\uADF8\uB824\uC8FC\uC2E0 {label} \uADF8\uB9BC\uC744 \uC81C\uCD9C\uD558\uACA0\uC2B5\uB2C8\uB2E4."
-  - key: day1.reaction_evaluation_unstable
-    sourceText: Response monitor unstable. Try the transmission again.
-    translations:
-    - locale: ko-KR
-      text: "\uBC18\uC751 \uAC10\uC2DC\uC7A5\uCE58\uAC00 \uBD88\uC548\uC815\uD569\uB2C8\uB2E4.
-        \uC1A1\uC2E0\uC744 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC2ED\uC2DC\uC624."
-  - key: day1.response_pattern_logged
-    sourceText: Response pattern logged. Next drawing, Mr. President.
-    translations:
-    - locale: ko-KR
-      text: "\uBC18\uC751 \uD328\uD134\uC744 \uAE30\uB85D\uD588\uC2B5\uB2C8\uB2E4.
-        \uB2E4\uC74C \uADF8\uB9BC\uC744 \uADF8\uB824\uC8FC\uC2DC\uC8E0, \uB300\uD1B5\uB839\uB2D8."
-  - key: day1.complete.1
-    sourceText: Calibration set complete. The interpreter now has a preliminary visual-response
-      map.
-    translations:
-    - locale: ko-KR
-      text: "\uBCF4\uC815 \uC138\uD2B8\uAC00 \uC644\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4.
-        \uD1B5\uC5ED\uAE30\uB294 \uC774\uC81C \uC608\uBE44 \uC2DC\uAC01 \uBC18\uC751
-        \uC9C0\uB3C4\uB97C \uD655\uBCF4\uD588\uC2B5\uB2C8\uB2E4."
-  - key: day1.complete.2
-    sourceText: These images will remain in the drawing library. We may need them
-      again tomorrow.
-    translations:
-    - locale: ko-KR
-      text: "\uC774 \uC774\uBBF8\uC9C0\uB4E4\uC740 \uADF8\uB9BC \uB77C\uC774\uBE0C\uB7EC\uB9AC\uC5D0
-        \uB0A8\uC2B5\uB2C8\uB2E4. \uB0B4\uC77C \uB2E4\uC2DC \uD544\uC694\uD560 \uC218
-        \uC788\uC2B5\uB2C8\uB2E4."
-  - key: day1.complete.3
-    sourceText: We have enough data for the interpreter.
-    translations:
-    - locale: ko-KR
-      text: "\uD1B5\uC5ED\uAE30\uC5D0 \uD544\uC694\uD55C \uB370\uC774\uD130\uB294
-        \uCDA9\uBD84\uD569\uB2C8\uB2E4."
-  - key: day1.complete.4
-    sourceText: 'I should warn you, Mr. President: they did not simply look at the
-      images. They reacted to your choices.'
-    translations:
-    - locale: ko-KR
-      text: "\uACBD\uACE0\uB4DC\uB824\uC57C\uACA0\uC2B5\uB2C8\uB2E4, \uB300\uD1B5\uB839\uB2D8.
-        \uADF8\uB4E4\uC740 \uC774\uBBF8\uC9C0\uB97C \uB2E8\uC21C\uD788 \uBCF8 \uAC83\uC774
-        \uC544\uB2D9\uB2C8\uB2E4. \uB300\uD1B5\uB839\uB2D8\uC758 \uC120\uD0DD\uC5D0
-        \uBC18\uC751\uD588\uC2B5\uB2C8\uB2E4."
-  - key: day1.reaction.none
-    sourceText: Minimal response. Logging baseline pattern.
-    translations:
-    - locale: ko-KR
-      text: "\uBCC4\uBC18\uC751\uC774 \uC5C6\uC5B4 \uBCF4\uC774\uB124\uC694. \uB1CC\uD30C\uB294
-        \uC798 \uCE21\uC815\uB418\uC5C8\uC2B5\uB2C8\uB2E4."
-  - key: day1.reaction.subtle
-    sourceText: Subtle response from the delegation. Logging association pattern.
-    translations:
-    - locale: ko-KR
-      text: "\uBBF8\uBB18\uD558\uB124\uC694. \uB1CC\uD30C \uCE21\uC815\uAC12\uC740
-        \uC798 \uAE30\uB85D\uD574\uB450\uC5C8\uC2B5\uB2C8\uB2E4."
-  - key: day1.reaction.moderate
-    sourceText: Moderate cross-delegate activity. The drawing registered clearly.
-    translations:
-    - locale: ko-KR
-      text: "\uB098\uC058\uC9C0 \uC54A\uC558\uB098\uBD05\uB2C8\uB2E4. \uBB34\uC2A8
-        \uC598\uAE30\uB97C \uD558\uACE0\uC788\uB294\uAC78\uAE4C\uC694? \uB1CC\uD30C
-        \uBC18\uC751\uC740 \uC798 \uCE21\uC815\uB418\uC5C8\uC2B5\uB2C8\uB2E4."
-  - key: day1.reaction.strong
-    sourceText: Strong response. All three delegates reacted to the drawing.
-    translations:
-    - locale: ko-KR
-      text: "\uAC15\uD55C \uBC18\uC751\uC744 \uBCF4\uC774\uB294\uAD70\uC694. \uB1CC\uD30C\uB3C4
-        \uC815\uC0C1 \uCE21\uC815\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uB1CC\uD30C \uBC18\uC751\uC774
-        \uC720\uB09C\uD788 \uC120\uBA85\uD569\uB2C8\uB2E4."
-  - key: label.blank
-    sourceText: blank
-    translations:
-    - locale: ko-KR
-      text: "\uBE48 \uADF8\uB9BC"
-  - key: label.written_text
-    sourceText: written text
-    translations:
-    - locale: ko-KR
-      text: "\uBB38\uC790"
-  - key: label.multiple_objects
-    sourceText: multiple objects
-    translations:
-    - locale: ko-KR
-      text: "\uC5EC\uB7EC \uBB3C\uCCB4"
-  - key: label.conjunction.and
-    sourceText: ' and '
-    translations:
-    - locale: ko-KR
-      text: " \uBC0F "
-  - key: label.apple
-    sourceText: apple
-    translations:
-    - locale: ko-KR
-      text: "\uC0AC\uACFC"
-  - key: label.banana
-    sourceText: banana
-    translations:
-    - locale: ko-KR
-      text: "\uBC14\uB098\uB098"
-  - key: label.lemon
-    sourceText: lemon
-    translations:
-    - locale: ko-KR
-      text: "\uB808\uBAAC"
-  - key: label.orange
-    sourceText: orange
-    translations:
-    - locale: ko-KR
-      text: "\uC624\uB80C\uC9C0"
-  - key: label.pear
-    sourceText: pear
-    translations:
-    - locale: ko-KR
-      text: "\uBC30"
-  - key: label.fruit
-    sourceText: fruit
-    translations:
-    - locale: ko-KR
-      text: "\uACFC\uC77C"
-  - key: label.house
-    sourceText: house
-    translations:
-    - locale: ko-KR
-      text: "\uC9D1"
-  - key: label.tree
-    sourceText: tree
-    translations:
-    - locale: ko-KR
-      text: "\uB098\uBB34"
-  - key: label.flower
-    sourceText: flower
-    translations:
-    - locale: ko-KR
-      text: "\uAF43"
-  - key: label.sun
-    sourceText: sun
-    translations:
-    - locale: ko-KR
-      text: "\uD0DC\uC591"
-  - key: label.moon
-    sourceText: moon
-    translations:
-    - locale: ko-KR
-      text: "\uB2EC"
-  - key: label.star
-    sourceText: star
-    translations:
-    - locale: ko-KR
-      text: "\uBCC4"
-  - key: label.car
-    sourceText: car
-    translations:
-    - locale: ko-KR
-      text: "\uC790\uB3D9\uCC28"
-  - key: label.bird
-    sourceText: bird
-    translations:
-    - locale: ko-KR
-      text: "\uC0C8"
-  - key: label.cat
-    sourceText: cat
-    translations:
-    - locale: ko-KR
-      text: "\uACE0\uC591\uC774"
-  - key: label.dog
-    sourceText: dog
-    translations:
-    - locale: ko-KR
-      text: "\uAC1C"
-  - key: label.fish
-    sourceText: fish
-    translations:
-    - locale: ko-KR
-      text: "\uBB3C\uACE0\uAE30"
-  - key: label.face
-    sourceText: face
-    translations:
-    - locale: ko-KR
-      text: "\uC5BC\uAD74"
-  - key: label.eye
-    sourceText: eye
-    translations:
-    - locale: ko-KR
-      text: "\uB208"
-  - key: label.hand
-    sourceText: hand
-    translations:
-    - locale: ko-KR
-      text: "\uC190"
-  - key: label.heart
-    sourceText: heart
-    translations:
-    - locale: ko-KR
-      text: "\uD558\uD2B8"
-  - key: label.sword
-    sourceText: sword
-    translations:
-    - locale: ko-KR
-      text: "\uAC80"
-  - key: label.knife
-    sourceText: knife
-    translations:
-    - locale: ko-KR
-      text: "\uCE7C"
-  - key: label.gun
-    sourceText: gun
-    translations:
-    - locale: ko-KR
-      text: "\uCD1D"
-  - key: label.handgun
-    sourceText: handgun
-    translations:
-    - locale: ko-KR
-      text: "\uAD8C\uCD1D"
-  - key: label.flag
-    sourceText: flag
-    translations:
-    - locale: ko-KR
-      text: "\uAE43\uBC1C"
-  - key: label.abstract_mark
-    sourceText: abstract mark
-    translations:
-    - locale: ko-KR
-      text: "\uCD94\uC0C1\uC801\uC778 \uD45C\uC2DC"
-  - key: first_contact.terminal.header.tablet_link_open
-    sourceText: '[TABLET LINK OPEN]'
-    translations:
-    - locale: ko-KR
-      text: "[\uD0DC\uBE14\uB9BF \uC5F0\uACB0]"
-  - key: first_contact.terminal.header.response_channel_ready
-    sourceText: '[RESPONSE CHANNEL READY]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC751\uB2F5 \uCC44\uB110 \uC900\uBE44]"
-  - key: first_contact.terminal.header.meaning_map
-    sourceText: '[MEANING MAP]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC758\uBBF8 \uC9C0\uB3C4]"
-  - key: first_contact.terminal.header.input_accepted
-    sourceText: '[INPUT ACCEPTED]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC785\uB825 \uD655\uC778]"
-  - key: first_contact.terminal.header.reply_channel_open
-    sourceText: '[REPLY CHANNEL OPEN]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC751\uB2F5 \uCC44\uB110 \uAC1C\uBC29]"
   - key: first_contact.terminal.header.probe_channel_open
     sourceText: '[PROBE CHANNEL OPEN]'
     translations:
@@ -498,76 +107,31 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "[\uD45C\uBCF8 \uC1A1\uC2E0]"
-  - key: first_contact.terminal.header.visual_probe_analysis
-    sourceText: '[VISUAL PROBE ANALYSIS]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC2DC\uAC01 \uD45C\uBCF8 \uBD84\uC11D]"
   - key: first_contact.terminal.header.input_rejected
     sourceText: '[INPUT REJECTED]'
     translations:
     - locale: ko-KR
       text: "[\uC785\uB825 \uAC70\uBD80]"
-  - key: first_contact.terminal.header.probe_label
-    sourceText: '[PROBE LABEL]'
-    translations:
-    - locale: ko-KR
-      text: "[\uD45C\uBCF8 \uB77C\uBCA8]"
   - key: first_contact.terminal.header.probe_review
     sourceText: '[PROBE REVIEW]'
     translations:
     - locale: ko-KR
       text: "[\uD45C\uBCF8 \uAC80\uD1A0]"
-  - key: first_contact.terminal.header.probe_sample
-    sourceText: '[PROBE SAMPLE]'
-    translations:
-    - locale: ko-KR
-      text: "[\uD45C\uBCF8]"
-  - key: first_contact.terminal.header.no_cluster
-    sourceText: '[NO CLUSTER]'
-    translations:
-    - locale: ko-KR
-      text: "[\uAD70\uC9D1 \uC5C6\uC74C]"
   - key: first_contact.terminal.header.signal_capture
     sourceText: '[SIGNAL CAPTURE]'
     translations:
     - locale: ko-KR
       text: "[\uC2E0\uD638 \uD3EC\uCC29]"
-  - key: first_contact.terminal.header.probe_result
-    sourceText: '[PROBE RESULT]'
-    translations:
-    - locale: ko-KR
-      text: "[\uD45C\uBCF8 \uACB0\uACFC]"
-  - key: first_contact.terminal.header.reply_signal
-    sourceText: '[REPLY SIGNAL]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC751\uB2F5 \uC2E0\uD638]"
-  - key: first_contact.terminal.header.reply_sent
-    sourceText: '[REPLY SENT]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC751\uB2F5 \uC1A1\uC2E0 \uC644\uB8CC]"
   - key: first_contact.terminal.header.translation_buffer
     sourceText: '[TRANSLATION BUFFER]'
     translations:
     - locale: ko-KR
       text: "[\uBC88\uC5ED \uBC84\uD37C]"
-  - key: first_contact.terminal.header.fallback
-    sourceText: '[FALLBACK]'
-    translations:
-    - locale: ko-KR
-      text: "[\uB300\uCCB4 \uB370\uC774\uD130]"
   - key: first_contact.terminal.header.incoming_transmission
     sourceText: '[INCOMING TRANSMISSION]'
     translations:
     - locale: ko-KR
       text: "[\uC218\uC2E0 \uC911\uC778 \uC804\uC1A1]"
-  - key: first_contact.terminal.header.meaning_signals
-    sourceText: '[MEANING SIGNALS]'
-    translations:
-    - locale: ko-KR
-      text: "[\uC758\uBBF8 \uC2E0\uD638]"
   - key: first_contact.terminal.header.probe_sequence
     sourceText: '[PROBE SEQUENCE]'
     translations:
@@ -577,27 +141,12 @@ MonoBehaviour:
     sourceText: '[CLUSTER TRACE]'
     translations:
     - locale: ko-KR
-      text: "[\uAD70\uC9D1 \uCD94\uC801]"
+      text: "[\uBC18\uC751 \uD328\uD134 \uCD94\uC801]"
   - key: first_contact.terminal.header.bootstrap_complete
     sourceText: '[BOOTSTRAP COMPLETE]'
     translations:
     - locale: ko-KR
       text: "[\uBD80\uD2B8\uC2A4\uD2B8\uB7A9 \uC644\uB8CC]"
-  - key: first_contact.terminal.choice.meaning_map
-    sourceText: MEANING MAP
-    translations:
-    - locale: ko-KR
-      text: "\uC758\uBBF8 \uC9C0\uB3C4"
-  - key: first_contact.terminal.choice.send_reply
-    sourceText: SEND REPLY
-    translations:
-    - locale: ko-KR
-      text: "\uC751\uB2F5 \uBCF4\uB0B4\uAE30"
-  - key: first_contact.terminal.choice.back_to_request
-    sourceText: BACK TO REQUEST
-    translations:
-    - locale: ko-KR
-      text: "\uC694\uCCAD\uC73C\uB85C \uB3CC\uC544\uAC00\uAE30"
   - key: first_contact.terminal.choice.redraw
     sourceText: REDRAW
     translations:
@@ -607,27 +156,7 @@ MonoBehaviour:
     sourceText: RETRY
     translations:
     - locale: ko-KR
-      text: "재시도"
-  - key: first_contact.terminal.choice.accept
-    sourceText: ACCEPT
-    translations:
-    - locale: ko-KR
-      text: "\uC218\uB77D"
-  - key: first_contact.terminal.choice.submit
-    sourceText: SUBMIT
-    translations:
-    - locale: ko-KR
-      text: "\uC81C\uCD9C"
-  - key: first_contact.terminal.choice.probe_unknown
-    sourceText: PROBE UNKNOWN
-    translations:
-    - locale: ko-KR
-      text: "\uBBF8\uD574\uC11D \uB2E8\uC5B4 \uD45C\uBCF8"
-  - key: first_contact.terminal.choice.probe_id
-    sourceText: PROBE {id}
-    translations:
-    - locale: ko-KR
-      text: "\uD45C\uBCF8 {id}"
+      text: "\uC7AC\uC2DC\uB3C4"
   - key: first_contact.terminal.choice.draw_related_object
     sourceText: DRAW RELATED OBJECT
     translations:
@@ -648,21 +177,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uBCF4\uB0B4\uB824\uBA74 ENTER"
-  - key: first_contact.terminal.meaning_map.drawing_reference
-    sourceText: DRAWING REFERENCE
-    translations:
-    - locale: ko-KR
-      text: "\uADF8\uB9BC \uAE30\uC900 \uB370\uC774\uD130"
-  - key: first_contact.terminal.line.target
-    sourceText: 'TARGET: {target}'
-    translations:
-    - locale: ko-KR
-      text: "\uBAA9\uD45C: {target}"
-  - key: first_contact.terminal.line.draw_target
-    sourceText: DRAW {target}
-    translations:
-    - locale: ko-KR
-      text: "{target} \uADF8\uB9AC\uAE30"
   - key: first_contact.terminal.line.submit_enter
     sourceText: 'SUBMIT: ENTER'
     translations:
@@ -678,61 +192,26 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uC0C1\uD0DC: {status}"
+  - key: first_contact.terminal.line.correction_required
+    sourceText: 'CHECK REQUIRED: {status}'
+    translations:
+    - locale: ko-KR
+      text: "\uD655\uC778 \uD544\uC694: {status}"
   - key: first_contact.terminal.line.label_required
     sourceText: LABEL REQUIRED
     translations:
     - locale: ko-KR
       text: "\uB77C\uBCA8 \uD544\uC694"
-  - key: first_contact.terminal.line.trace
-    sourceText: 'TRACE: {trace}'
-    translations:
-    - locale: ko-KR
-      text: "\uCD94\uC801: {trace}"
-  - key: first_contact.terminal.line.status_signal_buffered
-    sourceText: 'STATUS: SIGNAL BUFFERED'
-    translations:
-    - locale: ko-KR
-      text: "\uC0C1\uD0DC: \uC2E0\uD638 \uBC84\uD37C\uB428"
-  - key: first_contact.terminal.line.unknown_meaning_signal_color
-    sourceText: 'UNKNOWN MEANING SIGNAL: {color}'
-    translations:
-    - locale: ko-KR
-      text: "\uBBF8\uD574\uC11D \uC758\uBBF8 \uC2E0\uD638: {color}"
   - key: first_contact.terminal.line.channel
     sourceText: 'CHANNEL: {channel}'
     translations:
     - locale: ko-KR
       text: "\uCC44\uB110: {channel}"
-  - key: first_contact.terminal.line.draw_one_object
-    sourceText: DRAW ONE OBJECT
-    translations:
-    - locale: ko-KR
-      text: "\uC0AC\uBB3C \uD558\uB098\uB97C \uADF8\uB9AC\uC2ED\uC2DC\uC624"
-  - key: first_contact.terminal.line.draw_one_simple_object
-    sourceText: DRAW ONE SIMPLE OBJECT
-    translations:
-    - locale: ko-KR
-      text: "\uB2E8\uC21C\uD55C \uC0AC\uBB3C \uD558\uB098\uB97C \uADF8\uB9AC\uC2ED\uC2DC\uC624"
   - key: first_contact.terminal.line.image_captured
     sourceText: IMAGE CAPTURED
     translations:
     - locale: ko-KR
       text: "\uC774\uBBF8\uC9C0 \uCEA1\uCC98\uB428"
-  - key: first_contact.terminal.line.extracting_local_meaning_signal
-    sourceText: EXTRACTING LOCAL MEANING SIGNAL
-    translations:
-    - locale: ko-KR
-      text: "\uAE30\uC900 \uC758\uBBF8 \uC2E0\uD638 \uCD94\uCD9C \uC911"
-  - key: first_contact.terminal.line.extracting_meaning_signal
-    sourceText: EXTRACTING MEANING SIGNAL
-    translations:
-    - locale: ko-KR
-      text: "\uC758\uBBF8 \uC2E0\uD638 \uCD94\uCD9C \uC911"
-  - key: first_contact.terminal.line.visual_probe_signal_color
-    sourceText: 'VISUAL PROBE SIGNAL: {color}'
-    translations:
-    - locale: ko-KR
-      text: "\uC2DC\uAC01 \uD45C\uBCF8 \uC2E0\uD638: {color}"
   - key: first_contact.terminal.line.probe_label
     sourceText: 'PROBE LABEL: {label}'
     translations:
@@ -743,11 +222,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uD45C\uBCF8 \uB77C\uBCA8: "
-  - key: first_contact.terminal.line.probe_label_pending
-    sourceText: 'PROBE LABEL: --'
-    translations:
-    - locale: ko-KR
-      text: "\uD45C\uBCF8 \uB77C\uBCA8: --"
   - key: first_contact.terminal.line.probe_check_in_progress
     sourceText: 'PROBE CHECK: IN PROGRESS'
     translations:
@@ -768,56 +242,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uC751\uB2F5 \uCC44\uB110: \uAC1C\uBC29"
-  - key: first_contact.terminal.line.cluster
-    sourceText: 'CLUSTER: {cluster}'
-    translations:
-    - locale: ko-KR
-      text: "\uAD70\uC9D1: {cluster}"
-  - key: first_contact.terminal.line.translation_alignment
-    sourceText: 'TRANSLATION ALIGNMENT: {alignment}'
-    translations:
-    - locale: ko-KR
-      text: "\uBC88\uC5ED \uC815\uB82C: {alignment}"
-  - key: first_contact.terminal.line.memory_map_updated
-    sourceText: 'MEMORY MAP: {name} UPDATED'
-    translations:
-    - locale: ko-KR
-      text: "\uC758\uBBF8 \uC9C0\uB3C4: {name} \uAC31\uC2E0\uB428"
-  - key: first_contact.terminal.line.cluster_status
-    sourceText: 'CLUSTER: {cluster} / {status}'
-    translations:
-    - locale: ko-KR
-      text: "\uAD70\uC9D1: {cluster} / {status}"
-  - key: first_contact.terminal.line.visual_response
-    sourceText: 'VISUAL RESPONSE: {label}'
-    translations:
-    - locale: ko-KR
-      text: "\uC2DC\uAC01 \uC751\uB2F5: {label}"
-  - key: first_contact.terminal.line.transmission_status_delivered
-    sourceText: 'TRANSMISSION STATUS: DELIVERED'
-    translations:
-    - locale: ko-KR
-      text: "\uC804\uC1A1 \uC0C1\uD0DC: \uC804\uB2EC\uB428"
-  - key: first_contact.terminal.line.status_receiving_signal
-    sourceText: 'STATUS: RECEIVING SIGNAL'
-    translations:
-    - locale: ko-KR
-      text: "\uC0C1\uD0DC: \uC2E0\uD638 \uC218\uC2E0 \uC911"
-  - key: first_contact.terminal.line.translation_buffer_label
-    sourceText: 'TRANSLATION BUFFER:'
-    translations:
-    - locale: ko-KR
-      text: "\uBC88\uC5ED \uBC84\uD37C:"
-  - key: first_contact.terminal.line.translation_update
-    sourceText: TRANSLATION UPDATE
-    translations:
-    - locale: ko-KR
-      text: "\uBC88\uC5ED \uAC31\uC2E0"
-  - key: first_contact.terminal.line.no_change
-    sourceText: NO CHANGE
-    translations:
-    - locale: ko-KR
-      text: "\uBCC0\uD654 \uC5C6\uC74C"
   - key: first_contact.terminal.line.category
     sourceText: 'CATEGORY: {category}'
     translations:
@@ -827,27 +251,17 @@ MonoBehaviour:
     sourceText: 'GROUP: {group}'
     translations:
     - locale: ko-KR
-      text: "\uAD70\uC9D1: {group}"
+      text: "\uBC18\uC751 \uD328\uD134: {group}"
   - key: first_contact.terminal.line.trace_count
     sourceText: 'TRACE: {count}/{required}'
     translations:
     - locale: ko-KR
       text: "\uCD94\uC801: {count}/{required}"
-  - key: first_contact.terminal.line.trace_count_transition
-    sourceText: 'TRACE: {from}/{required} -> {to}/{required}'
-    translations:
-    - locale: ko-KR
-      text: "\uCD94\uC801: {from}/{required} -> {to}/{required}"
   - key: first_contact.terminal.line.trace_duplicate
     sourceText: 'TRACE: DUPLICATE'
     translations:
     - locale: ko-KR
       text: "\uCD94\uC801: \uC911\uBCF5"
-  - key: first_contact.terminal.line.trace_rejected
-    sourceText: 'TRACE: REJECTED'
-    translations:
-    - locale: ko-KR
-      text: "추적: 거절됨"
   - key: first_contact.terminal.line.trace_isolated
     sourceText: 'TRACE: ISOLATED'
     translations:
@@ -872,67 +286,79 @@ MonoBehaviour:
     sourceText: DANGER
     translations:
     - locale: ko-KR
-      text: 위험
+      text: "\uC704\uD5D8"
   - key: first_contact.terminal.category.protection
     sourceText: PROTECTION
     translations:
     - locale: ko-KR
-      text: 보호
+      text: "\uBCF4\uD638"
   - key: first_contact.terminal.category.food
     sourceText: FOOD
     translations:
     - locale: ko-KR
-      text: 음식
+      text: "\uC74C\uC2DD"
   - key: first_contact.terminal.category.tool
     sourceText: TOOL
     translations:
     - locale: ko-KR
-      text: 도구
+      text: "\uB3C4\uAD6C"
   - key: first_contact.terminal.meaning.danger
     sourceText: '[DANGER?]'
     translations:
     - locale: ko-KR
-      text: '[위험?]'
+      text: "[\uC704\uD5D8?]"
   - key: first_contact.terminal.meaning.protection
     sourceText: '[PROTECTION?]'
     translations:
     - locale: ko-KR
-      text: '[보호?]'
+      text: "[\uBCF4\uD638?]"
   - key: first_contact.terminal.meaning.food
     sourceText: '[FOOD?]'
     translations:
     - locale: ko-KR
-      text: '[음식?]'
+      text: "[\uC74C\uC2DD?]"
   - key: first_contact.terminal.meaning.tool
     sourceText: '[TOOL?]'
     translations:
     - locale: ko-KR
-      text: '[도구?]'
+      text: "[\uB3C4\uAD6C?]"
   - key: first_contact.terminal.meaning.unknown
     sourceText: '[MEANING?]'
     translations:
     - locale: ko-KR
-      text: '[의미?]'
+      text: "[\uC758\uBBF8?]"
   - key: first_contact.terminal.category.danger.descriptor
-    sourceText: concrete visible subjects whose ordinary identity is a source or instrument of harm, threat, injury, poisoning, fire, explosion, attack, or other direct hazard
+    sourceText: concrete visible subjects whose ordinary identity is a source or
     translations:
     - locale: ko-KR
-      text: 일반적인 정체성이 위해, 위협, 부상, 중독, 화재, 폭발, 공격 또는 기타 직접적인 위험의 원인이나 수단인 구체적이고 눈에 보이는 대상
+      text: "\uC77C\uBC18\uC801\uC778 \uC815\uCCB4\uC131\uC774 \uC704\uD574, \uC704\uD611,
+        \uBD80\uC0C1, \uC911\uB3C5, \uD654\uC7AC, \uD3ED\uBC1C, \uACF5\uACA9 \uB610\uB294
+        \uAE30\uD0C0 \uC9C1\uC811\uC801\uC778 \uC704\uD5D8\uC758 \uC6D0\uC778\uC774\uB098
+        \uC218\uB2E8\uC778 \uAD6C\uCCB4\uC801\uC774\uACE0 \uB208\uC5D0 \uBCF4\uC774\uB294
+        \uB300\uC0C1"
   - key: first_contact.terminal.category.protection.descriptor
-    sourceText: concrete visible subjects whose ordinary identity is protection, defense, shelter, guarding, or blocking harm
+    sourceText: concrete visible subjects whose ordinary identity is protection,
     translations:
     - locale: ko-KR
-      text: 일반적인 정체성이 보호, 방어, 피난, 경계 또는 위해 차단인 구체적이고 눈에 보이는 대상
+      text: "\uC77C\uBC18\uC801\uC778 \uC815\uCCB4\uC131\uC774 \uBCF4\uD638, \uBC29\uC5B4,
+        \uD53C\uB09C, \uACBD\uACC4 \uB610\uB294 \uC704\uD574 \uCC28\uB2E8\uC778 \uAD6C\uCCB4\uC801\uC774\uACE0
+        \uB208\uC5D0 \uBCF4\uC774\uB294 \uB300\uC0C1"
   - key: first_contact.terminal.category.food.descriptor
-    sourceText: concrete visible subjects whose ordinary identity is something eaten, drunk, prepared as a meal, or used as food
+    sourceText: concrete visible subjects whose ordinary identity is something eaten,
     translations:
     - locale: ko-KR
-      text: 일반적인 정체성이 먹거나 마시거나 식사로 준비되거나 식품으로 사용되는 구체적이고 눈에 보이는 대상
+      text: "\uC77C\uBC18\uC801\uC778 \uC815\uCCB4\uC131\uC774 \uBA39\uAC70\uB098
+        \uB9C8\uC2DC\uAC70\uB098 \uC2DD\uC0AC\uB85C \uC900\uBE44\uB418\uAC70\uB098
+        \uC2DD\uD488\uC73C\uB85C \uC0AC\uC6A9\uB418\uB294 \uAD6C\uCCB4\uC801\uC774\uACE0
+        \uB208\uC5D0 \uBCF4\uC774\uB294 \uB300\uC0C1"
   - key: first_contact.terminal.category.tool.descriptor
-    sourceText: concrete visible subjects whose ordinary identity is a tool, instrument, device, or implement for doing work
+    sourceText: concrete visible subjects whose ordinary identity is a tool, instrument,
     translations:
     - locale: ko-KR
-      text: 일반적인 정체성이 작업을 수행하는 데 쓰이는 도구, 기구, 장치 또는 작업용 물품인 구체적이고 눈에 보이는 대상
+      text: "\uC77C\uBC18\uC801\uC778 \uC815\uCCB4\uC131\uC774 \uC791\uC5C5\uC744
+        \uC218\uD589\uD558\uB294 \uB370 \uC4F0\uC774\uB294 \uB3C4\uAD6C, \uAE30\uAD6C,
+        \uC7A5\uCE58 \uB610\uB294 \uC791\uC5C5\uC6A9 \uBB3C\uD488\uC778 \uAD6C\uCCB4\uC801\uC774\uACE0
+        \uB208\uC5D0 \uBCF4\uC774\uB294 \uB300\uC0C1"
   - key: first_contact.terminal.line.translator_ready
     sourceText: TRANSLATOR READY
     translations:
@@ -943,16 +369,6 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uC758\uBBF8 \uC9C0\uB3C4 \uCD08\uAE30\uD654\uB428"
-  - key: first_contact.terminal.color.red
-    sourceText: RED
-    translations:
-    - locale: ko-KR
-      text: "\uBE68\uAC15"
-  - key: first_contact.terminal.color.cyan
-    sourceText: CYAN
-    translations:
-    - locale: ko-KR
-      text: "\uCCAD\uB85D"
   - key: first_contact.terminal.channel.probe_sequence
     sourceText: PROBE SEQUENCE
     translations:
@@ -972,7 +388,7 @@ MonoBehaviour:
     sourceText: DRAW ONE OBJECT ONLY
     translations:
     - locale: ko-KR
-      text: "\uC0AC\uBB3C \uD558\uB098\uB9CC \uADF8\uB9AC\uC2ED\uC2DC\uC624"
+      text: "\uC0AC\uBB3C\uC740 \uD558\uB098\uB9CC \uADF8\uB9AC\uC2ED\uC2DC\uC624"
   - key: first_contact.terminal.reason.text_or_symbol_detected
     sourceText: TEXT OR SYMBOL DETECTED
     translations:
@@ -982,52 +398,22 @@ MonoBehaviour:
     sourceText: SCENE OR ACTION DETECTED
     translations:
     - locale: ko-KR
-      text: "장면 또는 행동 감지됨"
+      text: "\uC7A5\uBA74 \uB610\uB294 \uD589\uB3D9 \uAC10\uC9C0\uB428"
   - key: first_contact.terminal.reason.object_not_clear
     sourceText: OBJECT NOT CLEAR
     translations:
     - locale: ko-KR
-      text: "사물 판독 불가"
-  - key: first_contact.terminal.reason.label_mismatch
+      text: "\uC0AC\uBB3C \uD310\uB3C5 \uBD88\uAC00"
+  - key: first_contact.terminal.status.label_mismatch
     sourceText: LABEL MISMATCH
     translations:
     - locale: ko-KR
-      text: "라벨 불일치"
+      text: "\uB77C\uBCA8 \uBD88\uC77C\uCE58"
   - key: first_contact.terminal.fallback.unknown
     sourceText: UNKNOWN
     translations:
     - locale: ko-KR
       text: "\uC54C \uC218 \uC5C6\uC74C"
-  - key: first_contact.terminal.alignment.stored
-    sourceText: STORED
-    translations:
-    - locale: ko-KR
-      text: "\uC800\uC7A5\uB428"
-  - key: first_contact.terminal.alignment.lock
-    sourceText: LOCK
-    translations:
-    - locale: ko-KR
-      text: "\uACE0\uC815"
-  - key: first_contact.terminal.alignment.strong
-    sourceText: STRONG
-    translations:
-    - locale: ko-KR
-      text: "\uAC15\uD568"
-  - key: first_contact.terminal.alignment.faint
-    sourceText: FAINT
-    translations:
-    - locale: ko-KR
-      text: "\uD76C\uBBF8\uD568"
-  - key: first_contact.terminal.alignment.weak
-    sourceText: WEAK
-    translations:
-    - locale: ko-KR
-      text: "\uC57D\uD568"
-  - key: first_contact.terminal.alignment.none
-    sourceText: NONE
-    translations:
-    - locale: ko-KR
-      text: "\uC5C6\uC74C"
   - key: first_contact.terminal.cluster.stable
     sourceText: STABLE
     translations:
@@ -1052,204 +438,331 @@ MonoBehaviour:
     sourceText: GROUP
     translations:
     - locale: ko-KR
-      text: "\uAD70\uC9D1"
+      text: "\uC758\uBBF8 \uD328\uD134"
   - key: first_contact.terminal.semantic_map.group_unknown
     sourceText: '[GROUP-??]'
     translations:
     - locale: ko-KR
-      text: "[\uAD70\uC9D1-??]"
-  - key: first_contact.officer.bootstrap_duplicate_probe
+      text: "[\uBC18\uC751 \uD328\uD134-??]"
+  - key: first_contact.doctor_hwang.bootstrap_duplicate_probe
     sourceText: The same sample repeats the same response. Try a different object
       in the same category.
     translations:
     - locale: ko-KR
-      text: "\uAC19\uC740 \uD45C\uBCF8\uC740 \uAC19\uC740 \uBC18\uC751\uB9CC \uBC18\uBCF5\uD569\uB2C8\uB2E4.
-        \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978 \uC0AC\uBB3C\uC744 \uBCF4\uB0B4
-        \uC8FC\uC138\uC694."
-  - key: first_contact.officer.bootstrap_category_mismatch
-    sourceText: This sample does not seem to fit the current category. Try a different
-      object in that category.
+      text: "\uAC19\uC740 \uADF8\uB9BC\uC740 \uAC19\uC740 \uBC18\uC751\uB9CC \uBC18\uBCF5\uD569\uB2C8\uB2E4.
+        \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978 \uC0AC\uBB3C \uADF8\uB9BC\uC744
+        \uBCF4\uB0B4 \uC8FC\uC138\uC694."
+  - key: first_contact.doctor_hwang.bootstrap_category_mismatch
+    sourceText: The aliens responded and the data was recorded, but the drawing does
+      not appear to belong to {category}.
     translations:
     - locale: ko-KR
-      text: "\uD45C\uBCF8\uC774 \uD604\uC7AC \uBD84\uB958\uC5D0 \uB9DE\uC9C0 \uC54A\uB294
-        \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978
-        \uC0AC\uBB3C\uC744 \uBCF4\uB0B4 \uC8FC\uC138\uC694."
-  - key: first_contact.officer.bootstrap_category_contextual
-    sourceText: This subject fits only through context, symbolism, or possible use. Send an object whose ordinary identity fits the category.
-    translations:
-    - locale: ko-KR
-      text: "이 대상은 맥락이나 상징, 가능한 용도를 통해서만 분류에 맞습니다. 대상 자체의 일반적인 정체성이 분류에 맞는 사물을 보내 주세요."
-  - key: first_contact.officer.bootstrap_category_generic
-    sourceText: This subject is too generic for the current category. Send a more specific object that ordinarily belongs to it.
-    translations:
-    - locale: ko-KR
-      text: "현재 분류를 판단하기에는 대상이 너무 일반적입니다. 평소에도 이 분류에 속하는 더 구체적인 사물을 보내 주세요."
-  - key: first_contact.officer.bootstrap_category_uncertain
-    sourceText: The device cannot establish that this subject belongs to the current category. Try a clearer example.
-    translations:
-    - locale: ko-KR
-      text: "이 대상이 현재 분류에 속하는지 판정할 수 없습니다. 더 분명한 예시를 보내 주세요."
-  - key: first_contact.officer.probe_blank
+      text: "\uADF8\uB9BC\uC5D0 \uBC18\uC751\uD574\uC11C \uB370\uC774\uD130\uB3C4
+        \uC218\uC9D1\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uD558\uC9C0\uB9CC {category}\uC5D0
+        \uD574\uB2F9\uD558\uB294 \uADF8\uB9BC\uC740 \uC544\uB2CC \uBAA8\uC591\uC785\uB2C8\uB2E4."
+  - key: first_contact.doctor_hwang.probe_blank
     sourceText: The drawing is too empty to read. Draw one visible object.
     translations:
     - locale: ko-KR
-      text: "\uADF8\uB9BC\uC774 \uBE44\uC5B4 \uC788\uC5B4 \uD310\uB3C5\uD558\uAE30
-        \uC5B4\uB835\uC2B5\uB2C8\uB2E4. \uBCF4\uC774\uB294 \uC0AC\uBB3C \uD558\uB098\uB97C
-        \uADF8\uB824 \uC8FC\uC138\uC694."
-  - key: first_contact.officer.probe_text_or_symbol
+      text: "\uADF8\uB9BC\uC744 \uC548\uADF8\uB9AC\uC2E0 \uAC83 \uAC19\uC2B5\uB2C8\uB2E4.
+        \uADF8\uB9BC\uC744 \uD558\uB098 \uADF8\uB824\uC8FC\uC2DC\uC9C0\uC694."
+  - key: first_contact.doctor_hwang.probe_text_or_symbol
     sourceText: The sample includes text or symbols. Draw the object without writing.
     translations:
     - locale: ko-KR
-      text: "\uD45C\uBCF8\uC5D0 \uAE00\uC790\uB098 \uAE30\uD638\uAC00 \uB4E4\uC5B4
-        \uC788\uC2B5\uB2C8\uB2E4. \uAE00\uC790 \uC5C6\uC774 \uC0AC\uBB3C \uD615\uD0DC\uB9CC
-        \uADF8\uB824 \uC8FC\uC138\uC694."
-  - key: first_contact.officer.probe_scene_or_action
+      text: "\uADF8\uB9BC\uC5D0 \uAE00\uC790\uB098 \uAE30\uD638\uAC00 \uB4E4\uC5B4
+        \uC788\uC2B5\uB2C8\uB2E4. \uC21C\uC218\uD55C \uC0AC\uBB3C\uC758 \uADF8\uB9BC\uB9CC\uC744
+        \uC81C\uCD9C\uD574\uC57C \uC815\uD655\uD55C \uB370\uC774\uD130\uB97C \uC5BB\uC744
+        \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.doctor_hwang.probe_scene_or_action
     sourceText: This looks like a scene or action. Draw one object by itself.
     translations:
     - locale: ko-KR
-      text: "\uC7A5\uBA74\uC774\uB098 \uD589\uB3D9\uC73C\uB85C \uBCF4\uC785\uB2C8\uB2E4.
-        \uC0AC\uBB3C \uD558\uB098\uB9CC \uB530\uB85C \uADF8\uB824 \uC8FC\uC138\uC694."
-  - key: first_contact.officer.probe_multiple_objects
+      text: "\uC774 \uADF8\uB9BC\uC740 \uC7A5\uBA74\uC774\uB098 \uD589\uB3D9\uC73C\uB85C
+        \uBCF4\uC785\uB2C8\uB2E4. \n\uC21C\uC218\uD55C \uC0AC\uBB3C\uC758 \uADF8\uB9BC\uB9CC
+        \uADF8\uB824\uC8FC\uC154\uC57C \uC815\uD655\uD55C \uB370\uC774\uD130\uB97C
+        \uC5BB\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.doctor_hwang.probe_multiple_objects
     sourceText: More than one object is detected. Leave only one object.
     translations:
     - locale: ko-KR
       text: "\uC0AC\uBB3C\uC774 \uB458 \uC774\uC0C1 \uAC10\uC9C0\uB429\uB2C8\uB2E4.
-        \uD558\uB098\uB9CC \uB0A8\uACA8 \uC8FC\uC138\uC694."
-  - key: first_contact.officer.probe_unresolved_object
+        \n\uD558\uB098\uB9CC \uB0A8\uACA8 \uC8FC\uC154\uC57C \uC815\uD655\uD55C \uB370\uC774\uD130\uB97C
+        \uC5BB\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.doctor_hwang.probe_unresolved_object
     sourceText: The device cannot read one clear object. Draw one concrete object.
     translations:
     - locale: ko-KR
-      text: "\uB69C\uB837\uD55C \uC0AC\uBB3C \uD558\uB098\uB85C \uD310\uB3C5\uB418\uC9C0
-        \uC54A\uC2B5\uB2C8\uB2E4. \uAD6C\uCCB4\uC801\uC778 \uC0AC\uBB3C \uD558\uB098\uB97C
-        \uADF8\uB824 \uC8FC\uC138\uC694."
-  - key: first_contact.officer.probe_label_mismatch
-    sourceText: The label doesn't seem to describe the drawing that well. Make the
-      label match the drawing.
+      text: "\uC5B4...\uBB58 \uADF8\uB9AC\uC2E0\uAC74\uC9C0 \uC798 \uBAA8\uB974\uACA0\uC2B5\uB2C8\uB2E4.
+        \uB2E4\uC2DC \uD55C\uBC88 \uADF8\uB824\uC8FC\uC2E4 \uC218 \uC788\uACA0\uC2B5\uB2C8\uAE4C?\n\uC0C9\uAE54\uB3C4
+        \uC798 \uC0AC\uC6A9\uD558\uC2DC\uBA74 \uB354 \uC54C\uC544\uBCF4\uAE30 \uC27D\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.doctor_hwang.probe_label_mismatch
+    sourceText: The label does not match the drawing. Enter the name of the subject
+      shown in the drawing.
     translations:
     - locale: ko-KR
-      text: "\uB77C\uBCA8\uC774 \uADF8\uB2E4\uC9C0 \uADF8\uB9BC\uC744 \uC798 \uB098\uD0C0\uB0B4\uC9C0
-        \uBABB\uD558\uB294 \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uADF8\uB9BC\uACFC \uB9DE\uB294
-        \uB77C\uBCA8\uC744 \uC81C\uCD9C\uD574\uC8FC\uC138\uC694. "
-  - key: first_contact.terminal.status.label_not_object
-    sourceText: LABEL OBJECT ONLY
-    translations:
-    - locale: ko-KR
-      text: "\uB77C\uBCA8: \uC0AC\uBB3C\uB9CC"
+      text: "\uB77C\uBCA8\uC774 \uADF8\uB9BC\uACFC \uC77C\uCE58\uD558\uC9C0 \uC54A\uB294
+        \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uADF8\uB9BC\uC5D0 \uB9DE\uB294 \uB300\uC0C1\uC758
+        \uC774\uB984\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694."
   - key: first_contact.terminal.status.label_action_or_abstract
     sourceText: 'LABEL: ACTION OR ABSTRACT'
     translations:
     - locale: ko-KR
-      text: "라벨: 행동 또는 추상 개념"
+      text: "\uB77C\uBCA8: \uD589\uB3D9 \uB610\uB294 \uCD94\uC0C1 \uAC1C\uB150"
   - key: first_contact.terminal.status.label_broad_category
     sourceText: 'LABEL: CATEGORY TOO BROAD'
     translations:
     - locale: ko-KR
-      text: "라벨: 분류가 너무 넓음"
+      text: "\uB77C\uBCA8: \uBD84\uB958\uAC00 \uB108\uBB34 \uB113\uC74C"
   - key: first_contact.terminal.status.label_multiple_subjects
     sourceText: 'LABEL: MULTIPLE SUBJECTS'
     translations:
     - locale: ko-KR
-      text: "라벨: 대상이 여러 개"
+      text: "\uB77C\uBCA8: \uC0AC\uBB3C\uC774 \uC5EC\uB7EC \uAC1C \uAC80\uCD9C"
   - key: first_contact.terminal.status.label_classification_claim
     sourceText: 'LABEL: REMOVE CLAIM'
     translations:
     - locale: ko-KR
-      text: "라벨: 주장 표현 제거"
-  - key: first_contact.officer.probe_label_not_object
-    sourceText: Use the object name only. Avoid moods, actions, categories, or value
-      words.
+      text: "\uB77C\uBCA8: \uC8FC\uAD00\uC801 \uD45C\uD604 \uC81C\uAC70"
+  - key: first_contact.doctor_hwang.probe_label_action_or_abstract
+    sourceText: The label names an action or abstract idea. Enter the name of one
+      concrete visible subject.
     translations:
     - locale: ko-KR
-      text: "\uB77C\uBCA8\uC5D0\uB294 \uC0AC\uBB3C \uC774\uB984\uB9CC \uC785\uB825\uD574
-        \uC8FC\uC138\uC694. \uAC10\uC815, \uD589\uB3D9, \uBD84\uB958, \uAC00\uCE58
-        \uD45C\uD604\uC740 \uD53C\uD574 \uC8FC\uC138\uC694."
-  - key: first_contact.officer.probe_label_action_or_abstract
-    sourceText: The label names an action or abstract idea. Enter the name of one concrete visible subject.
-    translations:
-    - locale: ko-KR
-      text: "라벨이 행동이나 추상적인 개념을 나타냅니다. 눈에 보이는 구체적인 대상 하나의 이름을 입력해 주세요."
-  - key: first_contact.officer.probe_label_broad_category
+      text: "\uB77C\uBCA8\uC774 \uD589\uB3D9\uC774\uB098 \uCD94\uC0C1\uC801\uC778
+        \uAC1C\uB150\uC744 \uB098\uD0C0\uB0C5\uB2C8\uB2E4. \uB208\uC5D0 \uBCF4\uC774\uB294
+        \uAD6C\uCCB4\uC801\uC778 \uB300\uC0C1 \uD558\uB098\uC758 \uC774\uB984\uC744
+        \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+  - key: first_contact.doctor_hwang.probe_label_broad_category
     sourceText: The label is a broad category. Enter one specific subject name.
     translations:
     - locale: ko-KR
-      text: "라벨이 너무 넓은 분류를 나타냅니다. 구체적인 대상 하나의 이름을 입력해 주세요."
-  - key: first_contact.officer.probe_label_multiple_subjects
+      text: "\uB77C\uBCA8\uC774 \uB108\uBB34 \uB113\uC740 \uBD84\uB958\uB97C \uB098\uD0C0\uB0C5\uB2C8\uB2E4.
+        \uAD6C\uCCB4\uC801\uC778 \uB300\uC0C1 \uD558\uB098\uC758 \uC774\uB984\uC744
+        \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+  - key: first_contact.doctor_hwang.probe_label_multiple_subjects
     sourceText: The label names multiple subjects. Enter only one subject name.
     translations:
     - locale: ko-KR
-      text: "라벨에 대상이 여러 개 포함되어 있습니다. 대상 하나의 이름만 입력해 주세요."
-  - key: first_contact.officer.probe_label_classification_claim
-    sourceText: Remove wording that argues how the subject should be classified, valued, or understood. Keep only the subject name.
+      text: "\uB77C\uBCA8\uC5D0 \uB300\uC0C1\uC774 \uC5EC\uB7EC \uAC1C \uD3EC\uD568\uB418\uC5B4
+        \uC788\uC2B5\uB2C8\uB2E4. \uB300\uC0C1 \uD558\uB098\uC758 \uC774\uB984\uB9CC
+        \uC785\uB825\uD574 \uC8FC\uC138\uC694."
+  - key: first_contact.doctor_hwang.probe_label_classification_claim
+    sourceText: Remove wording that argues how the subject should be classified,
+      valued, or understood. Keep only the subject name.
     translations:
     - locale: ko-KR
-      text: "대상을 어떻게 분류하거나 평가해야 하는지 주장하는 표현을 빼고 대상 이름만 입력해 주세요."
-  - key: day1.opening.4
-    sourceText: Let's begin
-    translations:
-    - locale: ko-KR
-      text: "\uADF8\uB7FC \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4."
+      text: "\uB300\uC0C1\uC744 \uC5B4\uB5BB\uAC8C \uBD84\uB958\uD558\uAC70\uB098
+        \uD3C9\uAC00\uD574\uC57C \uD558\uB294\uC9C0 \uC8FC\uC7A5\uD558\uB294 \uD45C\uD604\uC744
+        \uBE7C\uACE0 \uB300\uC0C1 \uC774\uB984\uB9CC \uC785\uB825\uD574 \uC8FC\uC138\uC694."
   - key: first_contact.terminal.header.analysis_error
     sourceText: '[ANALYSIS ERROR]'
     translations:
     - locale: ko-KR
       text: "[\uBD84\uC11D \uC624\uB958]"
-  - key: first_contact.terminal.line.analysis_unstable
-    sourceText: 'STATUS: ANALYSIS UNSTABLE'
-    translations:
-    - locale: ko-KR
-      text: "\uC0C1\uD0DC: \uBD84\uC11D \uBD88\uC548\uC815"
-  - key: first_contact.terminal.choice.retry_analysis
-    sourceText: RETRY ANALYSIS
-    translations:
-    - locale: ko-KR
-      text: "\uBD84\uC11D \uC7AC\uC2DC\uB3C4"
   - key: first_contact.terminal.status.analysis_unavailable
     sourceText: ANALYSIS UNAVAILABLE
     translations:
     - locale: ko-KR
-      text: "분석 사용 불가"
-  - key: first_contact.terminal.status.image_capture_failed
-    sourceText: IMAGE CAPTURE FAILED
+      text: "\uBD84\uC11D \uC0AC\uC6A9 \uBD88\uAC00"
+  - key: speaker.doctor_hwang
+    sourceText: Dr. Hwang
     translations:
     - locale: ko-KR
-      text: "이미지 캡처 실패"
-  - key: first_contact.terminal.status.label_analysis_failed
-    sourceText: LABEL ANALYSIS FAILED
+      text: "\uD669 \uBC15\uC0AC"
+  - key: first_contact.narrative.delegation_arrival
+    sourceText: The delegation is in position. The terminal will record their response.
     translations:
     - locale: ko-KR
-      text: "라벨 분석 실패"
-  - key: first_contact.terminal.status.image_validation_failed
-    sourceText: IMAGE VALIDATION FAILED
+      text: "\uC678\uACC4\uC778 \uB300\uD45C\uB2E8\uC774 \uC790\uB9AC\uC5D0 \uC549\uC558\uC2B5\uB2C8\uB2E4.
+        \uC774\uC81C \uD130\uBBF8\uB110\uB85C \uC800\uB4E4\uC758 \uBC18\uC751\uC744
+        \uAE30\uB85D\uD558\uACA0\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.narrative.first_category
+    sourceText: We will begin with {category}. Select the terminal when you are ready.
     translations:
     - locale: ko-KR
-      text: "그림 판정 실패"
-  - key: first_contact.terminal.status.signal_encoding_failed
-    sourceText: SIGNAL ENCODING FAILED
+      text: "\uC6B0\uC120 {category} \uCE74\uD14C\uACE0\uB9AC \uB370\uC774\uD130\uBD80\uD130
+        \uC218\uC9D1\uD558\uACA0\uC2B5\uB2C8\uB2E4. \uC900\uBE44\uB418\uBA74 \uD130\uBBF8\uB110\uC5D0\uC11C
+        \uC5D4\uD130\uB97C \uB20C\uB7EC \uC2DC\uC791\uD574 \uC8FC\uC2ED\uC2DC\uC624."
+  - key: first_contact.narrative.first_drawing
+    sourceText: Draw one concrete object in the {category} category. One object only.
     translations:
     - locale: ko-KR
-      text: "신호 기록 실패"
-  - key: first_contact.terminal.status.category_analysis_failed
-    sourceText: CATEGORY ANALYSIS FAILED
+      text: "\uAC01\uD558\uAC00 {category}\uC5D0 \uD574\uB2F9\uD55C\uB2E4\uACE0 \uC0DD\uAC01\uD558\uC2DC\uB294
+        \uAD6C\uCCB4\uC801\uC778 \uC0AC\uBB3C \uD558\uB098\uB97C \uADF8\uB9AC\uC2ED\uC2DC\uC624.
+        \uD558\uB098\uB9CC\uC785\uB2C8\uB2E4."
+  - key: first_contact.narrative.first_label
+    sourceText: Enter the name of the object. The machine needs the label to compare
+      the signal.
     translations:
     - locale: ko-KR
-      text: "분류 판정 실패"
-  - key: first_contact.terminal.status.category_mismatch
-    sourceText: CATEGORY MISMATCH
+      text: "\uADF8\uB9B0 \uC0AC\uBB3C\uC758 \uC774\uB984\uC744 \uC785\uB825\uD558\uC2ED\uC2DC\uC624.
+        \uC2E0\uD638\uB97C \uBE44\uAD50\uD558\uB824\uBA74 \uD45C\uBCF8 \uB77C\uBCA8\uC774
+        \uD544\uC694\uD569\uB2C8\uB2E4."
+  - key: first_contact.narrative.first_trace
+    sourceText: One response trace recorded. Different objects in the same category
+      should form a group.
     translations:
     - locale: ko-KR
-      text: "분류 불일치"
-  - key: first_contact.terminal.status.category_context_dependent
-    sourceText: CONTEXT DEPENDENT
+      text: "\uBC18\uC751 \uC2E0\uD638 \uD558\uB098\uAC00 \uAE30\uB85D\uB410\uC2B5\uB2C8\uB2E4.
+        \uAC19\uC740 \uBD84\uB958\uC758 \uB2E4\uB978 \uC0AC\uBB3C\uB4E4\uC744 \uBCF4\uB0B4\uBA74
+        \uBE44\uC2B7\uD55C \uC2E0\uD638\uB07C\uB9AC \uBC18\uC751 \uD328\uD134\uC744
+        \uAD00\uCC30\uD560 \uC218 \uC788\uC744 \uAC81\uB2C8\uB2E4."
+  - key: first_contact.narrative.more_samples
+    sourceText: Good. We need {remaining} more different sample to stabilize the
+      group.
     translations:
     - locale: ko-KR
-      text: "맥락 의존"
-  - key: first_contact.terminal.status.category_subject_too_generic
-    sourceText: SUBJECT TOO GENERIC
+      text: "\uC88B\uC2B5\uB2C8\uB2E4. \uB2E4\uB978 \uD45C\uBCF8 {remaining}\uAC1C\uB9CC
+        \uB354 \uC788\uC73C\uBA74 \uBC18\uC751 \uD328\uD134\uC744 \uD2B9\uC815\uD574\uB0BC
+        \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.narrative.category_calibrated
+    sourceText: The {category} response group is stable. Calibration is complete.
     translations:
     - locale: ko-KR
-      text: "대상이 너무 일반적"
-  - key: first_contact.terminal.status.category_unresolved
-    sourceText: CATEGORY UNRESOLVED
+      text: "{category} \uBC18\uC751 \uD328\uD134\uC744 \uD2B9\uC815 \uD588\uC2B5\uB2C8\uB2E4.
+        \uC774\uC81C {category} \uCE74\uD14C\uACE0\uB9AC\uC5D0 \uD574\uB2F9\uD558\uB294
+        \uB2E8\uC5B4\uB294 \uBC88\uC5ED\uD560 \uC218 \uC788\uACA0\uB124\uC694."
+  - key: first_contact.narrative.bootstrap_calibrated
+    sourceText: All {count} categories are calibrated. Let us see whether it can
+      translate a new signal.
     translations:
     - locale: ko-KR
-      text: "분류 판정 불명"
+      text: "\uCD1D {count}\uAC1C \uBD84\uB958\uC758 \uBCF4\uC815\uC774 \uB05D\uB0AC\uC2B5\uB2C8\uB2E4.
+        \uC774\uC81C \uCC98\uC74C \uB4E3\uB294 \uC2E0\uD638\uB3C4 \uBC88\uC5ED\uD558\uB294\uC9C0
+        \uD655\uC778\uD574 \uBCF4\uC8E0."
+  - key: first_contact.narrative.translation_succeeded
+    sourceText: It worked. Known categories are translating automatically; the unfamiliar
+      part remains unresolved.
+    translations:
+    - locale: ko-KR
+      text: "\uB410\uC2B5\uB2C8\uB2E4. \uBCF4\uC815\uB41C \uBD84\uB958\uB294 \uC790\uB3D9\uC73C\uB85C
+        \uBC88\uC5ED\uB410\uACE0, \uBAA8\uB974\uB294 \uBD80\uBD84\uB9CC \uC2E0\uD638
+        \uADF8\uB300\uB85C \uB0A8\uC558\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.placeholder.intro.news
+    sourceText: REDMOND UFO NEWS
+    translations:
+    - locale: ko-KR
+      text: "\uB808\uB4DC\uBA3C\uB4DC UFO \uC18D\uBCF4"
+  - key: first_contact.placeholder.intro.pizza
+    sourceText: ZAUCER PIZZA
+    translations:
+    - locale: ko-KR
+      text: "Zaucer \uD53C\uC790 \uBE44\uBC00 \uC785\uAD6C"
+  - key: first_contact.placeholder.intro.elevator
+    sourceText: CLASSIFIED ELEVATOR
+    translations:
+    - locale: ko-KR
+      text: "\uADF9\uBE44 \uC9C0\uD558 \uC5D8\uB9AC\uBCA0\uC774\uD130"
+  - key: first_contact.placeholder.intro.briefing
+    sourceText: TRANSLATOR BRIEFING
+    translations:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC5B4 \uBC88\uC5ED\uAE30 \uBE0C\uB9AC\uD551"
+  - key: first_contact.placeholder.intro.footer
+    sourceText: "TEMPORARY GEOMETRIC CUTSCENE  \u2022  SPACE: ADVANCE"
+    translations:
+    - locale: ko-KR
+      text: "\uC784\uC2DC \uB3C4\uD615 \uCEF7\uC2E0  \u2022  \uC2A4\uD398\uC774\uC2A4:
+        \uB118\uAE30\uAE30"
+  - key: first_contact.terminal.line.raw_signal
+    sourceText: 'SIGNAL: {signal}'
+    translations:
+    - locale: ko-KR
+      text: "\uC2E0\uD638: {signal}"
+  - key: dialogue.advance.first
+    sourceText: "[ SPACE ]  NEXT  \u25BC"
+    translations:
+    - locale: ko-KR
+      text: "[ SPACE ]  \uB2E4\uC74C  \u25BC"
+  - key: dialogue.advance.repeat
+    sourceText: "[ SPACE ]  \u25BC"
+    translations:
+    - locale: ko-KR
+      text: "[ SPACE ]  \u25BC"
+  - key: first_contact.narrative.preflight_intro
+    sourceText: 'Before they arrive, I need to see whether you can produce a usable
+      visual probe. '
+    translations:
+    - locale: ko-KR
+      text: "\uB370\uC774\uD130 \uC218\uC9D1\uC744 \uC2DC\uC791\uD558\uAE30 \uC804\uC5D0
+        \uC800\uB791 \uBA3C\uC800 \uC5F0\uC2B5\uC744 \uD574\uBCF4\uC2DC\uC8E0 \uAC01\uD558. "
+  - key: first_contact.narrative.tablet_tools
+    sourceText: The three illuminated controls are the brush, fill, and eraser.
+    translations:
+    - locale: ko-KR
+      text: "\uC9C0\uAE08 \uC810\uB4F1\uB41C \uC138 \uBC84\uD2BC\uC740 \uD39C, \uCC44\uC6B0\uAE30,
+        \uC9C0\uC6B0\uAC1C\uC785\uB2C8\uB2E4."
+  - key: first_contact.narrative.tablet_style
+    sourceText: These buttons change line width. Use the slider beside them to choose
+      a color.
+    translations:
+    - locale: ko-KR
+      text: "\uC774 \uBC84\uD2BC\uB4E4\uC740 \uC120 \uAD75\uAE30\uB97C \uBC14\uAFB8\uACE0,
+        \uC606\uC758 \uC2AC\uB77C\uC774\uB354\uB85C \uC0C9\uC744 \uACE0\uB97C \uC218
+        \uC788\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.narrative.tablet_history_and_send
+    sourceText: Use these to undo, redo, or clear the canvas. When the drawing is
+      ready, press Enter.
+    translations:
+    - locale: ko-KR
+      text: "\uC774\uCABD\uC740 \uC21C\uC11C\uB300\uB85C \uC804\uCCB4 \uC0AD\uC81C,
+        \uC2E4\uD589 \uCDE8\uC18C, \uB2E4\uC2DC \uC2E4\uD589\uC785\uB2C8\uB2E4."
+  - key: first_contact.narrative.preflight_drawing
+    sourceText: Draw one concrete object. No words, symbols, scenes, or extra objects.
+    translations:
+    - locale: ko-KR
+      text: "\uC0AC\uBB3C\uC744 \uC544\uBB34\uAC70\uB098 \uB531 \uD558\uB098\uB9CC
+        \uADF8\uB824\uC8FC\uC2ED\uC2DC\uC624.\n\uAE00\uC790\uB098 \uAE30\uD638, \uBCF5\uC7A1\uD55C
+        \uC7A5\uBA74\uC740 \uC548 \uB429\uB2C8\uB2E4.\n\uC0C9\uAE54\uB3C4 \uC0AC\uC6A9\uD574\uC11C
+        \uADF8\uB824 \uC8FC\uC2DC\uBA74 \uC54C\uC544\uBCF4\uAE30\uAC00 \uC27D\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.narrative.preflight_passed
+    sourceText: Good enough. We have seen what we need; the practice sample will
+      not be recorded.
+    translations:
+    - locale: ko-KR
+      text: "\uC88B\uC2B5\uB2C8\uB2E4. \uC0DD\uAC01\uBCF4\uB2E4 \uAF64 \uC798 \uADF8\uB9AC\uC2DC\uB294\uAD70\uC694,
+        \uAC01\uD558."
+  - key: first_contact.terminal.header.probe_preflight
+    sourceText: '[PROBE PREFLIGHT]'
+    translations:
+    - locale: ko-KR
+      text: "[\uD45C\uBCF8 \uC0AC\uC804 \uC810\uAC80]"
+  - key: first_contact.terminal.line.response_channel_closed
+    sourceText: 'RESPONSE CHANNEL: CLOSED'
+    translations:
+    - locale: ko-KR
+      text: "\uBC18\uC751 \uCC44\uB110: \uB2EB\uD798"
+  - key: first_contact.terminal.line.preflight_complete
+    sourceText: PREFLIGHT COMPLETE
+    translations:
+    - locale: ko-KR
+      text: "\uC0AC\uC804 \uC810\uAC80 \uC644\uB8CC"
+  - key: first_contact.terminal.line.probe_check_overridden
+    sourceText: 'PROBE CHECK: OVERRIDDEN'
+    translations:
+    - locale: ko-KR
+      text: "\uD45C\uBCF8 \uAC80\uC0AC: \uC218\uB3D9 \uC2B9\uC778"
+  - key: first_contact.terminal.prompt.check_drawing
+    sourceText: PRESS ENTER TO CHECK
+    translations:
+    - locale: ko-KR
+      text: "ENTER: \uAC80\uC0AC"
+  - key: first_contact.terminal.channel.local_preflight
+    sourceText: LOCAL PREFLIGHT
+    translations:
+    - locale: ko-KR
+      text: "\uB0B4\uBD80 \uC0AC\uC804 \uC810\uAC80"
+  - key: ui.title.game_title
+    sourceText: DOODLE DIPLOMACY
+    translations:
+    - locale: ko-KR
+      text: DOODLE DIPLOMACY
+  - key: first_contact.doctor_hwang.pattern_meaning_requested
+    sourceText: A new response pattern is stable, but its meaning is unknown. Compare
+      the samples and enter the meaning you want the translator to use.
+    translations:
+    - locale: ko-KR
+      text: "\uC0C8\uB85C\uC6B4 \uBC18\uC751 \uD328\uD134\uC774 \uAD00\uCC30 \uB418\uC5C8\uC2B5\uB2C8\uB2E4.
+        \uC81C\uCD9C\uD558\uC168\uB358 \uB77C\uBCA8\uB4E4\uC744 \uBCF4\uACE0 \uCE74\uD14C\uACE0\uB9AC\uC5D0
+        \uC774\uB984\uC744 \uBD99\uC5EC\uC8FC\uC2ED\uC2DC\uC624."

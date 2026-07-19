@@ -28,7 +28,10 @@ MonoBehaviour:
   minClusterPairwiseSimilarity: 0.75
   bootstrapMinTraceCount: 3
   bootstrapMinCategoryDescriptorFit: 0.6
-  bootstrapDuplicateSemanticThreshold: 0.9
+  bootstrapDuplicateSemanticThreshold: 0.96
+  bootstrapDuplicateSemanticReviewThreshold: 0.75
+  enableSemanticDuplicateLlmReview: 1
+  semanticDuplicateReviewMaxCandidates: 3
   waveformSemanticInfluence: 0.9
   waveformSessionJitter: 0.04
   waveformFeatureCount: 16

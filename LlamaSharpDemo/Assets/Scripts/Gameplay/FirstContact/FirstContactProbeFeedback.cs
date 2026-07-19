@@ -10,33 +10,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public FirstContactProbeLabelFeedback(
             string statusKey,
             string statusFallback,
-            string officerLineKey)
+            string guidanceLineKey)
         {
             StatusKey = statusKey ?? string.Empty;
             StatusFallback = statusFallback ?? string.Empty;
-            OfficerLineKey = officerLineKey ?? string.Empty;
+            GuidanceLineKey = guidanceLineKey ?? string.Empty;
         }
 
         public string StatusKey { get; }
         public string StatusFallback { get; }
-        public string OfficerLineKey { get; }
+        public string GuidanceLineKey { get; }
     }
 
     public static class FirstContactProbeFeedback
     {
-        public static string ResolveCategoryRejectionOfficerLine(
-            FirstContactBootstrapCategoryFitResult result)
+        public static string ResolveCategoryGuidanceLine(
+            FirstContactBootstrapCategoryFitResult _)
         {
-            return result?.EvidenceType switch
-            {
-                FirstContactBootstrapCategoryFitResult.SymbolicOrContextualEvidence =>
-                    "first_contact.officer.bootstrap_category_contextual",
-                FirstContactBootstrapCategoryFitResult.NeutralOrGenericEvidence =>
-                    "first_contact.officer.bootstrap_category_generic",
-                FirstContactBootstrapCategoryFitResult.UncertainEvidence =>
-                    "first_contact.officer.bootstrap_category_uncertain",
-                _ => "first_contact.officer.bootstrap_category_mismatch"
-            };
+            return "first_contact.doctor_hwang.bootstrap_category_mismatch";
         }
 
         public static FirstContactProbeLabelFeedback ResolveLabelIssue(
@@ -44,26 +35,30 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             return issue switch
             {
+                FirstContactProbeLabelIssue.LabelMismatch => new FirstContactProbeLabelFeedback(
+                    "first_contact.terminal.status.label_mismatch",
+                    "LABEL MISMATCH",
+                    "first_contact.doctor_hwang.probe_label_mismatch"),
                 FirstContactProbeLabelIssue.ActionOrAbstract => new FirstContactProbeLabelFeedback(
                     "first_contact.terminal.status.label_action_or_abstract",
                     "LABEL: ACTION OR ABSTRACT",
-                    "first_contact.officer.probe_label_action_or_abstract"),
+                    "first_contact.doctor_hwang.probe_label_action_or_abstract"),
                 FirstContactProbeLabelIssue.BroadCategory => new FirstContactProbeLabelFeedback(
                     "first_contact.terminal.status.label_broad_category",
                     "LABEL: CATEGORY TOO BROAD",
-                    "first_contact.officer.probe_label_broad_category"),
+                    "first_contact.doctor_hwang.probe_label_broad_category"),
                 FirstContactProbeLabelIssue.MultipleSubjects => new FirstContactProbeLabelFeedback(
                     "first_contact.terminal.status.label_multiple_subjects",
                     "LABEL: MULTIPLE SUBJECTS",
-                    "first_contact.officer.probe_label_multiple_subjects"),
+                    "first_contact.doctor_hwang.probe_label_multiple_subjects"),
                 FirstContactProbeLabelIssue.ClassificationClaim => new FirstContactProbeLabelFeedback(
                     "first_contact.terminal.status.label_classification_claim",
                     "LABEL: REMOVE CLAIM",
-                    "first_contact.officer.probe_label_classification_claim"),
+                    "first_contact.doctor_hwang.probe_label_classification_claim"),
                 _ => new FirstContactProbeLabelFeedback(
-                    "first_contact.terminal.status.label_not_object",
-                    "LABEL: OBJECT ONLY",
-                    "first_contact.officer.probe_label_not_object")
+                    "first_contact.terminal.status.label_action_or_abstract",
+                    "LABEL: ACTION OR ABSTRACT",
+                    "first_contact.doctor_hwang.probe_label_action_or_abstract")
             };
         }
 
@@ -71,21 +66,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactProbeValidationResult result,
             FirstContactVlmSettings settings,
             out string prompt,
-            out string officerLineKey)
+            out string guidanceLineKey)
         {
             prompt = string.Empty;
-            officerLineKey = string.Empty;
+            guidanceLineKey = string.Empty;
             if (result == null)
             {
                 prompt = "OBJECT NOT CLEAR";
-                officerLineKey = "first_contact.officer.probe_unresolved_object";
+                guidanceLineKey = "first_contact.doctor_hwang.probe_unresolved_object";
                 return true;
             }
 
             IReadOnlyList<FirstContactProbeVisualIssue> issues =
                 result.CollectRejectedVisualIssues(settings);
-            bool isBlank = issues.Count == 1 && issues[0] == FirstContactProbeVisualIssue.Blank;
-            if (issues.Count == 0 && !result.IsLabelMismatch)
+            if (issues.Count == 0)
             {
                 return false;
             }
@@ -96,30 +90,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 ResolveVisualIssue(
                     issues[i],
                     out string issuePrompt,
-                    out string issueOfficerLineKey);
+                    out string issueGuidanceLineKey);
                 if (promptBuilder.Length > 0)
                 {
                     promptBuilder.Append('\n');
                 }
 
                 promptBuilder.Append(issuePrompt);
-                if (string.IsNullOrWhiteSpace(officerLineKey))
+                if (string.IsNullOrWhiteSpace(guidanceLineKey))
                 {
-                    officerLineKey = issueOfficerLineKey;
-                }
-            }
-
-            if (result.IsLabelMismatch && !isBlank)
-            {
-                if (promptBuilder.Length > 0)
-                {
-                    promptBuilder.Append('\n');
-                }
-
-                promptBuilder.Append("LABEL MISMATCH");
-                if (string.IsNullOrWhiteSpace(officerLineKey))
-                {
-                    officerLineKey = "first_contact.officer.probe_label_mismatch";
+                    guidanceLineKey = issueGuidanceLineKey;
                 }
             }
 
@@ -130,10 +110,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public static bool TryGetValidationErrorRedrawPrompt(
             FirstContactProbeValidationResult result,
             out string prompt,
-            out string officerLineKey)
+            out string guidanceLineKey)
         {
             prompt = string.Empty;
-            officerLineKey = string.Empty;
+            guidanceLineKey = string.Empty;
             if (result == null || result.IsSuccess || string.IsNullOrWhiteSpace(result.Error))
             {
                 return false;
@@ -145,7 +125,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             prompt = "DRAW SOMETHING";
-            officerLineKey = "first_contact.officer.probe_blank";
+            guidanceLineKey = "first_contact.doctor_hwang.probe_blank";
             return true;
         }
 
@@ -205,39 +185,63 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 "OBJECT NOT CLEAR" => L10n.T(
                     "first_contact.terminal.reason.object_not_clear",
                     "OBJECT NOT CLEAR"),
-                "LABEL MISMATCH" => L10n.T(
-                    "first_contact.terminal.reason.label_mismatch",
-                    "LABEL MISMATCH"),
                 _ => prompt.Trim()
+            };
+        }
+
+        public static string GetRedrawPromptLocalizationKey(string prompt)
+        {
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                return "first_contact.terminal.reason.draw_one_object";
+            }
+
+            string[] lines = prompt.Replace("\r\n", "\n").Replace('\r', '\n')
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            string firstLine = lines[0].Trim().ToUpperInvariant();
+            return firstLine switch
+            {
+                "DRAW SOMETHING" => "first_contact.terminal.reason.draw_something",
+                "DRAW ONE OBJECT" => "first_contact.terminal.reason.draw_one_object",
+                "DRAW ONE OBJECT ONLY" => "first_contact.terminal.reason.draw_one_object_only",
+                "TEXT OR SYMBOL DETECTED" => "first_contact.terminal.reason.text_or_symbol_detected",
+                "SCENE OR ACTION DETECTED" => "first_contact.terminal.reason.scene_or_action_detected",
+                "OBJECT NOT CLEAR" => "first_contact.terminal.reason.object_not_clear",
+                _ => string.Empty
             };
         }
 
         private static void ResolveVisualIssue(
             FirstContactProbeVisualIssue issue,
             out string prompt,
-            out string officerLineKey)
+            out string guidanceLineKey)
         {
             switch (issue)
             {
                 case FirstContactProbeVisualIssue.Blank:
                     prompt = "DRAW SOMETHING";
-                    officerLineKey = "first_contact.officer.probe_blank";
+                    guidanceLineKey = "first_contact.doctor_hwang.probe_blank";
                     break;
                 case FirstContactProbeVisualIssue.TextOrSymbol:
                     prompt = "TEXT OR SYMBOL DETECTED";
-                    officerLineKey = "first_contact.officer.probe_text_or_symbol";
+                    guidanceLineKey = "first_contact.doctor_hwang.probe_text_or_symbol";
                     break;
                 case FirstContactProbeVisualIssue.SceneOrAction:
                     prompt = "SCENE OR ACTION DETECTED";
-                    officerLineKey = "first_contact.officer.probe_scene_or_action";
+                    guidanceLineKey = "first_contact.doctor_hwang.probe_scene_or_action";
                     break;
                 case FirstContactProbeVisualIssue.MultipleObjects:
                     prompt = "DRAW ONE OBJECT ONLY";
-                    officerLineKey = "first_contact.officer.probe_multiple_objects";
+                    guidanceLineKey = "first_contact.doctor_hwang.probe_multiple_objects";
                     break;
                 default:
                     prompt = "OBJECT NOT CLEAR";
-                    officerLineKey = "first_contact.officer.probe_unresolved_object";
+                    guidanceLineKey = "first_contact.doctor_hwang.probe_unresolved_object";
                     break;
             }
         }

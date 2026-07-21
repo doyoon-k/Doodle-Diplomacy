@@ -766,3 +766,58 @@ MonoBehaviour:
       text: "\uC0C8\uB85C\uC6B4 \uBC18\uC751 \uD328\uD134\uC774 \uAD00\uCC30 \uB418\uC5C8\uC2B5\uB2C8\uB2E4.
         \uC81C\uCD9C\uD558\uC168\uB358 \uB77C\uBCA8\uB4E4\uC744 \uBCF4\uACE0 \uCE74\uD14C\uACE0\uB9AC\uC5D0
         \uC774\uB984\uC744 \uBD99\uC5EC\uC8FC\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.objective.exit_vehicle
+    sourceText: Exit the vehicle.
+    translations:
+    - locale: ko-KR
+      text: "\uCC28\uC5D0\uC11C \uB0B4\uB9AC\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.objective.follow_director
+    sourceText: Follow the director.
+    translations:
+    - locale: ko-KR
+      text: "\uAD6D\uC7A5\uC744 \uB530\uB77C\uAC00\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.objective.use_elevator
+    sourceText: Enter the elevator.
+    translations:
+    - locale: ko-KR
+      text: "\uC5D8\uB9AC\uBCA0\uC774\uD130\uC5D0 \uD0C0\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.objective.follow_to_briefing
+    sourceText: Follow the director to the briefing room.
+    translations:
+    - locale: ko-KR
+      text: "\uAD6D\uC7A5\uC744 \uB530\uB77C \uBE0C\uB9AC\uD551\uC2E4\uB85C \uC774\uB3D9\uD558\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.objective.take_briefing_seat
+    sourceText: Take your seat.
+    translations:
+    - locale: ko-KR
+      text: "\uC790\uB9AC\uC5D0 \uC549\uC73C\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.objective.follow_to_meeting
+    sourceText: Follow the director to the meeting room.
+    translations:
+    - locale: ko-KR
+      text: "\uAD6D\uC7A5\uC744 \uB530\uB77C \uD68C\uB2F4\uC7A5\uC73C\uB85C \uC774\uB3D9\uD558\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.objective.enter_meeting
+    sourceText: Enter the meeting room.
+    translations:
+    - locale: ko-KR
+      text: "\uD68C\uB2F4\uC7A5\uC5D0 \uB4E4\uC5B4\uAC00\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.prompt.exit_vehicle
+    sourceText: '[ E ]  EXIT VEHICLE'
+    translations:
+    - locale: ko-KR
+      text: "[ E ]  \uCC28\uC5D0\uC11C \uB0B4\uB9AC\uAE30"
+  - key: first_contact.intro.prompt.use_elevator
+    sourceText: '[ E ]  USE ELEVATOR'
+    translations:
+    - locale: ko-KR
+      text: "[ E ]  \uC5D8\uB9AC\uBCA0\uC774\uD130 \uC774\uC6A9"
+  - key: first_contact.intro.prompt.sit
+    sourceText: '[ E ]  SIT'
+    translations:
+    - locale: ko-KR
+      text: "[ E ]  \uC549\uAE30"
+  - key: first_contact.intro.prompt.enter_meeting
+    sourceText: '[ E ]  ENTER MEETING ROOM'
+    translations:
+    - locale: ko-KR
+      text: "[ E ]  \uD68C\uB2F4\uC7A5 \uC785\uC7A5"

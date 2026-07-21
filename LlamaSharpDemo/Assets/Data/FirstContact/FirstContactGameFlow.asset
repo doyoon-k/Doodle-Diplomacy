@@ -13,4 +13,6 @@ MonoBehaviour:
   m_Name: FirstContactGameFlow
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Data.GameFlowAsset
   entries:
-  - {fileID: 11400000, guid: 1b1a66a13e55408581282823b6f4cbce, type: 2}
+  - {fileID: 11400000, guid: df719b6dfc038164e9e7e0f5f8a0b5f5, type: 2}
+  - {fileID: 11400000, guid: 05647027a007d5f45a87c66d03ff214f, type: 2}
+  - {fileID: 11400000, guid: f196d9439ef41f54b8149bb5411d01f2, type: 2}

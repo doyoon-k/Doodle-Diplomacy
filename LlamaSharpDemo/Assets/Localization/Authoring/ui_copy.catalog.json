@@ -1676,6 +1676,193 @@
       "context": "ui · title · start",
       "status": "final",
       "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.exit_vehicle",
+      "sourceText": "Exit the vehicle.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "차에서 내리십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · vehicle",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.follow_director",
+      "sourceText": "Follow the director.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "국장을 따라가십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · surface guide",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.use_elevator",
+      "sourceText": "Enter the elevator.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "엘리베이터에 타십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · elevator",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.follow_to_briefing",
+      "sourceText": "Follow the director to the briefing room.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "국장을 따라 브리핑실로 이동하십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · facility guide",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.take_briefing_seat",
+      "sourceText": "Take your seat.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자리에 앉으십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · briefing seat",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.follow_to_meeting",
+      "sourceText": "Follow the director to the meeting room.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "국장을 따라 회담장으로 이동하십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · meeting guide",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.enter_meeting",
+      "sourceText": "Enter the meeting room.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "회담장에 들어가십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · meeting room",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.exit_vehicle",
+      "sourceText": "[ E ]  EXIT VEHICLE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  차에서 내리기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · vehicle",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.use_elevator",
+      "sourceText": "[ E ]  USE ELEVATOR",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  엘리베이터 이용",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · elevator",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.sit",
+      "sourceText": "[ E ]  SIT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  앉기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · briefing seat",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.enter_meeting",
+      "sourceText": "[ E ]  ENTER MEETING ROOM",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  회담장 입장",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · meeting room",
+      "status": "final",
+      "tags": []
     }
   ]
 }

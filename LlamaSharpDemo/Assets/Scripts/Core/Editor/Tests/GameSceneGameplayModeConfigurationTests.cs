@@ -13,6 +13,8 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         private const string MainMenuScenePath = "Assets/Scenes/MainMenuScene.unity";
         private const string GameRootScenePath = "Assets/Scenes/GameRoot.unity";
         private const string GameScenePath = "Assets/Scenes/GameScene.unity";
+        private const string IntroSurfaceScenePath = "Assets/Scenes/FirstContact/FC_Intro_Surface.unity";
+        private const string IntroFacilityScenePath = "Assets/Scenes/FirstContact/FC_Intro_Facility.unity";
         private const string GameFlowPath = "Assets/Data/FirstContact/FirstContactGameFlow.asset";
 
         [Test]
@@ -48,16 +50,19 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             var flow = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.GameFlowAsset>(GameFlowPath);
             Assert.IsInstanceOf<IGameplaySceneModeResolver>(hub);
             var resolver = (IGameplaySceneModeResolver)hub;
-            Assert.IsInstanceOf<FirstContactTranslationMode>(resolver.GetModeBehaviour(flow.entries[0]));
+            Assert.IsInstanceOf<FirstContactTranslationMode>(resolver.GetModeBehaviour(flow.entries[^1]));
         }
 
         [Test]
-        public void FirstContactFlowContainsOnlyActiveFirstContactEntry()
+        public void FirstContactFlowContainsIntroAndTranslationEntries()
         {
             var flow = AssetDatabase.LoadAssetAtPath<DoodleDiplomacy.Data.GameFlowAsset>(GameFlowPath);
             Assert.IsNotNull(flow, "FirstContactGameFlow asset must exist.");
-            Assert.AreEqual(1, flow.entries.Length, "Active flow should exclude legacy Day1/object-pair prototype entries.");
-            Assert.AreEqual("first-contact-translation", flow.entries[0].entryTag);
+            Assert.AreEqual(3, flow.entries.Length, "Active flow should contain surface intro, facility intro, and translation gameplay.");
+            Assert.AreEqual("first-contact-intro-surface", flow.entries[0].entryTag);
+            Assert.AreEqual("first-contact-intro-facility", flow.entries[1].entryTag);
+            Assert.AreEqual("first-contact-translation", flow.entries[2].entryTag);
+            Assert.IsFalse(flow.entries[2].startSessionWithIntro, "The completed 3D intro replaces the translation mode's placeholder intro cards.");
         }
 
         [Test]
@@ -110,6 +115,8 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         {
             AssertSceneEnabled(MainMenuScenePath);
             AssertSceneEnabled(GameRootScenePath);
+            AssertSceneEnabled(IntroSurfaceScenePath);
+            AssertSceneEnabled(IntroFacilityScenePath);
             AssertSceneEnabled(GameScenePath);
         }
 

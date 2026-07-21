@@ -12,6 +12,12 @@ EditorBuildSettings:
     path: Assets/Scenes/GameRoot.unity
     guid: 3b998a9a28e44f6e9ad1fdf151e456cf
   - enabled: 1
+    path: Assets/Scenes/FirstContact/FC_Intro_Surface.unity
+    guid: 04b33738d59f4804a9cfc482d82b0110
+  - enabled: 1
+    path: Assets/Scenes/FirstContact/FC_Intro_Facility.unity
+    guid: a6bdf2f163a2d8748bf14095324c6393
+  - enabled: 1
     path: Assets/Scenes/GameScene.unity
     guid: a8cc9bc2bc7c1674cb00a37698435925
   - enabled: 0

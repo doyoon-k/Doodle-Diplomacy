@@ -15,6 +15,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private string _objectiveFallback = string.Empty;
         private string _promptKey = string.Empty;
         private string _promptFallback = string.Empty;
+        private bool _crosshairVisible = true;
 
         public void Configure(
             TextMeshProUGUI objective,
@@ -26,6 +27,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             crosshairText = crosshair;
             RefreshFont();
             RefreshLocalizedText();
+            RefreshCrosshairVisibility();
         }
 
         private void OnEnable()
@@ -33,6 +35,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             L10n.LocaleChanged += HandleLocaleChanged;
             RefreshFont();
             RefreshLocalizedText();
+            RefreshCrosshairVisibility();
         }
 
         private void OnDisable()
@@ -62,6 +65,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public void ClearPrompt()
         {
             SetPrompt(string.Empty, string.Empty);
+        }
+
+        public void SetCrosshairVisible(bool visible)
+        {
+            _crosshairVisible = visible;
+            RefreshCrosshairVisibility();
         }
 
         private void HandleLocaleChanged(string locale)
@@ -102,6 +111,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             promptText.text = visible
                 ? L10n.T(_promptKey, _promptFallback)
                 : string.Empty;
+        }
+
+        private void RefreshCrosshairVisibility()
+        {
+            if (crosshairText != null)
+            {
+                crosshairText.gameObject.SetActive(_crosshairVisible);
+            }
         }
 
         private void RefreshFont()

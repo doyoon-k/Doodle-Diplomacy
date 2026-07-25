@@ -119,7 +119,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
-            if (!result.Error.Trim().Equals("Drawing is blank.", StringComparison.OrdinalIgnoreCase))
+            return TryGetBlankDrawingRedrawPrompt(
+                result.Error,
+                out prompt,
+                out guidanceLineKey);
+        }
+
+        public static bool TryGetBlankDrawingRedrawPrompt(
+            string error,
+            out string prompt,
+            out string guidanceLineKey)
+        {
+            prompt = string.Empty;
+            guidanceLineKey = string.Empty;
+            if (string.IsNullOrWhiteSpace(error) ||
+                !error.Trim().Equals("Drawing is blank.", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

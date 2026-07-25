@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactNarrativeSettings
   narrativeScenario: {fileID: 11400000, guid: d0b69c3fbbd2ce942aeac9dc289e7b18, type: 2}
   enableEncounterOpening: 1
-  playPlaceholderIntroMontage: 1
+  playPlaceholderIntroMontage: 0
   createPlaceholderGeometry: 1
   enablePreflightTutorial: 1
   placeholderIntroCardSeconds: 0.9

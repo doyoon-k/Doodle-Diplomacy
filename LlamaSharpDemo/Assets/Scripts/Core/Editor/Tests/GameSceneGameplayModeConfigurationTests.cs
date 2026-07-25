@@ -62,7 +62,13 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.AreEqual("first-contact-intro-surface", flow.entries[0].entryTag);
             Assert.AreEqual("first-contact-intro-facility", flow.entries[1].entryTag);
             Assert.AreEqual("first-contact-translation", flow.entries[2].entryTag);
-            Assert.IsFalse(flow.entries[2].startSessionWithIntro, "The completed 3D intro replaces the translation mode's placeholder intro cards.");
+            Assert.IsTrue(flow.entries[2].startSessionWithIntro, "Dr. Hwang's preflight tutorial must still run after the completed 3D intro.");
+
+            var narrativeSettings = AssetDatabase.LoadAssetAtPath<FirstContactNarrativeSettings>(
+                "Assets/Data/FirstContact/FirstContactNarrativeSettings.asset");
+            Assert.IsNotNull(narrativeSettings);
+            Assert.IsFalse(narrativeSettings.playPlaceholderIntroMontage, "The 3D intro replaces only the old placeholder montage.");
+            Assert.IsTrue(narrativeSettings.enablePreflightTutorial, "The terminal preflight tutorial must remain enabled.");
         }
 
         [Test]

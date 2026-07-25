@@ -1,4 +1,7 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using DoodleDiplomacy.Narrative;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -15,14 +18,38 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField] private FirstContactIntroInteractable elevatorInteraction;
         [SerializeField] private FirstContactIntroInteractable briefingSeatInteraction;
         [SerializeField] private FirstContactIntroInteractable meetingRoomInteraction;
+        [SerializeField] private FirstContactNewsBroadcastPlayer newsBroadcast;
+        [SerializeField] private Transform newsCameraAnchor;
+        [SerializeField, Min(0f)] private float newsExitBlendSeconds = 0.8f;
+        [Tooltip("The physical pizza sign to glance at from the vehicle. If empty, the prototype sign is found at runtime.")]
+        [SerializeField] private Transform pizzaSignLookTarget;
+        [SerializeField] private Transform pizzaSignCameraAnchor;
+        [SerializeField, Min(0f)] private float pizzaSignFocusBlendSeconds = 0.45f;
+        [SerializeField, Min(0f)] private float pizzaSignLeadSeconds = 0.25f;
+        [SerializeField, Min(0f)] private float pizzaSignExitBlendSeconds = 0.55f;
         [SerializeField, Min(0f)] private float placeholderBriefingSeconds = 2f;
 
         private Coroutine _seatRoutine;
+        private Coroutine _newsRoutine;
+        private Coroutine _carArrivalRoutine;
+        private FirstContactNewsSubtitleDisplay _dialogueDisplay;
+        private readonly List<NarrativeBeat> _activeDialogueBeats = new();
         private bool _begun;
         private bool _busy;
 
         public bool IsBusy => _busy;
         public FirstContactIntroSegment Segment => segment;
+        public Transform NewsCameraAnchor => newsCameraAnchor;
+
+        public void SetNewsBroadcast(FirstContactNewsBroadcastPlayer broadcast)
+        {
+            newsBroadcast = broadcast;
+        }
+
+        public void SetNewsCameraAnchor(Transform cameraAnchor)
+        {
+            newsCameraAnchor = cameraAnchor;
+        }
 
         public void Configure(
             FirstContactIntroSegment sceneSegment,
@@ -33,7 +60,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactIntroInteractable exitVehicle,
             FirstContactIntroInteractable elevator,
             FirstContactIntroInteractable briefingSeat,
-            FirstContactIntroInteractable meetingRoom)
+            FirstContactIntroInteractable meetingRoom,
+            FirstContactNewsBroadcastPlayer broadcast = null,
+            Transform broadcastCameraAnchor = null)
         {
             segment = sceneSegment;
             mode = introMode;
@@ -44,6 +73,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             elevatorInteraction = elevator;
             briefingSeatInteraction = briefingSeat;
             meetingRoomInteraction = meetingRoom;
+            newsBroadcast = broadcast;
+            newsCameraAnchor = broadcastCameraAnchor;
         }
 
         private IEnumerator Start()
@@ -55,6 +86,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void BeginDirectEditorPreview()
+        {
+            FirstContactIntroSequenceController sequence =
+                FindFirstObjectByType<FirstContactIntroSequenceController>(
+                    FindObjectsInactive.Exclude);
+            if (sequence != null)
+            {
+                sequence.Begin();
+            }
+        }
+#endif
+
         private void OnEnable()
         {
             SubscribeGuide();
@@ -62,6 +107,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void OnDisable()
         {
+            player?.RestoreView();
+            hud?.SetCrosshairVisible(true);
             UnsubscribeGuide();
         }
 
@@ -79,14 +126,26 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             if (segment == FirstContactIntroSegment.Surface)
             {
-                exitVehicleInteraction?.SetAvailable(true);
+                exitVehicleInteraction?.SetAvailable(false);
                 elevatorInteraction?.SetAvailable(false);
                 player?.SetMovementEnabled(false);
-                player?.SetContextualInteraction(exitVehicleInteraction);
-                hud?.SetObjective(
-                    "first_contact.intro.objective.exit_vehicle",
-                    "Exit the vehicle.");
+                player?.SetInteractionEnabled(false);
+                player?.SetLookEnabled(false);
+                player?.SetContextualInteraction(null);
+                hud?.ClearObjective();
                 guide?.Stop();
+
+                if (newsBroadcast != null && newsBroadcast.IsConfigured)
+                {
+                    newsBroadcast.SetSubtitleHost(hud);
+                    player?.LockViewTo(newsCameraAnchor);
+                    hud?.SetCrosshairVisible(false);
+                    _newsRoutine = StartCoroutine(NewsBroadcastRoutine());
+                }
+                else
+                {
+                    EnableVehicleExit();
+                }
             }
             else
             {
@@ -110,11 +169,193 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _seatRoutine = null;
             }
 
+            if (_newsRoutine != null)
+            {
+                StopCoroutine(_newsRoutine);
+                _newsRoutine = null;
+            }
+
+            if (_carArrivalRoutine != null)
+            {
+                StopCoroutine(_carArrivalRoutine);
+                _carArrivalRoutine = null;
+            }
+
+            newsBroadcast?.StopBroadcast();
+            _dialogueDisplay?.HideImmediate();
+            player?.RestoreView();
             guide?.Stop();
             player?.SetContextualInteraction(null);
             player?.SetControlEnabled(false);
             hud?.ClearObjective();
             hud?.ClearPrompt();
+            hud?.SetCrosshairVisible(true);
+        }
+
+        private IEnumerator NewsBroadcastRoutine()
+        {
+            yield return newsBroadcast.PlayBroadcastRoutine();
+            _newsRoutine = null;
+            if (player != null)
+            {
+                yield return player.BlendToRestoredView(newsExitBlendSeconds);
+            }
+
+            if (_begun && !_busy)
+            {
+                _carArrivalRoutine = StartCoroutine(CarArrivalRoutine());
+            }
+        }
+
+        private IEnumerator CarArrivalRoutine()
+        {
+            player?.SetMovementEnabled(false);
+            // The player stays seated, but can freely look around while the president and director talk.
+            player?.SetLookEnabled(true);
+            player?.SetInteractionEnabled(false);
+            hud?.ClearObjective();
+
+            yield return PlayDialogueEventRoutine("intro.car.after_news");
+
+            ResolvePizzaSignLookTarget();
+            if (pizzaSignLookTarget != null)
+            {
+                // Keep the player in the car. This is a glance toward the sign, not a camera teleport.
+                player?.SetLookEnabled(false);
+                if (player != null)
+                {
+                    yield return player.BlendViewToLookAt(
+                        pizzaSignLookTarget,
+                        pizzaSignFocusBlendSeconds);
+                }
+
+                if (pizzaSignLeadSeconds > 0f)
+                {
+                    yield return new WaitForSecondsRealtime(pizzaSignLeadSeconds);
+                }
+            }
+
+            yield return PlayDialogueEventRoutine("intro.car.pizza_sign");
+
+            if (pizzaSignLookTarget != null && player != null)
+            {
+                yield return player.BlendToRestoredGazeView(pizzaSignExitBlendSeconds);
+            }
+
+            _dialogueDisplay?.Hide();
+            _carArrivalRoutine = null;
+            if (_begun && !_busy)
+            {
+                EnableVehicleExit();
+            }
+        }
+
+        private IEnumerator PlayDialogueEventRoutine(string triggerEvent)
+        {
+            NarrativeScenarioAsset scenario = newsBroadcast != null
+                ? newsBroadcast.NarrativeScenario
+                : null;
+            if (scenario == null || string.IsNullOrWhiteSpace(triggerEvent))
+            {
+                yield break;
+            }
+
+            _activeDialogueBeats.Clear();
+            IReadOnlyList<NarrativeBeat> beats = scenario.Beats;
+            for (int i = 0; i < beats.Count; i++)
+            {
+                NarrativeBeat beat = beats[i];
+                if (beat != null &&
+                    beat.enabled &&
+                    string.Equals(
+                        beat.triggerEvent,
+                        triggerEvent,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    _activeDialogueBeats.Add(beat);
+                }
+            }
+
+            if (_activeDialogueBeats.Count == 0)
+            {
+                yield break;
+            }
+
+            _activeDialogueBeats.Sort((left, right) => left.order.CompareTo(right.order));
+            FirstContactNewsSubtitleDisplay display = GetDialogueDisplay();
+            for (int i = 0; i < _activeDialogueBeats.Count; i++)
+            {
+                NarrativeBeat beat = _activeDialogueBeats[i];
+                NarrativeTrace.Emit(scenario.ScenarioId, beat.id, "enter");
+                display?.Show(beat.ResolveSpeaker(), beat.ResolveText());
+
+                float elapsed = 0f;
+                float duration = Mathf.Max(0.1f, beat.minimumSeconds);
+                while (_begun && !_busy && elapsed < duration)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+
+                display?.Hide();
+                NarrativeTrace.Emit(scenario.ScenarioId, beat.id, "exit");
+            }
+        }
+
+        private FirstContactNewsSubtitleDisplay GetDialogueDisplay()
+        {
+            if (_dialogueDisplay != null || hud == null)
+            {
+                return _dialogueDisplay;
+            }
+
+            _dialogueDisplay = hud.GetComponent<FirstContactNewsSubtitleDisplay>();
+            if (_dialogueDisplay == null)
+            {
+                _dialogueDisplay = hud.gameObject.AddComponent<FirstContactNewsSubtitleDisplay>();
+            }
+
+            return _dialogueDisplay;
+        }
+
+        private void ResolvePizzaSignLookTarget()
+        {
+            if (pizzaSignLookTarget != null)
+            {
+                return;
+            }
+
+            // The existing SHOT_Pizza_Sign is a camera position, not the sign itself.
+            // Prefer the physical sign so the camera can stay in the car and merely turn toward it.
+            GameObject sign = GameObject.Find("SignBacking");
+            if (sign != null)
+            {
+                pizzaSignLookTarget = sign.transform;
+                return;
+            }
+
+            // Retain a safe fallback for scenes that do not yet include the prototype sign mesh.
+            if (pizzaSignCameraAnchor == null)
+            {
+                GameObject shot = GameObject.Find("SHOT_Pizza_Sign");
+                pizzaSignCameraAnchor = shot != null ? shot.transform : null;
+            }
+
+            pizzaSignLookTarget = pizzaSignCameraAnchor;
+        }
+
+        private void EnableVehicleExit()
+        {
+            player?.RestoreView();
+            hud?.SetCrosshairVisible(true);
+            exitVehicleInteraction?.SetAvailable(true);
+            player?.SetLookEnabled(true);
+            player?.SetInteractionEnabled(true);
+            player?.SetMovementEnabled(false);
+            player?.SetContextualInteraction(exitVehicleInteraction);
+            hud?.SetObjective(
+                "first_contact.intro.objective.exit_vehicle",
+                "Exit the vehicle.");
         }
 
         public bool HandleInteraction(

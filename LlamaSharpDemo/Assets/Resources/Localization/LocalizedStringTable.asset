@@ -821,3 +821,200 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "[ E ]  \uD68C\uB2F4\uC7A5 \uC785\uC7A5"
+  - key: first_contact.news.station
+    sourceText: KSEA 7 NEWS
+    translations:
+    - locale: ko-KR
+      text: "KSEA 7 \uB274\uC2A4"
+  - key: first_contact.news.vhs.banner
+    sourceText: ARCHIVE
+    translations:
+    - locale: ko-KR
+      text: "\uC790\uB8CC\uD654\uBA74"
+  - key: first_contact.news.vhs.status
+    sourceText: "AMATEUR VIDEO \xB7 REDMOND"
+    translations:
+    - locale: ko-KR
+      text: "\uC2DC\uBBFC \uC81C\uBCF4 \uC601\uC0C1 \xB7 \uB808\uB4DC\uBA3C\uB4DC"
+  - key: first_contact.news.vhs.headline
+    sourceText: UNIDENTIFIED OBJECT SEEN OVER REDMOND
+    translations:
+    - locale: ko-KR
+      text: "\uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5 \uBBF8\uD655\uC778 \uBE44\uD589\uBB3C\uCCB4
+        \uD3EC\uCC29"
+  - key: first_contact.news.vhs.caption
+    sourceText: This footage was submitted by a local resident.
+    translations:
+    - locale: ko-KR
+      text: "\uC2DC\uBBFC\uC774 \uC81C\uBCF4\uD55C \uCD2C\uC601 \uC601\uC0C1\uC785\uB2C8\uB2E4."
+  - key: first_contact.news.reporter.banner
+    sourceText: BREAKING NEWS
+    translations:
+    - locale: ko-KR
+      text: "\uC18D\uBCF4"
+  - key: first_contact.news.reporter.status
+    sourceText: "LIVE \xB7 REDMOND"
+    translations:
+    - locale: ko-KR
+      text: "\uD604\uC7A5 \xB7 \uB808\uB4DC\uBA3C\uB4DC"
+  - key: first_contact.news.reporter.headline
+    sourceText: UFO SIGHTING CAUSES CONFUSION EAST OF SEATTLE
+    translations:
+    - locale: ko-KR
+      text: "\uC2DC\uC560\uD2C0 \uB3D9\uBD80 UFO \uBAA9\uACA9\uC73C\uB85C \uC2DC\uBBFC
+        \uD63C\uB780"
+  - key: first_contact.news.reporter.caption
+    sourceText: An unidentified flying object was sighted over Redmond, east of Seattle,
+      leaving residents confused.
+    translations:
+    - locale: ko-KR
+      text: "\uC2DC\uC560\uD2C0 \uB3D9\uBD80, \uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5\uC5D0\uC11C
+        \uBBF8\uD655\uC778 \uBE44\uD589\uBB3C\uCCB4\uAC00 \uBAA9\uACA9\uB418\uC5B4
+        \uC2DC\uBBFC\uB4E4\uC774 \uD63C\uB780\uC5D0 \uBE60\uC84C\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.news.interview.banner
+    sourceText: WITNESS
+    translations:
+    - locale: ko-KR
+      text: "\uBAA9\uACA9\uC790"
+  - key: first_contact.news.interview.status
+    sourceText: EYEWITNESS INTERVIEW
+    translations:
+    - locale: ko-KR
+      text: "\uD604\uC7A5 \uBAA9\uACA9\uC790 \uC778\uD130\uBDF0"
+  - key: first_contact.news.interview.headline
+    sourceText: '"IT DISAPPEARED INTO THE FOREST"'
+    translations:
+    - locale: ko-KR
+      text: "\"\uC232 \uC18D\uC73C\uB85C \uC0AC\uB77C\uC84C\uC2B5\uB2C8\uB2E4\""
+  - key: first_contact.news.interview.caption
+    sourceText: I saw it with my own eyes. It appeared in an instant, flashed bright
+      lights, and vanished into the forest!
+    translations:
+    - locale: ko-KR
+      text: "\uB0B4 \uB208\uC73C\uB85C \uBD84\uBA85\uD788 \uBD24\uB2E4\uB2C8\uAE4C?
+        \uC21C\uC2DD\uAC04\uC5D0 \uB098\uD0C0\uB098\uC11C \uBE5B\uC744 \uB9C8\uAD6C
+        \uBFDC\uB354\uB2C8 \uC232 \uC18D\uC73C\uB85C \uC0AC\uB77C\uC84C\uB2E4\uB2C8\uAE4C,
+        \uAE00\uC384!"
+  - key: first_contact.news.oregon.banner
+    sourceText: ARCHIVE
+    translations:
+    - locale: ko-KR
+      text: "\uC790\uB8CC\uD654\uBA74"
+  - key: first_contact.news.oregon.status
+    sourceText: "FILE PHOTO \xB7 OREGON"
+    translations:
+    - locale: ko-KR
+      text: "\uC790\uB8CC \uC0AC\uC9C4 \xB7 \uC624\uB9AC\uAC74"
+  - key: first_contact.news.oregon.headline
+    sourceText: SIMILAR OBJECT PHOTOGRAPHED IN OREGON
+    translations:
+    - locale: ko-KR
+      text: "\uC624\uB9AC\uAC74\uC5D0\uC11C\uB3C4 \uC720\uC0AC \uBE44\uD589\uBB3C\uCCB4
+        \uCD2C\uC601"
+  - key: first_contact.news.oregon.caption
+    sourceText: Similar sightings have also been reported in Oregon.
+    translations:
+    - locale: ko-KR
+      text: "\uC720\uC0AC\uD55C \uBAA9\uACA9 \uC0AC\uB840\uB294 \uACFC\uAC70 \uC624\uB9AC\uAC74\uC8FC\uC5D0\uC11C\uB3C4
+        \uBCF4\uACE0\uB410\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.news.press.banner
+    sourceText: LIVE
+    translations:
+    - locale: ko-KR
+      text: "\uC0DD\uC911\uACC4"
+  - key: first_contact.news.press.status
+    sourceText: AIR FORCE BRIEFING
+    translations:
+    - locale: ko-KR
+      text: "\uACF5\uAD70 \uBE0C\uB9AC\uD551"
+  - key: first_contact.news.press.headline
+    sourceText: AIR FORCE CITES WEATHER BALLOON AND NIGHT EXERCISE
+    translations:
+    - locale: ko-KR
+      text: "\uACF5\uAD70, \uAE30\uC0C1\uAD00\uCE21\uC6A9 \uD48D\uC120\uACFC \uC57C\uAC04
+        \uD6C8\uB828\uC774 \uC6D0\uC778\uC774\uB77C \uBC1C\uD45C"
+  - key: first_contact.news.press.caption
+    sourceText: Officials say Venus, a weather balloon, and flares from a nearby
+      base appeared together by coincidence.
+    translations:
+    - locale: ko-KR
+      text: "\uB2F9\uAD6D\uC740 \uAE08\uC131\uACFC \uAE30\uC0C1\uAD00\uCE21\uC6A9
+        \uD48D\uC120, \uC778\uADFC \uAE30\uC9C0\uC758 \uC870\uBA85\uD0C4\uC774 \uC6B0\uC5F0\uD788
+        \uACB9\uCCD0 \uBCF4\uC778 \uAC83\uC73C\uB85C \uD310\uB2E8\uD588\uC2B5\uB2C8\uB2E4.
+        \uADFC\uAC70 \uC5C6\uB294 \uC18C\uBB38 \uD655\uC0B0\uC744 \uC790\uC81C\uD574
+        \uC8FC\uC2ED\uC2DC\uC624."
+  - key: first_contact.intro.news.ufo_archive
+    sourceText: This footage of an unidentified flying object was recorded over Redmond,
+      Washington.
+    translations:
+    - locale: ko-KR
+      text: "\uC6CC\uC2F1\uD134 \uC8FC \uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5\uC5D0\uC11C
+        \uBBF8\uD655\uC778 \uBB3C\uCCB4\uAC00 \uBE5B\uC744 \uC3D8\uBA70 \uB0A0\uACE0
+        \uC788\uC2B5\uB2C8\uB2E4. "
+  - key: first_contact.intro.news.field_reporter
+    sourceText: An unidentified flying object has been sighted over Redmond, east
+      of Seattle, leaving residents confused.
+    translations:
+    - locale: ko-KR
+      text: "\uC2DC\uC560\uD2C0 \uB3D9\uBD80 \uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5\uC5D0\uC11C
+        \uBBF8\uD655\uC778 \uBE44\uD589\uBB3C\uCCB4\uAC00 \uBAA9\uACA9\uB3FC \uC2DC\uBBFC\uB4E4\uC774
+        \uD63C\uB780\uC5D0 \uBE60\uC84C\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.intro.news.eyewitness
+    sourceText: I saw it with my own eyes! It appeared in an instant, flashed bright
+      lights everywhere, then vanished into the forest!
+    translations:
+    - locale: ko-KR
+      text: "\uB0B4 \uB208\uC73C\uB85C \uBD84\uBA85\uD788 \uBD24\uB2E4\uB2C8\uAE4C\uC694?
+        \uC21C\uC2DD\uAC04\uC5D0 \uB098\uD0C0\uB098 \uBE5B\uC744 \uB9C8\uAD6C \uBFDC\uB354\uB2C8
+        \uC232\uC18D\uC73C\uB85C \uC0AC\uB77C\uC84C\uC5B4\uC694!"
+  - key: first_contact.intro.news.redmond_photo
+    sourceText: This is a still photograph of the same unidentified object seen over
+      Redmond.
+    translations:
+    - locale: ko-KR
+      text: "\uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5\uC5D0\uC11C \uBAA9\uACA9\uB41C
+        \uB3D9\uC77C \uBBF8\uD655\uC778 \uBB3C\uCCB4\uC758 \uAE30\uB85D \uC0AC\uC9C4\uC785\uB2C8\uB2E4."
+  - key: first_contact.intro.news.air_force_explanation
+    sourceText: We believe last night's lights were caused by Venus, a weather balloon,
+      and a nearby base's nighttime flare exercise appearing together by coincidence.
+    translations:
+    - locale: ko-KR
+      text: "\uC5B4\uC82F\uBC24 \uBAA9\uACA9\uB41C \uBD88\uBE5B\uC740 \uAE08\uC131,
+        \uAE30\uC0C1\uAD00\uCE21\uC6A9 \uD48D\uC120, \uADF8\uB9AC\uACE0 \uC778\uADFC
+        \uAE30\uC9C0\uC758 \uC57C\uAC04 \uC870\uBA85\uD0C4 \uD6C8\uB828\uC774 \uC6B0\uC5F0\uD788
+        \uACB9\uCCD0 \uBCF4\uC778 \uAC83\uC73C\uB85C \uD310\uB2E8\uB429\uB2C8\uB2E4."
+  - key: first_contact.intro.news.air_force_warning
+    sourceText: Be advised that spreading baseless rumors and causing public disorder
+      may result in prosecution.
+    translations:
+    - locale: ko-KR
+      text: "\uADFC\uAC70 \uC5C6\uB294 \uC18C\uBB38\uC73C\uB85C \uD63C\uB780\uC744
+        \uD37C\uB728\uB9B4 \uACBD\uC6B0 \uCC98\uBC8C\uBC1B\uC744 \uC218 \uC788\uC73C\uB2C8
+        \uC8FC\uC758\uD558\uC2DC\uAE30 \uBC14\uB78D\uB2C8\uB2E4."
+  - key: first_contact.intro.car.after_news.president
+    sourceText: Will people really believe this? They are not idiots. There were
+      too many witnesses.
+    translations:
+    - locale: ko-KR
+      text: "\uC774\uAC78 \uC0AC\uB78C\uB4E4\uC774 \uBBFF\uC744\uAE4C? \uC0AC\uB78C\uB4E4\uC774
+        \uBC14\uBCF4\uB3C4 \uC544\uB2C8\uACE0. \uBCF8 \uC0AC\uB78C\uC774 \uD55C\uB458\uC774\uC5B4\uC57C\uC9C0."
+  - key: first_contact.intro.car.after_news.director_cover
+    sourceText: It was the best option available, Mr. President.
+    translations:
+    - locale: ko-KR
+      text: "\uC774\uAC8C \uCD5C\uC120\uC774\uC5C8\uC2B5\uB2C8\uB2E4, \uAC01\uD558."
+  - key: first_contact.intro.car.after_news.director_arrival
+    sourceText: We are almost there.
+    translations:
+    - locale: ko-KR
+      text: "\uC774\uC81C \uAC70\uC758 \uB2E4 \uC654\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.intro.car.pizza_sign.president
+    sourceText: Isn't this a pizza place? It is pretty quiet.
+    translations:
+    - locale: ko-KR
+      text: "\uC5EC\uAE30\uB294 \uD53C\uC790\uC9D1 \uC544\uB2CC\uAC00? \uD55C\uAC00\uD558\uAD6C\uB9CC."
+  - key: first_contact.intro.car.pizza_sign.director
+    sourceText: Let me explain once we are inside.
+    translations:
+    - locale: ko-KR
+      text: "\uC77C\uB2E8 \uB4E4\uC5B4\uAC00\uC11C \uC124\uBA85\uD574 \uB4DC\uB9AC\uACA0\uC2B5\uB2C8\uB2E4."

@@ -13,28 +13,29 @@ MonoBehaviour:
   m_Name: FirstContactProbeValidationPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: FirstContactProbeValidationPipeline
-  description: First Contact VLM validator. Checks drawing rules and operator label match without producing semantic labels.
+  description: VLM drawing validator. Checks image fields and label match.
   steps:
   - stepName: FirstContactProbeValidator
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: a42e093df78b4d1894b0aa86b61043fb, type: 2}
-    userPromptTemplate: 'Validate this probe drawing conservatively.
-
-      UI_LOCALE: {{source_locale}}
-
-      ORIGINAL_PLAYER_LABEL: {{probe_display_label}}
-
-      The original label may use a language different from UI_LOCALE. Interpret the
-      original text directly without translating or rewriting it.'
+    embeddingProfile: {fileID: 0}
+    userPromptTemplate: 'PROVIDED_LABEL_JSON: {{probe_display_label_json}}'
+    embeddingOutputKey: embedding
+    failOnEmptyEmbeddingInput: 1
     jsonMaxRetries: 1
     jsonRetryDelaySeconds: 0.1
     useVision: 1
     imageStateKey: reference_image
     requireImage: 1
     resizeLongestSide: 1024
-    customLinkTypeName:
+    customLinkTypeName: DoodleDiplomacy.Gameplay.FirstContact.FirstContactLabelAnalysisChainLink,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     customAsset: {fileID: 0}
-    customLinkParameters: []
+    customLinkParameters:
+    - key: parameters
+      value: 
+    - key: service
+      value: 
     editorPosition: {x: -160, y: -40}
     guid: b4cc23f4-e7d6-4f88-8763-c27f81087f85
     nextStepGuid: 
@@ -43,8 +44,8 @@ MonoBehaviour:
     outputNodePosition: {x: 680, y: -40}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 0, y: 0, z: 0}
-    viewScale: {x: 1, y: 1, z: 1}
+    viewPosition: {x: 561, y: -258, z: 0}
+    viewScale: {x: 0.57175326, y: 0.57175326, z: 1}
     viewInitialized: 1
     snapshotPositions:
     - {x: 0, y: 0}

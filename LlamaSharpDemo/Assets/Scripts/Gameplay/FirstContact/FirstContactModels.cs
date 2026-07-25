@@ -254,7 +254,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             None,
             IdenticalImage,
-            SameLabel,
+            SameLabelReuse,
             StrongSemanticMatch
         }
 
@@ -338,7 +338,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     string.Equals(candidateLabel, ResolveNormalizedLabel(recorded), StringComparison.Ordinal))
                 {
                     duplicate = recorded;
-                    evidence = new MatchEvidence(MatchKind.SameLabel, 1f);
+                    evidence = new MatchEvidence(MatchKind.SameLabelReuse, 1f);
                     return true;
                 }
 

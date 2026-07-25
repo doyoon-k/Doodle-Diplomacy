@@ -16,6 +16,12 @@
       "summary": "Temporary cards bridge the finished briefing script into the playable encounter."
     },
     {
+      "id": "news_broadcast",
+      "title": "In-car news broadcast",
+      "order": 1,
+      "summary": "Readable in-game subtitles timed to the silent television footage in the presidential car."
+    },
+    {
       "id": "preflight",
       "title": "Tablet preflight",
       "order": 5,
@@ -53,6 +59,223 @@
     }
   ],
   "beats": [
+    {
+      "id": "news_ufo_archive",
+      "sectionId": "news_broadcast",
+      "order": 0,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsUfoArchive",
+      "triggerEvent": "intro.news.clip.0",
+      "condition": "UFO VHS footage is playing on the in-car television",
+      "repeat": "once-per-session",
+      "speakerId": "ksea_news",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "KSEA 7 NEWS",
+      "localizationKey": "first_contact.intro.news.ufo_archive",
+      "sourceText": "This footage of an unidentified flying object was recorded over Redmond, Washington.",
+      "advance": "automatic",
+      "minimumSeconds": 5.5,
+      "situation": "Silent VHS footage opens the broadcast.",
+      "beforeAction": "The camera is locked in front of the in-car television.",
+      "afterAction": "Cut to the field reporter.",
+      "stageDirection": "Show as a clean game subtitle below the noisy television image.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-0",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "워싱턴 주 레드먼드 상공에서 미확인 물체가 빛을 쏘며 숲 위를 ",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_field_reporter",
+      "sectionId": "news_broadcast",
+      "order": 10,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsFieldReporter",
+      "triggerEvent": "intro.news.clip.1",
+      "condition": "The field reporter clip is playing",
+      "repeat": "once-per-session",
+      "speakerId": "field_reporter",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "FIELD REPORTER",
+      "localizationKey": "first_contact.intro.news.field_reporter",
+      "sourceText": "An unidentified flying object has been sighted over Redmond, east of Seattle, leaving residents confused.",
+      "advance": "automatic",
+      "minimumSeconds": 7,
+      "situation": "A reporter introduces the Redmond sighting.",
+      "beforeAction": "The archive footage ends.",
+      "afterAction": "Cut to an eyewitness interview.",
+      "stageDirection": "Do not show an advance prompt.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-1",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "시애틀 동부 레드먼드 상공에서 미확인 비행물체가 목격돼 시민들이 혼란에 빠졌습니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_eyewitness",
+      "sectionId": "news_broadcast",
+      "order": 20,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsEyewitness",
+      "triggerEvent": "intro.news.clip.2",
+      "condition": "The eyewitness interview clip is playing",
+      "repeat": "once-per-session",
+      "speakerId": "eyewitness",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "EYEWITNESS",
+      "localizationKey": "first_contact.intro.news.eyewitness",
+      "sourceText": "I saw it with my own eyes! It appeared in an instant, flashed bright lights everywhere, then vanished into the forest!",
+      "advance": "automatic",
+      "minimumSeconds": 7,
+      "situation": "A local eyewitness excitedly describes the object.",
+      "beforeAction": "The reporter narration ends.",
+      "afterAction": "Show the still photograph of the same object.",
+      "stageDirection": "The subtitle remains readable while the television graphics retain heavy VHS noise.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-2",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "내 눈으로 분명히 봤다니까요? 순식간에 나타나 빛을 마구 뿜더니 숲속으로 사라졌어요!",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_redmond_photo",
+      "sectionId": "news_broadcast",
+      "order": 30,
+      "enabled": true,
+      "type": "caption",
+      "status": "final",
+      "runtimeCue": "NewsRedmondPhoto",
+      "triggerEvent": "intro.news.clip.3",
+      "condition": "The still photograph named ufo_oregon.jpg is shown as evidence from the same Redmond incident",
+      "repeat": "once-per-session",
+      "speakerId": "ksea_news",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "KSEA 7 NEWS",
+      "localizationKey": "first_contact.intro.news.redmond_photo",
+      "sourceText": "This is a still photograph of the same unidentified object seen over Redmond.",
+      "advance": "automatic",
+      "minimumSeconds": 2.7,
+      "situation": "The broadcast holds on a photograph of the same UFO; the source filename is not story canon.",
+      "beforeAction": "The eyewitness interview ends.",
+      "afterAction": "Cut to the Air Force press conference.",
+      "stageDirection": "Do not describe this as a separate Oregon sighting.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-3",
+        "automatic",
+        "same-ufo"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "레드먼드 상공에서 목격된 동일 미확인 물체의 기록 사진입니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_air_force_explanation",
+      "sectionId": "news_broadcast",
+      "order": 40,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsAirForceExplanation",
+      "triggerEvent": "intro.news.clip.4",
+      "condition": "The Air Force press conference clip begins",
+      "repeat": "once-per-session",
+      "speakerId": "air_force_spokesperson",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "AIR FORCE SPOKESPERSON",
+      "localizationKey": "first_contact.intro.news.air_force_explanation",
+      "sourceText": "We believe last night's lights were caused by Venus, a weather balloon, and a nearby base's nighttime flare exercise appearing together by coincidence.",
+      "advance": "automatic",
+      "minimumSeconds": 6.7,
+      "situation": "An Air Force spokesperson offers an implausible official explanation.",
+      "beforeAction": "The still photograph leaves the screen.",
+      "afterAction": "The spokesperson warns against spreading rumors.",
+      "stageDirection": "Keep the delivery dry and official.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-4",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "어젯밤 목격된 불빛은 금성, 기상관측용 풍선, 그리고 인근 기지의 야간 조명탄 훈련이 우연히 겹쳐 보인 것으로 판단됩니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_air_force_warning",
+      "sectionId": "news_broadcast",
+      "order": 50,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsAirForceWarning",
+      "triggerEvent": "intro.news.clip.4",
+      "condition": "The Air Force press conference continues",
+      "repeat": "once-per-session",
+      "speakerId": "air_force_spokesperson",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "AIR FORCE SPOKESPERSON",
+      "localizationKey": "first_contact.intro.news.air_force_warning",
+      "sourceText": "Be advised that spreading baseless rumors and causing public disorder may result in prosecution.",
+      "advance": "automatic",
+      "minimumSeconds": 4,
+      "situation": "The spokesperson ends the explanation with a threat.",
+      "beforeAction": "The official explanation concludes.",
+      "afterAction": "The television powers off.",
+      "stageDirection": "Do not show an advance prompt.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-4",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "근거 없는 소문으로 혼란을 퍼뜨릴 경우 처벌받을 수 있으니 주의하시기 바랍니다.",
+          "status": "final"
+        }
+      ]
+    },
     {
       "id": "intro_news_card",
       "sectionId": "intro_bridge",
@@ -738,17 +961,17 @@
       "enabled": true,
       "type": "reactive",
       "status": "final",
-      "triggerEvent": "sample.rejected.category_mismatch",
-      "condition": "the object does not belong to the open category",
+      "triggerEvent": "sample.recorded.category_mismatch",
+      "condition": "the response is recorded but the sample does not advance the active category trace",
       "repeat": "first-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.doctor_hwang.bootstrap_category_mismatch",
-      "sourceText": "The drawing itself is usable, but it does not fit the current {category}, so it cannot be recorded as a response trace. Try another object from that category.",
+      "sourceText": "The aliens responded and the data was recorded, but the drawing does not appear to belong to {category}.",
       "advance": "player",
       "minimumSeconds": 0,
-      "situation": "The classifier rejects a clear category mismatch.",
+      "situation": "Any category mismatch, contextual-only relation, or uncertain relation is recorded without advancing the active category trace.",
       "tags": [
         "reactive",
         "sample",
@@ -763,71 +986,9 @@
       ]
     },
     {
-      "id": "doctor_hwang_bootstrap_category_contextual",
-      "sectionId": "reactive_guidance",
-      "order": 20,
-      "enabled": true,
-      "type": "reactive",
-      "status": "final",
-      "triggerEvent": "sample.rejected.category_contextual",
-      "condition": "the fit depends on symbolism, situation, or possible use",
-      "repeat": "first-occurrence",
-      "speakerId": "doctor_hwang",
-      "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "Dr. Hwang",
-      "localizationKey": "first_contact.doctor_hwang.bootstrap_category_contextual",
-      "sourceText": "That connection depends on context, symbolism, or possible use. Send an object that belongs to the category by its ordinary identity.",
-      "advance": "player",
-      "minimumSeconds": 0,
-      "situation": "The proposed relation is indirect rather than inherent to the object.",
-      "tags": [
-        "reactive",
-        "sample",
-        "category"
-      ],
-      "localizedTexts": [
-        {
-          "locale": "ko-KR",
-          "text": "그 연관성은 맥락이나 상징, 가능한 용도에 의존합니다. 사물 자체가 현재 분류에 속하는 표본을 보내 주세요.",
-          "status": "final"
-        }
-      ]
-    },
-    {
-      "id": "doctor_hwang_bootstrap_category_uncertain",
-      "sectionId": "reactive_guidance",
-      "order": 30,
-      "enabled": true,
-      "type": "reactive",
-      "status": "final",
-      "triggerEvent": "sample.rejected.category_uncertain",
-      "condition": "the classifier cannot establish category membership",
-      "repeat": "first-occurrence",
-      "speakerId": "doctor_hwang",
-      "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "Dr. Hwang",
-      "localizationKey": "first_contact.doctor_hwang.bootstrap_category_uncertain",
-      "sourceText": "The device cannot establish this subject's ordinary relationship to the current category. Try a clearer example.",
-      "advance": "player",
-      "minimumSeconds": 0,
-      "situation": "The category evidence is ambiguous.",
-      "tags": [
-        "reactive",
-        "sample",
-        "category"
-      ],
-      "localizedTexts": [
-        {
-          "locale": "ko-KR",
-          "text": "이 사물과 현재 분류의 일반적인 관계를 판정할 수 없습니다. 더 분명한 표본을 보내 주세요.",
-          "status": "final"
-        }
-      ]
-    },
-    {
       "id": "doctor_hwang_pattern_meaning_requested",
       "sectionId": "reactive_guidance",
-      "order": 40,
+      "order": 20,
       "enabled": true,
       "type": "reactive",
       "status": "final",
@@ -864,7 +1025,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.blank",
       "condition": "the drawing surface contains too little visible information",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -894,7 +1055,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.text_or_symbol",
       "condition": "the drawing contains writing or symbolic notation",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -924,7 +1085,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.scene_or_action",
       "condition": "the drawing depicts a scene or action instead of one object",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -954,7 +1115,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.multiple_objects",
       "condition": "more than one distinct object is visible",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -984,7 +1145,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.unresolved_object",
       "condition": "the vision check cannot identify one concrete object",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -1012,17 +1173,17 @@
       "enabled": true,
       "type": "reactive",
       "status": "final",
-      "triggerEvent": "sample.rejected.label_mismatch",
+      "triggerEvent": "sample.label_correction.label_mismatch",
       "condition": "the written label does not describe the drawing",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.doctor_hwang.probe_label_mismatch",
-      "sourceText": "The label doesn't seem to describe the drawing that well. Make the label match the drawing.",
+      "sourceText": "The label does not match the drawing. Enter the name of the subject shown in the drawing.",
       "advance": "player",
       "minimumSeconds": 0,
-      "situation": "The semantic label and the visual sample disagree.",
+      "situation": "The visual sample is preserved while the player corrects a mismatched label.",
       "tags": [
         "reactive",
         "label"
@@ -1030,7 +1191,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "라벨에 맞는 그림인지 알아보기 어렵습니다. 다시한번 그려주시지요.\n색깔을 적절히 사용하시면 더 알아보기 쉽습니다. \n",
+          "text": "라벨이 그림과 일치하지 않는 것 같습니다. 그림에 맞는 대상의 이름을 입력해 주세요.",
           "status": "final"
         }
       ]
@@ -1044,7 +1205,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.label_action_or_abstract",
       "condition": "the label names an action or abstract idea",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -1074,7 +1235,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.label_broad_category",
       "condition": "the label is a category rather than a specific subject",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -1104,7 +1265,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.label_multiple_subjects",
       "condition": "the label names more than one subject",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
@@ -1134,7 +1295,7 @@
       "status": "final",
       "triggerEvent": "sample.rejected.label_classification_claim",
       "condition": "the label argues how the subject should be interpreted",
-      "repeat": "first-occurrence",
+      "repeat": "every-occurrence",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",

@@ -13,28 +13,31 @@ MonoBehaviour:
   m_Name: FirstContactSemanticDuplicateReviewPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: FirstContactSemanticDuplicateReviewPipeline
-  description: Reviews only embedding gray-zone pairs to decide whether two multilingual original labels name the same concrete concept.
+  description: Reviews embedding gray-zone label pairs for concrete-subject equivalence.
   steps:
   - stepName: FirstContactSemanticDuplicateReview
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: 0debb9ac5f584780bf51f1be0aa5ab4e, type: 2}
     embeddingProfile: {fileID: 0}
-    userPromptTemplate: 'Label A (original JSON string): {{left_label_json}}
+    userPromptTemplate: 'LABEL_A_JSON: {{left_label_json}}
 
-      Label B (original JSON string): {{right_label_json}}
-
-      Decide only whether the two original labels name the same ordinary concrete subject concept.'
+      LABEL_B_JSON: {{right_label_json}}'
     embeddingOutputKey: embedding
     failOnEmptyEmbeddingInput: 1
-    jsonMaxRetries: 2
+    jsonMaxRetries: 1
     jsonRetryDelaySeconds: 0.1
     useVision: 0
     imageStateKey: 
     requireImage: 0
     resizeLongestSide: 1024
-    customLinkTypeName: 
+    customLinkTypeName: DoodleDiplomacy.Gameplay.FirstContact.FirstContactLabelAnalysisChainLink,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     customAsset: {fileID: 0}
-    customLinkParameters: []
+    customLinkParameters:
+    - key: parameters
+      value: 
+    - key: service
+      value: 
     editorPosition: {x: -160, y: -40}
     guid: 4318bfa5-aaf1-4b0e-892f-004408f4a108
     nextStepGuid: 

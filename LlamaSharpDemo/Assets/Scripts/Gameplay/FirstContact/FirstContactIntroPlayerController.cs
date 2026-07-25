@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityCamera = UnityEngine.Camera;
@@ -32,13 +33,25 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private float _pitch;
         private float _verticalVelocity;
         private bool _controlEnabled;
+        private bool _lookEnabled;
         private bool _movementEnabled;
         private bool _interactionEnabled;
         private bool _cursorCaptured;
         private FirstContactIntroInteractable _contextualInteraction;
+        private Transform _lockedViewAnchor;
+        private Vector3 _savedCameraLocalPosition;
+        private Quaternion _savedCameraLocalRotation;
+        private bool _hasSavedCameraPose;
+        private bool _gazeViewLocked;
+        private Vector3 _gazeLockedCameraPosition;
+        private Quaternion _gazeLockedCameraRotation;
+        private Vector3 _savedGazeCameraLocalPosition;
+        private Quaternion _savedGazeCameraLocalRotation;
+        private bool _hasSavedGazeCameraPose;
 
         public UnityCamera ViewCamera => viewCamera;
         public bool ControlEnabled => _controlEnabled;
+        public bool IsViewLocked => _lockedViewAnchor != null || _gazeViewLocked;
 
         public void Configure(UnityCamera camera, FirstContactIntroHud introHud)
         {
@@ -73,14 +86,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
-            HandleLook();
+            if (_lookEnabled)
+            {
+                HandleLook();
+            }
+
             HandleMovement();
             HandleInteraction();
+        }
+
+        private void LateUpdate()
+        {
+            ApplyLockedView();
         }
 
         public void SetControlEnabled(bool enabled)
         {
             _controlEnabled = enabled;
+            _lookEnabled = enabled;
             _movementEnabled = enabled;
             _interactionEnabled = enabled;
             _verticalVelocity = 0f;
@@ -102,6 +125,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _verticalVelocity = 0f;
         }
 
+        public void SetLookEnabled(bool enabled)
+        {
+            _lookEnabled = enabled;
+        }
+
         public void SetInteractionEnabled(bool enabled)
         {
             _interactionEnabled = enabled;
@@ -118,6 +146,208 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 hud?.ClearPrompt();
             }
+        }
+
+        public void LockViewTo(Transform cameraAnchor)
+        {
+            if (cameraAnchor == null)
+            {
+                return;
+            }
+
+            EnsureReferences();
+            if (viewCamera == null)
+            {
+                return;
+            }
+
+            if (!_hasSavedCameraPose)
+            {
+                _savedCameraLocalPosition = viewCamera.transform.localPosition;
+                _savedCameraLocalRotation = viewCamera.transform.localRotation;
+                _hasSavedCameraPose = true;
+            }
+
+            _lockedViewAnchor = cameraAnchor;
+            ApplyLockedView();
+        }
+
+        public void RestoreView()
+        {
+            _lockedViewAnchor = null;
+            _gazeViewLocked = false;
+            if (viewCamera == null)
+            {
+                _hasSavedCameraPose = false;
+                _hasSavedGazeCameraPose = false;
+                return;
+            }
+
+            if (_hasSavedCameraPose)
+            {
+                viewCamera.transform.localPosition = _savedCameraLocalPosition;
+                viewCamera.transform.localRotation = _savedCameraLocalRotation;
+                _pitch = NormalizePitch(_savedCameraLocalRotation.eulerAngles.x);
+                _hasSavedCameraPose = false;
+                return;
+            }
+
+            if (_hasSavedGazeCameraPose)
+            {
+                viewCamera.transform.localPosition = _savedGazeCameraLocalPosition;
+                viewCamera.transform.localRotation = _savedGazeCameraLocalRotation;
+                _pitch = NormalizePitch(_savedGazeCameraLocalRotation.eulerAngles.x);
+                _hasSavedGazeCameraPose = false;
+            }
+        }
+
+        public IEnumerator BlendToRestoredView(float seconds)
+        {
+            EnsureReferences();
+            if (!_hasSavedCameraPose || viewCamera == null)
+            {
+                if (_hasSavedGazeCameraPose)
+                {
+                    yield return BlendToRestoredGazeView(seconds);
+                    yield break;
+                }
+
+                RestoreView();
+                yield break;
+            }
+
+            Transform cameraTransform = viewCamera.transform;
+            Transform cameraParent = cameraTransform.parent;
+            Vector3 startPosition = cameraTransform.position;
+            Quaternion startRotation = cameraTransform.rotation;
+            Vector3 targetPosition = cameraParent != null
+                ? cameraParent.TransformPoint(_savedCameraLocalPosition)
+                : _savedCameraLocalPosition;
+            Quaternion targetRotation = cameraParent != null
+                ? cameraParent.rotation * _savedCameraLocalRotation
+                : _savedCameraLocalRotation;
+
+            _lockedViewAnchor = null;
+            if (seconds <= 0f)
+            {
+                RestoreView();
+                yield break;
+            }
+
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsed / seconds);
+                float easedProgress = progress * progress * (3f - 2f * progress);
+                cameraTransform.SetPositionAndRotation(
+                    Vector3.Lerp(startPosition, targetPosition, easedProgress),
+                    Quaternion.Slerp(startRotation, targetRotation, easedProgress));
+                yield return null;
+            }
+
+            cameraTransform.localPosition = _savedCameraLocalPosition;
+            cameraTransform.localRotation = _savedCameraLocalRotation;
+            _pitch = NormalizePitch(_savedCameraLocalRotation.eulerAngles.x);
+            _hasSavedCameraPose = false;
+        }
+
+        /// <summary>
+        /// Keeps the camera at the player's current position while aiming it at a target.
+        /// Unlike <see cref="LockViewTo"/>, this does not move the camera to the target transform.
+        /// </summary>
+        public IEnumerator BlendViewToLookAt(Transform target, float seconds)
+        {
+            EnsureReferences();
+            if (target == null || viewCamera == null)
+            {
+                yield break;
+            }
+
+            if (!_hasSavedGazeCameraPose)
+            {
+                _savedGazeCameraLocalPosition = viewCamera.transform.localPosition;
+                _savedGazeCameraLocalRotation = viewCamera.transform.localRotation;
+                _hasSavedGazeCameraPose = true;
+            }
+
+            Transform cameraTransform = viewCamera.transform;
+            Vector3 cameraPosition = cameraTransform.position;
+            Vector3 lookDirection = target.position - cameraPosition;
+            if (lookDirection.sqrMagnitude < 0.0001f)
+            {
+                yield break;
+            }
+
+            Quaternion startRotation = cameraTransform.rotation;
+            Quaternion targetRotation = Quaternion.LookRotation(lookDirection.normalized, Vector3.up);
+            _gazeLockedCameraPosition = cameraPosition;
+            _gazeLockedCameraRotation = targetRotation;
+            _gazeViewLocked = false;
+
+            if (seconds > 0f)
+            {
+                float elapsed = 0f;
+                while (elapsed < seconds)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    float progress = Mathf.Clamp01(elapsed / seconds);
+                    float easedProgress = progress * progress * (3f - 2f * progress);
+                    cameraTransform.SetPositionAndRotation(
+                        cameraPosition,
+                        Quaternion.Slerp(startRotation, targetRotation, easedProgress));
+                    yield return null;
+                }
+            }
+
+            _gazeViewLocked = true;
+            ApplyLockedView();
+        }
+
+        /// <summary>
+        /// Smoothly returns from a gaze-only focus to the camera pose saved before it began.
+        /// </summary>
+        public IEnumerator BlendToRestoredGazeView(float seconds)
+        {
+            EnsureReferences();
+            if (!_hasSavedGazeCameraPose || viewCamera == null)
+            {
+                _gazeViewLocked = false;
+                _hasSavedGazeCameraPose = false;
+                yield break;
+            }
+
+            Transform cameraTransform = viewCamera.transform;
+            Transform cameraParent = cameraTransform.parent;
+            Vector3 startPosition = cameraTransform.position;
+            Quaternion startRotation = cameraTransform.rotation;
+            Vector3 targetPosition = cameraParent != null
+                ? cameraParent.TransformPoint(_savedGazeCameraLocalPosition)
+                : _savedGazeCameraLocalPosition;
+            Quaternion targetRotation = cameraParent != null
+                ? cameraParent.rotation * _savedGazeCameraLocalRotation
+                : _savedGazeCameraLocalRotation;
+
+            _gazeViewLocked = false;
+            if (seconds > 0f)
+            {
+                float elapsed = 0f;
+                while (elapsed < seconds)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    float progress = Mathf.Clamp01(elapsed / seconds);
+                    float easedProgress = progress * progress * (3f - 2f * progress);
+                    cameraTransform.SetPositionAndRotation(
+                        Vector3.Lerp(startPosition, targetPosition, easedProgress),
+                        Quaternion.Slerp(startRotation, targetRotation, easedProgress));
+                    yield return null;
+                }
+            }
+
+            cameraTransform.localPosition = _savedGazeCameraLocalPosition;
+            cameraTransform.localRotation = _savedGazeCameraLocalRotation;
+            _pitch = NormalizePitch(_savedGazeCameraLocalRotation.eulerAngles.x);
+            _hasSavedGazeCameraPose = false;
         }
 
         public void Teleport(Transform target, bool seated = false)
@@ -153,6 +383,29 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _verticalVelocity = 0f;
+        }
+
+        private void ApplyLockedView()
+        {
+            if (viewCamera == null)
+            {
+                return;
+            }
+
+            if (_lockedViewAnchor != null)
+            {
+                viewCamera.transform.SetPositionAndRotation(
+                    _lockedViewAnchor.position,
+                    _lockedViewAnchor.rotation);
+                return;
+            }
+
+            if (_gazeViewLocked)
+            {
+                viewCamera.transform.SetPositionAndRotation(
+                    _gazeLockedCameraPosition,
+                    _gazeLockedCameraRotation);
+            }
         }
 
         private void EnsureReferences()

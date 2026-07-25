@@ -573,6 +573,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             if (!captureSucceeded)
             {
+                if (FirstContactProbeFeedback.TryGetBlankDrawingRedrawPrompt(
+                        captureError,
+                        out string blankRedrawPrompt,
+                        out string blankGuidanceLineKey))
+                {
+                    yield return ShowContentRedrawPromptRoutine(
+                        blankRedrawPrompt,
+                        blankGuidanceLineKey);
+                    yield break;
+                }
+
                 if (_isPreflightTutorial)
                 {
                     yield return CompletePreflightRoutine(
@@ -819,7 +830,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             yield return _probeProcessor.ValidateWithRetries(
                 _workingProbe.CreateDraft(),
-                L10n.CurrentLocale,
                 onComplete);
         }
 
@@ -1176,7 +1186,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     {
                         Debug.Log(
                             $"[FirstContactTranslationMode] Duplicate confirmed by gray-zone review. " +
-                            $"similarity={candidate.SemanticSimilarity:0.000} confidence={review.Confidence:0.00} " +
+                            $"similarity={candidate.SemanticSimilarity:0.000} " +
                             $"candidate='{card?.OriginalLabel}' recorded='{candidate.Card?.OriginalLabel}' " +
                             $"reason='{review.Reason}'.",
                             this);

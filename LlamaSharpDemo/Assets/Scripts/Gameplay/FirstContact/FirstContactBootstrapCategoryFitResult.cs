@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using DoodleDiplomacy.Core;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -104,17 +103,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public const string Uncertain = "uncertain";
 
         private const string RelationKey = "semantic_relation";
-        private const string ConfidenceKey = "confidence";
         private const string ReasonKey = "reason";
 
         public string Relation = Uncertain;
-        public float Confidence;
         public string Reason = string.Empty;
         public string Error = string.Empty;
 
         public bool IsSuccess => string.IsNullOrWhiteSpace(Error);
         public bool ConfirmsDuplicate =>
-            string.Equals(Relation, SameConcept, StringComparison.Ordinal) && Confidence >= 0.7f;
+            string.Equals(Relation, SameConcept, StringComparison.Ordinal);
 
         public static FirstContactSemanticDuplicateReviewResult Failed(string message)
         {
@@ -159,21 +156,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
-            float confidence = 0f;
-            if (state.TryGetString(ConfidenceKey, out string confidenceText))
-            {
-                float.TryParse(
-                    confidenceText?.Trim(),
-                    NumberStyles.Float,
-                    CultureInfo.InvariantCulture,
-                    out confidence);
-            }
-
             state.TryGetString(ReasonKey, out string reason);
             result = new FirstContactSemanticDuplicateReviewResult
             {
                 Relation = relation,
-                Confidence = Math.Max(0f, Math.Min(1f, confidence)),
                 Reason = reason?.Trim() ?? string.Empty
             };
             return true;

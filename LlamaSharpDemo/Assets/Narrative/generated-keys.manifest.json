@@ -1,6 +1,61 @@
 {
     "entries": [
         {
+            "key": "first_contact.intro.news.ufo_archive",
+            "scenarioId": "first_contact_day1",
+            "beatId": "news_ufo_archive"
+        },
+        {
+            "key": "first_contact.intro.news.field_reporter",
+            "scenarioId": "first_contact_day1",
+            "beatId": "news_field_reporter"
+        },
+        {
+            "key": "first_contact.intro.news.eyewitness",
+            "scenarioId": "first_contact_day1",
+            "beatId": "news_eyewitness"
+        },
+        {
+            "key": "first_contact.intro.news.redmond_photo",
+            "scenarioId": "first_contact_day1",
+            "beatId": "news_redmond_photo"
+        },
+        {
+            "key": "first_contact.intro.news.air_force_explanation",
+            "scenarioId": "first_contact_day1",
+            "beatId": "news_air_force_explanation"
+        },
+        {
+            "key": "first_contact.intro.news.air_force_warning",
+            "scenarioId": "first_contact_day1",
+            "beatId": "news_air_force_warning"
+        },
+        {
+            "key": "first_contact.intro.car.after_news.president",
+            "scenarioId": "first_contact_day1",
+            "beatId": "car_after_news_president"
+        },
+        {
+            "key": "first_contact.intro.car.after_news.director_cover",
+            "scenarioId": "first_contact_day1",
+            "beatId": "car_after_news_director_cover"
+        },
+        {
+            "key": "first_contact.intro.car.after_news.director_arrival",
+            "scenarioId": "first_contact_day1",
+            "beatId": "car_after_news_director_arrival"
+        },
+        {
+            "key": "first_contact.intro.car.pizza_sign.president",
+            "scenarioId": "first_contact_day1",
+            "beatId": "car_pizza_sign_president"
+        },
+        {
+            "key": "first_contact.intro.car.pizza_sign.director",
+            "scenarioId": "first_contact_day1",
+            "beatId": "car_pizza_sign_director"
+        },
+        {
             "key": "first_contact.placeholder.intro.news",
             "scenarioId": "first_contact_day1",
             "beatId": "intro_news_card"

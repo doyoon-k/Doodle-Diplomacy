@@ -16,6 +16,18 @@
       "summary": "Temporary cards bridge the finished briefing script into the playable encounter."
     },
     {
+      "id": "news_broadcast",
+      "title": "In-car news broadcast",
+      "order": 1,
+      "summary": "Readable in-game subtitles timed to the silent television footage in the presidential car."
+    },
+    {
+      "id": "car_arrival",
+      "title": "Car arrival",
+      "order": 2,
+      "summary": "The president and director react to the broadcast, notice Zaucer Pizza, and prepare to leave the vehicle."
+    },
+    {
       "id": "preflight",
       "title": "Tablet preflight",
       "order": 5,
@@ -53,6 +65,400 @@
     }
   ],
   "beats": [
+    {
+      "id": "news_ufo_archive",
+      "sectionId": "news_broadcast",
+      "order": 0,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsUfoArchive",
+      "triggerEvent": "intro.news.clip.0",
+      "condition": "UFO VHS footage is playing on the in-car television",
+      "repeat": "once-per-session",
+      "speakerId": "ksea_news",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "KSEA 7 NEWS",
+      "localizationKey": "first_contact.intro.news.ufo_archive",
+      "sourceText": "This footage of an unidentified flying object was recorded over Redmond, Washington.",
+      "advance": "automatic",
+      "minimumSeconds": 5.5,
+      "situation": "Silent VHS footage opens the broadcast.",
+      "beforeAction": "The camera is locked in front of the in-car television.",
+      "afterAction": "Cut to the field reporter.",
+      "stageDirection": "Show as a clean game subtitle below the noisy television image.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-0",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "워싱턴 주 레드먼드 상공에서 미확인 물체가 빛을 쏘며 날고 있습니다. ",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_field_reporter",
+      "sectionId": "news_broadcast",
+      "order": 10,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsFieldReporter",
+      "triggerEvent": "intro.news.clip.1",
+      "condition": "The field reporter clip is playing",
+      "repeat": "once-per-session",
+      "speakerId": "field_reporter",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "FIELD REPORTER",
+      "localizationKey": "first_contact.intro.news.field_reporter",
+      "sourceText": "An unidentified flying object has been sighted over Redmond, east of Seattle, leaving residents confused.",
+      "advance": "automatic",
+      "minimumSeconds": 7,
+      "situation": "A reporter introduces the Redmond sighting.",
+      "beforeAction": "The archive footage ends.",
+      "afterAction": "Cut to an eyewitness interview.",
+      "stageDirection": "Do not show an advance prompt.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-1",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "시애틀 동부 레드먼드 상공에서 미확인 비행물체가 목격돼 시민들이 혼란에 빠졌습니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_eyewitness",
+      "sectionId": "news_broadcast",
+      "order": 20,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsEyewitness",
+      "triggerEvent": "intro.news.clip.2",
+      "condition": "The eyewitness interview clip is playing",
+      "repeat": "once-per-session",
+      "speakerId": "eyewitness",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "EYEWITNESS",
+      "localizationKey": "first_contact.intro.news.eyewitness",
+      "sourceText": "I saw it with my own eyes! It appeared in an instant, flashed bright lights everywhere, then vanished into the forest!",
+      "advance": "automatic",
+      "minimumSeconds": 7,
+      "situation": "A local eyewitness excitedly describes the object.",
+      "beforeAction": "The reporter narration ends.",
+      "afterAction": "Show the still photograph of the same object.",
+      "stageDirection": "The subtitle remains readable while the television graphics retain heavy VHS noise.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-2",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "내 눈으로 분명히 봤다니까요? 순식간에 나타나 빛을 마구 뿜더니 숲속으로 사라졌어요!",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_redmond_photo",
+      "sectionId": "news_broadcast",
+      "order": 30,
+      "enabled": true,
+      "type": "caption",
+      "status": "final",
+      "runtimeCue": "NewsRedmondPhoto",
+      "triggerEvent": "intro.news.clip.3",
+      "condition": "The still photograph named ufo_oregon.jpg is shown as evidence from the same Redmond incident",
+      "repeat": "once-per-session",
+      "speakerId": "ksea_news",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "KSEA 7 NEWS",
+      "localizationKey": "first_contact.intro.news.redmond_photo",
+      "sourceText": "This is a still photograph of the same unidentified object seen over Redmond.",
+      "advance": "automatic",
+      "minimumSeconds": 5.5,
+      "situation": "The broadcast holds on a photograph of the same UFO; the source filename is not story canon.",
+      "beforeAction": "The eyewitness interview ends.",
+      "afterAction": "Cut to the Air Force press conference.",
+      "stageDirection": "Do not describe this as a separate Oregon sighting.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-3",
+        "automatic",
+        "same-ufo"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "레드먼드 상공에서 목격된 동일 미확인 물체의 기록 사진입니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_air_force_explanation",
+      "sectionId": "news_broadcast",
+      "order": 40,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsAirForceExplanation",
+      "triggerEvent": "intro.news.clip.4",
+      "condition": "The Air Force press conference clip begins",
+      "repeat": "once-per-session",
+      "speakerId": "air_force_spokesperson",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "AIR FORCE SPOKESPERSON",
+      "localizationKey": "first_contact.intro.news.air_force_explanation",
+      "sourceText": "We believe last night's lights were caused by Venus, a weather balloon, and a nearby base's nighttime flare exercise appearing together by coincidence.",
+      "advance": "automatic",
+      "minimumSeconds": 6.7,
+      "situation": "An Air Force spokesperson offers an implausible official explanation.",
+      "beforeAction": "The still photograph leaves the screen.",
+      "afterAction": "The spokesperson warns against spreading rumors.",
+      "stageDirection": "Keep the delivery dry and official.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-4",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "어젯밤 목격된 불빛은 금성, 기상관측용 풍선, 그리고 인근 기지의 야간 조명탄 훈련이 우연히 겹쳐 보인 것으로 판단됩니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "news_air_force_warning",
+      "sectionId": "news_broadcast",
+      "order": 50,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "NewsAirForceWarning",
+      "triggerEvent": "intro.news.clip.4",
+      "condition": "The Air Force press conference continues",
+      "repeat": "once-per-session",
+      "speakerId": "air_force_spokesperson",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "AIR FORCE SPOKESPERSON",
+      "localizationKey": "first_contact.intro.news.air_force_warning",
+      "sourceText": "Be advised that spreading baseless rumors and causing public disorder may result in prosecution.",
+      "advance": "automatic",
+      "minimumSeconds": 4,
+      "situation": "The spokesperson ends the explanation with a threat.",
+      "beforeAction": "The official explanation concludes.",
+      "afterAction": "The television powers off.",
+      "stageDirection": "Do not show an advance prompt.",
+      "tags": [
+        "intro",
+        "news",
+        "clip-4",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "근거 없는 소문으로 혼란을 퍼뜨릴 경우 처벌받을 수 있으니 주의하시기 바랍니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "car_after_news_president",
+      "sectionId": "car_arrival",
+      "order": 0,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "CarAfterNewsPresident",
+      "triggerEvent": "intro.car.after_news",
+      "condition": "The in-car television has powered off and the view returns to the president.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.car.after_news.president",
+      "sourceText": "Will people really believe this? They are not idiots. There were too many witnesses.",
+      "advance": "automatic",
+      "minimumSeconds": 4.4,
+      "situation": "The president reacts to the implausible official explanation.",
+      "beforeAction": "The television cuts to black.",
+      "afterAction": "The director defends the cover story.",
+      "stageDirection": "Keep the player seated in the car; movement and interaction remain locked.",
+      "tags": [
+        "intro",
+        "car",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이걸 사람들이 믿을까? 사람들이 바보도 아니고. 본 사람이 한둘이어야지.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "car_after_news_director_cover",
+      "sectionId": "car_arrival",
+      "order": 10,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "CarAfterNewsDirectorCover",
+      "triggerEvent": "intro.car.after_news",
+      "condition": "The president questions the cover story.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.car.after_news.director_cover",
+      "sourceText": "It was the best option available, Mr. President.",
+      "advance": "automatic",
+      "minimumSeconds": 2.8,
+      "situation": "The director gives a restrained reply.",
+      "beforeAction": "The president finishes speaking.",
+      "afterAction": "The director announces the arrival.",
+      "stageDirection": "Do not give the player control yet.",
+      "tags": [
+        "intro",
+        "car",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이게 최선이었습니다, 각하.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "car_after_news_director_arrival",
+      "sectionId": "car_arrival",
+      "order": 20,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "CarAfterNewsDirectorArrival",
+      "triggerEvent": "intro.car.after_news",
+      "condition": "The director looks out of the stopped vehicle.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.car.after_news.director_arrival",
+      "sourceText": "We are almost there.",
+      "advance": "automatic",
+      "minimumSeconds": 2.1,
+      "situation": "The car reaches the restaurant.",
+      "beforeAction": "The cover-story discussion ends.",
+      "afterAction": "The view moves to the restaurant sign.",
+      "stageDirection": "Hold on the normal car view before cutting to the sign shot.",
+      "tags": [
+        "intro",
+        "car",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이제 거의 다 왔습니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "car_pizza_sign_president",
+      "sectionId": "car_arrival",
+      "order": 30,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "CarPizzaSignPresident",
+      "triggerEvent": "intro.car.pizza_sign",
+      "condition": "The camera holds on the Zaucer Pizza sign outside the vehicle.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.car.pizza_sign.president",
+      "sourceText": "Isn't this a pizza place? It is pretty quiet.",
+      "advance": "automatic",
+      "minimumSeconds": 3.2,
+      "situation": "The president notices the unlikely meeting location.",
+      "beforeAction": "The director announces that they have arrived.",
+      "afterAction": "The director asks the president to enter.",
+      "stageDirection": "The player view is locked to SHOT_Pizza_Sign.",
+      "tags": [
+        "intro",
+        "car",
+        "pizza-sign",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "여기는 피자집 아닌가? 한가하구만.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "car_pizza_sign_director",
+      "sectionId": "car_arrival",
+      "order": 40,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "CarPizzaSignDirector",
+      "triggerEvent": "intro.car.pizza_sign",
+      "condition": "The president finishes commenting on the restaurant.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.car.pizza_sign.director",
+      "sourceText": "Let me explain once we are inside.",
+      "advance": "automatic",
+      "minimumSeconds": 2.8,
+      "situation": "The director redirects the conversation toward the concealed entrance.",
+      "beforeAction": "The president looks at the sign.",
+      "afterAction": "The player regains control and can use the car door handle.",
+      "stageDirection": "After this line, blend back to the president's car view and enable the exit interaction.",
+      "tags": [
+        "intro",
+        "car",
+        "pizza-sign",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "일단 들어가서 설명해 드리겠습니다.",
+          "status": "final"
+        }
+      ]
+    },
     {
       "id": "intro_news_card",
       "sectionId": "intro_bridge",

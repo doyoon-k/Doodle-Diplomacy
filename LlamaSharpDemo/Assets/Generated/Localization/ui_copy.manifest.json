@@ -66,6 +66,111 @@
             "surface": "caption"
         },
         {
+            "key": "first_contact.news.interview.banner",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.interview.caption",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.interview.headline",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.interview.status",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.oregon.banner",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.oregon.caption",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.oregon.headline",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.oregon.status",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.press.banner",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.press.caption",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.press.headline",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.press.status",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.reporter.banner",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.reporter.caption",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.reporter.headline",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.reporter.status",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.station",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.vhs.banner",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.vhs.caption",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.vhs.headline",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.news.vhs.status",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
             "key": "first_contact.placeholder.intro.footer",
             "screenId": "first_contact.intro",
             "surface": "caption"

@@ -132,7 +132,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public IEnumerator ValidateWithRetries(
             FirstContactProbeDraft draft,
-            string sourceLocale,
             Action<FirstContactProbeValidationResult, string> onComplete)
         {
             int attempts = Mathf.Max(1, (_settings?.validatorRetryCount ?? 0) + 1);
@@ -142,7 +141,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             for (int attempt = 1; attempt <= attempts; attempt++)
             {
                 FirstContactProbeValidationResult result = null;
-                yield return Validate(draft, sourceLocale, value => result = value);
+                yield return Validate(draft, value => result = value);
                 if (result != null && result.IsSuccess)
                 {
                     onComplete?.Invoke(result, string.Empty);
@@ -200,9 +199,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             state.SetString("category_display_name", category.LocalizedDisplayName);
             state.SetString("category_definition", category.LocalizedDescriptorText);
             state.SetString("probe_label", card?.NormalizedLabel ?? string.Empty);
+            string originalLabel = ResolveOriginalLabel(card);
             state.SetString(
                 "probe_display_label",
-                card?.OriginalLabel ?? card?.NormalizedLabel ?? string.Empty);
+                originalLabel);
+            state.SetString(
+                "probe_display_label_json",
+                SerializePromptLabel(originalLabel));
             state.SetString(PromptPipelineConstants.SourceLocaleKey, sourceLocale ?? string.Empty);
 
             bool done = false;
@@ -316,7 +319,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private IEnumerator Validate(
             FirstContactProbeDraft draft,
-            string sourceLocale,
             Action<FirstContactProbeValidationResult> onComplete)
         {
             if (draft.Texture == null)
@@ -347,12 +349,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     : _settings.imageStateKey,
                 draft.Texture);
             state.SetString("probe_label", draft.NormalizedLabel);
+            string originalLabel = string.IsNullOrWhiteSpace(draft.OriginalLabel)
+                ? draft.NormalizedLabel
+                : draft.OriginalLabel;
             state.SetString(
                 "probe_display_label",
-                string.IsNullOrWhiteSpace(draft.OriginalLabel)
-                    ? draft.NormalizedLabel
-                    : draft.OriginalLabel);
-            state.SetString(PromptPipelineConstants.SourceLocaleKey, sourceLocale ?? string.Empty);
+                originalLabel);
+            state.SetString(
+                "probe_display_label_json",
+                SerializePromptLabel(originalLabel));
 
             bool done = false;
             PipelineState finalState = null;
@@ -420,17 +425,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             IDrawingFeature drawing,
             Action<FirstContactProbeCaptureResult> onComplete)
         {
+            if (drawing == null)
+            {
+                onComplete?.Invoke(FirstContactProbeCaptureResult.Failed(
+                    "Drawing feature is missing."));
+                yield break;
+            }
+
+            if (!drawing.HasVisibleDrawing)
+            {
+                onComplete?.Invoke(FirstContactProbeCaptureResult.Failed(
+                    "Drawing is blank."));
+                yield break;
+            }
+
             int attempts = Mathf.Max(1, (_settings?.captureRetryCount ?? 0) + 1);
             string lastError = string.Empty;
             for (int attempt = 1; attempt <= attempts; attempt++)
             {
-                if (drawing == null)
-                {
-                    onComplete?.Invoke(FirstContactProbeCaptureResult.Failed(
-                        "Drawing feature is missing."));
-                    yield break;
-                }
-
                 if (drawing.TryExportPngBytes(out byte[] pngBytes, out string error) &&
                     pngBytes != null &&
                     pngBytes.Length > 0)

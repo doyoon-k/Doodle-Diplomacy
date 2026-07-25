@@ -13,13 +13,14 @@ MonoBehaviour:
   m_Name: FirstContactProbeLabelPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: FirstContactProbeLabelPipeline
-  description: First Contact probe label processing. Validates the original player label without translating it.
+  description: First Contact probe label processing. Validates the original player
+    label without translating it.
   steps:
   - stepName: FirstContactProbeLabelAnalysis
     stepKind: 2
     llmProfile: {fileID: 11400000, guid: a07303aecaef44738ce4c70ad8401dcc, type: 2}
     embeddingProfile: {fileID: 0}
-    userPromptTemplate:
+    userPromptTemplate: 
     embeddingOutputKey: embedding
     failOnEmptyEmbeddingInput: 1
     jsonMaxRetries: 1
@@ -38,13 +39,13 @@ MonoBehaviour:
     guid: 8a19b733-3570-443c-b100-83301b7fce2f
     nextStepGuid: 
   layoutSettings:
-    inputNodePosition: {x: -420, y: 0}
-    outputNodePosition: {x: 320, y: -80}
+    inputNodePosition: {x: -369, y: -42}
+    outputNodePosition: {x: 524, y: -71}
     inputPositionInitialized: 1
     outputPositionInitialized: 1
-    viewPosition: {x: 0, y: 0, z: 0}
-    viewScale: {x: 1, y: 1, z: 1}
+    viewPosition: {x: 612, y: 203, z: 0}
+    viewScale: {x: 0.8695652, y: 0.8695652, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 0, y: 0}
+    - {x: 270, y: -10}
     snapshotPositionsInitialized: 1

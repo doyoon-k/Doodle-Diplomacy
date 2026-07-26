@@ -20,4 +20,22 @@ grouped into deduplicated screen snapshots and only changes the current selectio
 **현재 UI로 이동** is clicked. Catalog entries marked with `audience: internal` remain
 available to the runtime localization importer but are never shown in UI copy authoring.
 
+## Adding dialogue
+
+Select the line that should come immediately before the new dialogue, then press **＋**.
+The add-dialogue window only asks for the speaker, source text, translation, and display
+duration. It inherits the selected line's section and trigger event, inserts the line in
+sequence, and generates a stable beat ID and localization key. Generated identities stay
+unchanged when copy or speaker details are edited.
+
+The main editor keeps technical fields under **고급 설정**. `runtimeCue` should remain
+empty for an ordinary line; it is only for Unity-side camera, actor, or sequence hooks.
+A yellow playback warning means that a beat has neither a trigger event nor a runtime cue
+and may not be reachable in game.
+
+News beats also show a media timing budget read from the First Contact scene and the
+referenced MP4 file. The card compares the in-game clip duration with the sum of all
+dialogue durations on the same `intro.news.clip.*` event and highlights overflow in red.
+Still-image timing uses the authored `stillImageSeconds` value.
+
 Run `npm test` to validate the authoring data contract.

@@ -217,15 +217,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             Transform cameraTransform = viewCamera.transform;
-            Transform cameraParent = cameraTransform.parent;
-            Vector3 startPosition = cameraTransform.position;
-            Quaternion startRotation = cameraTransform.rotation;
-            Vector3 targetPosition = cameraParent != null
-                ? cameraParent.TransformPoint(_savedCameraLocalPosition)
-                : _savedCameraLocalPosition;
-            Quaternion targetRotation = cameraParent != null
-                ? cameraParent.rotation * _savedCameraLocalRotation
-                : _savedCameraLocalRotation;
+            Vector3 startLocalPosition = cameraTransform.localPosition;
+            Quaternion startLocalRotation = cameraTransform.localRotation;
 
             _lockedViewAnchor = null;
             if (seconds <= 0f)
@@ -240,9 +233,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 elapsed += Time.unscaledDeltaTime;
                 float progress = Mathf.Clamp01(elapsed / seconds);
                 float easedProgress = progress * progress * (3f - 2f * progress);
-                cameraTransform.SetPositionAndRotation(
-                    Vector3.Lerp(startPosition, targetPosition, easedProgress),
-                    Quaternion.Slerp(startRotation, targetRotation, easedProgress));
+                cameraTransform.localPosition = Vector3.Lerp(
+                    startLocalPosition,
+                    _savedCameraLocalPosition,
+                    easedProgress);
+                cameraTransform.localRotation = Quaternion.Slerp(
+                    startLocalRotation,
+                    _savedCameraLocalRotation,
+                    easedProgress);
                 yield return null;
             }
 
@@ -383,6 +381,66 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _verticalVelocity = 0f;
+        }
+
+        /// <summary>
+        /// Moves the player through the current world to a target pose. This is used
+        /// for the short physical step from the rear seat to the outside of the car.
+        /// </summary>
+        public IEnumerator MoveToWorldPose(Transform target, float seconds)
+        {
+            if (target == null)
+            {
+                yield break;
+            }
+
+            EnsureReferences();
+            bool controllerWasEnabled =
+                _characterController != null && _characterController.enabled;
+            if (_characterController != null)
+            {
+                _characterController.enabled = false;
+            }
+
+            Vector3 startPosition = transform.position;
+            Quaternion startRotation = transform.rotation;
+            Vector3 startCameraLocalPosition = viewCamera != null
+                ? viewCamera.transform.localPosition
+                : Vector3.zero;
+            Quaternion startCameraLocalRotation = viewCamera != null
+                ? viewCamera.transform.localRotation
+                : Quaternion.identity;
+
+            float elapsed = 0f;
+            float safeSeconds = Mathf.Max(0f, seconds);
+            while (elapsed < safeSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = safeSeconds <= 0.0001f
+                    ? 1f
+                    : Mathf.Clamp01(elapsed / safeSeconds);
+                float easedProgress =
+                    progress * progress * (3f - 2f * progress);
+                transform.SetPositionAndRotation(
+                    Vector3.Lerp(startPosition, target.position, easedProgress),
+                    Quaternion.Slerp(startRotation, target.rotation, easedProgress));
+
+                yield return null;
+            }
+
+            transform.SetPositionAndRotation(target.position, target.rotation);
+            if (viewCamera != null)
+            {
+                viewCamera.transform.localPosition = startCameraLocalPosition;
+                viewCamera.transform.localRotation = startCameraLocalRotation;
+            }
+
+            _pitch = NormalizePitch(startCameraLocalRotation.eulerAngles.x);
+            _verticalVelocity = 0f;
+            if (_characterController != null)
+            {
+                _characterController.enabled = controllerWasEnabled;
+            }
         }
 
         private void ApplyLockedView()

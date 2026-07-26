@@ -1,3 +1,11 @@
+import {
+  createDialogueBeat,
+  duplicateNarrativeBeat,
+  estimateDialogueSeconds,
+  playbackConnection,
+  speakerPresets,
+} from "./authoring.js";
+
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
@@ -8,6 +16,7 @@ const state = {
   scenarioIssues: [],
   catalogIssues: [],
   catalogUsage: { byKey: {}, unusedKeys: [], missingKeys: [] },
+  newsTiming: [],
   mode: "dialogue",
   selectedBeatId: "",
   selectedCopyKey: "",
@@ -84,6 +93,9 @@ async function loadProject() {
   state.catalogUsage = catalogPayload.usage || state.catalogUsage;
   state.selectedCopyKey = playerFacingCopies()[0]?.key || "";
   state.selectedTermId = state.catalog.terms[0]?.id || "";
+  state.newsTiming = await api("/api/media/news")
+    .then((payload) => payload.items || [])
+    .catch(() => []);
   await loadScenario(state.project.scenarios[0].scenarioId, false);
 
   const params = new URLSearchParams(location.search);
@@ -161,7 +173,7 @@ function renderModeChrome() {
       ? "저장하면 Unity 번역표가 자동 갱신됩니다. 화면 미리보기는 구성 확인용입니다."
       : "용어집은 문구를 쓸 때의 기준입니다. 번역표에는 직접 출력되지 않습니다.";
   $(".checkpoint-actions").classList.toggle("hidden", !dialogue);
-  $("#addBeatButton").title = dialogue ? "새 비트" : state.mode === "copy" ? "새 UI 문구" : "새 용어";
+  $("#addBeatButton").title = dialogue ? "새 대사" : state.mode === "copy" ? "새 UI 문구" : "새 용어";
 }
 
 function configureFilters() {
@@ -243,12 +255,16 @@ function filteredBeats() {
 
 function renderBeatList() {
   const beats = filteredBeats();
-  $("#beatList").innerHTML = beats.length ? beats.map((beat) => `
-    <button class="beat-card ${beat.id === state.selectedBeatId ? "active" : ""} ${beat.id === state.activeTraceBeatId ? "trace" : ""}" data-beat="${escapeHtml(beat.id)}">
-      <span class="beat-top"><span class="beat-id">${escapeHtml(beat.id)}</span><span class="badges"><i class="badge">${escapeHtml(beat.type)}</i><i class="badge">${escapeHtml(beat.status)}</i></span></span>
+  $("#beatList").innerHTML = beats.length ? beats.map((beat) => {
+    const connection = playbackConnection(beat);
+    const speaker = beat.speakerFallback || (beat.type === "system" ? "무대 지시" : "화자 없음");
+    return `
+    <button class="beat-card ${beat.id === state.selectedBeatId ? "active" : ""} ${beat.id === state.activeTraceBeatId ? "trace" : ""} ${connection.state === "unconnected" ? "unconnected" : ""}" data-beat="${escapeHtml(beat.id)}">
+      <span class="beat-top"><span class="beat-id">${escapeHtml(speaker)}</span><span class="badges"><i class="badge">${escapeHtml(beat.status)}</i>${connection.state === "unconnected" ? '<i class="badge warning">재생 미연결</i>' : ""}</span></span>
       <span class="beat-copy">${escapeHtml(localizedPreview(beat, state.document))}</span>
-      <span class="beat-context">${escapeHtml(beat.situation || beat.triggerEvent || "문맥 없음")}</span>
-    </button>`).join("") : emptyList("표시할 비트가 없습니다");
+      <span class="beat-context">${escapeHtml(sectionById(beat.sectionId)?.title || "섹션 없음")} · ${escapeHtml(beat.triggerEvent || beat.id)}</span>
+    </button>`;
+  }).join("") : emptyList("표시할 비트가 없습니다");
   $$('[data-beat]').forEach((button) => button.addEventListener("click", () => selectBeat(button.dataset.beat)));
 }
 
@@ -335,7 +351,7 @@ function renderEditor() {
   if (!beat && !copy && !term) {
     $("#emptyEditor strong").textContent = state.mode === "dialogue" ? "비트를 선택하세요" : state.mode === "copy" ? "UI 문구를 선택하세요" : "용어를 선택하세요";
     $("#emptyEditor p").textContent = state.mode === "dialogue"
-      ? "발생 시점, 전후 행동, 대사와 번역을 한 화면에서 편집할 수 있습니다."
+      ? "대사와 번역을 편집하거나, 선택한 위치 다음에 새 대사를 추가할 수 있습니다."
       : state.mode === "copy"
         ? "사용 화면, 맥락, 원문과 번역을 한 화면에서 편집할 수 있습니다."
         : "권장 번역과 사용 규칙을 정리할 수 있습니다.";
@@ -346,15 +362,146 @@ function renderEditor() {
 }
 
 function renderBeatEditor(beat) {
-  $("#beatTitle").textContent = beat.id;
+  renderBeatHeading(beat);
   $("#sectionField").innerHTML = state.document.sections.map((section) => `<option value="${escapeHtml(section.id)}">${escapeHtml(section.title)}</option>`).join("");
   $$('[data-field]').forEach((field) => {
     const name = field.dataset.field;
     field.value = name === "tags" ? (beat.tags || []).join(", ") : beat[name] ?? "";
   });
+  renderSpeakerEditor(beat);
+  renderPlaybackConnection(beat);
+  renderMediaTiming(beat);
   renderLocaleEditors(beat, state.document, "#localeEditors", "#placeholderChips", renderBeatPreview, renderBeatList);
   populateLocaleSelect("#previewLocale", state.document);
   renderBeatPreview(beat);
+}
+
+function renderBeatHeading(beat) {
+  $("#beatTitle").textContent = beat.speakerFallback || (beat.type === "system" ? "무대 지시" : "화자 없음");
+  $("#beatTitleMeta").textContent = `${beat.id} · ${sectionById(beat.sectionId)?.title || beat.sectionId || "섹션 없음"}`;
+}
+
+function speakerOptionValue(preset) {
+  return preset.id ? `id:${preset.id}` : `fallback:${preset.fallback}`;
+}
+
+function populateSpeakerSelect(select, speaker = {}, preferFirst = false) {
+  const presets = speakerPresets(state.document);
+  select.innerHTML = '<option value="__none__">화자 없음</option>' + presets.map((preset) =>
+    `<option value="${escapeHtml(speakerOptionValue(preset))}" data-speaker-id="${escapeHtml(preset.id)}" data-speaker-fallback="${escapeHtml(preset.fallback)}" data-speaker-key="${escapeHtml(preset.localizationKey)}">${escapeHtml(preset.fallback || preset.id)}</option>`).join("") +
+    '<option value="__custom__">＋ 새 화자…</option>';
+
+  const matching = presets.find((preset) =>
+    preset.id === String(speaker.id || "") &&
+    preset.fallback === String(speaker.fallback || "") &&
+    preset.localizationKey === String(speaker.localizationKey || ""));
+  if (matching) select.value = speakerOptionValue(matching);
+  else if (speaker.id || speaker.fallback) select.value = "__custom__";
+  else if (preferFirst && presets.length) select.value = speakerOptionValue(presets.find((preset) => preset.id === "president") || presets[0]);
+  else select.value = "__none__";
+}
+
+function selectedSpeaker(select, customIdSelector, customFallbackSelector) {
+  if (select.value === "__none__") return { id: "", fallback: "", localizationKey: "" };
+  if (select.value === "__custom__") {
+    return {
+      id: $(customIdSelector).value.trim(),
+      fallback: $(customFallbackSelector).value.trim(),
+      localizationKey: "",
+    };
+  }
+  const option = select.selectedOptions[0];
+  return {
+    id: option?.dataset.speakerId || "",
+    fallback: option?.dataset.speakerFallback || "",
+    localizationKey: option?.dataset.speakerKey || "",
+  };
+}
+
+function renderSpeakerEditor(beat) {
+  const select = $("#speakerPreset");
+  populateSpeakerSelect(select, {
+    id: beat.speakerId,
+    fallback: beat.speakerFallback,
+    localizationKey: beat.speakerLocalizationKey,
+  });
+  const custom = select.value === "__custom__";
+  $("#customSpeakerFields").classList.toggle("hidden", !custom);
+  $("#customSpeakerId").value = custom ? beat.speakerId || "" : "";
+  $("#customSpeakerFallback").value = custom ? beat.speakerFallback || "" : "";
+}
+
+function renderPlaybackConnection(beat) {
+  const connection = playbackConnection(beat);
+  const element = $("#playbackConnection");
+  element.className = `playback-connection ${connection.state}`;
+  element.innerHTML = `<b>${escapeHtml(connection.label)}</b><span>${escapeHtml(connection.detail)}</span>`;
+}
+
+function mediaTimingForBeat(beat) {
+  return state.newsTiming.find((item) => item.triggerEvent === beat?.triggerEvent) || null;
+}
+
+function formatSeconds(value) {
+  return `${Number(value || 0).toFixed(1)}초`;
+}
+
+function renderMediaTiming(beat) {
+  const element = $("#mediaTiming");
+  const media = mediaTimingForBeat(beat);
+  if (!media) {
+    element.className = "media-timing hidden";
+    element.innerHTML = "";
+    return;
+  }
+
+  const beats = state.document.beats
+    .filter((candidate) => candidate.enabled !== false && candidate.triggerEvent === media.triggerEvent)
+    .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
+  const allocatedSeconds = beats.reduce((total, candidate) =>
+    total + Math.max(0.1, Number(candidate.minimumSeconds || 0)), 0);
+  const selectedIndex = beats.indexOf(beat);
+  const selectedStart = beats.slice(0, Math.max(0, selectedIndex)).reduce((total, candidate) =>
+    total + Math.max(0.1, Number(candidate.minimumSeconds || 0)), 0);
+  const selectedEnd = selectedStart + Math.max(0.1, Number(beat.minimumSeconds || 0));
+  const remaining = media.playbackSeconds - allocatedSeconds;
+  const over = remaining < -0.01;
+  const near = !over && remaining < 0.75;
+  const denominator = Math.max(media.playbackSeconds, allocatedSeconds, 0.1);
+  const segments = beats.map((candidate) => {
+    const width = Math.max(0.5, Math.max(0.1, Number(candidate.minimumSeconds || 0)) / denominator * 100);
+    return `<span class="timing-segment ${candidate === beat ? "selected" : ""}" style="width:${width.toFixed(2)}%" title="${escapeHtml(candidate.speakerFallback || candidate.id)} · ${formatSeconds(candidate.minimumSeconds)}"></span>`;
+  }).join("");
+  const typeLabel = media.mediaType === "still" ? "스틸 이미지" : "영상";
+  const remainingLabel = over ? `${formatSeconds(Math.abs(remaining))} 초과` : `${formatSeconds(remaining)} 남음`;
+  const capNote = media.capped
+    ? `원본 ${formatSeconds(media.sourceSeconds)} · 게임에서는 최대 12.0초만 재생`
+    : `${typeLabel} 전체 길이`;
+
+  element.className = `media-timing ${over ? "over" : near ? "near" : ""}`;
+  element.innerHTML = `
+    <div class="media-timing-heading"><strong>${escapeHtml(media.assetName)}</strong><span>${escapeHtml(capNote)}</span></div>
+    <div class="timing-metrics">
+      <div class="timing-metric"><small>게임 재생 길이</small><b>${formatSeconds(media.playbackSeconds)}</b></div>
+      <div class="timing-metric"><small>전체 대사 시간</small><b>${formatSeconds(allocatedSeconds)}</b></div>
+      <div class="timing-metric remaining"><small>시간 여유</small><b>${remainingLabel}</b></div>
+    </div>
+    <div class="timing-track">${segments}</div>
+    <div class="timing-detail"><span>이 대사 <b>${formatSeconds(selectedStart)}–${formatSeconds(selectedEnd)}</b></span><span>${beats.length}개 대사</span></div>`;
+}
+
+function applySpeakerToBeat(beat, speaker) {
+  beat.speakerId = speaker.id;
+  beat.speakerFallback = speaker.fallback;
+  beat.speakerLocalizationKey = speaker.localizationKey;
+  for (const name of ["speakerId", "speakerFallback", "speakerLocalizationKey"]) {
+    const field = $(`[data-field="${name}"]`);
+    if (field) field.value = beat[name] || "";
+  }
+  markDirty("scenario");
+  renderBeatHeading(beat);
+  renderBeatPreview(beat);
+  renderBeatList();
 }
 
 function renderCopyEditor(entry) {
@@ -573,23 +720,102 @@ function scrollSelected(selector, dataName, value) {
 }
 
 function addCurrentItem() {
-  if (state.mode === "dialogue") return addBeat();
+  if (state.mode === "dialogue") return openNewBeatDialog();
   if (state.mode === "copy") return addCopy();
   addTerm();
 }
 
-function addBeat() {
-  const sectionId = state.selectedGroupId || state.document.sections[0]?.id || "";
-  let suffix = 1; while (state.document.beats.some((beat) => beat.id === `new_beat_${suffix}`)) suffix++;
-  const beat = {
-    id: `new_beat_${suffix}`, sectionId, order: Math.max(-10, ...state.document.beats.filter((item) => item.sectionId === sectionId).map((item) => item.order || 0)) + 10,
-    enabled: true, type: "dialogue", status: "draft", runtimeCue: "", triggerEvent: "", condition: "", repeat: "once",
-    speakerId: "doctor_hwang", speakerLocalizationKey: "speaker.doctor_hwang", speakerFallback: "Dr. Hwang",
-    localizationKey: `first_contact.narrative.new_beat_${suffix}`, sourceText: "", advance: "player", minimumSeconds: 0.3,
-    situation: "", beforeAction: "", afterAction: "", stageDirection: "", tags: [],
-    localizedTexts: state.document.locales.filter((locale) => locale !== state.document.sourceLocale).map((locale) => ({ locale, text: "", status: "draft" })),
-  };
-  state.document.beats.push(beat); markDirty("scenario"); renderAll(); selectBeat(beat.id);
+function insertionAnchor() {
+  const selected = currentBeat();
+  if (selected && (!state.selectedGroupId || selected.sectionId === state.selectedGroupId)) return selected;
+  const sectionId = state.selectedGroupId || selected?.sectionId || state.document.sections[0]?.id || "";
+  return [...state.document.beats]
+    .filter((beat) => beat.sectionId === sectionId)
+    .sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
+    .at(-1) || null;
+}
+
+function openNewBeatDialog() {
+  const dialog = $("#newBeatDialog");
+  const anchor = insertionAnchor();
+  const sectionId = anchor?.sectionId || state.selectedGroupId || state.document.sections[0]?.id || "";
+  dialog.dataset.anchorBeatId = anchor?.id || "";
+  dialog.dataset.sectionId = sectionId;
+
+  const sectionTitle = sectionById(sectionId)?.title || sectionId || "섹션 없음";
+  const anchorText = anchor ? localizedPreview(anchor, state.document) : "섹션의 첫 대사";
+  const media = mediaTimingForBeat(anchor);
+  const mediaLine = media ? `<br>${escapeHtml(media.assetName)} · 게임 재생 ${formatSeconds(media.playbackSeconds)}` : "";
+  $("#newBeatContext").innerHTML = `<b>${escapeHtml(sectionTitle)} · ${anchor ? "선택한 대사 다음" : "섹션 끝"}</b><span>${escapeHtml(anchorText)}<br>${anchor?.triggerEvent ? `발생 이벤트 ${escapeHtml(anchor.triggerEvent)} 자동 상속` : "상속할 발생 이벤트가 없어 추가 후 고급 설정이 필요합니다."}${mediaLine}</span>`;
+
+  populateSpeakerSelect($("#newBeatSpeaker"), {
+    id: anchor?.speakerId,
+    fallback: anchor?.speakerFallback,
+    localizationKey: anchor?.speakerLocalizationKey,
+  }, true);
+  $("#newBeatSpeakerId").value = "";
+  $("#newBeatSpeakerFallback").value = "";
+  $("#newBeatCustomSpeaker").classList.toggle("hidden", $("#newBeatSpeaker").value !== "__custom__");
+
+  $("#newBeatLocaleEditors").innerHTML = state.document.locales.map((locale) => {
+    const source = locale === state.document.sourceLocale;
+    return `<label class="locale-block"><strong>${escapeHtml(locale)} <em>${source ? "원문 · 필수" : "번역"}</em></strong><textarea data-new-beat-locale="${escapeHtml(locale)}" ${source ? "required" : ""} placeholder="${source ? "대사를 입력하세요" : "번역은 나중에 입력해도 됩니다"}"></textarea></label>`;
+  }).join("");
+  $("#newBeatAutomaticDuration").checked = true;
+  $("#newBeatMinimumSeconds").disabled = true;
+  $("#newBeatMinimumSeconds").value = "1.8";
+  dialog.showModal();
+  $(`[data-new-beat-locale="${state.document.sourceLocale}"]`)?.focus();
+}
+
+function updateNewBeatDuration() {
+  if (!$("#newBeatAutomaticDuration").checked) return;
+  const sourceText = $(`[data-new-beat-locale="${state.document.sourceLocale}"]`)?.value || "";
+  const localizedTexts = $$('[data-new-beat-locale]').filter((field) => field.dataset.newBeatLocale !== state.document.sourceLocale)
+    .map((field) => ({ locale: field.dataset.newBeatLocale, text: field.value }));
+  $("#newBeatMinimumSeconds").value = estimateDialogueSeconds(sourceText, localizedTexts);
+}
+
+function submitNewBeat(event) {
+  event.preventDefault();
+  const sourceField = $(`[data-new-beat-locale="${state.document.sourceLocale}"]`);
+  const sourceText = sourceField?.value.trim() || "";
+  if (!sourceText) {
+    toast("원문 대사를 입력하세요.");
+    sourceField?.focus();
+    return;
+  }
+
+  const speaker = selectedSpeaker($("#newBeatSpeaker"), "#newBeatSpeakerId", "#newBeatSpeakerFallback");
+  if (!speaker.id && !speaker.fallback) {
+    toast("화자를 선택하거나 새 화자를 입력하세요.");
+    $("#newBeatSpeaker").focus();
+    return;
+  }
+
+  const translations = {};
+  $$('[data-new-beat-locale]').forEach((field) => {
+    if (field.dataset.newBeatLocale !== state.document.sourceLocale) translations[field.dataset.newBeatLocale] = field.value.trim();
+  });
+  const dialog = $("#newBeatDialog");
+  const beat = createDialogueBeat(state.document, {
+    anchorBeatId: dialog.dataset.anchorBeatId,
+    sectionId: dialog.dataset.sectionId,
+    speaker,
+    sourceText,
+    translations,
+    automaticDuration: $("#newBeatAutomaticDuration").checked,
+    minimumSeconds: Number($("#newBeatMinimumSeconds").value),
+  });
+  state.document.beats.push(beat);
+  state.selectedGroupId = beat.sectionId;
+  state.selectedBeatId = beat.id;
+  dialog.close();
+  markDirty("scenario");
+  renderAll();
+  updateUrlForSelection();
+  requestAnimationFrame(() => scrollSelected("[data-beat]", "beat", beat.id));
+  toast("새 대사를 추가했습니다. ID와 번역 키는 자동으로 생성되었습니다.");
 }
 
 function addCopy() {
@@ -610,9 +836,7 @@ function addTerm() {
 
 function duplicateBeat() {
   const beat = currentBeat(); if (!beat) return;
-  const copy = structuredClone(beat); let suffix = 2;
-  while (state.document.beats.some((item) => item.id === `${beat.id}_${suffix}`)) suffix++;
-  copy.id = `${beat.id}_${suffix}`; copy.localizationKey = `${beat.localizationKey}_${suffix}`; copy.order = (beat.order || 0) + 1; copy.status = "draft";
+  const copy = duplicateNarrativeBeat(state.document, beat);
   state.document.beats.push(copy); markDirty("scenario"); renderAll(); selectBeat(copy.id);
 }
 
@@ -654,7 +878,7 @@ function moveBeat(direction) {
   const beat = currentBeat(); if (!beat) return;
   const siblings = state.document.beats.filter((item) => item.sectionId === beat.sectionId).sort((a, b) => a.order - b.order);
   const index = siblings.indexOf(beat); const target = siblings[index + direction]; if (!target) return;
-  const order = beat.order; beat.order = target.order; target.order = order; markDirty("scenario"); renderList();
+  const order = beat.order; beat.order = target.order; target.order = order; markDirty("scenario"); renderList(); renderMediaTiming(beat);
 }
 
 function sendUnity(message) {
@@ -765,6 +989,44 @@ function wireEvents() {
   $("#activeUiTrace").addEventListener("click", () => jumpToUiTrace());
   $("#drawerClose").addEventListener("click", () => $("#drawer").classList.add("hidden"));
 
+  $("#speakerPreset").addEventListener("change", () => {
+    const beat = currentBeat(); if (!beat) return;
+    const custom = $("#speakerPreset").value === "__custom__";
+    $("#customSpeakerFields").classList.toggle("hidden", !custom);
+    if (custom) {
+      $("#customSpeakerId").value = beat.speakerId || "";
+      $("#customSpeakerFallback").value = beat.speakerFallback || "";
+      $("#customSpeakerFallback").focus();
+      return;
+    }
+    applySpeakerToBeat(beat, selectedSpeaker($("#speakerPreset"), "#customSpeakerId", "#customSpeakerFallback"));
+  });
+  ["#customSpeakerId", "#customSpeakerFallback"].forEach((selector) => $(selector).addEventListener("input", () => {
+    const beat = currentBeat(); if (!beat || $("#speakerPreset").value !== "__custom__") return;
+    applySpeakerToBeat(beat, selectedSpeaker($("#speakerPreset"), "#customSpeakerId", "#customSpeakerFallback"));
+  }));
+  $("#estimateDurationButton").addEventListener("click", () => {
+    const beat = currentBeat(); if (!beat) return;
+    beat.minimumSeconds = estimateDialogueSeconds(beat.sourceText, beat.localizedTexts);
+    $('[data-field="minimumSeconds"]').value = beat.minimumSeconds;
+    markDirty("scenario");
+    toast(`표시 시간을 ${beat.minimumSeconds.toFixed(1)}초로 계산했습니다.`);
+  });
+
+  $("#newBeatCloseButton").addEventListener("click", () => $("#newBeatDialog").close());
+  $("#newBeatCancelButton").addEventListener("click", () => $("#newBeatDialog").close());
+  $("#newBeatSpeaker").addEventListener("change", () => {
+    const custom = $("#newBeatSpeaker").value === "__custom__";
+    $("#newBeatCustomSpeaker").classList.toggle("hidden", !custom);
+    if (custom) $("#newBeatSpeakerFallback").focus();
+  });
+  $("#newBeatAutomaticDuration").addEventListener("change", () => {
+    $("#newBeatMinimumSeconds").disabled = $("#newBeatAutomaticDuration").checked;
+    updateNewBeatDuration();
+  });
+  $("#newBeatLocaleEditors").addEventListener("input", updateNewBeatDuration);
+  $("#newBeatForm").addEventListener("submit", submitNewBeat);
+
   $("#beatEditor").addEventListener("input", (event) => {
     const field = event.target.closest("[data-field]"); const beat = currentBeat(); if (!field || !beat) return;
     const name = field.dataset.field; const oldId = beat.id;
@@ -772,8 +1034,11 @@ function wireEvents() {
     else if (name === "minimumSeconds") beat[name] = Number(field.value || 0);
     else beat[name] = field.value;
     if (name === "id") state.selectedBeatId = beat.id;
-    markDirty("scenario"); $("#beatTitle").textContent = beat.id; renderBeatPreview(beat);
-    if (["id", "type", "status", "sectionId", "situation", "localizationKey"].includes(name)) renderList();
+    markDirty("scenario"); renderBeatHeading(beat); renderBeatPreview(beat);
+    if (["id", "type", "status", "sectionId", "situation", "localizationKey", "triggerEvent"].includes(name)) renderList();
+    if (["triggerEvent", "runtimeCue"].includes(name)) renderPlaybackConnection(beat);
+    if (["minimumSeconds", "triggerEvent", "sectionId"].includes(name)) renderMediaTiming(beat);
+    if (["speakerId", "speakerFallback", "speakerLocalizationKey"].includes(name)) renderSpeakerEditor(beat);
     if (name === "id" && oldId !== beat.id) updateUrlForSelection();
   });
 

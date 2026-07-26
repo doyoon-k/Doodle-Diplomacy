@@ -811,6 +811,23 @@
       "tags": []
     },
     {
+      "key": "first_contact.terminal.line.correction_required",
+      "sourceText": "CHECK REQUIRED: {status}",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "확인 필요: {status}",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.terminal",
+      "surface": "terminal",
+      "screenId": "first_contact.terminal.probe_review",
+      "context": "terminal · line · correction required",
+      "status": "final",
+      "tags": []
+    },
+    {
       "key": "first_contact.terminal.line.label_required",
       "sourceText": "LABEL REQUIRED",
       "localizedTexts": [
@@ -1338,7 +1355,7 @@
       "tags": []
     },
     {
-      "key": "first_contact.terminal.reason.label_mismatch",
+      "key": "first_contact.terminal.status.label_mismatch",
       "sourceText": "LABEL MISMATCH",
       "localizedTexts": [
         {
@@ -1350,7 +1367,7 @@
       "domain": "first_contact.terminal",
       "surface": "system",
       "screenId": "first_contact.feedback",
-      "context": "terminal · reason · label mismatch",
+      "context": "terminal · status · label mismatch",
       "status": "final",
       "tags": []
     },
@@ -1453,23 +1470,6 @@
       "surface": "system",
       "screenId": "first_contact.feedback",
       "context": "terminal · status · analysis unavailable",
-      "status": "final",
-      "tags": []
-    },
-    {
-      "key": "first_contact.terminal.status.category_mismatch",
-      "sourceText": "CATEGORY MISMATCH",
-      "localizedTexts": [
-        {
-          "locale": "ko-KR",
-          "text": "분류 불일치",
-          "status": "final"
-        }
-      ],
-      "domain": "first_contact.terminal",
-      "surface": "system",
-      "screenId": "first_contact.feedback",
-      "context": "terminal · status · category mismatch",
       "status": "final",
       "tags": []
     },
@@ -1674,6 +1674,550 @@
       "surface": "menu",
       "screenId": "title.main",
       "context": "ui · title · start",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.exit_vehicle",
+      "sourceText": "Exit the vehicle.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "차에서 내리십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · vehicle",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.follow_director",
+      "sourceText": "Follow the director.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "국장을 따라가십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · surface guide",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.use_elevator",
+      "sourceText": "Enter the elevator.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "엘리베이터에 타십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · elevator",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.follow_to_briefing",
+      "sourceText": "Follow the director to the briefing room.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "국장을 따라 브리핑실로 이동하십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · facility guide",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.take_briefing_seat",
+      "sourceText": "Take your seat.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자리에 앉으십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · briefing seat",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.follow_to_meeting",
+      "sourceText": "Follow the director to the meeting room.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "국장을 따라 회담장으로 이동하십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · meeting guide",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.objective.enter_meeting",
+      "sourceText": "Enter the meeting room.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "회담장에 들어가십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · meeting room",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.exit_vehicle",
+      "sourceText": "[ E ]  EXIT VEHICLE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  차에서 내리기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · vehicle",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.use_elevator",
+      "sourceText": "[ E ]  USE ELEVATOR",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  엘리베이터 이용",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · elevator",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.sit",
+      "sourceText": "[ E ]  SIT",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  앉기",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · briefing seat",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.intro.prompt.enter_meeting",
+      "sourceText": "[ E ]  ENTER MEETING ROOM",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  회담장 입장",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro prompt · meeting room",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.station",
+      "sourceText": "KSEA 7 NEWS",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "KSEA 7 뉴스",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · station bug",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.vhs.banner",
+      "sourceText": "ARCHIVE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자료화면",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · amateur footage banner",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.vhs.status",
+      "sourceText": "AMATEUR VIDEO · REDMOND",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "시민 제보 영상 · 레드먼드",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · amateur footage status",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.vhs.headline",
+      "sourceText": "UNIDENTIFIED OBJECT SEEN OVER REDMOND",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "레드먼드 상공 미확인 비행물체 포착",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · amateur footage headline",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.vhs.caption",
+      "sourceText": "This footage was submitted by a local resident.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "시민이 제보한 촬영 영상입니다.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · amateur footage caption",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.reporter.banner",
+      "sourceText": "BREAKING NEWS",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "속보",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · reporter banner",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.reporter.status",
+      "sourceText": "LIVE · REDMOND",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "현장 · 레드먼드",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · reporter status",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.reporter.headline",
+      "sourceText": "UFO SIGHTING CAUSES CONFUSION EAST OF SEATTLE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "시애틀 동부 UFO 목격으로 시민 혼란",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · reporter headline",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.reporter.caption",
+      "sourceText": "An unidentified flying object was sighted over Redmond, east of Seattle, leaving residents confused.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "시애틀 동부, 레드먼드 상공에서 미확인 비행물체가 목격되어 시민들이 혼란에 빠졌습니다.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · reporter caption",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.interview.banner",
+      "sourceText": "WITNESS",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "목격자",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · witness banner",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.interview.status",
+      "sourceText": "EYEWITNESS INTERVIEW",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "현장 목격자 인터뷰",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · witness status",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.interview.headline",
+      "sourceText": "\"IT DISAPPEARED INTO THE FOREST\"",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "\"숲 속으로 사라졌습니다\"",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · witness headline",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.interview.caption",
+      "sourceText": "I saw it with my own eyes. It appeared in an instant, flashed bright lights, and vanished into the forest!",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "내 눈으로 분명히 봤다니까? 순식간에 나타나서 빛을 마구 뿜더니 숲 속으로 사라졌다니까, 글쎄!",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · witness caption",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.oregon.banner",
+      "sourceText": "ARCHIVE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자료화면",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Oregon photo banner",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.oregon.status",
+      "sourceText": "FILE PHOTO · OREGON",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자료 사진 · 오리건",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Oregon photo status",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.oregon.headline",
+      "sourceText": "SIMILAR OBJECT PHOTOGRAPHED IN OREGON",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "오리건에서도 유사 비행물체 촬영",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Oregon photo headline",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.oregon.caption",
+      "sourceText": "Similar sightings have also been reported in Oregon.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "유사한 목격 사례는 과거 오리건주에서도 보고됐습니다.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Oregon photo caption",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.press.banner",
+      "sourceText": "LIVE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "생중계",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Air Force briefing banner",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.press.status",
+      "sourceText": "AIR FORCE BRIEFING",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "공군 브리핑",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Air Force briefing status",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.press.headline",
+      "sourceText": "AIR FORCE CITES WEATHER BALLOON AND NIGHT EXERCISE",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "공군, 기상관측용 풍선과 야간 훈련이 원인이라 발표",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Air Force briefing headline",
+      "status": "final",
+      "tags": []
+    },
+    {
+      "key": "first_contact.news.press.caption",
+      "sourceText": "Officials say Venus, a weather balloon, and flares from a nearby base appeared together by coincidence.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "당국은 금성과 기상관측용 풍선, 인근 기지의 조명탄이 우연히 겹쳐 보인 것으로 판단했습니다. 근거 없는 소문 확산을 자제해 주십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.news",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "in-car television · Air Force briefing caption",
       "status": "final",
       "tags": []
     }

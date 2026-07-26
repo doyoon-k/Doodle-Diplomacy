@@ -11,6 +11,11 @@
             "surface": "dialogue"
         },
         {
+            "key": "first_contact.intro.objective.board_elevator",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
             "key": "first_contact.intro.objective.enter_meeting",
             "screenId": "first_contact.intro",
             "surface": "caption"

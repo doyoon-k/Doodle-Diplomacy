@@ -6,6 +6,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { validateScenario } from "./lib/validation.mjs";
 import { createCatalogFromUnityTable, validateCatalog } from "./lib/localization-catalog.mjs";
 import { auditCatalogUsage } from "./lib/source-audit.mjs";
+import { readNewsTiming } from "./lib/news-timing.mjs";
 
 const deskRoot = path.dirname(fileURLToPath(import.meta.url));
 const defaultProjectRoot = path.resolve(deskRoot, "../../LlamaSharpDemo");
@@ -142,6 +143,10 @@ const server = http.createServer(async (request, response) => {
         issues: validateCatalog(catalog, beatKeys),
         usage: await auditCatalogUsage(projectRoot, catalog, beatKeys),
       });
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/media/news") {
+      return sendJson(response, 200, { items: await readNewsTiming(projectRoot) });
     }
 
     if (request.method === "PUT" && url.pathname === "/api/localization/catalog") {

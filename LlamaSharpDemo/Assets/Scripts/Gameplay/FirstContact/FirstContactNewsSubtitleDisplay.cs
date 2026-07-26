@@ -17,7 +17,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private const float FadeSeconds = 0.12f;
 
         private GameObject _root;
+        private RectTransform _rootRect;
         private CanvasGroup _canvasGroup;
+        private Image _background;
+        private Image _topAccent;
         private TextMeshProUGUI _speakerText;
         private TextMeshProUGUI _dialogueText;
         private Coroutine _fadeRoutine;
@@ -43,12 +46,28 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void Show(string speaker, string dialogue)
         {
+            ShowNews(speaker, dialogue);
+        }
+
+        public void ShowNews(string speaker, string dialogue)
+        {
+            Show(speaker, dialogue, newsStyle: true);
+        }
+
+        public void ShowDialogue(string speaker, string dialogue)
+        {
+            Show(speaker, dialogue, newsStyle: false);
+        }
+
+        private void Show(string speaker, string dialogue, bool newsStyle)
+        {
             EnsureLayout();
             if (_root == null)
             {
                 return;
             }
 
+            ApplyPresentationStyle(newsStyle);
             _speakerText.text = speaker ?? string.Empty;
             _dialogueText.text = dialogue ?? string.Empty;
             RefreshFont();
@@ -99,14 +118,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _root = CreateUiObject("NewsTranscript_Runtime", hostCanvas.transform);
-            RectTransform rootRect = _root.GetComponent<RectTransform>();
-            Stretch(rootRect, new Vector2(0.12f, 0.045f), new Vector2(0.88f, 0.175f));
+            _rootRect = _root.GetComponent<RectTransform>();
+            Stretch(_rootRect, new Vector2(0.12f, 0.045f), new Vector2(0.88f, 0.175f));
 
-            Image background = _root.AddComponent<Image>();
-            background.color = new Color(0.012f, 0.02f, 0.045f, 0.91f);
-            background.raycastTarget = false;
+            _background = _root.AddComponent<Image>();
+            _background.color = new Color(0.012f, 0.02f, 0.045f, 0.91f);
+            _background.raycastTarget = false;
 
-            Image topAccent = CreatePanel(
+            _topAccent = CreatePanel(
                 "Accent",
                 _root.transform,
                 new Vector2(0f, 0.94f),
@@ -137,6 +156,52 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _canvasGroup.alpha = 0f;
             _root.SetActive(false);
             RefreshFont();
+        }
+
+        private void ApplyPresentationStyle(bool newsStyle)
+        {
+            if (_rootRect == null || _speakerText == null || _dialogueText == null)
+            {
+                return;
+            }
+
+            if (newsStyle)
+            {
+                Stretch(_rootRect, new Vector2(0.12f, 0.045f), new Vector2(0.88f, 0.175f));
+                _background.enabled = true;
+                _topAccent.enabled = true;
+
+                _speakerText.fontSize = 22f;
+                _speakerText.fontStyle = FontStyles.Bold;
+                _speakerText.color = new Color(1f, 0.82f, 0.55f, 1f);
+                SetOutline(_speakerText, 0f);
+
+                _dialogueText.fontSize = 31f;
+                _dialogueText.fontStyle = FontStyles.Normal;
+                _dialogueText.color = new Color(0.97f, 0.97f, 0.94f, 1f);
+                SetOutline(_dialogueText, 0f);
+                return;
+            }
+
+            Stretch(_rootRect, new Vector2(0.10f, 0.055f), new Vector2(0.90f, 0.185f));
+            _background.enabled = false;
+            _topAccent.enabled = false;
+
+            _speakerText.fontSize = 23f;
+            _speakerText.fontStyle = FontStyles.Bold;
+            _speakerText.color = new Color(1f, 0.82f, 0.55f, 1f);
+            SetOutline(_speakerText, 0.20f);
+
+            _dialogueText.fontSize = 32f;
+            _dialogueText.fontStyle = FontStyles.Normal;
+            _dialogueText.color = Color.white;
+            SetOutline(_dialogueText, 0.18f);
+        }
+
+        private static void SetOutline(TextMeshProUGUI text, float width)
+        {
+            text.outlineColor = new Color32(0, 0, 0, 255);
+            text.outlineWidth = width;
         }
 
         private void HandleLocaleChanged(string locale)

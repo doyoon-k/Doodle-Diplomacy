@@ -13,13 +13,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField, Min(0.5f)] private float playerLeashDistance = 5.5f;
         [SerializeField, Min(0f)] private float pointPauseSeconds = 0.25f;
         [SerializeField, Min(1f)] private float turnSpeed = 10f;
+        [Header("Visual Forward Correction")]
+        [Tooltip("The imported suit model faces local -X, while route movement uses Unity local +Z as forward.")]
+        [SerializeField] private Transform visualForwardRoot;
+        [SerializeField] private float visualYawCorrectionDegrees = 90f;
 
         private readonly HashSet<int> _manualHoldPoints = new();
         private Transform _player;
+        private Quaternion _visualOriginalLocalRotation;
         private int _currentPointIndex;
         private float _pauseRemaining;
         private bool _moving;
         private bool _waitingForRelease;
+        private bool _visualRotationCaptured;
+        private bool _visualCorrectionApplied;
 
         public event Action<int> ReachedManualHoldPoint;
         public event Action ReachedDestination;
@@ -41,9 +48,35 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             RebuildHoldPointSet();
         }
 
+        public void CopyConfigurationFrom(FirstContactIntroGuideController source)
+        {
+            if (source == null || source == this)
+            {
+                return;
+            }
+
+            pathPoints = source.pathPoints != null
+                ? (Transform[])source.pathPoints.Clone()
+                : Array.Empty<Transform>();
+            manualHoldPointIndices = source.manualHoldPointIndices != null
+                ? (int[])source.manualHoldPointIndices.Clone()
+                : Array.Empty<int>();
+            moveSpeed = source.moveSpeed;
+            playerLeashDistance = source.playerLeashDistance;
+            pointPauseSeconds = source.pointPauseSeconds;
+            turnSpeed = source.turnSpeed;
+            visualYawCorrectionDegrees = source.visualYawCorrectionDegrees;
+            RebuildHoldPointSet();
+        }
+
         private void Awake()
         {
             RebuildHoldPointSet();
+        }
+
+        private void OnDisable()
+        {
+            RestoreVisualForwardRotation();
         }
 
         private void Update()
@@ -95,6 +128,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void Begin(Transform player, bool warpToStart = true)
         {
+            ApplyVisualForwardCorrection();
             _player = player;
             _currentPointIndex = 0;
             _pauseRemaining = 0f;
@@ -115,11 +149,74 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _pauseRemaining = pointPauseSeconds;
         }
 
+        public void AddManualHoldPoint(int pointIndex)
+        {
+            if (pointIndex >= 0)
+            {
+                _manualHoldPoints.Add(pointIndex);
+            }
+        }
+
         public void Stop()
         {
             _moving = false;
             _waitingForRelease = false;
             _player = null;
+            RestoreVisualForwardRotation();
+        }
+
+        public void ApplyVisualForwardCorrection()
+        {
+            if (Mathf.Approximately(visualYawCorrectionDegrees, 0f))
+            {
+                return;
+            }
+
+            if (visualForwardRoot == null)
+            {
+                Transform[] descendants = GetComponentsInChildren<Transform>(true);
+                for (int i = 0; i < descendants.Length; i++)
+                {
+                    if (descendants[i] != transform &&
+                        string.Equals(
+                            descendants[i].name,
+                            "AdjutantVisual",
+                            StringComparison.Ordinal))
+                    {
+                        visualForwardRoot = descendants[i];
+                        break;
+                    }
+                }
+            }
+
+            if (visualForwardRoot == null)
+            {
+                return;
+            }
+
+            if (!_visualRotationCaptured)
+            {
+                _visualOriginalLocalRotation = visualForwardRoot.localRotation;
+                _visualRotationCaptured = true;
+            }
+
+            visualForwardRoot.localRotation =
+                _visualOriginalLocalRotation *
+                Quaternion.Euler(0f, visualYawCorrectionDegrees, 0f);
+            _visualCorrectionApplied = true;
+        }
+
+        private void RestoreVisualForwardRotation()
+        {
+            if (!_visualCorrectionApplied ||
+                !_visualRotationCaptured ||
+                visualForwardRoot == null)
+            {
+                return;
+            }
+
+            visualForwardRoot.localRotation = _visualOriginalLocalRotation;
+            _visualCorrectionApplied = false;
         }
 
         private void AdvancePoint()

@@ -28,6 +28,12 @@
       "summary": "The president and director react to the broadcast, notice Zaucer Pizza, and prepare to leave the vehicle."
     },
     {
+      "id": "pizza_restaurant",
+      "title": "Pizza restaurant",
+      "order": 3,
+      "summary": "Restaurant patrons recognize the president, the director jokes about aliens, and the party preserves its cover story."
+    },
+    {
       "id": "preflight",
       "title": "Tablet preflight",
       "order": 5,
@@ -82,7 +88,7 @@
       "localizationKey": "first_contact.intro.news.ufo_archive",
       "sourceText": "This footage of an unidentified flying object was recorded over Redmond, Washington.",
       "advance": "automatic",
-      "minimumSeconds": 5.5,
+      "minimumSeconds": 7.2,
       "situation": "Silent VHS footage opens the broadcast.",
       "beforeAction": "The camera is locked in front of the in-car television.",
       "afterAction": "Cut to the field reporter.",
@@ -96,7 +102,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "워싱턴 주 레드먼드 상공에서 미확인 물체가 빛을 쏘며 날고 있습니다. ",
+          "text": "워싱턴 주 레드먼드 상공에서 미확인 물체가 빛을 뿜으며 활공하는 장면이 발견되어 시민들이 불안에 떨고 있습니다. ",
           "status": "final"
         }
       ]
@@ -118,7 +124,7 @@
       "localizationKey": "first_contact.intro.news.field_reporter",
       "sourceText": "An unidentified flying object has been sighted over Redmond, east of Seattle, leaving residents confused.",
       "advance": "automatic",
-      "minimumSeconds": 7,
+      "minimumSeconds": 8.4,
       "situation": "A reporter introduces the Redmond sighting.",
       "beforeAction": "The archive footage ends.",
       "afterAction": "Cut to an eyewitness interview.",
@@ -132,7 +138,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "시애틀 동부 레드먼드 상공에서 미확인 비행물체가 목격돼 시민들이 혼란에 빠졌습니다.",
+          "text": "이곳은 최초 목격자가 UFO를 봤다고 제보한 숲 근처입니다. 상공을 떠다니다가 숲속으로 쑥 들어갔다는 증언들이 이어지고 있습니다.",
           "status": "final"
         }
       ]
@@ -154,7 +160,7 @@
       "localizationKey": "first_contact.intro.news.eyewitness",
       "sourceText": "I saw it with my own eyes! It appeared in an instant, flashed bright lights everywhere, then vanished into the forest!",
       "advance": "automatic",
-      "minimumSeconds": 7,
+      "minimumSeconds": 5,
       "situation": "A local eyewitness excitedly describes the object.",
       "beforeAction": "The reporter narration ends.",
       "afterAction": "Show the still photograph of the same object.",
@@ -168,7 +174,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "내 눈으로 분명히 봤다니까요? 순식간에 나타나 빛을 마구 뿜더니 숲속으로 사라졌어요!",
+          "text": "제 눈으로 분명이 봤습니다. 순식간에 나타나 빛을 마구 뿜더니 숲속으로 사라졌지요. ",
           "status": "final"
         }
       ]
@@ -190,7 +196,7 @@
       "localizationKey": "first_contact.intro.news.redmond_photo",
       "sourceText": "This is a still photograph of the same unidentified object seen over Redmond.",
       "advance": "automatic",
-      "minimumSeconds": 5.5,
+      "minimumSeconds": 6,
       "situation": "The broadcast holds on a photograph of the same UFO; the source filename is not story canon.",
       "beforeAction": "The eyewitness interview ends.",
       "afterAction": "Cut to the Air Force press conference.",
@@ -205,7 +211,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "레드먼드 상공에서 목격된 동일 미확인 물체의 기록 사진입니다.",
+          "text": "공군 측에서 촬영된 미확인 물체의 기록 사진입니다. 마치 비행접시의 모양을 하고 있습니다. 공군 당국은 우연히 포착된 기상현상이라고 해명했습니다.",
           "status": "final"
         }
       ]
@@ -227,7 +233,7 @@
       "localizationKey": "first_contact.intro.news.air_force_explanation",
       "sourceText": "We believe last night's lights were caused by Venus, a weather balloon, and a nearby base's nighttime flare exercise appearing together by coincidence.",
       "advance": "automatic",
-      "minimumSeconds": 6.7,
+      "minimumSeconds": 6,
       "situation": "An Air Force spokesperson offers an implausible official explanation.",
       "beforeAction": "The still photograph leaves the screen.",
       "afterAction": "The spokesperson warns against spreading rumors.",
@@ -241,7 +247,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "어젯밤 목격된 불빛은 금성, 기상관측용 풍선, 그리고 인근 기지의 야간 조명탄 훈련이 우연히 겹쳐 보인 것으로 판단됩니다.",
+          "text": "어젯밤 목격된 불빛은 금성, 기상관측용 풍선, 그리고 인근 기지의 야간 조명탄 훈련이 우연히 겹쳐 보인 것으로 판단됩니다. ",
           "status": "final"
         }
       ]
@@ -334,7 +340,7 @@
       "localizationKey": "first_contact.intro.car.after_news.director_cover",
       "sourceText": "It was the best option available, Mr. President.",
       "advance": "automatic",
-      "minimumSeconds": 2.8,
+      "minimumSeconds": 3,
       "situation": "The director gives a restrained reply.",
       "beforeAction": "The president finishes speaking.",
       "afterAction": "The director announces the arrival.",
@@ -347,7 +353,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "이게 최선이었습니다, 각하.",
+          "text": "UFO 얘기를 하는 사람들을 계속해서 미친 사람처럼 취급하듯 여론을 만들면 됩니다 각하.",
           "status": "final"
         }
       ]
@@ -455,6 +461,295 @@
         {
           "locale": "ko-KR",
           "text": "일단 들어가서 설명해 드리겠습니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_citizen_question",
+      "sectionId": "pizza_restaurant",
+      "order": 5,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "PizzaCitizenQuestion",
+      "triggerEvent": "intro.pizza.citizen_encounter",
+      "condition": "The president enters the dining area and the patrons recognize him.",
+      "repeat": "once-per-session",
+      "speakerId": "citizen",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "CITIZEN",
+      "localizationKey": "first_contact.intro.pizza.citizen_question",
+      "sourceText": "Mr. President? What brings you here...?",
+      "advance": "automatic",
+      "minimumSeconds": 2.8,
+      "situation": "A nearby patron stares at the unexpected visitor.",
+      "beforeAction": "The director stops in the middle of the dining room.",
+      "afterAction": "The director answers before the president can respond.",
+      "stageDirection": "Keep the player in first person and allow free camera look.",
+      "tags": [
+        "intro",
+        "pizza",
+        "citizens",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "대통령님이 여긴 어쩐 일로...?",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_director_alien_joke",
+      "sectionId": "pizza_restaurant",
+      "order": 10,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "PizzaDirectorAlienJoke",
+      "triggerEvent": "intro.pizza.citizen_encounter",
+      "condition": "A patron asks why the president is at the restaurant.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.pizza.director_alien_joke",
+      "sourceText": "What else? We are obviously here to meet aliens. Ha!",
+      "advance": "automatic",
+      "minimumSeconds": 3.4,
+      "situation": "The director states the truth as if it were a joke.",
+      "beforeAction": "The president hesitates.",
+      "afterAction": "The patrons burst out laughing.",
+      "stageDirection": "The director delivers the line casually.",
+      "tags": [
+        "intro",
+        "pizza",
+        "director",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "어쩐 일이긴요! 이 피자집 지하로 가면 외계인을 만날 수 있다고 해서 왔죠.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_awkward_silence",
+      "sectionId": "pizza_restaurant",
+      "order": 15,
+      "enabled": true,
+      "type": "system",
+      "status": "final",
+      "runtimeCue": "PizzaAwkwardSilence",
+      "triggerEvent": "intro.pizza.citizen_encounter",
+      "condition": "The director has just claimed that the party came to meet aliens.",
+      "repeat": "once-per-session",
+      "speakerId": "",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "",
+      "localizationKey": "first_contact.intro.pizza.awkward_silence.stage",
+      "sourceText": "An awkward silence. The patrons stare at the director.",
+      "advance": "automatic",
+      "minimumSeconds": 2.2,
+      "situation": "Nobody is sure whether the director is joking.",
+      "beforeAction": "The director finishes his alien remark and the subtitle disappears.",
+      "afterAction": "The patrons finally burst into laughter.",
+      "stageDirection": "Do not display this beat as dialogue. Turn the patrons toward the director and hold on the uncomfortable silence.",
+      "tags": [
+        "intro",
+        "pizza",
+        "silence",
+        "timing",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "어색한 침묵. 시민들이 국장을 이상하게 쳐다본다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_citizens_laugh",
+      "sectionId": "pizza_restaurant",
+      "order": 20,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "PizzaCitizensLaugh",
+      "triggerEvent": "intro.pizza.citizen_encounter",
+      "condition": "The director claims they are meeting aliens.",
+      "repeat": "once-per-session",
+      "speakerId": "citizens",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PATRONS",
+      "localizationKey": "first_contact.intro.pizza.citizens_laugh",
+      "sourceText": "Hahaha! That is a good one.",
+      "advance": "automatic",
+      "minimumSeconds": 2.5,
+      "situation": "The room treats the truth as a harmless joke.",
+      "beforeAction": "The patrons stare at the director for a beat.",
+      "afterAction": "The president supplies a plausible excuse.",
+      "stageDirection": "The four graybox patrons remain turned toward the player.",
+      "tags": [
+        "intro",
+        "pizza",
+        "citizens",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "으하하하하하하! 농담도 잘하시네.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_president_cover",
+      "sectionId": "pizza_restaurant",
+      "order": 30,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "PizzaPresidentCover",
+      "triggerEvent": "intro.pizza.citizen_encounter",
+      "condition": "The patrons laugh at the director's alien remark.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.pizza.president_cover",
+      "sourceText": "We were hungry and stopped for a bite. Please keep it between us.",
+      "advance": "automatic",
+      "minimumSeconds": 4.2,
+      "situation": "The president improvises a mundane cover story.",
+      "beforeAction": "The laughter begins to settle.",
+      "afterAction": "The patron wishes the party well.",
+      "stageDirection": "Do not lock the player's camera.",
+      "tags": [
+        "intro",
+        "pizza",
+        "president",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "흠...흠...배가 고파서 잠시 들렀습니다. 비밀로 해주세요.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_citizen_farewell",
+      "sectionId": "pizza_restaurant",
+      "order": 40,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "PizzaCitizenFarewell",
+      "triggerEvent": "intro.pizza.citizen_encounter",
+      "condition": "The president asks the patrons to keep his visit quiet.",
+      "repeat": "once-per-session",
+      "speakerId": "citizen",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "CITIZEN",
+      "localizationKey": "first_contact.intro.pizza.citizen_farewell",
+      "sourceText": "Enjoy your meal. Ha ha.",
+      "advance": "automatic",
+      "minimumSeconds": 2.4,
+      "situation": "The patron accepts the explanation without suspicion.",
+      "beforeAction": "The president finishes the cover story.",
+      "afterAction": "The party resumes walking and waits until the patrons are out of earshot.",
+      "stageDirection": "End the patron-facing exchange here, then release the route hold.",
+      "tags": [
+        "intro",
+        "pizza",
+        "citizen",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그러시겠죠. 하하. 좋은 시간 보내세요.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_president_insane",
+      "sectionId": "pizza_restaurant",
+      "order": 50,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "PizzaPresidentInsane",
+      "triggerEvent": "intro.pizza.private_exchange",
+      "condition": "The president and director have walked far enough from every patron to speak privately.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.pizza.president_insane",
+      "sourceText": "You are insane.",
+      "advance": "automatic",
+      "minimumSeconds": 1.8,
+      "situation": "The president quietly glares at the director.",
+      "beforeAction": "The party leaves the dining area and continues toward the elevator.",
+      "afterAction": "The director points out that nobody believed him.",
+      "stageDirection": "A short, dry aside delivered while walking and safely out of earshot.",
+      "tags": [
+        "intro",
+        "pizza",
+        "president",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자네 미쳤군.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_director_no_one_believes",
+      "sectionId": "pizza_restaurant",
+      "order": 60,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "PizzaDirectorPrivateReply",
+      "triggerEvent": "intro.pizza.private_exchange",
+      "condition": "The president rebukes the director under his breath.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.pizza.director_no_one_believes",
+      "sourceText": "You see? Nobody believes it.",
+      "advance": "automatic",
+      "minimumSeconds": 3,
+      "situation": "The director calmly proves his point and prepares to continue.",
+      "beforeAction": "The president glares at him.",
+      "afterAction": "The pair continues toward the kitchen and elevator.",
+      "stageDirection": "Keep the route active while the director answers.",
+      "tags": [
+        "intro",
+        "pizza",
+        "director",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "때로는 블러핑이 가장 효과적인 법이지요.",
           "status": "final"
         }
       ]
@@ -1778,7 +2073,357 @@
           "status": "final"
         }
       ]
+    },
+    {
+      "id": "car_after_news_line_0062",
+      "sectionId": "car_arrival",
+      "order": 15,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "triggerEvent": "intro.car.after_news",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.car.after.news.line_0062",
+      "sourceText": "asdf",
+      "advance": "automatic",
+      "minimumSeconds": 5.7,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": [],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "CIA에서도 사람들을 파견해 곳곳에서 여론을 조장하고 있으니 걱정 안하셔도 됩니다.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "car_pizza_sign_line_0063",
+      "sectionId": "car_arrival",
+      "order": 35,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "triggerEvent": "intro.car.pizza_sign",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.car.pizza.sign.line_0063",
+      "sourceText": "asdf",
+      "advance": "automatic",
+      "minimumSeconds": 2.7,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": [],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "여기가 저희 목적지가 맞습니다.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "car_pizza_sign_line_0064",
+      "sectionId": "car_arrival",
+      "order": 37,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "triggerEvent": "intro.car.pizza_sign",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.car.pizza.sign.line_0064",
+      "sourceText": "asdf",
+      "advance": "automatic",
+      "minimumSeconds": 5.3,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": [],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "뭐 피자집에 외계인이 숨어있기라도 한건가? 이 집 피자가 수상하게 맛있긴 하지.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "news_clip_2_line_0065",
+      "sectionId": "news_broadcast",
+      "order": 25,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "triggerEvent": "intro.news.clip.2",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "eyewitness",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "EYEWITNESS",
+      "localizationKey": "first_contact.intro.news.clip.2.line_0065",
+      "sourceText": "ASDA",
+      "advance": "automatic",
+      "minimumSeconds": 4.3,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": [],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이전에 전혀 본 적 없는 광경이었습니다. 분명히 UFO에요.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "pizza_citizen_encounter_line_0066",
+      "sectionId": "pizza_restaurant",
+      "order": 0,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "PizzaApproachPresidentComment",
+      "triggerEvent": "intro.pizza.approach",
+      "condition": "The president and director are walking from the parked car toward the restaurant entrance.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.pizza.citizen.encounter.line_0066",
+      "sourceText": "An alien-themed pizza place. That's certainly unusual.",
+      "advance": "automatic",
+      "minimumSeconds": 4,
+      "situation": "The restaurant's alien theme is visible while the pair cross the parking lot.",
+      "beforeAction": "The president gets out of the car and starts following the director.",
+      "afterAction": "They continue walking toward the entrance.",
+      "stageDirection": "Keep player movement and free camera look enabled while the subtitle plays.",
+      "tags": [
+        "intro",
+        "pizza",
+        "approach",
+        "walking",
+        "automatic"
+      ],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "외계인 컨셉의 피자집이라니. 아주 이색적이야.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "pizza_storage_question_0067",
+      "sectionId": "pizza_restaurant",
+      "order": 70,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "StoragePresidentQuestion",
+      "triggerEvent": "intro.pizza.storage.approach",
+      "condition": "The president and the director reach the back of the storeroom.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.pizza.storage.question",
+      "sourceText": "What are we doing in a pizza restaurant storeroom?",
+      "advance": "automatic",
+      "minimumSeconds": 2.8,
+      "situation": "The director stops in front of an ordinary storage shelf.",
+      "beforeAction": "The pair leave the dining room and cross the kitchen.",
+      "afterAction": "The director steps toward the shelf.",
+      "stageDirection": "Keep the player in first person with free camera look.",
+      "tags": ["intro", "pizza", "storage", "automatic"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "피자집 창고에서 뭘 하려고?",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_storage_reveal_president_0068",
+      "sectionId": "pizza_restaurant",
+      "order": 80,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "StorageRevealPresident",
+      "triggerEvent": "intro.pizza.storage.reveal",
+      "condition": "The concealed wall panel has opened and exposed an elevator.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.pizza.storage.reveal.president",
+      "sourceText": "Well... what is this?",
+      "advance": "automatic",
+      "minimumSeconds": 2.1,
+      "situation": "An industrial elevator is visible behind the storeroom wall.",
+      "beforeAction": "The shelf moves aside, two knocks sound, and the wall opens.",
+      "afterAction": "The director gestures toward the elevator.",
+      "stageDirection": "Let the player look into the newly opened passage.",
+      "tags": ["intro", "pizza", "secret-door", "automatic"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "허... 이게 무슨.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_storage_reveal_director_0069",
+      "sectionId": "pizza_restaurant",
+      "order": 90,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "StorageRevealDirector",
+      "triggerEvent": "intro.pizza.storage.reveal",
+      "condition": "The secret elevator entrance is open.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.pizza.storage.reveal.director",
+      "sourceText": "Step inside, Mr. President.",
+      "advance": "automatic",
+      "minimumSeconds": 2.3,
+      "situation": "The director invites the president into the hidden elevator.",
+      "beforeAction": "The president reacts to the concealed entrance.",
+      "afterAction": "The director walks into the elevator.",
+      "stageDirection": "Resume the director route only after this line finishes.",
+      "tags": ["intro", "pizza", "secret-door", "director", "automatic"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "어서 들어오시죠, 각하.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "elevator_descent_question_0070",
+      "sectionId": "intro_bridge",
+      "order": 30,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "ElevatorDescentQuestion",
+      "triggerEvent": "intro.elevator.descent",
+      "condition": "The hidden elevator has begun descending.",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.elevator.descent.question",
+      "sourceText": "Where does this lead?",
+      "advance": "automatic",
+      "minimumSeconds": 2.2,
+      "situation": "The elevator leaves the restaurant level.",
+      "beforeAction": "The player presses the elevator control and the concealed door closes.",
+      "afterAction": "The director begins explaining the classified facility.",
+      "stageDirection": "Keep the camera under player control inside the elevator.",
+      "tags": ["intro", "elevator", "president", "automatic"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이건 어디로 이어지지?",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "elevator_descent_first_contact_0071",
+      "sectionId": "intro_bridge",
+      "order": 40,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "ElevatorDescentFirstContact",
+      "triggerEvent": "intro.elevator.descent",
+      "condition": "The elevator is descending to the classified facility.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.elevator.descent.first_contact",
+      "sourceText": "A few years ago, after our first unofficial contact with extraterrestrials, the government formed a dedicated organization to prepare for an official meeting like today's.",
+      "advance": "automatic",
+      "minimumSeconds": 7.2,
+      "situation": "The director reveals that contact with extraterrestrials has already occurred.",
+      "beforeAction": "The president asks where the elevator leads.",
+      "afterAction": "The director explains the translator project.",
+      "stageDirection": "The elevator hum continues beneath the dialogue.",
+      "tags": ["intro", "elevator", "director", "exposition", "automatic"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "몇 년 전 외계인과 처음 비공식적으로 조우한 이후, 정부는 전담 조직을 만들어 오늘 같은 공식 회담을 준비해왔습니다.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "elevator_descent_darpa_0072",
+      "sectionId": "intro_bridge",
+      "order": 50,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "ElevatorDescentDarpa",
+      "triggerEvent": "intro.elevator.descent",
+      "condition": "The elevator continues descending.",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.elevator.descent.darpa",
+      "sourceText": "Working with DARPA, we gathered our best researchers to develop a translator for their language.",
+      "advance": "automatic",
+      "minimumSeconds": 5.4,
+      "situation": "The director introduces the translator research program.",
+      "beforeAction": "The director describes the government's contact organization.",
+      "afterAction": "The elevator arrives at the underground facility.",
+      "stageDirection": "Complete the surface segment after this line.",
+      "tags": ["intro", "elevator", "director", "darpa", "automatic"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "DARPA를 중심으로 저희가 가진 최고의 연구원들을 모아 그들의 언어를 번역하는 번역기를 만들고자 연구를 진행해왔지요.",
+          "status": "final"
+        }
+      ]
     }
   ],
-  "localizationEntries": []
+  "localizationEntries": [],
+  "authoring": {
+    "nextBeatSerial": 73
+  }
 }

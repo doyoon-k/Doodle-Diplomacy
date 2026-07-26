@@ -48,6 +48,10 @@ export function validateScenario(document) {
       push("error", "Dialogue text is empty.", id, "sourceText");
     }
 
+    if (beat?.enabled !== false && !String(beat?.triggerEvent || "").trim() && !String(beat?.runtimeCue || "").trim()) {
+      push("warning", "No playback connection. Add a trigger event or a runtime cue before expecting this beat to play in game.", id, "triggerEvent");
+    }
+
     const sourceVariables = placeholders(beat?.sourceText);
     for (const locale of locales) {
       const translated = (beat?.localizedTexts || []).find((item) => item.locale === locale);

@@ -15,8 +15,10 @@ test("serves the project index and authoring UI", async (context) => {
   const temporaryProject = await fs.mkdtemp(path.join(os.tmpdir(), "narrative-desk-"));
   const temporaryNarrativeFolder = path.join(temporaryProject, "Assets", "Narrative");
   await fs.mkdir(temporaryNarrativeFolder, { recursive: true });
+  const sourceScenarioPath = path.resolve(deskRoot, "../../LlamaSharpDemo/Assets/Narrative/first_contact_day1.narrative.json");
+  const sourceScenario = JSON.parse(await fs.readFile(sourceScenarioPath, "utf8"));
   await fs.copyFile(
-    path.resolve(deskRoot, "../../LlamaSharpDemo/Assets/Narrative/first_contact_day1.narrative.json"),
+    sourceScenarioPath,
     path.join(temporaryNarrativeFolder, "first_contact_day1.narrative.json"),
   );
   context.after(() => fs.rm(temporaryProject, { recursive: true, force: true }));
@@ -44,7 +46,7 @@ test("serves the project index and authoring UI", async (context) => {
   assert.equal(projectResponse.status, 200);
   const project = await projectResponse.json();
   assert.equal(project.scenarios[0].scenarioId, "first_contact_day1");
-  assert.equal(project.scenarios[0].beatCount, 42);
+  assert.equal(project.scenarios[0].beatCount, sourceScenario.beats.length);
 
   const scenarioResponse = await fetch(`http://127.0.0.1:${port}/api/scenarios/first_contact_day1`);
   const scenarioPayload = await scenarioResponse.json();
@@ -60,6 +62,10 @@ test("serves the project index and authoring UI", async (context) => {
     "Temporary save test",
   );
   assert.equal(await fs.stat(path.join(temporaryNarrativeFolder, "first_contact_day1.narrative.json.bak")).then(() => true), true);
+
+  const newsTimingResponse = await fetch(`http://127.0.0.1:${port}/api/media/news`);
+  assert.equal(newsTimingResponse.status, 200);
+  assert.deepEqual((await newsTimingResponse.json()).items, []);
 
   const pageResponse = await fetch(`http://127.0.0.1:${port}/`);
   assert.equal(pageResponse.status, 200);

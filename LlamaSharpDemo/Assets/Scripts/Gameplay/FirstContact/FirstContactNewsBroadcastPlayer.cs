@@ -144,10 +144,40 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private bool _runtimeReady;
         private bool _stopRequested;
         private bool _isPlaying;
+        private bool _playbackClockRunning;
 
         public bool IsPlaying => _isPlaying;
+        public bool IsPlaybackClockRunning => _playbackClockRunning;
+        public event Action<bool> PlaybackClockChanged;
         public int PlaylistCount => playlist?.Length ?? 0;
         public NarrativeScenarioAsset NarrativeScenario => ResolveNarrativeScenario();
+
+        public float EstimatedPlaybackSeconds
+        {
+            get
+            {
+                double seconds = 0d;
+                if (playlist == null)
+                {
+                    return 0f;
+                }
+
+                for (int i = 0; i < playlist.Length; i++)
+                {
+                    FirstContactNewsBroadcastItem item = playlist[i];
+                    if (item == null || !item.IsConfigured)
+                    {
+                        continue;
+                    }
+
+                    seconds += item.MediaType == FirstContactNewsMediaType.Video
+                        ? ResolveClipLengthSeconds(item.VideoClip)
+                        : item.StillImageSeconds;
+                }
+
+                return (float)seconds;
+            }
+        }
 
         public bool IsConfigured
         {
@@ -287,6 +317,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             _isPlaying = true;
             _stopRequested = false;
+            SetPlaybackClockRunning(false);
             SetTelevisionPowered(true);
 
             for (int playlistIndex = 0; playlistIndex < playlist.Length; playlistIndex++)
@@ -316,6 +347,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             _currentItem = null;
             _isPlaying = false;
+            SetPlaybackClockRunning(false);
             StopSubtitleTrack(immediate: true);
             TurnOffImmediate();
         }
@@ -324,6 +356,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             _stopRequested = true;
             _isPlaying = false;
+            SetPlaybackClockRunning(false);
             if (_videoPlayer != null)
             {
                 _videoPlayer.Stop();
@@ -335,6 +368,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private IEnumerator PlayVideoRoutine(FirstContactNewsBroadcastItem item, int playlistIndex)
         {
+            SetPlaybackClockRunning(false);
             ClearRenderTexture(_mediaTexture, Color.black);
             _mediaImage.texture = _mediaTexture;
             _mediaImage.color = Color.white;
@@ -408,27 +442,43 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     this);
             };
 
+            double clipLength = ResolveClipLengthSeconds(item.VideoClip);
             _videoPlayer.loopPointReached += completedHandler;
             _videoPlayer.errorReceived += errorHandler;
             _videoPlayer.Play();
+            SetPlaybackClockRunning(true);
             StartSubtitleTrack(playlistIndex);
 
-            double clipLength = ResolveClipLengthSeconds(item.VideoClip);
             float playbackTimeout = (float)clipLength + 3f;
             float playbackElapsed = 0f;
+            float routeClockElapsed = 0f;
 
             while (!_stopRequested &&
                    !reachedEnd &&
                    !playbackError &&
                    playbackElapsed < playbackTimeout)
             {
-                playbackElapsed += Time.unscaledDeltaTime;
+                float frameSeconds = Time.unscaledDeltaTime;
+                playbackElapsed += frameSeconds;
+                if (routeClockElapsed < clipLength)
+                {
+                    routeClockElapsed += frameSeconds;
+                    if (routeClockElapsed >= clipLength)
+                    {
+                        // VideoPlayer start/end overhead varies between machines.
+                        // It may remain visible, but it must not consume more of
+                        // the generated road than the authored clip duration.
+                        SetPlaybackClockRunning(false);
+                    }
+                }
+
                 yield return null;
             }
 
             _videoPlayer.loopPointReached -= completedHandler;
             _videoPlayer.errorReceived -= errorHandler;
             _videoPlayer.Stop();
+            SetPlaybackClockRunning(false);
         }
 
         private static double ResolveClipLengthSeconds(VideoClip clip)
@@ -461,6 +511,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _mediaImage.texture = item.StillImage;
             _mediaImage.color = Color.white;
             ApplyMediaAspect(item.StillImage.width, item.StillImage.height);
+            SetPlaybackClockRunning(true);
 
             float elapsed = 0f;
             while (!_stopRequested && elapsed < item.StillImageSeconds)
@@ -468,6 +519,19 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
+
+            SetPlaybackClockRunning(false);
+        }
+
+        private void SetPlaybackClockRunning(bool running)
+        {
+            if (_playbackClockRunning == running)
+            {
+                return;
+            }
+
+            _playbackClockRunning = running;
+            PlaybackClockChanged?.Invoke(running);
         }
 
         private void StartSubtitleTrack(int playlistIndex)
@@ -576,7 +640,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
                 NarrativeBeat beat = _activeSubtitleBeats[i];
                 NarrativeTrace.Emit(scenario.ScenarioId, beat.id, "enter");
-                _subtitleDisplay?.Show(beat.ResolveSpeaker(), beat.ResolveText());
+                _subtitleDisplay?.ShowNews(beat.ResolveSpeaker(), beat.ResolveText());
 
                 float duration = Mathf.Max(0.1f, beat.minimumSeconds);
                 float elapsed = 0f;

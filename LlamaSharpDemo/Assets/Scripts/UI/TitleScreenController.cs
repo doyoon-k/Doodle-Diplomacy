@@ -184,6 +184,7 @@ namespace DoodleDiplomacy.UI
                 : null;
             if (title != null)
             {
+                ApplyLocalizedFont(title);
                 title.text = L10n.T("ui.settings.title", "Settings");
             }
 
@@ -192,6 +193,7 @@ namespace DoodleDiplomacy.UI
                 : null;
             if (languageLabel != null)
             {
+                ApplyLocalizedFont(languageLabel);
                 languageLabel.text = L10n.T("ui.settings.language", "Language");
             }
 
@@ -227,7 +229,17 @@ namespace DoodleDiplomacy.UI
             TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(includeInactive: true);
             if (label != null)
             {
+                ApplyLocalizedFont(label);
                 label.text = text;
+            }
+        }
+
+        private static void ApplyLocalizedFont(TextMeshProUGUI text)
+        {
+            TMP_FontAsset localizedFont = L10n.CurrentFont;
+            if (text != null && localizedFont != null && text.font != localizedFont)
+            {
+                text.font = localizedFont;
             }
         }
 
@@ -337,6 +349,7 @@ namespace DoodleDiplomacy.UI
             labelObject.transform.SetParent(parent, false);
 
             TextMeshProUGUI label = labelObject.GetComponent<TextMeshProUGUI>();
+            ApplyLocalizedFont(label);
             label.alignment = TextAlignmentOptions.Center;
             label.color = Color.white;
             label.fontSize = fontSize;
@@ -360,6 +373,7 @@ namespace DoodleDiplomacy.UI
             textObject.transform.SetParent(parent, false);
 
             TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+            ApplyLocalizedFont(text);
             text.alignment = TextAlignmentOptions.Center;
             text.color = Color.white;
             text.fontSize = fontSize;

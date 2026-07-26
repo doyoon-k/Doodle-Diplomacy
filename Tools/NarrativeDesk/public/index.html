@@ -50,7 +50,7 @@
             <option value="">모든 상태</option><option>draft</option><option>review</option>
             <option>final</option><option>placeholder</option>
           </select>
-          <button id="addBeatButton" class="icon-button" title="새 비트">＋</button>
+          <button id="addBeatButton" class="icon-button" title="새 대사">＋</button>
         </div>
         <button id="activeTrace" class="active-trace hidden" type="button"></button>
         <button id="activeUiTrace" class="active-trace ui-trace hidden" type="button"></button>
@@ -65,7 +65,7 @@
         </div>
         <form id="beatEditor" class="hidden" autocomplete="off">
           <div class="editor-heading">
-            <div><label class="eyebrow">SELECTED BEAT</label><h1 id="beatTitle"></h1></div>
+            <div><label class="eyebrow">SELECTED DIALOGUE</label><h1 id="beatTitle"></h1><small id="beatTitleMeta" class="editor-title-meta"></small></div>
             <div class="editor-actions">
               <button id="moveUpButton" type="button" class="icon-button" title="위로">↑</button>
               <button id="moveDownButton" type="button" class="icon-button" title="아래로">↓</button>
@@ -74,21 +74,51 @@
             </div>
           </div>
 
-          <div class="field-grid two">
-            <label>ID<input data-field="id" /></label>
-            <label>섹션<select data-field="sectionId" id="sectionField"></select></label>
-            <label>유형<select data-field="type"><option>dialogue</option><option>caption</option><option>reactive</option><option>reaction</option><option>system</option></select></label>
-            <label>상태<select data-field="status"><option>draft</option><option>review</option><option>final</option><option>placeholder</option></select></label>
-          </div>
+          <section id="playbackConnection" class="playback-connection"></section>
+          <section id="mediaTiming" class="media-timing hidden"></section>
 
-          <details open>
-            <summary>게임 속 위치와 조건</summary>
-            <div class="field-stack">
+          <section class="quick-editor-card">
+            <div class="section-intro">
+              <div><strong>대사 편집</strong><span>대사 작업에 필요한 항목만 표시합니다.</span></div>
+            </div>
+            <div class="field-grid two">
+              <label>화자<select id="speakerPreset"></select></label>
+              <label>표시 시간
+                <span class="duration-field"><input data-field="minimumSeconds" type="number" min="0.1" step="0.1" /><button id="estimateDurationButton" type="button" class="ghost compact">자동 계산</button></span>
+              </label>
+            </div>
+            <div id="customSpeakerFields" class="field-grid two hidden">
+              <label>화자 ID<input id="customSpeakerId" placeholder="예: scientist" /></label>
+              <label>화자 표시 이름<input id="customSpeakerFallback" placeholder="예: SCIENTIST" /></label>
+            </div>
+          </section>
+
+          <details open class="copy-section dialogue-copy-section">
+            <summary>대사와 번역</summary>
+            <div id="localeEditors" class="locale-editors"></div>
+            <div id="placeholderChips" class="chips"></div>
+          </details>
+
+          <details class="advanced-settings">
+            <summary>고급 설정 <span>연출 연결 및 기술 정보</span></summary>
+            <p class="advanced-note">일반 대사를 수정할 때는 아래 항목을 건드릴 필요가 없습니다. 실행 큐는 Unity 특수 연출과 연결할 때만 사용합니다.</p>
+            <div class="field-grid two">
+              <label>고유 ID<input data-field="id" readonly /></label>
+              <label>대사 번역 키<input data-field="localizationKey" readonly /></label>
+              <label>섹션<select data-field="sectionId" id="sectionField"></select></label>
+              <label>유형<select data-field="type"><option>dialogue</option><option>caption</option><option>reactive</option><option>reaction</option><option>system</option></select></label>
+              <label>상태<select data-field="status"><option>draft</option><option>review</option><option>final</option><option>placeholder</option></select></label>
+              <label>진행<select data-field="advance"><option value="player">플레이어 입력</option><option value="automatic">자동</option><option value="automatic-or-player">자동 또는 입력</option></select></label>
+              <label>발생 이벤트<input data-field="triggerEvent" /></label>
+              <label>실행 큐<input data-field="runtimeCue" placeholder="특수 연출 연결 시에만" /></label>
+              <label>화자 ID<input data-field="speakerId" /></label>
+              <label>표시 이름 기본값<input data-field="speakerFallback" /></label>
+              <label>화자 번역 키<input data-field="speakerLocalizationKey" /></label>
+              <label>반복 규칙<input data-field="repeat" /></label>
+              <label>태그<input data-field="tags" placeholder="쉼표로 구분" /></label>
+            </div>
+            <div class="field-stack advanced-context-fields">
               <label>이 상황은 무엇인가<textarea data-field="situation" rows="2"></textarea></label>
-              <div class="field-grid two">
-                <label>발생 이벤트<input data-field="triggerEvent" /></label>
-                <label>실행 큐<input data-field="runtimeCue" placeholder="런타임 직접 연결 시" /></label>
-              </div>
               <label>조건<input data-field="condition" /></label>
               <div class="field-grid two">
                 <label>직전 행동<textarea data-field="beforeAction" rows="2"></textarea></label>
@@ -96,26 +126,6 @@
               </div>
               <label>무대 지시<textarea data-field="stageDirection" rows="2"></textarea></label>
             </div>
-          </details>
-
-          <details open>
-            <summary>화자와 진행</summary>
-            <div class="field-grid two">
-              <label>화자 ID<input data-field="speakerId" /></label>
-              <label>표시 이름 기본값<input data-field="speakerFallback" /></label>
-              <label>화자 번역 키<input data-field="speakerLocalizationKey" /></label>
-              <label>대사 번역 키<input data-field="localizationKey" /></label>
-              <label>진행<select data-field="advance"><option value="player">플레이어 입력</option><option value="automatic">자동</option><option value="automatic-or-player">자동 또는 입력</option></select></label>
-              <label>최소 표시 시간<input data-field="minimumSeconds" type="number" min="0" step="0.1" /></label>
-              <label>반복 규칙<input data-field="repeat" /></label>
-              <label>태그<input data-field="tags" placeholder="쉼표로 구분" /></label>
-            </div>
-          </details>
-
-          <details open class="copy-section">
-            <summary>대사와 번역</summary>
-            <div id="localeEditors" class="locale-editors"></div>
-            <div id="placeholderChips" class="chips"></div>
           </details>
 
           <section class="preview-card">
@@ -210,6 +220,31 @@
         <button id="checkpointButton" class="ghost">Unity에서 재생</button>
       </div>
     </footer>
+    <dialog id="newBeatDialog" class="authoring-dialog">
+      <form id="newBeatForm" method="dialog">
+        <div class="dialog-heading">
+          <div><label class="eyebrow">ADD DIALOGUE</label><h2>새 대사 추가</h2></div>
+          <button id="newBeatCloseButton" type="button" class="icon-button" aria-label="닫기">×</button>
+        </div>
+        <section id="newBeatContext" class="insertion-context"></section>
+        <div class="field-stack dialog-fields">
+          <label>화자<select id="newBeatSpeaker"></select></label>
+          <div id="newBeatCustomSpeaker" class="field-grid two hidden">
+            <label>화자 ID<input id="newBeatSpeakerId" placeholder="예: scientist" /></label>
+            <label>화자 표시 이름<input id="newBeatSpeakerFallback" placeholder="예: SCIENTIST" /></label>
+          </div>
+          <div id="newBeatLocaleEditors" class="locale-editors dialog-locales"></div>
+          <div class="duration-create-row">
+            <label class="checkbox-label"><input id="newBeatAutomaticDuration" type="checkbox" checked /> 글자 수에 맞춰 표시 시간 자동 계산</label>
+            <label>표시 시간<input id="newBeatMinimumSeconds" type="number" min="0.1" step="0.1" value="1.8" disabled /></label>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button id="newBeatCancelButton" type="button" class="ghost">취소</button>
+          <button type="submit" class="primary">현재 대사 다음에 추가</button>
+        </div>
+      </form>
+    </dialog>
     <section id="drawer" class="drawer hidden"><div class="drawer-header"><strong id="drawerTitle"></strong><button id="drawerClose" class="icon-button">×</button></div><div id="drawerBody"></div></section>
     <div id="toast" class="toast hidden"></div>
     <script type="module" src="/app.js"></script>

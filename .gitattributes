@@ -2,3 +2,15 @@
 *.dll filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.pptx filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.tiff filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.tga filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.exr filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.psd filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.st filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.tif filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.png filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/**/*.hdr filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/Terrain/Data/*.asset filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/Terrain/DetailMaps/*.asset filter=lfs diff=lfs merge=lfs -text
+LlamaSharpDemo/Assets/TerrainDemoScene_URP/Scenes/TerrainDemoScene/LightingData.asset filter=lfs diff=lfs merge=lfs -text

@@ -35,6 +35,11 @@ MonoBehaviour:
     order: 2
     summary: The president and director react to the broadcast, notice Zaucer Pizza,
       and prepare to leave the vehicle.
+  - id: pizza_restaurant
+    title: Pizza restaurant
+    order: 3
+    summary: Restaurant patrons recognize the president, the director jokes about
+      aliens, and the party preserves its cover story.
   - id: preflight
     title: Tablet preflight
     order: 5
@@ -79,7 +84,7 @@ MonoBehaviour:
     sourceText: This footage of an unidentified flying object was recorded over Redmond,
       Washington.
     advance: automatic
-    minimumSeconds: 5.5
+    minimumSeconds: 7.2
     situation: Silent VHS footage opens the broadcast.
     beforeAction: The camera is locked in front of the in-car television.
     afterAction: Cut to the field reporter.
@@ -92,8 +97,9 @@ MonoBehaviour:
     localizedTexts:
     - locale: ko-KR
       text: "\uC6CC\uC2F1\uD134 \uC8FC \uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5\uC5D0\uC11C
-        \uBBF8\uD655\uC778 \uBB3C\uCCB4\uAC00 \uBE5B\uC744 \uC3D8\uBA70 \uB0A0\uACE0
-        \uC788\uC2B5\uB2C8\uB2E4. "
+        \uBBF8\uD655\uC778 \uBB3C\uCCB4\uAC00 \uBE5B\uC744 \uBFDC\uC73C\uBA70 \uD65C\uACF5\uD558\uB294
+        \uC7A5\uBA74\uC774 \uBC1C\uACAC\uB418\uC5B4 \uC2DC\uBBFC\uB4E4\uC774 \uBD88\uC548\uC5D0
+        \uB5A8\uACE0 \uC788\uC2B5\uB2C8\uB2E4. "
       status: final
   - id: news_field_reporter
     sectionId: news_broadcast
@@ -112,7 +118,7 @@ MonoBehaviour:
     sourceText: An unidentified flying object has been sighted over Redmond, east
       of Seattle, leaving residents confused.
     advance: automatic
-    minimumSeconds: 7
+    minimumSeconds: 8.4
     situation: A reporter introduces the Redmond sighting.
     beforeAction: The archive footage ends.
     afterAction: Cut to an eyewitness interview.
@@ -124,9 +130,10 @@ MonoBehaviour:
     - automatic
     localizedTexts:
     - locale: ko-KR
-      text: "\uC2DC\uC560\uD2C0 \uB3D9\uBD80 \uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5\uC5D0\uC11C
-        \uBBF8\uD655\uC778 \uBE44\uD589\uBB3C\uCCB4\uAC00 \uBAA9\uACA9\uB3FC \uC2DC\uBBFC\uB4E4\uC774
-        \uD63C\uB780\uC5D0 \uBE60\uC84C\uC2B5\uB2C8\uB2E4."
+      text: "\uC774\uACF3\uC740 \uCD5C\uCD08 \uBAA9\uACA9\uC790\uAC00 UFO\uB97C \uBD24\uB2E4\uACE0
+        \uC81C\uBCF4\uD55C \uC232 \uADFC\uCC98\uC785\uB2C8\uB2E4. \uC0C1\uACF5\uC744
+        \uB5A0\uB2E4\uB2C8\uB2E4\uAC00 \uC232\uC18D\uC73C\uB85C \uC465 \uB4E4\uC5B4\uAC14\uB2E4\uB294
+        \uC99D\uC5B8\uB4E4\uC774 \uC774\uC5B4\uC9C0\uACE0 \uC788\uC2B5\uB2C8\uB2E4."
       status: final
   - id: news_eyewitness
     sectionId: news_broadcast
@@ -145,7 +152,7 @@ MonoBehaviour:
     sourceText: I saw it with my own eyes! It appeared in an instant, flashed bright
       lights everywhere, then vanished into the forest!
     advance: automatic
-    minimumSeconds: 7
+    minimumSeconds: 5
     situation: A local eyewitness excitedly describes the object.
     beforeAction: The reporter narration ends.
     afterAction: Show the still photograph of the same object.
@@ -158,9 +165,9 @@ MonoBehaviour:
     - automatic
     localizedTexts:
     - locale: ko-KR
-      text: "\uB0B4 \uB208\uC73C\uB85C \uBD84\uBA85\uD788 \uBD24\uB2E4\uB2C8\uAE4C\uC694?
+      text: "\uC81C \uB208\uC73C\uB85C \uBD84\uBA85\uC774 \uBD24\uC2B5\uB2C8\uB2E4.
         \uC21C\uC2DD\uAC04\uC5D0 \uB098\uD0C0\uB098 \uBE5B\uC744 \uB9C8\uAD6C \uBFDC\uB354\uB2C8
-        \uC232\uC18D\uC73C\uB85C \uC0AC\uB77C\uC84C\uC5B4\uC694!"
+        \uC232\uC18D\uC73C\uB85C \uC0AC\uB77C\uC84C\uC9C0\uC694. "
       status: final
   - id: news_redmond_photo
     sectionId: news_broadcast
@@ -180,7 +187,7 @@ MonoBehaviour:
     sourceText: This is a still photograph of the same unidentified object seen over
       Redmond.
     advance: automatic
-    minimumSeconds: 5.5
+    minimumSeconds: 6
     situation: The broadcast holds on a photograph of the same UFO; the source filename
       is not story canon.
     beforeAction: The eyewitness interview ends.
@@ -194,8 +201,11 @@ MonoBehaviour:
     - same-ufo
     localizedTexts:
     - locale: ko-KR
-      text: "\uB808\uB4DC\uBA3C\uB4DC \uC0C1\uACF5\uC5D0\uC11C \uBAA9\uACA9\uB41C
-        \uB3D9\uC77C \uBBF8\uD655\uC778 \uBB3C\uCCB4\uC758 \uAE30\uB85D \uC0AC\uC9C4\uC785\uB2C8\uB2E4."
+      text: "\uACF5\uAD70 \uCE21\uC5D0\uC11C \uCD2C\uC601\uB41C \uBBF8\uD655\uC778
+        \uBB3C\uCCB4\uC758 \uAE30\uB85D \uC0AC\uC9C4\uC785\uB2C8\uB2E4. \uB9C8\uCE58
+        \uBE44\uD589\uC811\uC2DC\uC758 \uBAA8\uC591\uC744 \uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4.
+        \uACF5\uAD70 \uB2F9\uAD6D\uC740 \uC6B0\uC5F0\uD788 \uD3EC\uCC29\uB41C \uAE30\uC0C1\uD604\uC0C1\uC774\uB77C\uACE0
+        \uD574\uBA85\uD588\uC2B5\uB2C8\uB2E4."
       status: final
   - id: news_air_force_explanation
     sectionId: news_broadcast
@@ -214,7 +224,7 @@ MonoBehaviour:
     sourceText: We believe last night's lights were caused by Venus, a weather balloon,
       and a nearby base's nighttime flare exercise appearing together by coincidence.
     advance: automatic
-    minimumSeconds: 6.7
+    minimumSeconds: 6
     situation: An Air Force spokesperson offers an implausible official explanation.
     beforeAction: The still photograph leaves the screen.
     afterAction: The spokesperson warns against spreading rumors.
@@ -229,7 +239,7 @@ MonoBehaviour:
       text: "\uC5B4\uC82F\uBC24 \uBAA9\uACA9\uB41C \uBD88\uBE5B\uC740 \uAE08\uC131,
         \uAE30\uC0C1\uAD00\uCE21\uC6A9 \uD48D\uC120, \uADF8\uB9AC\uACE0 \uC778\uADFC
         \uAE30\uC9C0\uC758 \uC57C\uAC04 \uC870\uBA85\uD0C4 \uD6C8\uB828\uC774 \uC6B0\uC5F0\uD788
-        \uACB9\uCCD0 \uBCF4\uC778 \uAC83\uC73C\uB85C \uD310\uB2E8\uB429\uB2C8\uB2E4."
+        \uACB9\uCCD0 \uBCF4\uC778 \uAC83\uC73C\uB85C \uD310\uB2E8\uB429\uB2C8\uB2E4. "
       status: final
   - id: news_air_force_warning
     sectionId: news_broadcast
@@ -313,7 +323,7 @@ MonoBehaviour:
     localizationKey: first_contact.intro.car.after_news.director_cover
     sourceText: It was the best option available, Mr. President.
     advance: automatic
-    minimumSeconds: 2.8
+    minimumSeconds: 3
     situation: The director gives a restrained reply.
     beforeAction: The president finishes speaking.
     afterAction: The director announces the arrival.
@@ -324,7 +334,9 @@ MonoBehaviour:
     - automatic
     localizedTexts:
     - locale: ko-KR
-      text: "\uC774\uAC8C \uCD5C\uC120\uC774\uC5C8\uC2B5\uB2C8\uB2E4, \uAC01\uD558."
+      text: "UFO \uC598\uAE30\uB97C \uD558\uB294 \uC0AC\uB78C\uB4E4\uC744 \uACC4\uC18D\uD574\uC11C
+        \uBBF8\uCE5C \uC0AC\uB78C\uCC98\uB7FC \uCDE8\uAE09\uD558\uB4EF \uC5EC\uB860\uC744
+        \uB9CC\uB4E4\uBA74 \uB429\uB2C8\uB2E4 \uAC01\uD558."
       status: final
   - id: car_after_news_director_arrival
     sectionId: car_arrival
@@ -415,6 +427,257 @@ MonoBehaviour:
     localizedTexts:
     - locale: ko-KR
       text: "\uC77C\uB2E8 \uB4E4\uC5B4\uAC00\uC11C \uC124\uBA85\uD574 \uB4DC\uB9AC\uACA0\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: pizza_citizen_question
+    sectionId: pizza_restaurant
+    order: 5
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PizzaCitizenQuestion
+    triggerEvent: intro.pizza.citizen_encounter
+    condition: The president enters the dining area and the patrons recognize him.
+    repeat: once-per-session
+    speakerId: citizen
+    speakerLocalizationKey: 
+    speakerFallback: CITIZEN
+    localizationKey: first_contact.intro.pizza.citizen_question
+    sourceText: Mr. President? What brings you here...?
+    advance: automatic
+    minimumSeconds: 2.8
+    situation: A nearby patron stares at the unexpected visitor.
+    beforeAction: The director stops in the middle of the dining room.
+    afterAction: The director answers before the president can respond.
+    stageDirection: Keep the player in first person and allow free camera look.
+    tags:
+    - intro
+    - pizza
+    - citizens
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB300\uD1B5\uB839\uB2D8\uC774 \uC5EC\uAE34 \uC5B4\uCA50 \uC77C\uB85C...?"
+      status: final
+  - id: pizza_director_alien_joke
+    sectionId: pizza_restaurant
+    order: 10
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PizzaDirectorAlienJoke
+    triggerEvent: intro.pizza.citizen_encounter
+    condition: A patron asks why the president is at the restaurant.
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.pizza.director_alien_joke
+    sourceText: What else? We are obviously here to meet aliens. Ha!
+    advance: automatic
+    minimumSeconds: 3.4
+    situation: The director states the truth as if it were a joke.
+    beforeAction: The president hesitates.
+    afterAction: The patrons burst out laughing.
+    stageDirection: The director delivers the line casually.
+    tags:
+    - intro
+    - pizza
+    - director
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC5B4\uCA50 \uC77C\uC774\uAE34\uC694! \uC774 \uD53C\uC790\uC9D1 \uC9C0\uD558\uB85C
+        \uAC00\uBA74 \uC678\uACC4\uC778\uC744 \uB9CC\uB0A0 \uC218 \uC788\uB2E4\uACE0
+        \uD574\uC11C \uC654\uC8E0."
+      status: final
+  - id: pizza_awkward_silence
+    sectionId: pizza_restaurant
+    order: 15
+    enabled: 1
+    type: system
+    status: final
+    runtimeCue: PizzaAwkwardSilence
+    triggerEvent: intro.pizza.citizen_encounter
+    condition: The director has just claimed that the party came to meet aliens.
+    repeat: once-per-session
+    speakerId: 
+    speakerLocalizationKey: 
+    speakerFallback: 
+    localizationKey: first_contact.intro.pizza.awkward_silence.stage
+    sourceText: An awkward silence. The patrons stare at the director.
+    advance: automatic
+    minimumSeconds: 2.2
+    situation: Nobody is sure whether the director is joking.
+    beforeAction: The director finishes his alien remark and the subtitle disappears.
+    afterAction: The patrons finally burst into laughter.
+    stageDirection: Do not display this beat as dialogue. Turn the patrons toward
+      the director and hold on the uncomfortable silence.
+    tags:
+    - intro
+    - pizza
+    - silence
+    - timing
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC5B4\uC0C9\uD55C \uCE68\uBB35. \uC2DC\uBBFC\uB4E4\uC774 \uAD6D\uC7A5\uC744
+        \uC774\uC0C1\uD558\uAC8C \uCCD0\uB2E4\uBCF8\uB2E4."
+      status: final
+  - id: pizza_citizens_laugh
+    sectionId: pizza_restaurant
+    order: 20
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PizzaCitizensLaugh
+    triggerEvent: intro.pizza.citizen_encounter
+    condition: The director claims they are meeting aliens.
+    repeat: once-per-session
+    speakerId: citizens
+    speakerLocalizationKey: 
+    speakerFallback: PATRONS
+    localizationKey: first_contact.intro.pizza.citizens_laugh
+    sourceText: Hahaha! That is a good one.
+    advance: automatic
+    minimumSeconds: 2.5
+    situation: The room treats the truth as a harmless joke.
+    beforeAction: The patrons stare at the director for a beat.
+    afterAction: The president supplies a plausible excuse.
+    stageDirection: The four graybox patrons remain turned toward the player.
+    tags:
+    - intro
+    - pizza
+    - citizens
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC73C\uD558\uD558\uD558\uD558\uD558\uD558! \uB18D\uB2F4\uB3C4 \uC798\uD558\uC2DC\uB124."
+      status: final
+  - id: pizza_president_cover
+    sectionId: pizza_restaurant
+    order: 30
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PizzaPresidentCover
+    triggerEvent: intro.pizza.citizen_encounter
+    condition: The patrons laugh at the director's alien remark.
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.pizza.president_cover
+    sourceText: We were hungry and stopped for a bite. Please keep it between us.
+    advance: automatic
+    minimumSeconds: 4.2
+    situation: The president improvises a mundane cover story.
+    beforeAction: The laughter begins to settle.
+    afterAction: The patron wishes the party well.
+    stageDirection: Do not lock the player's camera.
+    tags:
+    - intro
+    - pizza
+    - president
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD760...\uD760...\uBC30\uAC00 \uACE0\uD30C\uC11C \uC7A0\uC2DC \uB4E4\uB800\uC2B5\uB2C8\uB2E4.
+        \uBE44\uBC00\uB85C \uD574\uC8FC\uC138\uC694."
+      status: final
+  - id: pizza_citizen_farewell
+    sectionId: pizza_restaurant
+    order: 40
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PizzaCitizenFarewell
+    triggerEvent: intro.pizza.citizen_encounter
+    condition: The president asks the patrons to keep his visit quiet.
+    repeat: once-per-session
+    speakerId: citizen
+    speakerLocalizationKey: 
+    speakerFallback: CITIZEN
+    localizationKey: first_contact.intro.pizza.citizen_farewell
+    sourceText: Enjoy your meal. Ha ha.
+    advance: automatic
+    minimumSeconds: 2.4
+    situation: The patron accepts the explanation without suspicion.
+    beforeAction: The president finishes the cover story.
+    afterAction: The party resumes walking and waits until the patrons are out of
+      earshot.
+    stageDirection: End the patron-facing exchange here, then release the route hold.
+    tags:
+    - intro
+    - pizza
+    - citizen
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB7EC\uC2DC\uACA0\uC8E0. \uD558\uD558. \uC88B\uC740 \uC2DC\uAC04
+        \uBCF4\uB0B4\uC138\uC694."
+      status: final
+  - id: pizza_president_insane
+    sectionId: pizza_restaurant
+    order: 50
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PizzaPresidentInsane
+    triggerEvent: intro.pizza.private_exchange
+    condition: The president and director have walked far enough from every patron
+      to speak privately.
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.pizza.president_insane
+    sourceText: You are insane.
+    advance: automatic
+    minimumSeconds: 1.8
+    situation: The president quietly glares at the director.
+    beforeAction: The party leaves the dining area and continues toward the elevator.
+    afterAction: The director points out that nobody believed him.
+    stageDirection: A short, dry aside delivered while walking and safely out of
+      earshot.
+    tags:
+    - intro
+    - pizza
+    - president
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC790\uB124 \uBBF8\uCCE4\uAD70."
+      status: final
+  - id: pizza_director_no_one_believes
+    sectionId: pizza_restaurant
+    order: 60
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: PizzaDirectorPrivateReply
+    triggerEvent: intro.pizza.private_exchange
+    condition: The president rebukes the director under his breath.
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.pizza.director_no_one_believes
+    sourceText: You see? Nobody believes it.
+    advance: automatic
+    minimumSeconds: 3
+    situation: The director calmly proves his point and prepares to continue.
+    beforeAction: The president glares at him.
+    afterAction: The pair continues toward the kitchen and elevator.
+    stageDirection: Keep the route active while the director answers.
+    tags:
+    - intro
+    - pizza
+    - director
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB54C\uB85C\uB294 \uBE14\uB7EC\uD551\uC774 \uAC00\uC7A5 \uD6A8\uACFC\uC801\uC778
+        \uBC95\uC774\uC9C0\uC694."
       status: final
   - id: intro_news_card
     sectionId: intro_bridge
@@ -1702,5 +1965,343 @@ MonoBehaviour:
     - locale: ko-KR
       text: "\uADF8\uB4E4\uC740 \uAF64 \uAE4A\uC740 \uC778\uC0C1\uC744 \uBC1B\uC740
         \uAC83 \uAC19\uC2B5\uB2C8\uB2E4!"
+      status: final
+  - id: car_after_news_line_0062
+    sectionId: car_arrival
+    order: 15
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    triggerEvent: intro.car.after_news
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.car.after.news.line_0062
+    sourceText: asdf
+    advance: automatic
+    minimumSeconds: 5.7
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "CIA\uC5D0\uC11C\uB3C4 \uC0AC\uB78C\uB4E4\uC744 \uD30C\uACAC\uD574 \uACF3\uACF3\uC5D0\uC11C
+        \uC5EC\uB860\uC744 \uC870\uC7A5\uD558\uACE0 \uC788\uC73C\uB2C8 \uAC71\uC815
+        \uC548\uD558\uC154\uB3C4 \uB429\uB2C8\uB2E4."
+      status: draft
+  - id: car_pizza_sign_line_0063
+    sectionId: car_arrival
+    order: 35
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    triggerEvent: intro.car.pizza_sign
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.car.pizza.sign.line_0063
+    sourceText: asdf
+    advance: automatic
+    minimumSeconds: 2.7
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC5EC\uAE30\uAC00 \uC800\uD76C \uBAA9\uC801\uC9C0\uAC00 \uB9DE\uC2B5\uB2C8\uB2E4."
+      status: draft
+  - id: car_pizza_sign_line_0064
+    sectionId: car_arrival
+    order: 37
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    triggerEvent: intro.car.pizza_sign
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.car.pizza.sign.line_0064
+    sourceText: asdf
+    advance: automatic
+    minimumSeconds: 5.3
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uBB50 \uD53C\uC790\uC9D1\uC5D0 \uC678\uACC4\uC778\uC774 \uC228\uC5B4\uC788\uAE30\uB77C\uB3C4
+        \uD55C\uAC74\uAC00? \uC774 \uC9D1 \uD53C\uC790\uAC00 \uC218\uC0C1\uD558\uAC8C
+        \uB9DB\uC788\uAE34 \uD558\uC9C0."
+      status: draft
+  - id: news_clip_2_line_0065
+    sectionId: news_broadcast
+    order: 25
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    triggerEvent: intro.news.clip.2
+    condition: 
+    repeat: once-per-session
+    speakerId: eyewitness
+    speakerLocalizationKey: 
+    speakerFallback: EYEWITNESS
+    localizationKey: first_contact.intro.news.clip.2.line_0065
+    sourceText: ASDA
+    advance: automatic
+    minimumSeconds: 4.3
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uC804\uC5D0 \uC804\uD600 \uBCF8 \uC801 \uC5C6\uB294 \uAD11\uACBD\uC774\uC5C8\uC2B5\uB2C8\uB2E4.
+        \uBD84\uBA85\uD788 UFO\uC5D0\uC694."
+      status: draft
+  - id: pizza_citizen_encounter_line_0066
+    sectionId: pizza_restaurant
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: PizzaApproachPresidentComment
+    triggerEvent: intro.pizza.approach
+    condition: The president and director are walking from the parked car toward
+      the restaurant entrance.
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.pizza.citizen.encounter.line_0066
+    sourceText: An alien-themed pizza place. That's certainly unusual.
+    advance: automatic
+    minimumSeconds: 4
+    situation: The restaurant's alien theme is visible while the pair cross the parking
+      lot.
+    beforeAction: The president gets out of the car and starts following the director.
+    afterAction: They continue walking toward the entrance.
+    stageDirection: Keep player movement and free camera look enabled while the subtitle
+      plays.
+    tags:
+    - intro
+    - pizza
+    - approach
+    - walking
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC678\uACC4\uC778 \uCEE8\uC149\uC758 \uD53C\uC790\uC9D1\uC774\uB77C\uB2C8.
+        \uC544\uC8FC \uC774\uC0C9\uC801\uC774\uC57C."
+      status: draft
+  - id: pizza_storage_question_0067
+    sectionId: pizza_restaurant
+    order: 70
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: StoragePresidentQuestion
+    triggerEvent: intro.pizza.storage.approach
+    condition: The president and the director reach the back of the storeroom.
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.pizza.storage.question
+    sourceText: What are we doing in a pizza restaurant storeroom?
+    advance: automatic
+    minimumSeconds: 2.8
+    situation: The director stops in front of an ordinary storage shelf.
+    beforeAction: The pair leave the dining room and cross the kitchen.
+    afterAction: The director steps toward the shelf.
+    stageDirection: Keep the player in first person with free camera look.
+    tags:
+    - intro
+    - pizza
+    - storage
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD53C\uC790\uC9D1 \uCC3D\uACE0\uC5D0\uC11C \uBB58 \uD558\uB824\uACE0?"
+      status: final
+  - id: pizza_storage_reveal_president_0068
+    sectionId: pizza_restaurant
+    order: 80
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: StorageRevealPresident
+    triggerEvent: intro.pizza.storage.reveal
+    condition: The concealed wall panel has opened and exposed an elevator.
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.pizza.storage.reveal.president
+    sourceText: Well... what is this?
+    advance: automatic
+    minimumSeconds: 2.1
+    situation: An industrial elevator is visible behind the storeroom wall.
+    beforeAction: The shelf moves aside, two knocks sound, and the wall opens.
+    afterAction: The director gestures toward the elevator.
+    stageDirection: Let the player look into the newly opened passage.
+    tags:
+    - intro
+    - pizza
+    - secret-door
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD5C8... \uC774\uAC8C \uBB34\uC2A8."
+      status: final
+  - id: pizza_storage_reveal_director_0069
+    sectionId: pizza_restaurant
+    order: 90
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: StorageRevealDirector
+    triggerEvent: intro.pizza.storage.reveal
+    condition: The secret elevator entrance is open.
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.pizza.storage.reveal.director
+    sourceText: Step inside, Mr. President.
+    advance: automatic
+    minimumSeconds: 2.3
+    situation: The director invites the president into the hidden elevator.
+    beforeAction: The president reacts to the concealed entrance.
+    afterAction: The director walks into the elevator.
+    stageDirection: Resume the director route only after this line finishes.
+    tags:
+    - intro
+    - pizza
+    - secret-door
+    - director
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC5B4\uC11C \uB4E4\uC5B4\uC624\uC2DC\uC8E0, \uAC01\uD558."
+      status: final
+  - id: elevator_descent_question_0070
+    sectionId: intro_bridge
+    order: 30
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: ElevatorDescentQuestion
+    triggerEvent: intro.elevator.descent
+    condition: The hidden elevator has begun descending.
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.elevator.descent.question
+    sourceText: Where does this lead?
+    advance: automatic
+    minimumSeconds: 2.2
+    situation: The elevator leaves the restaurant level.
+    beforeAction: The player presses the elevator control and the concealed door
+      closes.
+    afterAction: The director begins explaining the classified facility.
+    stageDirection: Keep the camera under player control inside the elevator.
+    tags:
+    - intro
+    - elevator
+    - president
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uAC74 \uC5B4\uB514\uB85C \uC774\uC5B4\uC9C0\uC9C0?"
+      status: final
+  - id: elevator_descent_first_contact_0071
+    sectionId: intro_bridge
+    order: 40
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: ElevatorDescentFirstContact
+    triggerEvent: intro.elevator.descent
+    condition: The elevator is descending to the classified facility.
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.elevator.descent.first_contact
+    sourceText: A few years ago, after our first unofficial contact with extraterrestrials,
+      the government formed a dedicated organization to prepare for an official meeting
+      like today's.
+    advance: automatic
+    minimumSeconds: 7.2
+    situation: The director reveals that contact with extraterrestrials has already
+      occurred.
+    beforeAction: The president asks where the elevator leads.
+    afterAction: The director explains the translator project.
+    stageDirection: The elevator hum continues beneath the dialogue.
+    tags:
+    - intro
+    - elevator
+    - director
+    - exposition
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uBA87 \uB144 \uC804 \uC678\uACC4\uC778\uACFC \uCC98\uC74C \uBE44\uACF5\uC2DD\uC801\uC73C\uB85C
+        \uC870\uC6B0\uD55C \uC774\uD6C4, \uC815\uBD80\uB294 \uC804\uB2F4 \uC870\uC9C1\uC744
+        \uB9CC\uB4E4\uC5B4 \uC624\uB298 \uAC19\uC740 \uACF5\uC2DD \uD68C\uB2F4\uC744
+        \uC900\uBE44\uD574\uC654\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: elevator_descent_darpa_0072
+    sectionId: intro_bridge
+    order: 50
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: ElevatorDescentDarpa
+    triggerEvent: intro.elevator.descent
+    condition: The elevator continues descending.
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.elevator.descent.darpa
+    sourceText: Working with DARPA, we gathered our best researchers to develop a
+      translator for their language.
+    advance: automatic
+    minimumSeconds: 5.4
+    situation: The director introduces the translator research program.
+    beforeAction: The director describes the government's contact organization.
+    afterAction: The elevator arrives at the underground facility.
+    stageDirection: Complete the surface segment after this line.
+    tags:
+    - intro
+    - elevator
+    - director
+    - darpa
+    - automatic
+    localizedTexts:
+    - locale: ko-KR
+      text: "DARPA\uB97C \uC911\uC2EC\uC73C\uB85C \uC800\uD76C\uAC00 \uAC00\uC9C4
+        \uCD5C\uACE0\uC758 \uC5F0\uAD6C\uC6D0\uB4E4\uC744 \uBAA8\uC544 \uADF8\uB4E4\uC758
+        \uC5B8\uC5B4\uB97C \uBC88\uC5ED\uD558\uB294 \uBC88\uC5ED\uAE30\uB97C \uB9CC\uB4E4\uACE0\uC790
+        \uC5F0\uAD6C\uB97C \uC9C4\uD589\uD574\uC654\uC9C0\uC694."
       status: final
   localizationEntries: []

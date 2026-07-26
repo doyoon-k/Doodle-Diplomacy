@@ -138,6 +138,10 @@ namespace DoodleDiplomacy.UI
 
         private void RefreshLocalizedText()
         {
+            ApplyLocalizedFont(titleText);
+            ApplyLocalizedFont(settingsTitleText);
+            ApplyLocalizedFont(languageLabelText);
+
             UiCopyTrace.BeginScreen("title.main", "menu");
             if (titleText != null)
             {
@@ -336,6 +340,7 @@ namespace DoodleDiplomacy.UI
             textObject.transform.SetParent(parent, false);
 
             TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+            ApplyLocalizedFont(text);
             text.alignment = TextAlignmentOptions.Center;
             text.color = Color.white;
             text.fontSize = fontSize;
@@ -384,7 +389,17 @@ namespace DoodleDiplomacy.UI
             TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(includeInactive: true);
             if (label != null)
             {
+                ApplyLocalizedFont(label);
                 label.text = text;
+            }
+        }
+
+        private static void ApplyLocalizedFont(TextMeshProUGUI text)
+        {
+            TMP_FontAsset localizedFont = L10n.CurrentFont;
+            if (text != null && localizedFont != null && text.font != localizedFont)
+            {
+                text.font = localizedFont;
             }
         }
 
@@ -497,13 +512,14 @@ namespace DoodleDiplomacy.UI
                     continue;
                 }
 
-                label.text = string.IsNullOrWhiteSpace(binding.Locale.NativeName)
-                    ? binding.Locale.EnglishName
-                    : binding.Locale.NativeName;
                 if (binding.Locale.Font != null)
                 {
                     label.font = binding.Locale.Font;
                 }
+
+                label.text = string.IsNullOrWhiteSpace(binding.Locale.NativeName)
+                    ? binding.Locale.EnglishName
+                    : binding.Locale.NativeName;
 
                 label.isRightToLeftText =
                     binding.Locale.Direction == LocalizedTextDirection.RightToLeft;

@@ -29,7 +29,7 @@ namespace DoodleDiplomacy.Narrative.Editor
                 {
                     EditorUtility.DisplayDialog(
                         "Narrative Desk",
-                        "Could not start the local Narrative Desk server. Run npm install in Tools/NarrativeDesk, then try again.",
+                        "Could not start the local Narrative Desk server. Verify that Node.js is installed and run npm install in Tools/NarrativeDesk, then try again.",
                         "OK");
                     return;
                 }
@@ -37,6 +37,15 @@ namespace DoodleDiplomacy.Narrative.Editor
                 for (int i = 0; i < 20 && !await IsServerAvailable(); i++)
                 {
                     await Task.Delay(150);
+                }
+
+                if (!await IsServerAvailable())
+                {
+                    EditorUtility.DisplayDialog(
+                        "Narrative Desk",
+                        "The Narrative Desk process started, but the local server did not become available. Check the Unity Console for the first Node.js error.",
+                        "OK");
+                    return;
                 }
             }
 
@@ -72,9 +81,16 @@ namespace DoodleDiplomacy.Narrative.Editor
             string repositoryRoot = Path.GetDirectoryName(unityProjectRoot) ?? string.Empty;
             string deskRoot = Path.Combine(repositoryRoot, "Tools", "NarrativeDesk");
             string packagePath = Path.Combine(deskRoot, "package.json");
+            string serverPath = Path.Combine(deskRoot, "server.mjs");
             if (!File.Exists(packagePath))
             {
                 Debug.LogError($"[Narrative Desk] package.json was not found at {packagePath}.");
+                return false;
+            }
+
+            if (!File.Exists(serverPath))
+            {
+                Debug.LogError($"[Narrative Desk] server.mjs was not found at {serverPath}.");
                 return false;
             }
 
@@ -82,8 +98,14 @@ namespace DoodleDiplomacy.Narrative.Editor
             {
                 var startInfo = new ProcessStartInfo
                 {
-                    FileName = Application.platform == RuntimePlatform.WindowsEditor ? "npm.cmd" : "npm",
-                    Arguments = "start",
+                    // Launch Node directly. Starting a bare npm.cmd through
+                    // ProcessStartInfo on Windows makes npm resolve %~dp0 from
+                    // WorkingDirectory, so it incorrectly searches for
+                    // Tools/NarrativeDesk/node_modules/npm/bin/npm-cli.js.
+                    FileName = Application.platform == RuntimePlatform.WindowsEditor
+                        ? "node.exe"
+                        : "node",
+                    Arguments = $"\"{serverPath}\"",
                     WorkingDirectory = deskRoot,
                     UseShellExecute = false,
                     CreateNoWindow = true,

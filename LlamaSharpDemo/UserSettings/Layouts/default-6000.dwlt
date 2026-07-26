@@ -248,8 +248,8 @@ MonoBehaviour:
     y: 0
     width: 429
     height: 622
-  m_MinSize: {x: 275, y: 50}
-  m_MaxSize: {x: 4000, y: 4000}
+  m_MinSize: {x: 276, y: 76}
+  m_MaxSize: {x: 4001, y: 4026}
   m_ActualView: {fileID: 18}
   m_Panes:
   - {fileID: 18}
@@ -513,7 +513,7 @@ MonoBehaviour:
   m_Pos:
     serializedVersion: 2
     x: 0
-    y: 79
+    y: 24
     width: 386
     height: 596
   m_SerializedDataModeController:
@@ -578,8 +578,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Scene\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 387
-    y: 79
+    x: 388
+    y: 24
     width: 1102
     height: 596
   m_SerializedDataModeController:
@@ -1270,7 +1270,7 @@ MonoBehaviour:
   m_Rotation:
     m_Target: {x: 0.228733, y: -0.10805297, z: 0.027029293, w: 0.967101}
     speed: 2
-    m_Value: {x: 0.22873196, y: -0.10805248, z: 0.02702917, w: 0.9670966}
+    m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
     m_Target: 1.3649018
     speed: 2
@@ -1278,7 +1278,7 @@ MonoBehaviour:
   m_Ortho:
     m_Target: 0
     speed: 2
-    m_Value: 0
+    m_Value: 1
   m_CameraSettings:
     m_Speed: 0.35
     m_SpeedNormalized: 0.1745873
@@ -1292,7 +1292,7 @@ MonoBehaviour:
     m_FarClip: 10000
     m_DynamicClip: 1
     m_OcclusionCulling: 0
-  m_LastSceneViewRotation: {x: -0.16648304, y: 0.22506583, z: -0.038922843, w: -0.959264}
+  m_LastSceneViewRotation: {x: -0.08717229, y: 0.89959055, z: -0.21045254, w: -0.3726226}
   m_LastSceneViewOrtho: 0
   m_Viewpoint:
     m_SceneView: {fileID: 17}
@@ -1329,8 +1329,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Inspector\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1491
-    y: 79
+    x: 1492
+    y: 24
     width: 428
     height: 596
   m_SerializedDataModeController:
@@ -1379,7 +1379,7 @@ MonoBehaviour:
   m_Pos:
     serializedVersion: 2
     x: 0
-    y: 701
+    y: 646
     width: 1920
     height: 285
   m_SerializedDataModeController:
@@ -1423,7 +1423,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 211}
     m_SelectedIDs: 2ad10000
     m_LastClickedID: 53546
-    m_ExpandedIDs: 00000000a2d000002ed10000a6d1000000ca9a3b
+    m_ExpandedIDs: 0000000016d2000018d200001ad20000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1452,7 +1452,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000a2d00000
+    m_ExpandedIDs: 0000000016d2000018d200001ad20000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 

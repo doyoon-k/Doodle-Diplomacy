@@ -3,12 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using DoodleDiplomacy.Narrative;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.InputSystem;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
     [DisallowMultipleComponent]
     public sealed class FirstContactIntroSequenceController : MonoBehaviour
     {
+        [Serializable]
+        private sealed class BriefingVisualCueEvent : UnityEvent<string>
+        {
+        }
+
         [SerializeField] private FirstContactIntroSegment segment;
         [SerializeField] private FirstContactIntroMode mode;
         [SerializeField] private FirstContactIntroPlayerController player;
@@ -19,6 +26,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField] private FirstContactIntroInteractable briefingSeatInteraction;
         [SerializeField] private FirstContactIntroInteractable meetingRoomInteraction;
         [SerializeField] private FirstContactNewsBroadcastPlayer newsBroadcast;
+        [SerializeField] private NarrativeScenarioAsset narrativeScenario;
         [SerializeField] private FirstContactVehicleRouteController vehicleRoute;
         [SerializeField] private FirstContactSecretElevatorSequence secretElevatorSequence;
         [SerializeField] private Transform newsCameraAnchor;
@@ -52,7 +60,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField, Min(0)] private int secretRevealGuidePointIndex = 7;
         [SerializeField, Min(0.5f)] private float secretRevealStartDistance = 3.25f;
         [SerializeField, Min(0f)] private float minimumElevatorDescentSeconds = 2.5f;
-        [SerializeField, Min(0f)] private float placeholderBriefingSeconds = 2f;
+        [Header("Facility Briefing")]
+        [SerializeField] private Transform briefingWideCameraAnchor;
+        [SerializeField] private Transform briefingProjectorCameraAnchor;
+        [SerializeField, Min(0f)] private float facilityCorridorLeadSeconds = 0.65f;
+        [SerializeField, Min(0f)] private float briefingSeatMoveSeconds = 0.45f;
+        [SerializeField, Min(0f)] private float briefingCameraBlendSeconds = 0.55f;
+        [SerializeField, Min(0f)] private float briefingExitBlendSeconds = 0.55f;
+        [Tooltip("Raised for BriefingSlide* runtime cues. Add the projector image swap here when slide resources are ready.")]
+        [SerializeField] private BriefingVisualCueEvent briefingVisualCue = new();
 
         private Coroutine _seatRoutine;
         private Coroutine _newsRoutine;
@@ -64,6 +80,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Coroutine _pizzaPrivateExchangeRoutine;
         private Coroutine _secretDoorRevealRoutine;
         private Coroutine _elevatorRideRoutine;
+        private Coroutine _facilityCorridorDialogueRoutine;
         private FirstContactNewsSubtitleDisplay _dialogueDisplay;
         private readonly List<NarrativeBeat> _activeDialogueBeats = new();
         private bool _begun;
@@ -77,6 +94,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private int _directorOriginalSiblingIndex;
         private Vector3 _directorOriginalLocalPosition;
         private Quaternion _directorOriginalLocalRotation;
+        private Transform _activeBriefingCameraAnchor;
+        private bool _facilityGuideAtBriefing;
+        private bool _facilityCorridorDialogueComplete;
 
         public bool IsBusy => _busy;
         public FirstContactIntroSegment Segment => segment;
@@ -200,6 +220,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
             else
             {
+                _facilityGuideAtBriefing = false;
+                _facilityCorridorDialogueComplete = false;
                 player?.SetContextualInteraction(null);
                 briefingSeatInteraction?.SetAvailable(false);
                 meetingRoomInteraction?.SetAvailable(false);
@@ -207,6 +229,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     "first_contact.intro.objective.follow_to_briefing",
                     "Follow the director to the briefing room.");
                 guide?.Begin(player != null ? player.transform : null);
+                _facilityCorridorDialogueRoutine = StartCoroutine(
+                    FacilityCorridorDialogueRoutine());
             }
         }
 
@@ -273,6 +297,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 StopCoroutine(_elevatorRideRoutine);
                 _elevatorRideRoutine = null;
             }
+
+            if (_facilityCorridorDialogueRoutine != null)
+            {
+                StopCoroutine(_facilityCorridorDialogueRoutine);
+                _facilityCorridorDialogueRoutine = null;
+            }
+
+            _facilityGuideAtBriefing = false;
+            _facilityCorridorDialogueComplete = false;
+            _activeBriefingCameraAnchor = null;
 
             UnsubscribeNewsPlaybackClock();
             newsBroadcast?.StopBroadcast();
@@ -377,9 +411,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             string triggerEvent,
             bool playWhileSequenceBusy = false)
         {
-            NarrativeScenarioAsset scenario = newsBroadcast != null
-                ? newsBroadcast.NarrativeScenario
-                : null;
+            NarrativeScenarioAsset scenario = GetNarrativeScenario();
             if (scenario == null || string.IsNullOrWhiteSpace(triggerEvent))
             {
                 yield break;
@@ -434,16 +466,79 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     yield return null;
                 }
 
+                if (beat.WaitForAdvance && !silentBeat &&
+                    CanContinueDialogue(playWhileSequenceBusy))
+                {
+                    display?.SetAdvancePromptVisible(true);
+                    while (CanContinueDialogue(playWhileSequenceBusy) &&
+                           !WasDialogueAdvancePressed())
+                    {
+                        yield return null;
+                    }
+                }
+
+                display?.SetAdvancePromptVisible(false);
                 display?.Hide();
                 NarrativeTrace.Emit(scenario.ScenarioId, beat.id, "exit");
                 HandleDialogueRuntimeCue(beat.runtimeCue);
+
+                if (!CanContinueDialogue(playWhileSequenceBusy))
+                {
+                    yield break;
+                }
             }
+        }
+
+        private bool CanContinueDialogue(bool playWhileSequenceBusy)
+        {
+            return _begun && (playWhileSequenceBusy || !_busy);
+        }
+
+        private static bool WasDialogueAdvancePressed()
+        {
+            return Keyboard.current != null &&
+                   Keyboard.current.spaceKey.wasPressedThisFrame;
         }
 
         private IEnumerator PrepareDialogueBeatRoutine(string runtimeCue)
         {
             if (string.IsNullOrWhiteSpace(runtimeCue))
             {
+                yield break;
+            }
+
+            bool isBriefingSlide = runtimeCue.StartsWith(
+                "BriefingSlide",
+                StringComparison.OrdinalIgnoreCase);
+            Transform briefingAnchor = null;
+            if (string.Equals(
+                    runtimeCue,
+                    "BriefingWide",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                briefingAnchor = briefingWideCameraAnchor;
+            }
+            else if (runtimeCue.StartsWith(
+                         "BriefingProjector",
+                         StringComparison.OrdinalIgnoreCase) ||
+                     isBriefingSlide)
+            {
+                briefingAnchor = briefingProjectorCameraAnchor;
+            }
+
+            if (isBriefingSlide)
+            {
+                briefingVisualCue?.Invoke(runtimeCue);
+            }
+
+            if (briefingAnchor != null &&
+                briefingAnchor != _activeBriefingCameraAnchor &&
+                player != null)
+            {
+                yield return player.BlendViewToAnchor(
+                    briefingAnchor,
+                    briefingCameraBlendSeconds);
+                _activeBriefingCameraAnchor = briefingAnchor;
                 yield break;
             }
 
@@ -503,6 +598,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return _dialogueDisplay;
+        }
+
+        private NarrativeScenarioAsset GetNarrativeScenario()
+        {
+            return narrativeScenario != null
+                ? narrativeScenario
+                : newsBroadcast != null
+                    ? newsBroadcast.NarrativeScenario
+                    : null;
         }
 
         private void HandleDialogueRuntimeCue(string runtimeCue)
@@ -951,13 +1055,41 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             sourcePlayer.SetMovementEnabled(false);
+            sourcePlayer.SetLookEnabled(false);
             sourcePlayer.SetInteractionEnabled(false);
-            sourcePlayer.Teleport(interactable.Target, seated: true);
+            sourcePlayer.SetContextualInteraction(null);
+            hud?.SetCrosshairVisible(false);
+            hud?.ClearPrompt();
             hud?.ClearObjective();
 
-            yield return new WaitForSeconds(placeholderBriefingSeconds);
+            if (interactable.Target != null)
+            {
+                yield return sourcePlayer.MoveToWorldPose(
+                    interactable.Target,
+                    briefingSeatMoveSeconds);
+            }
+
+            sourcePlayer.Teleport(interactable.Target, seated: true);
+            if (briefingWideCameraAnchor != null)
+            {
+                yield return sourcePlayer.BlendViewToAnchor(
+                    briefingWideCameraAnchor,
+                    briefingCameraBlendSeconds);
+                _activeBriefingCameraAnchor = briefingWideCameraAnchor;
+            }
+
+            yield return PlayDialogueEventRoutine(
+                "intro.facility.briefing",
+                playWhileSequenceBusy: true);
+
+            _dialogueDisplay?.Hide();
+            _activeBriefingCameraAnchor = null;
+            yield return sourcePlayer.BlendToRestoredView(
+                briefingExitBlendSeconds);
 
             sourcePlayer.Teleport(interactable.SecondaryTarget, seated: false);
+            hud?.SetCrosshairVisible(true);
+            sourcePlayer.SetLookEnabled(true);
             sourcePlayer.SetMovementEnabled(true);
             sourcePlayer.SetInteractionEnabled(true);
             guide?.Resume();
@@ -966,6 +1098,36 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 "Follow the director to the meeting room.");
             _busy = false;
             _seatRoutine = null;
+        }
+
+        private IEnumerator FacilityCorridorDialogueRoutine()
+        {
+            if (facilityCorridorLeadSeconds > 0f)
+            {
+                yield return new WaitForSecondsRealtime(
+                    facilityCorridorLeadSeconds);
+            }
+
+            yield return PlayDialogueEventRoutine(
+                "intro.facility.corridor");
+            _facilityCorridorDialogueComplete = true;
+            _facilityCorridorDialogueRoutine = null;
+            TryEnableBriefingSeat();
+        }
+
+        private void TryEnableBriefingSeat()
+        {
+            if (!_begun || segment != FirstContactIntroSegment.Facility ||
+                !_facilityGuideAtBriefing ||
+                !_facilityCorridorDialogueComplete)
+            {
+                return;
+            }
+
+            briefingSeatInteraction?.SetAvailable(true);
+            hud?.SetObjective(
+                "first_contact.intro.objective.take_briefing_seat",
+                "Take your seat.");
         }
 
         private void HandleGuideManualHold(int pointIndex)
@@ -994,10 +1156,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
-            briefingSeatInteraction?.SetAvailable(true);
-            hud?.SetObjective(
-                "first_contact.intro.objective.take_briefing_seat",
-                "Take your seat.");
+            _facilityGuideAtBriefing = true;
+            TryEnableBriefingSeat();
         }
 
         private IEnumerator CitizenEncounterRoutine()

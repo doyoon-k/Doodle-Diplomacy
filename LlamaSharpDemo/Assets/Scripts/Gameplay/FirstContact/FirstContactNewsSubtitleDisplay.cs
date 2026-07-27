@@ -23,6 +23,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Image _topAccent;
         private TextMeshProUGUI _speakerText;
         private TextMeshProUGUI _dialogueText;
+        private TextMeshProUGUI _advanceText;
         private Coroutine _fadeRoutine;
 
         private void OnEnable()
@@ -70,13 +71,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ApplyPresentationStyle(newsStyle);
             _speakerText.text = speaker ?? string.Empty;
             _dialogueText.text = dialogue ?? string.Empty;
+            SetAdvancePromptVisible(false);
             RefreshFont();
             _root.SetActive(true);
             FadeTo(1f, FadeSeconds);
         }
 
+        public void SetAdvancePromptVisible(bool visible)
+        {
+            EnsureLayout();
+            if (_advanceText != null)
+            {
+                _advanceText.gameObject.SetActive(visible);
+            }
+        }
+
         public void Hide()
         {
+            SetAdvancePromptVisible(false);
             if (_root == null || !_root.activeSelf)
             {
                 return;
@@ -87,6 +99,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void HideImmediate()
         {
+            if (_advanceText != null)
+            {
+                _advanceText.gameObject.SetActive(false);
+            }
+
             if (_fadeRoutine != null)
             {
                 StopCoroutine(_fadeRoutine);
@@ -152,6 +169,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 TextAlignmentOptions.TopLeft,
                 new Color(0.97f, 0.97f, 0.94f, 1f));
 
+            _advanceText = CreateText(
+                "Advance",
+                _root.transform,
+                new Vector2(0.78f, 0.015f),
+                new Vector2(0.965f, 0.20f),
+                17f,
+                FontStyles.Bold,
+                TextAlignmentOptions.BottomRight,
+                new Color(1f, 0.82f, 0.55f, 0.95f));
+            _advanceText.text = "SPACE  >";
+            _advanceText.gameObject.SetActive(false);
+
             _canvasGroup = _root.AddComponent<CanvasGroup>();
             _canvasGroup.alpha = 0f;
             _root.SetActive(false);
@@ -170,6 +199,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Stretch(_rootRect, new Vector2(0.12f, 0.045f), new Vector2(0.88f, 0.175f));
                 _background.enabled = true;
                 _topAccent.enabled = true;
+                Stretch(
+                    _dialogueText.rectTransform,
+                    new Vector2(0.035f, 0.10f),
+                    new Vector2(0.965f, 0.67f));
 
                 _speakerText.fontSize = 22f;
                 _speakerText.fontStyle = FontStyles.Bold;
@@ -177,15 +210,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 SetOutline(_speakerText, 0f);
 
                 _dialogueText.fontSize = 31f;
+                _dialogueText.enableAutoSizing = false;
                 _dialogueText.fontStyle = FontStyles.Normal;
                 _dialogueText.color = new Color(0.97f, 0.97f, 0.94f, 1f);
                 SetOutline(_dialogueText, 0f);
                 return;
             }
 
-            Stretch(_rootRect, new Vector2(0.10f, 0.055f), new Vector2(0.90f, 0.185f));
+            Stretch(_rootRect, new Vector2(0.10f, 0.04f), new Vector2(0.90f, 0.36f));
             _background.enabled = false;
             _topAccent.enabled = false;
+            Stretch(
+                _dialogueText.rectTransform,
+                new Vector2(0.035f, 0.18f),
+                new Vector2(0.965f, 0.67f));
 
             _speakerText.fontSize = 23f;
             _speakerText.fontStyle = FontStyles.Bold;
@@ -193,6 +231,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             SetOutline(_speakerText, 0.20f);
 
             _dialogueText.fontSize = 32f;
+            _dialogueText.enableAutoSizing = true;
+            _dialogueText.fontSizeMin = 18f;
+            _dialogueText.fontSizeMax = 32f;
             _dialogueText.fontStyle = FontStyles.Normal;
             _dialogueText.color = Color.white;
             SetOutline(_dialogueText, 0.18f);
@@ -225,6 +266,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             if (_dialogueText != null)
             {
                 _dialogueText.font = font;
+            }
+
+            if (_advanceText != null)
+            {
+                _advanceText.font = font;
             }
         }
 

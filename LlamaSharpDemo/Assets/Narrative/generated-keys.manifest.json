@@ -359,6 +359,296 @@
             "key": "first_contact.intro.elevator.descent.darpa",
             "scenarioId": "first_contact_day1",
             "beatId": "elevator_descent_darpa_0072"
+        },
+        {
+            "key": "first_contact.intro.facility.corridor.discovery",
+            "scenarioId": "first_contact_day1",
+            "beatId": "facility_corridor_discovery_0073"
+        },
+        {
+            "key": "first_contact.intro.facility.corridor.what",
+            "scenarioId": "first_contact_day1",
+            "beatId": "facility_corridor_what_0074"
+        },
+        {
+            "key": "first_contact.intro.facility.corridor.signal",
+            "scenarioId": "first_contact_day1",
+            "beatId": "facility_corridor_signal_0075"
+        },
+        {
+            "key": "first_contact.intro.facility.corridor.telepathy",
+            "scenarioId": "first_contact_day1",
+            "beatId": "facility_corridor_telepathy_0076"
+        },
+        {
+            "key": "first_contact.intro.facility.corridor.close",
+            "scenarioId": "first_contact_day1",
+            "beatId": "facility_corridor_close_0077"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.assignment_question",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_assignment_question_0078"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.assignment",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_assignment_0079"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.language_question",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_language_question_0080"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.build_translator",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_build_translator_0081"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.prototype",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_prototype_0082"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.ready_question",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_ready_question_0083"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.handoff",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_handoff_0084"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.prototype_limits",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_prototype_limits_0085"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.not_complete",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_not_complete_0086"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.prototype_reply",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_prototype_reply_0087"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.how_it_works",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_how_it_works_0088"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.principle",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_principle_0089"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.fft",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_fft_0090"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.feature_vector",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_feature_vector_0091"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.mahalanobis",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_mahalanobis_0092"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.director_interrupt",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_director_interrupt_0093"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.recursive_interpolation",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_recursive_interpolation_0094"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.president_interrupt",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_president_interrupt_0095"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.realtime_update",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_realtime_update_0096"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.explain_simply",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_explain_simply_0097"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.apology",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_apology_0098"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.basic_premise",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_basic_premise_0099"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.collect_waveforms",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_collect_waveforms_0100"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.banana_example",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_banana_example_0101"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.database_limit",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_database_limit_0102"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.algorithm_solution",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_algorithm_solution_0103"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.task_simple",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_task_simple_0104"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.task_question",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_task_question_0105"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.draw_categories",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_draw_categories_0106"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.food_examples",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_food_examples_0107"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.similar_patterns",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_similar_patterns_0108"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.president_agrees",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_president_agrees_0109"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.unseen_translation",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_unseen_translation_0110"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.magic",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_magic_0111"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.category_basis",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_category_basis_0112"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.alien_motive",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_alien_motive_0113"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.cows_and_corn",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_cows_and_corn_0114"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.military_recon",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_military_recon_0115"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.four_categories",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_four_categories_0116"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.why_draw",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_why_draw_0117"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.researchers_ignored",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_researchers_ignored_0118"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.tv_response",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_tv_response_0119"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.wanted_president",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_wanted_president_0120"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.creepy",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_creepy_0121"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.no_malice",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_no_malice_0122"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.wearing_suits",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_wearing_suits_0123"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.diplomatic_intent",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_diplomatic_intent_0124"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.alien_suits",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_alien_suits_0125"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.tie_joke",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_tie_joke_0126"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.black_tie",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_black_tie_0127"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.smart",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_smart_0128"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.not_interested",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_not_interested_0129"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.move_when_ready",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_move_when_ready_0130"
         }
     ]
 }

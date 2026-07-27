@@ -33,9 +33,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _ChromaticAberration: 0.008
+    - _ChromaticAberration: 0.00617
     - _Curvature: 0.03
-    - _NoiseStrength: 0.026
+    - _NoiseStrength: 0.005
     - _OverlayChromaticAberration: 0.001
     - _OverlayNoiseStrength: 0.006
     - _OverlayPixelateStrength: 0
@@ -47,6 +47,6 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0.754717, g: 0.42569378, b: 0, a: 1}
     - _OverlayPixelResolution: {r: 1920, g: 1080, b: 0, a: 0}
-    - _PixelResolution: {r: 192, g: 108, b: 0, a: 0}
+    - _PixelResolution: {r: 240, g: 180, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

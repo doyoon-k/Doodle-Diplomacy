@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -22,7 +23,7 @@ namespace DoodleDiplomacy.Narrative.Editor
             {
                 scenario.ApplyDocument(NarrativeScenarioJson.Parse(json));
                 Assert.That(scenario.ScenarioId, Is.EqualTo("first_contact_day1"));
-                Assert.That(scenario.Beats.Count, Is.EqualTo(45));
+                Assert.That(scenario.Beats.Count, Is.EqualTo(130));
                 Assert.That(
                     scenario.TryGetBeatByRuntimeCue("CategoryCalibrated", out NarrativeBeat beat),
                     Is.True);
@@ -38,7 +39,33 @@ namespace DoodleDiplomacy.Narrative.Editor
                     scenario.TryGetBeatByRuntimeCue("PreflightDrawing", out NarrativeBeat preflightDrawing),
                     Is.True);
                 Assert.That(preflightDrawing.sourceText, Does.Not.Contain("{category}"));
-                Assert.That(preflightDrawing.sourceText, Does.Contain("any one concrete object"));
+                Assert.That(preflightDrawing.sourceText, Does.Contain("one concrete object"));
+                Assert.That(
+                    scenario.Beats.Count(item =>
+                        item.triggerEvent == "intro.facility.corridor"),
+                    Is.EqualTo(5));
+                Assert.That(
+                    scenario.Beats.Count(item =>
+                        item.triggerEvent == "intro.facility.briefing"),
+                    Is.EqualTo(53));
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "facility_corridor_discovery_0073",
+                        out NarrativeBeat corridorBeat),
+                    Is.True);
+                Assert.That(corridorBeat.WaitForAdvance, Is.False);
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "briefing_assignment_question_0078",
+                        out NarrativeBeat briefingBeat),
+                    Is.True);
+                Assert.That(briefingBeat.WaitForAdvance, Is.True);
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "briefing_banana_example_0101",
+                        out NarrativeBeat bananaBeat),
+                    Is.True);
+                Assert.That(bananaBeat.runtimeCue, Is.EqualTo("BriefingSlideBanana"));
             }
             finally
             {

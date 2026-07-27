@@ -172,6 +172,51 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ApplyLockedView();
         }
 
+        public IEnumerator BlendViewToAnchor(Transform cameraAnchor, float seconds)
+        {
+            if (cameraAnchor == null)
+            {
+                yield break;
+            }
+
+            EnsureReferences();
+            if (viewCamera == null)
+            {
+                yield break;
+            }
+
+            if (!_hasSavedCameraPose)
+            {
+                _savedCameraLocalPosition = viewCamera.transform.localPosition;
+                _savedCameraLocalRotation = viewCamera.transform.localRotation;
+                _hasSavedCameraPose = true;
+            }
+
+            Transform cameraTransform = viewCamera.transform;
+            Vector3 startPosition = cameraTransform.position;
+            Quaternion startRotation = cameraTransform.rotation;
+            _lockedViewAnchor = null;
+            _gazeViewLocked = false;
+
+            float duration = Mathf.Max(0f, seconds);
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = duration <= 0.0001f
+                    ? 1f
+                    : Mathf.Clamp01(elapsed / duration);
+                float easedProgress = progress * progress * (3f - 2f * progress);
+                cameraTransform.SetPositionAndRotation(
+                    Vector3.Lerp(startPosition, cameraAnchor.position, easedProgress),
+                    Quaternion.Slerp(startRotation, cameraAnchor.rotation, easedProgress));
+                yield return null;
+            }
+
+            _lockedViewAnchor = cameraAnchor;
+            ApplyLockedView();
+        }
+
         public void RestoreView()
         {
             _lockedViewAnchor = null;

@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Hidden_ShaderGlass_PS1_QuantizeDither
+  m_Name: PS1QuantizeIndoor
   m_Shader: {fileID: 4800000, guid: c9b6747cbee843e6991cf6c66334cbab, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -29,16 +29,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - Brightness: -0.164
-    - ChromaShift: 0.343
-    - ColorSteps: 39.3
-    - Contrast: 1.063
-    - DitherStrength: 0.284
+    - Brightness: -0.02
+    - ChromaShift: 1.593
+    - ColorSteps: 48.7
+    - Contrast: 1.179
+    - DitherStrength: 0.611
     - FrameCount: 0
-    - JitterStrength: 0.692
-    - NoiseStrength: 0.0068
-    - Saturation: 1.266
-    - ScanlineStrength: 0.164
+    - JitterStrength: 1.609
+    - NoiseStrength: 0.0103
+    - Saturation: 1.582
+    - ScanlineStrength: 0.197
     - TimestampDay: 9
     - TimestampEnable: 0
     - TimestampHour: 23

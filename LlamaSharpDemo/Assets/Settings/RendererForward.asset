@@ -71,7 +71,7 @@ MonoBehaviour:
   settings:
     preset: {fileID: 11400000, guid: 998929f8e8194797998cedc0698b9f2e, type: 2}
     renderPassEvent: 1000
-    targetInputResolution: {x: 640, y: 480}
+    targetInputResolution: {x: 1920, y: 1080}
     outputScale: 1
     freeScale: 0
     flipHorizontal: 0

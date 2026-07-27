@@ -1,5 +1,6 @@
 using DoodleDiplomacy.Gameplay;
 using DoodleDiplomacy.Gameplay.FirstContact;
+using DoodleDiplomacy.Narrative;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Build;
@@ -16,6 +17,8 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         private const string IntroSurfaceScenePath = "Assets/Scenes/FirstContact/FC_Intro_Surface.unity";
         private const string IntroFacilityScenePath = "Assets/Scenes/FirstContact/FC_Intro_Facility.unity";
         private const string GameFlowPath = "Assets/Data/FirstContact/FirstContactGameFlow.asset";
+        private const string NarrativeScenarioPath =
+            "Assets/Generated/Narrative/first_contact_day1.asset";
 
         [Test]
         public void GameSceneHostUsesDirectGameplayMode()
@@ -132,6 +135,39 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.Greater(EditorBuildSettings.scenes.Length, 0, "Build Settings must contain at least one scene.");
             Assert.AreEqual(MainMenuScenePath, EditorBuildSettings.scenes[0].path);
             Assert.IsTrue(EditorBuildSettings.scenes[0].enabled, "MainMenuScene must be the enabled build start scene.");
+        }
+
+        [Test]
+        public void IntroFacilityContainsTranslatorBriefingConfiguration()
+        {
+            string sceneText = System.IO.File.ReadAllText(IntroFacilityScenePath);
+            StringAssert.Contains(
+                "narrativeScenario: {fileID: 11400000, guid: d0b69c3fbbd2ce942aeac9dc289e7b18, type: 2}",
+                sceneText);
+            StringAssert.Contains(
+                "briefingWideCameraAnchor: {fileID: 1908255186}",
+                sceneText);
+            StringAssert.Contains(
+                "briefingProjectorCameraAnchor: {fileID: 520970492}",
+                sceneText);
+            StringAssert.Contains("manualHoldPointIndices: 04000000", sceneText);
+
+            NarrativeScenarioAsset scenario =
+                AssetDatabase.LoadAssetAtPath<NarrativeScenarioAsset>(
+                    NarrativeScenarioPath);
+            Assert.IsNotNull(scenario);
+            Assert.IsTrue(
+                scenario.TryGetBeat(
+                    "facility_corridor_discovery_0073",
+                    out NarrativeBeat corridorBeat));
+            Assert.AreEqual("intro.facility.corridor", corridorBeat.triggerEvent);
+            Assert.IsTrue(
+                scenario.TryGetBeat(
+                    "briefing_move_when_ready_0130",
+                    out NarrativeBeat finalBriefingBeat));
+            Assert.AreEqual(
+                "intro.facility.briefing",
+                finalBriefingBeat.triggerEvent);
         }
 
         private static void AssertSceneEnabled(string scenePath)

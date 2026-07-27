@@ -59,7 +59,7 @@ Read the /unity-initial-setup skill for detailed installation instructions.
 Only include the fields/properties you want to change.
 Any unknown or invalid fields and properties will be reported in the response. |
 | `pathPatches` | `any` | No | Optional. List of path-scoped patches routed through Reflector.TryModifyAt. |
-| `jsonPatch` | `string` | No | Optional. JSON Merge Patch (RFC 7396, extended with [i]/[key] keys) routed through Reflector.TryPatch. |
+| `jsonPatch` | `any` | No | Optional. JSON Merge Patch (RFC 7396, extended with [i]/[key] keys) routed through Reflector.TryPatch. |
 
 ### Input JSON Schema
 
@@ -74,10 +74,18 @@ Any unknown or invalid fields and properties will be reported in the response. |
       "$ref": "#/$defs/com.IvanMurzak.ReflectorNet.Model.SerializedMember"
     },
     "pathPatches": {
-      "$ref": "#/$defs/System.Collections.Generic.List%3CAIGD.PathPatch%3E"
+      "$ref": "#/$defs/System.Collections.Generic.List(AIGD.PathPatch)"
     },
     "jsonPatch": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": true
+        }
+      ]
     }
   },
   "$defs": {
@@ -149,7 +157,7 @@ Any unknown or invalid fields and properties will be reported in the response. |
         }
       }
     },
-    "System.Collections.Generic.List<AIGD.PathPatch>": {
+    "System.Collections.Generic.List(AIGD.PathPatch)": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/AIGD.PathPatch"
@@ -230,7 +238,7 @@ Any unknown or invalid fields and properties will be reported in the response. |
         "$ref": "#/$defs/com.IvanMurzak.ReflectorNet.Model.SerializedMember"
       }
     },
-    "System.String[]": {
+    "System.String-1": {
       "type": "array",
       "items": {
         "type": "string"
@@ -252,7 +260,7 @@ Any unknown or invalid fields and properties will be reported in the response. |
           "description": "Updated object data after modification."
         },
         "Logs": {
-          "$ref": "#/$defs/System.String%5B%5D",
+          "$ref": "#/$defs/System.String-1",
           "description": "Log of modifications made and any warnings/errors encountered."
         }
       },

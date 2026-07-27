@@ -40,9 +40,19 @@ MonoBehaviour:
     order: 3
     summary: Restaurant patrons recognize the president, the director jokes about
       aliens, and the party preserves its cover story.
+  - id: facility_corridor
+    title: Facility corridor
+    order: 4
+    summary: The director explains what the first contact revealed while escorting
+      the president to the briefing room.
+  - id: facility_briefing
+    title: Translator briefing
+    order: 5
+    summary: Dr. Hwang explains the translator prototype, calibration task, and why
+      the aliens will only respond to the president.
   - id: preflight
     title: Tablet preflight
-    order: 5
+    order: 6
     summary: Dr. Hwang checks the president's drawing and walks through the local
       probe controls before the delegation enters.
   - id: arrival
@@ -2303,5 +2313,1630 @@ MonoBehaviour:
         \uCD5C\uACE0\uC758 \uC5F0\uAD6C\uC6D0\uB4E4\uC744 \uBAA8\uC544 \uADF8\uB4E4\uC758
         \uC5B8\uC5B4\uB97C \uBC88\uC5ED\uD558\uB294 \uBC88\uC5ED\uAE30\uB97C \uB9CC\uB4E4\uACE0\uC790
         \uC5F0\uAD6C\uB97C \uC9C4\uD589\uD574\uC654\uC9C0\uC694."
+      status: final
+  - id: facility_corridor_discovery_0073
+    sectionId: facility_corridor
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FacilityCorridorDirector
+    triggerEvent: intro.facility.corridor
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.corridor.discovery
+    sourceText: There is one thing we learned from that first encounter.
+    advance: automatic
+    minimumSeconds: 3.8
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8 \uCCAB \uC870\uC6B0\uC5D0\uC11C \uD55C \uAC00\uC9C0 \uC54C\uC544\uB0B8
+        \uC0AC\uC2E4\uC774 \uC788\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: facility_corridor_what_0074
+    sectionId: facility_corridor
+    order: 10
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FacilityCorridorPresident
+    triggerEvent: intro.facility.corridor
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.corridor.what
+    sourceText: What is it?
+    advance: automatic
+    minimumSeconds: 2
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uAC8C \uBB54\uAC00?"
+      status: final
+  - id: facility_corridor_signal_0075
+    sectionId: facility_corridor
+    order: 20
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FacilityCorridorDirector
+    triggerEvent: intro.facility.corridor
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.corridor.signal
+    sourceText: They probably communicate by emitting some kind of brainwave signal
+      outside their bodies.
+    advance: automatic
+    minimumSeconds: 5.4
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB4E4\uC740 \uC544\uB9C8\uB3C4...\uC77C\uC885\uC758 \uB1CC\uD30C\uB97C
+        \uC678\uBD80\uB85C \uBC29\uCD9C\uD558\uC5EC \uC11C\uB85C \uC18C\uD1B5\uD558\uB294
+        \uAC83 \uAC19\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: facility_corridor_telepathy_0076
+    sectionId: facility_corridor
+    order: 30
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FacilityCorridorPresident
+    triggerEvent: intro.facility.corridor
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.corridor.telepathy
+    sourceText: Are you talking about something like telepathy?
+    advance: automatic
+    minimumSeconds: 3
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD154\uB808\uD30C\uC2DC \uAC19\uC740\uAC78 \uB9D0\uD558\uB294\uAC74\uAC00?"
+      status: final
+  - id: facility_corridor_close_0077
+    sectionId: facility_corridor
+    order: 40
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: FacilityCorridorDirector
+    triggerEvent: intro.facility.corridor
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.corridor.close
+    sourceText: Uh... something like that.
+    advance: automatic
+    minimumSeconds: 2.2
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC5B4...\uADF8\uB7F0 \uC148\uC774\uC9C0\uC694."
+      status: final
+  - id: briefing_assignment_question_0078
+    sectionId: facility_briefing
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.assignment_question
+    sourceText: So what exactly am I supposed to do?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB798\uC11C \uB0B4\uAC00 \uD560\uC77C\uC774 \uB300\uCCB4 \uBB54\uAC00?"
+      status: final
+  - id: briefing_assignment_0079
+    sectionId: facility_briefing
+    order: 10
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.assignment
+    sourceText: From now on, you will conduct humanity's first official diplomatic
+      meeting with extraterrestrials.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uAC01\uD558\uB294 \uC774\uC81C\uBD80\uD130 \uC778\uB958 \uCD5C\uCD08\uB85C
+        \uC678\uACC4\uC778\uACFC \uACF5\uC2DD \uC678\uAD50 \uD68C\uB2F4\uC744 \uD558\uC2E4\uAC81\uB2C8\uB2E4."
+      status: final
+  - id: briefing_language_question_0080
+    sectionId: facility_briefing
+    order: 20
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.language_question
+    sourceText: Fine. But how? Did they say they speak English?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC88B\uC544. \uADF8\uB7F0\uB370 \uBB34\uC2A8 \uC218\uB85C? \uADF8\uB4E4\uC774
+        \uC601\uC5B4\uB77C\uB3C4 \uD560 \uC904 \uC548\uB2E4\uACE0 \uD558\uB358\uAC00?"
+      status: final
+  - id: briefing_build_translator_0081
+    sectionId: facility_briefing
+    order: 30
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.build_translator
+    sourceText: Exactly. So first, we need to build a translator.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB9DE\uC2B5\uB2C8\uB2E4. \uADF8\uB798\uC11C \uC6B0\uC120 \uBC88\uC5ED\uAE30\uB97C
+        \uB9CC\uB4E4\uC5B4\uC57C \uACA0\uC9C0\uC694."
+      status: final
+  - id: briefing_prototype_0082
+    sectionId: facility_briefing
+    order: 40
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.prototype
+    sourceText: DARPA and our best minds have completed a prototype translator.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "DARPA\uC640 \uCD5C\uACE0\uC758 \uC778\uC7AC\uB4E4\uC744 \uAD6C\uC131\uD574
+        \uC5F0\uAD6C\uB97C \uC9C4\uD589\uD588\uACE0 \uBC88\uC5ED\uAE30\uC758 \uD504\uB85C\uD1A0\uD0C0\uC785\uC744
+        \uC644\uC131\uD588\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_ready_question_0083
+    sectionId: facility_briefing
+    order: 50
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.ready_question
+    sourceText: Huh. So can we talk to them right away now?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD5C8. \uADF8\uB7FC \uC774\uC81C \uADF8\uB4E4\uACFC \uBC14\uB85C \uB300\uD654\uD560
+        \uC218 \uC788\uB294 \uAC74\uAC00?"
+      status: final
+  - id: briefing_handoff_0084
+    sectionId: facility_briefing
+    order: 60
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.handoff
+    sourceText: Dr. Hwang, who led the translator project, will explain the details.
+      Doctor?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC790\uC138\uD55C \uAC74 \uBC88\uC5ED\uAE30 \uAC1C\uBC1C \uCC45\uC784\uC790\uC778
+        \uD669 \uBC15\uC0AC\uAC00 \uC124\uBA85\uB4DC\uB9B4 \uAC81\uB2C8\uB2E4. \uD669
+        \uBC15\uC0AC?"
+      status: final
+  - id: briefing_prototype_limits_0085
+    sectionId: facility_briefing
+    order: 70
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.prototype_limits
+    sourceText: The device is complete, but we still need alien-language data to
+      optimize the algorithm.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC5D0...\uC7A5\uCE58\uB294 \uC644\uC131\uD588\uC9C0\uB9CC \uC544\uC9C1
+        \uC678\uACC4\uC5B4 \uB370\uC774\uD130\uB97C \uC218\uC9D1\uD574\uC11C \uC54C\uACE0\uB9AC\uC998
+        \uCD5C\uC801\uD654 \uACFC\uC815\uC744 \uAC70\uCCD0\uC57C \uD569\uB2C8\uB2E4."
+      status: final
+  - id: briefing_not_complete_0086
+    sectionId: facility_briefing
+    order: 80
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.not_complete
+    sourceText: Then it isn't finished.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB7FC \uC644\uC131\uB41C \uAC8C \uC544\uB2C8\uC796\uB098?"
+      status: final
+  - id: briefing_prototype_reply_0087
+    sectionId: facility_briefing
+    order: 90
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.prototype_reply
+    sourceText: That is why it is a prototype.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB798\uC11C \uD504\uB85C\uD1A0\uD0C0\uC785\uC778 \uAC70\uC9C0\uC694."
+      status: final
+  - id: briefing_how_it_works_0088
+    sectionId: facility_briefing
+    order: 100
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.how_it_works
+    sourceText: Hmm... fine. How exactly does this thing work?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD760\u2026\uC88B\uC544. \uADF8\uB798\uC11C \uC774\uAC8C \uB300\uCCB4
+        \uC5B4\uB5BB\uAC8C \uC791\uB3D9\uD55C\uB2E4\uB294\uAC74\uAC00?"
+      status: final
+  - id: briefing_principle_0089
+    sectionId: facility_briefing
+    order: 110
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorTechnical
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.principle
+    sourceText: Ahem... yes. The principle behind our translator is simple.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD760\uD760\u2026\uC608. \uC800\uD76C \uBC88\uC5ED\uAE30\uC758 \uC6D0\uB9AC\uB294
+        \uAC04\uB2E8\uD569\uB2C8\uB2E4."
+      status: final
+  - id: briefing_fft_0090
+    sectionId: facility_briefing
+    order: 120
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorTechnical
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.fft
+    sourceText: First, a multichannel phased-array receiver simultaneously samples
+      the neuroelectromagnetic signals emitted extracranially by an alien subject.
+      We then apply a fast Fourier transform to the time-domain evoked-potential
+      waveform and decompose it into a frequency spectrum.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC6B0\uC120 \uC678\uACC4 \uAC1C\uCCB4\uAC00 \uB450\uAC1C\uC678\uB85C
+        \uBC29\uC0AC\uD558\uB294 \uC2E0\uACBD\uC804\uC790\uAE30 \uC2E0\uD638\uB97C
+        \uB2E4\uCC44\uB110 \uC704\uC0C1\uBC30\uC5F4 \uC218\uC2E0\uAE30\uB85C \uB3D9\uC2DC
+        \uD45C\uBCF8\uD654\uD55C \uB4A4, \uC720\uBC1C\uC804\uC704\uC758 \uC2DC\uAC04\uC601\uC5ED
+        \uD30C\uD615\uC5D0 \uACE0\uC18D \uD478\uB9AC\uC5D0 \uBCC0\uD658\uC744 \uC801\uC6A9\uD558\uC5EC
+        \uC8FC\uD30C\uC218\uBCC4 \uC2A4\uD399\uD2B8\uB7FC\uC73C\uB85C \uBD84\uD574\uD569\uB2C8\uB2E4."
+      status: final
+  - id: briefing_feature_vector_0091
+    sectionId: facility_briefing
+    order: 130
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorTechnical
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.feature_vector
+    sourceText: Next, an adaptive band-pass filter removes baseline drift and physiological
+      noise. Phase delay, amplitude-modulation rate, and harmonic distribution are
+      normalized and reconstructed as a multidimensional feature vector.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB2E4\uC74C \uAE30\uC800\uC120 \uD3B8\uCC28\uC640 \uC0DD\uB9AC\uC801
+        \uC7A1\uC74C\uC744 \uC801\uC751\uD615 \uB300\uC5ED\uD1B5\uACFC \uD544\uD130\uB85C
+        \uC81C\uAC70\uD558\uACE0, \uC704\uC0C1 \uC9C0\uC5F0\uAC12\uACFC \uC9C4\uD3ED
+        \uBCC0\uC870\uC728, \uACE0\uC870\uD30C \uBD84\uD3EC\uB97C \uC815\uADDC\uD654\uD558\uC5EC
+        \uB2E4\uCC28\uC6D0 \uD2B9\uC9D5 \uBCA1\uD130\uB85C \uC7AC\uAD6C\uC131\uD558\uC9C0\uC694."
+      status: final
+  - id: briefing_mahalanobis_0092
+    sectionId: facility_briefing
+    order: 140
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorTechnical
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.mahalanobis
+    sourceText: "We feed that vector into a stimulus-specific cross-correlation matrix
+      and combine multivariate discriminant analysis with non-hierarchical clustering
+      to estimate semantic proximity between waveforms. When an unknown signal arrives,
+      a Bayesian estimator calculates its posterior probability and the Mahalanobis
+      distance to the existing semantic groups\u2014"
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774 \uD2B9\uC9D5 \uBCA1\uD130\uB97C \uC790\uADF9\uBB3C\uBCC4 \uAD50\uCC28\uC0C1\uAD00
+        \uD589\uB82C\uC5D0 \uB300\uC785\uD558\uACE0, \uB2E4\uBCC0\uB7C9 \uD310\uBCC4\uBD84\uC11D\uACFC
+        \uBE44\uACC4\uCE35\uC801 \uAD70\uC9D1\uD654\uB97C \uBCD1\uD589\uD558\uBA74
+        \uAC1C\uBCC4 \uD30C\uD615 \uC0AC\uC774\uC758 \uC758\uBBF8\uB860\uC801 \uADFC\uC811\uB3C4\uB97C
+        \uCD94\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC774\uD6C4 \uBBF8\uC9C0
+        \uC2E0\uD638\uAC00 \uC218\uC2E0\uB418\uBA74 \uBCA0\uC774\uC988 \uCD94\uC815\uAE30\uB97C
+        \uD1B5\uD574 \uC0AC\uD6C4\uD655\uB960\uC744 \uC0B0\uCD9C\uD558\uACE0 \uAE30\uC874
+        \uC758\uBBF8\uAD70\uACFC\uC758 \uB9C8\uD560\uB77C\uB178\uBE44\uC2A4 \uAC70\uB9AC\uB97C\u2014"
+      status: final
+  - id: briefing_director_interrupt_0093
+    sectionId: facility_briefing
+    order: 150
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.director_interrupt
+    sourceText: Dr. Hwang?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD669 \uBC15\uC0AC?"
+      status: final
+  - id: briefing_recursive_interpolation_0094
+    sectionId: facility_briefing
+    order: 160
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorTechnical
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.recursive_interpolation
+    sourceText: "\u2014and by defining a decision boundary that minimizes that distance,
+      we can recursively interpolate the superordinate concepts of unseen vocabulary
+      from limited samples. Once enough signals accumulate, the topological connectivity
+      of the semantic space can be\u2014"
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\u2014\uCD5C\uC18C\uD654\uD558\uB294 \uD310\uBCC4\uACBD\uACC4\uB97C
+        \uC124\uC815\uD568\uC73C\uB85C\uC368 \uC81C\uD55C\uB41C \uD45C\uBCF8\uB9CC\uC73C\uB85C\uB3C4
+        \uBBF8\uAD00\uCE21 \uC5B4\uD718\uC758 \uC0C1\uC704 \uAC1C\uB150\uC744 \uC7AC\uADC0\uC801\uC73C\uB85C
+        \uBCF4\uAC04\uD560 \uC218 \uC788\uC73C\uBA70, \uCDA9\uBD84\uD55C \uC2E0\uD638\uAC00
+        \uB204\uC801\uB420 \uACBD\uC6B0 \uC758\uBBF8\uACF5\uAC04\uC758 \uC704\uC0C1\uC801
+        \uC5F0\uACB0 \uAD6C\uC870\uB97C\u2014"
+      status: final
+  - id: briefing_president_interrupt_0095
+    sectionId: facility_briefing
+    order: 170
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.president_interrupt
+    sourceText: Dr. Hwang?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD669 \uBC15\uC0AC?"
+      status: final
+  - id: briefing_realtime_update_0096
+    sectionId: facility_briefing
+    order: 180
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorTechnical
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.realtime_update
+    sourceText: "\u2014updated in real time to enable bidirectional neurolinguistic
+      conversion... ah, yes?"
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\u2014\uC2E4\uC2DC\uAC04\uC73C\uB85C \uAC31\uC2E0\uD558\uC5EC \uC591\uBC29\uD5A5
+        \uC2E0\uACBD\uC5B8\uC5B4 \uBCC0\uD658\uC744\u2026\uC544, \uC608?"
+      status: final
+  - id: briefing_explain_simply_0097
+    sectionId: facility_briefing
+    order: 190
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.explain_simply
+    sourceText: Explain it more simply. I did not understand a word of that.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC880 \uB354 \uC27D\uAC8C \uC124\uBA85\uD574\uBD10. \uBB50\uB77C\uB294\uC9C0
+        \uD558\uB098\uB3C4 \uBAA8\uB974\uACA0\uAD70."
+      status: final
+  - id: briefing_apology_0098
+    sectionId: facility_briefing
+    order: 200
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.apology
+    sourceText: Ah... I am sorry.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC544\u2026\uC8C4\uC1A1\uD569\uB2C8\uB2E4."
+      status: final
+  - id: briefing_basic_premise_0099
+    sectionId: facility_briefing
+    order: 210
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorSimple
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.basic_premise
+    sourceText: Ahem... the basic premise is this. When you look at an object, your
+      brain processes information about it and produces a signal.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uCFE8\uB7ED\u2026\uC6B0\uC120 \uAE30\uBCF8\uC801\uC778 \uC804\uC81C\uB294
+        \uC774\uB807\uC2B5\uB2C8\uB2E4. \uC5B4\uB5A4 \uC0AC\uBB3C\uC744 \uBCFC \uB54C
+        \uB1CC\uB294 \uD574\uB2F9 \uC0AC\uBB3C\uC5D0 \uB300\uD55C \uC815\uBCF4\uB97C
+        \uCC98\uB9AC\uD558\uBA74\uC11C \uC2E0\uD638\uB97C \uBC1C\uC0DD\uC2DC\uD0B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_collect_waveforms_0100
+    sectionId: facility_briefing
+    order: 220
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideObjectSignal
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.collect_waveforms
+    sourceText: The same is true for the aliens. We will use that principle to collect
+      the waveforms they emit when they look at specific objects.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uB294 \uC678\uACC4\uC778\uB3C4 \uB9C8\uCC2C\uAC00\uC9C0 \uC785\uB2C8\uB2E4.
+        \uC774 \uC6D0\uB9AC\uB97C \uC774\uC6A9\uD574\uC11C \uBA3C\uC800 \uC800\uB4E4\uC774
+        \uD2B9\uC815 \uC0AC\uBB3C\uC744 \uBCFC \uB54C \uBC29\uCD9C\uB418\uB294 \uB1CC\uD30C\uC758
+        \uD30C\uD615\uC744 \uC218\uC9D1\uD560 \uC608\uC815\uC785\uB2C8\uB2E4."
+      status: final
+  - id: briefing_banana_example_0101
+    sectionId: facility_briefing
+    order: 230
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideBanana
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.banana_example
+    sourceText: For example, the brainwave they emit when shown a banana probably
+      means banana.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC608\uB97C \uB4E4\uC5B4 \uBC14\uB098\uB098\uB97C \uBCF4\uC5EC\uC92C\uC744
+        \uB54C \uC800\uB4E4\uC774 \uB0B4\uBFDC\uB294 \uB1CC\uD30C\uB294 \uC544\uB9C8\uB3C4
+        \uBC14\uB098\uB098\uB97C \uC758\uBBF8\uD558\uB294 \uB1CC\uD30C\uACA0\uC9C0\uC694."
+      status: final
+  - id: briefing_database_limit_0102
+    sectionId: facility_briefing
+    order: 240
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideDatabase
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.database_limit
+    sourceText: But we cannot show them every object on Earth and build an enormous
+      database map one item at a time.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD558\uC9C0\uB9CC \uC9C0\uAD6C\uC5D0 \uC874\uC7AC\uD558\uB294 \uBAA8\uB4E0
+        \uC0AC\uBB3C\uB4E4\uC744 \uC804\uBD80 \uBCF4\uC5EC\uC918\uAC00\uBA70 \uAC70\uB300\uD55C
+        \uB370\uC774\uD130\uBCA0\uC774\uC2A4 \uB9F5\uC744 \uB9CC\uB4E4\uC218\uB294
+        \uC5C6\uB294 \uBC95\uC785\uB2C8\uB2E4."
+      status: final
+  - id: briefing_algorithm_solution_0103
+    sectionId: facility_briefing
+    order: 250
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorSimple
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.algorithm_solution
+    sourceText: That is the problem our brilliant algorithm is designed to solve.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB798\uC11C \uC800\uD76C\uAC00 \uAC1C\uBC1C\uD55C \uCC9C\uC7AC\uC801\uC778
+        \uC54C\uACE0\uB9AC\uC998\uC73C\uB85C \uC774\uB97C \uD574\uACB0\uD558\uB824\uACE0
+        \uD569\uB2C8\uB2E4."
+      status: final
+  - id: briefing_task_simple_0104
+    sectionId: facility_briefing
+    order: 260
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.task_simple
+    sourceText: Your job is simple, Mr. President.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB300\uD1B5\uB839\uB2D8\uC774 \uD558\uC2E4 \uC77C\uC740 \uAC04\uB2E8\uD569\uB2C8\uB2E4."
+      status: final
+  - id: briefing_task_question_0105
+    sectionId: facility_briefing
+    order: 270
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.task_question
+    sourceText: What is it?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uAC8C \uBB54\uAC00?"
+      status: final
+  - id: briefing_draw_categories_0106
+    sectionId: facility_briefing
+    order: 280
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingProjectorSimple
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.draw_categories
+    sourceText: You will draw and show them pictures of various objects that fit
+      categories we have defined in advance.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC800\uB4E4\uC5D0\uAC8C \uC800\uD76C\uAC00 \uBBF8\uB9AC \uC815\uC758\uD574\uB454
+        \uCE74\uD14C\uACE0\uB9AC\uC5D0 \uD574\uB2F9\uD558\uB294 \uB2E4\uC591\uD55C
+        \uC0AC\uBB3C\uC758 \uADF8\uB9BC\uB4E4\uC744 \uADF8\uB824\uC11C \uBCF4\uC5EC\uC8FC\uC2DC\uB294
+        \uAC81\uB2C8\uB2E4."
+      status: final
+  - id: briefing_food_examples_0107
+    sectionId: facility_briefing
+    order: 290
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideFoodCluster
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.food_examples
+    sourceText: For example, apples and bananas are both food.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC608\uB97C \uB4E4\uC5B4 \uC0AC\uACFC\uC640 \uBC14\uB098\uB098\uB294
+        \uB458 \uB2E4 \uC74C\uC2DD\uC785\uB2C8\uB2E4."
+      status: final
+  - id: briefing_similar_patterns_0108
+    sectionId: facility_briefing
+    order: 300
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideFoodCluster
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.similar_patterns
+    sourceText: They look different, but because they are both food, some similar
+      patterns should appear in the brainwaves produced when viewing them.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC0DD\uAE34 \uAC83\uC740 \uB2EC\uB77C\uB3C4 \uB458 \uB2E4 \uC74C\uC2DD\uC774\uAE30
+        \uB54C\uBB38\uC5D0 \uC774 \uB450 \uC0AC\uBB3C\uC744 \uBCFC \uB54C \uBC1C\uC0DD\uD558\uB294
+        \uB1CC\uD30C\uC758 \uD328\uD134\uC740 \uC5B4\uB290\uC815\uB3C4 \uBE44\uC2B7\uD55C
+        \uD328\uD134\uB4E4\uC774 \uAD00\uCC30\uB418\uAE30 \uB9C8\uB828\uC785\uB2C8\uB2E4."
+      status: final
+  - id: briefing_president_agrees_0109
+    sectionId: facility_briefing
+    order: 310
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.president_agrees
+    sourceText: Right.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB807\uC9C0."
+      status: final
+  - id: briefing_unseen_translation_0110
+    sectionId: facility_briefing
+    order: 320
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideFoodCluster
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.unseen_translation
+    sourceText: If our algorithm analyzes groups of similar patterns, it can automatically
+      translate an uncollected word whenever that word belongs to a category we have
+      already analyzed.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uB807\uAC8C \uBE44\uC2B7\uD55C \uD328\uD134\uB4E4\uC744 \uBAA8\uC544\uC11C
+        \uC800\uD76C \uC54C\uACE0\uB9AC\uC998\uC73C\uB85C \uBD84\uC11D\uD558\uBA74
+        \uC218\uC9D1\uD558\uC9C0 \uC54A\uC558\uB358 \uB2E8\uC5B4\uB77C\uB3C4 \uBD84\uC11D\uC774
+        \uC644\uB8CC\uB41C \uCE74\uD14C\uACE0\uB9AC\uC5D0 \uD574\uB2F9\uD558\uB294
+        \uB2E8\uC5B4\uB77C\uBA74 \uC790\uB3D9\uC73C\uB85C \uBC88\uC5ED\uC774 \uB418\uB294
+        \uAC81\uB2C8\uB2E4."
+      status: final
+  - id: briefing_magic_0111
+    sectionId: facility_briefing
+    order: 330
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.magic
+    sourceText: That is practically magic.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB9C8\uBC95\uC774 \uB530\uB85C \uC5C6\uB124."
+      status: final
+  - id: briefing_category_basis_0112
+    sectionId: facility_briefing
+    order: 340
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.category_basis
+    sourceText: Good. What determines the categories?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC88B\uC544. \uADF8\uB7FC \uADF8 \uCE74\uD14C\uACE0\uB9AC\uB97C \uC815\uD558\uB294
+        \uAE30\uC900\uC740 \uBB54\uAC00?"
+      status: final
+  - id: briefing_alien_motive_0113
+    sectionId: facility_briefing
+    order: 350
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideUfoEvidence
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.alien_motive
+    sourceText: Looking back at everything they have done on Earth, they seem to
+      have come here to study and understand our civilization.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uADF8\uB3D9\uC548 \uC800\uB4E4\uC774 \uC9C0\uAD6C\uC5D0\uC11C \uD55C
+        \uD589\uC801\uB4E4\uC744 \uD55C\uBC88 \uB3CC\uC544\uBCF4\uBA74 \uC544\uB9C8
+        \uC800\uD76C \uBB38\uBA85\uC744 \uC870\uC0AC\uD558\uACE0 \uC774\uD574\uD558\uACE0\uC790
+        \uBC29\uBB38\uD55C \uAC83 \uAC19\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_cows_and_corn_0114
+    sectionId: facility_briefing
+    order: 360
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideUfoEvidence
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.cows_and_corn
+    sourceText: They abducted cattle from ranches and landed in cornfields to collect
+      corn.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uBAA9\uC7A5\uC5D0\uC11C \uC18C\uB97C \uB0A9\uCE58\uD558\uACE0 \uC625\uC218\uC218\uBC2D\uC5D0
+        \uCC29\uB959\uD558\uC5EC \uC625\uC218\uC218\uB4E4\uC744 \uCC44\uCDE8\uD574\uAC00\uAE30\uB3C4
+        \uD558\uACE0"
+      status: final
+  - id: briefing_military_recon_0115
+    sectionId: facility_briefing
+    order: 370
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideUfoEvidence
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.military_recon
+    sourceText: They have also repeatedly appeared near military installations to
+      conduct reconnaissance.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uAD70\uC0AC \uC2DC\uC124 \uADFC\uCC98\uC5D0 \uACC4\uC18D \uB098\uD0C0\uB098\uC11C
+        \uC815\uCC30\uC744 \uD558\uACE0 \uAC00\uAE30\uB3C4 \uD558\uACE0 \uB9D0\uC774\uC9C0\uC694."
+      status: final
+  - id: briefing_four_categories_0116
+    sectionId: facility_briefing
+    order: 380
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideCategories
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.four_categories
+    sourceText: So, for now, we have chosen danger, protection, food, and tools as
+      the categories.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB530\uB77C\uC11C \uCE74\uD14C\uACE0\uB9AC\uB4E4\uC740 \uC6B0\uC120
+        \uC704\uD5D8, \uBCF4\uD638, \uC74C\uC2DD, \uB3C4\uAD6C\uB85C \uC815\uD588\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_why_draw_0117
+    sectionId: facility_briefing
+    order: 390
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.why_draw
+    sourceText: Hmm... fine. But why do I personally have to draw the pictures and
+      show them?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC74C\u2026\uC88B\uC544. \uADFC\uB370 \uC65C \uAD73\uC774 \uADF8\uB9BC\uC744
+        \uB0B4\uAC00 \uC9C1\uC811 \uADF8\uB824\uC11C \uBCF4\uC5EC \uC918\uC57C \uD558\uB294
+        \uAC74\uAC00?"
+      status: final
+  - id: briefing_researchers_ignored_0118
+    sectionId: facility_briefing
+    order: 400
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlidePresidentResponse
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.researchers_ignored
+    sourceText: Our researchers already tried showing pictures to the aliens waiting
+      here, but there was no response.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC608. \uC548 \uADF8\uB798\uB3C4 \uB300\uAE30 \uC911\uC778 \uC678\uACC4\uC778\uB4E4\uC5D0\uAC8C
+        \uC800\uD76C \uC5F0\uAD6C\uC6D0\uB4E4\uC774 \uBA3C\uC800 \uADF8\uB9BC\uC744
+        \uBCF4\uC5EC\uC918 \uBD24\uB294\uB370 \uC544\uBB34 \uBC18\uC751\uC774 \uC5C6\uC5C8\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_tv_response_0119
+    sectionId: facility_briefing
+    order: 410
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlidePresidentResponse
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.tv_response
+    sourceText: We finally gave up and watched television in the waiting room. The
+      moment you appeared on screen, every instrument started screaming.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uACB0\uAD6D \uD3EC\uAE30\uD558\uACE0 \uB2E4 \uAC19\uC774 \uB300\uAE30\uC2E4
+        TV\uB098 \uBCF4\uACE0 \uC788\uC5C8\uB294\uB370, \uD654\uBA74\uC5D0 \uAC01\uD558\uAC00
+        \uB098\uC624\uC790 \uAC11\uC790\uAE30 \uACC4\uCE21\uAE30\uAC00 \uBBF8\uCE5C
+        \uB4EF\uC774 \uC6B8\uB9AC\uAE30 \uC2DC\uC791\uD588\uC9C0\uC694."
+      status: final
+  - id: briefing_wanted_president_0120
+    sectionId: facility_briefing
+    order: 420
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlidePresidentResponse
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.wanted_president
+    sourceText: It seems you were the person they wanted to meet from the beginning.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC544\uBB34\uB798\uB3C4 \uC800\uB4E4\uC774 \uB9CC\uB098\uACE0 \uC2F6\uC5C8\uB358
+        \uC0AC\uB78C\uC740 \uCC98\uC74C\uBD80\uD130 \uAC01\uD558\uC600\uB358 \uBAA8\uC591\uC785\uB2C8\uB2E4."
+      status: final
+  - id: briefing_creepy_0121
+    sectionId: facility_briefing
+    order: 430
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.creepy
+    sourceText: Damn it... that is unsettling.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uB7F0 \uC820\uC7A5\u2026\uADF8\uAC70 \uCC38 \uC18C\uB984\uB3CB\uB124."
+      status: final
+  - id: briefing_no_malice_0122
+    sectionId: facility_briefing
+    order: 440
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.no_malice
+    sourceText: I do not think you need to worry too much. They do not appear hostile.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB108\uBB34 \uAC71\uC815\uD558\uC9C0\uB294 \uC54A\uC73C\uC154\uB3C4
+        \uB420 \uAC83 \uAC19\uC2B5\uB2C8\uB2E4. \uC545\uC758\uB294 \uC5C6\uC5B4 \uBCF4\uC5EC\uC694."
+      status: final
+  - id: briefing_wearing_suits_0123
+    sectionId: facility_briefing
+    order: 450
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideSuits
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.wearing_suits
+    sourceText: They arrived wearing proper suits.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC591\uBCF5\uC744 \uAC16\uCDB0 \uC785\uACE0 \uC654\uB354\uAD70\uC694."
+      status: final
+  - id: briefing_diplomatic_intent_0124
+    sectionId: facility_briefing
+    order: 460
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideSuits
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.diplomatic_intent
+    sourceText: They seem to have studied our civilization and come with a diplomatic
+      purpose.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC800\uD76C \uBB38\uBA85\uC5D0 \uB300\uD574 \uC5B4\uB290 \uC815\uB3C4
+        \uC870\uC0AC\uB97C \uD558\uACE0 \uC678\uAD50\uC801\uC778 \uBAA9\uC801\uC774
+        \uC788\uB294 \uAC83 \uAC19\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_alien_suits_0125
+    sectionId: facility_briefing
+    order: 470
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.alien_suits
+    sourceText: Aliens in suits. That is absurd.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD5C8. \uC591\uBCF5\uC744 \uC785\uC740 \uC678\uACC4\uC778\uC774\uB77C\uB2C8
+        \uC5B4\uC774\uAC00 \uC5C6\uAD70."
+      status: final
+  - id: briefing_tie_joke_0126
+    sectionId: facility_briefing
+    order: 480
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.tie_joke
+    sourceText: Did they wear ties too? Red ones or blue ones, perhaps? Ha!
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uB125\uD0C0\uC774\uB3C4 \uB9F8\uB358\uAC00? \uD639\uC2DC \uBE68\uAC04\uC0C9\uC774\uB098
+        \uD30C\uB780\uC0C9\uC774\uB358\uAC00? \uD558\uD558"
+      status: final
+  - id: briefing_black_tie_0127
+    sectionId: facility_briefing
+    order: 490
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingSlideSuits
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.briefing.black_tie
+    sourceText: They wore black ties.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uAC80\uC740\uC0C9 \uB125\uD0C0\uC774\uB97C \uB9E4\uACE0 \uC654\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_smart_0128
+    sectionId: facility_briefing
+    order: 500
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.facility.briefing.smart
+    sourceText: Smart.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC601\uB9AC\uD558\uB124."
+      status: final
+  - id: briefing_not_interested_0129
+    sectionId: facility_briefing
+    order: 510
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.not_interested
+    sourceText: They probably are not very interested in that.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC544\uB9C8 \uBCC4\uB85C \uAD00\uC2EC\uC774 \uC5C6\uC744\uAC81\uB2C8\uB2E4."
+      status: final
+  - id: briefing_move_when_ready_0130
+    sectionId: facility_briefing
+    order: 520
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingWide
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: DR. HWANG
+    localizationKey: first_contact.intro.facility.briefing.move_when_ready
+    sourceText: In any case, we can move on when you are ready.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC544\uBB34\uD2BC. \uC774\uC81C \uC900\uBE44\uAC00 \uB418\uBA74 \uC774\uB3D9\uD558\uC2DC\uC9C0\uC694."
       status: final
   localizationEntries: []

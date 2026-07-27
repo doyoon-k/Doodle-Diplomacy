@@ -4148,8 +4148,17 @@ MonoBehaviour:
   briefingSeatInteraction: {fileID: 1801371474}
   meetingRoomInteraction: {fileID: 1705549476}
   newsBroadcast: {fileID: 0}
+  narrativeScenario: {fileID: 11400000, guid: d0b69c3fbbd2ce942aeac9dc289e7b18, type: 2}
   newsCameraAnchor: {fileID: 0}
-  placeholderBriefingSeconds: 2
+  briefingWideCameraAnchor: {fileID: 1908255186}
+  briefingProjectorCameraAnchor: {fileID: 520970492}
+  facilityCorridorLeadSeconds: 0.65
+  briefingSeatMoveSeconds: 0.45
+  briefingCameraBlendSeconds: 0.55
+  briefingExitBlendSeconds: 0.55
+  briefingVisualCue:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1421050248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4927,7 +4936,7 @@ MonoBehaviour:
   - {fileID: 1071506563}
   - {fileID: 1530317912}
   - {fileID: 678933284}
-  manualHoldPointIndices: 03000000
+  manualHoldPointIndices: 04000000
   moveSpeed: 2.25
   playerLeashDistance: 5.5
   pointPauseSeconds: 0.25

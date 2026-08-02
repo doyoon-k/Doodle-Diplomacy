@@ -257,6 +257,29 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
+        /// <summary>
+        /// Development shortcut used to begin testing at the authored parked pose.
+        /// This moves only the saved vehicle rig; it does not construct or replace
+        /// any scene content.
+        /// </summary>
+        public bool SnapToParkedPose()
+        {
+            if (!EnsureVehicleRig())
+            {
+                return false;
+            }
+
+            _routeLocalPosition = GetRouteLocalPosition(parkingStopAnchor);
+            _routeYaw = GetYaw(GetApproachDirection());
+            _stateElapsed = 0f;
+            _signVisible = true;
+            _brakingRequested = false;
+            _cruisePaused = false;
+            _state = FirstContactVehicleDriveState.Stopped;
+            ApplyVehiclePose(includeRoadMotion: false);
+            return true;
+        }
+
         public void StopAndRestore()
         {
             _state = FirstContactVehicleDriveState.Inactive;

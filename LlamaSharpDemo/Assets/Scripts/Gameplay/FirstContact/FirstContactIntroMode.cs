@@ -23,6 +23,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? "first-contact-intro" : modeId.Trim();
         public GameState CurrentState => _currentState;
         public FirstContactIntroSceneReferences SceneReferences => sceneReferences;
+        public bool EnteredFromPreloadedScene { get; private set; }
 
         public void Configure(
             string id,
@@ -37,6 +38,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public void Enter(GameplayModeContext context)
         {
             _context = context;
+            EnteredFromPreloadedScene =
+                context?.Services.TryGet(out GameplaySceneTransitionContext transition) == true &&
+                transition.WasPreloaded;
             ChangeState(GameState.Intro);
         }
 
@@ -44,6 +48,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             sequenceController?.Stop();
             _context = null;
+            EnteredFromPreloadedScene = false;
             ChangeState(GameState.Title);
         }
 
@@ -70,6 +75,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             else
             {
                 Debug.LogWarning("[FirstContactIntroMode] No game flow controller is available.", this);
+            }
+        }
+
+        public void PreloadNextSegment()
+        {
+            if (_context?.Services.TryGet(out IGameFlowPreloader preloader) == true)
+            {
+                preloader.PreloadNextEntry();
             }
         }
 

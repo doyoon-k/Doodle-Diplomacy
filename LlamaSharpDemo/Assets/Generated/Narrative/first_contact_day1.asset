@@ -40,19 +40,24 @@ MonoBehaviour:
     order: 3
     summary: Restaurant patrons recognize the president, the director jokes about
       aliens, and the party preserves its cover story.
+  - id: elevator_descent
+    title: Elevator descent
+    order: 4
+    summary: The president and director discuss the classified facility while descending
+      from Zaucer Pizza.
   - id: facility_corridor
     title: Facility corridor
-    order: 4
+    order: 5
     summary: The director explains what the first contact revealed while escorting
       the president to the briefing room.
   - id: facility_briefing
     title: Translator briefing
-    order: 5
+    order: 6
     summary: Dr. Hwang explains the translator prototype, calibration task, and why
       the aliens will only respond to the president.
   - id: preflight
     title: Tablet preflight
-    order: 6
+    order: 7
     summary: Dr. Hwang checks the president's drawing and walks through the local
       probe controls before the delegation enters.
   - id: arrival
@@ -2212,7 +2217,7 @@ MonoBehaviour:
       text: "\uC5B4\uC11C \uB4E4\uC5B4\uC624\uC2DC\uC8E0, \uAC01\uD558."
       status: final
   - id: elevator_descent_question_0070
-    sectionId: intro_bridge
+    sectionId: elevator_descent
     order: 30
     enabled: 1
     type: dialogue
@@ -2243,7 +2248,7 @@ MonoBehaviour:
       text: "\uC774\uAC74 \uC5B4\uB514\uB85C \uC774\uC5B4\uC9C0\uC9C0?"
       status: final
   - id: elevator_descent_first_contact_0071
-    sectionId: intro_bridge
+    sectionId: elevator_descent
     order: 40
     enabled: 1
     type: dialogue
@@ -2280,7 +2285,7 @@ MonoBehaviour:
         \uC900\uBE44\uD574\uC654\uC2B5\uB2C8\uB2E4."
       status: final
   - id: elevator_descent_darpa_0072
-    sectionId: intro_bridge
+    sectionId: elevator_descent
     order: 50
     enabled: 1
     type: dialogue

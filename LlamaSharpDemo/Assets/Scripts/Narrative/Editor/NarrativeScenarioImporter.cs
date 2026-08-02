@@ -379,7 +379,7 @@ namespace DoodleDiplomacy.Narrative.Editor
                 }
             }
 
-            string json = JsonUtility.ToJson(manifest, true) + Environment.NewLine;
+            string json = JsonUtility.ToJson(manifest, true) + System.Environment.NewLine;
             string absolutePath = ToAbsolutePath(ManifestPath);
             Directory.CreateDirectory(Path.GetDirectoryName(absolutePath) ?? string.Empty);
             if (!File.Exists(absolutePath) || !string.Equals(File.ReadAllText(absolutePath), json, StringComparison.Ordinal))

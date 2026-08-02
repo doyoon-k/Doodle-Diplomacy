@@ -26,7 +26,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Header("Interaction")]
         [SerializeField, Min(0.5f)] private float interactionDistance = 2.6f;
         [SerializeField] private LayerMask interactionMask = ~0;
-        [SerializeField, Min(0.5f)] private float standingEyeHeight = 1.65f;
+        [Tooltip("Only used when an interaction explicitly seats the player. Standing camera position comes from the authored camera Transform.")]
         [SerializeField, Min(0.5f)] private float seatedEyeHeight = 1.18f;
 
         private CharacterController _characterController;
@@ -48,6 +48,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Vector3 _savedGazeCameraLocalPosition;
         private Quaternion _savedGazeCameraLocalRotation;
         private bool _hasSavedGazeCameraPose;
+        private Vector3 _authoredCameraLocalPosition;
+        private Quaternion _authoredCameraLocalRotation;
+        private bool _hasAuthoredCameraPose;
+        private Vector3 _shakeBaseCameraLocalPosition;
+        private Quaternion _shakeBaseCameraLocalRotation;
+        private bool _viewShakeActive;
 
         public UnityCamera ViewCamera => viewCamera;
         public bool ControlEnabled => _controlEnabled;
@@ -55,14 +61,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void Configure(UnityCamera camera, FirstContactIntroHud introHud)
         {
+            if (viewCamera != camera)
+            {
+                _hasAuthoredCameraPose = false;
+            }
+
             viewCamera = camera;
             hud = introHud;
             EnsureReferences();
+            CaptureAuthoredCameraPose();
         }
 
         private void Awake()
         {
             EnsureReferences();
+            CaptureAuthoredCameraPose();
             if (viewCamera != null)
             {
                 _pitch = NormalizePitch(viewCamera.transform.localEulerAngles.x);
@@ -71,6 +84,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void OnDisable()
         {
+            StopViewShake();
             if (_cursorCaptured)
             {
                 ReleaseCursor();
@@ -137,6 +151,33 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 hud?.ClearPrompt();
             }
+        }
+
+        public void ApplyViewWorldRotation(Quaternion worldRotation)
+        {
+            EnsureReferences();
+            StopViewShake();
+            if (viewCamera == null)
+            {
+                return;
+            }
+
+            Vector3 forward = worldRotation * Vector3.forward;
+            Vector3 planarForward = Vector3.ProjectOnPlane(forward, Vector3.up);
+            if (planarForward.sqrMagnitude > 0.0001f)
+            {
+                transform.rotation = Quaternion.LookRotation(
+                    planarForward.normalized,
+                    Vector3.up);
+            }
+
+            float planarLength = Mathf.Sqrt(
+                forward.x * forward.x + forward.z * forward.z);
+            _pitch = Mathf.Clamp(
+                Mathf.Atan2(-forward.y, planarLength) * Mathf.Rad2Deg,
+                -pitchLimit,
+                pitchLimit);
+            viewCamera.transform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
         }
 
         public void SetContextualInteraction(FirstContactIntroInteractable interactable)
@@ -219,6 +260,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void RestoreView()
         {
+            StopViewShake();
             _lockedViewAnchor = null;
             _gazeViewLocked = false;
             if (viewCamera == null)
@@ -244,6 +286,77 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _pitch = NormalizePitch(_savedGazeCameraLocalRotation.eulerAngles.x);
                 _hasSavedGazeCameraPose = false;
             }
+        }
+
+        /// <summary>
+        /// Applies a small local camera vibration and restores the exact authored
+        /// camera pose afterward. Intended for short in-world impacts such as an
+        /// elevator arriving at a floor.
+        /// </summary>
+        public IEnumerator ShakeView(
+            float seconds,
+            float positionAmplitude,
+            float rotationAmplitudeDegrees,
+            float frequency)
+        {
+            EnsureReferences();
+            if (viewCamera == null || seconds <= 0f)
+            {
+                yield break;
+            }
+
+            StopViewShake();
+            Transform cameraTransform = viewCamera.transform;
+            _shakeBaseCameraLocalPosition = cameraTransform.localPosition;
+            _shakeBaseCameraLocalRotation = cameraTransform.localRotation;
+            _viewShakeActive = true;
+
+            float elapsed = 0f;
+            float duration = Mathf.Max(0.01f, seconds);
+            float safeFrequency = Mathf.Max(0.1f, frequency);
+            while (_viewShakeActive && elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsed / duration);
+                float envelope = Mathf.Sin(progress * Mathf.PI) *
+                                 Mathf.Lerp(1f, 0.55f, progress);
+                float phase = elapsed * safeFrequency * Mathf.PI * 2f;
+
+                Vector3 positionOffset = new(
+                    Mathf.Sin(phase * 0.73f) * positionAmplitude * 0.35f,
+                    Mathf.Sin(phase * 1.17f) * positionAmplitude,
+                    Mathf.Cos(phase * 0.61f) * positionAmplitude * 0.18f);
+                Vector3 rotationOffset = new(
+                    Mathf.Sin(phase * 0.91f) * rotationAmplitudeDegrees,
+                    Mathf.Cos(phase * 0.67f) * rotationAmplitudeDegrees * 0.45f,
+                    Mathf.Sin(phase * 1.09f) * rotationAmplitudeDegrees * 0.35f);
+
+                cameraTransform.localPosition =
+                    _shakeBaseCameraLocalPosition + positionOffset * envelope;
+                cameraTransform.localRotation =
+                    _shakeBaseCameraLocalRotation *
+                    Quaternion.Euler(rotationOffset * envelope);
+                yield return null;
+            }
+
+            StopViewShake();
+        }
+
+        public void StopViewShake()
+        {
+            if (!_viewShakeActive)
+            {
+                return;
+            }
+
+            if (viewCamera != null)
+            {
+                viewCamera.transform.localPosition = _shakeBaseCameraLocalPosition;
+                viewCamera.transform.localRotation = _shakeBaseCameraLocalRotation;
+                _pitch = NormalizePitch(_shakeBaseCameraLocalRotation.eulerAngles.x);
+            }
+
+            _viewShakeActive = false;
         }
 
         public IEnumerator BlendToRestoredView(float seconds)
@@ -401,6 +514,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             EnsureReferences();
+            StopViewShake();
             bool controllerWasEnabled = _characterController != null && _characterController.enabled;
             if (_characterController != null)
             {
@@ -410,14 +524,23 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             transform.SetPositionAndRotation(
                 target.position,
                 Quaternion.Euler(0f, target.eulerAngles.y, 0f));
-            _pitch = NormalizePitch(target.eulerAngles.x);
             if (viewCamera != null)
             {
-                viewCamera.transform.localPosition = new Vector3(
-                    0f,
-                    seated ? seatedEyeHeight : standingEyeHeight,
-                    0f);
-                viewCamera.transform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+                CaptureAuthoredCameraPose();
+                Vector3 cameraPosition = _hasAuthoredCameraPose
+                    ? _authoredCameraLocalPosition
+                    : viewCamera.transform.localPosition;
+                Quaternion cameraRotation = _hasAuthoredCameraPose
+                    ? _authoredCameraLocalRotation
+                    : viewCamera.transform.localRotation;
+                if (seated)
+                {
+                    cameraPosition.y = seatedEyeHeight;
+                }
+
+                viewCamera.transform.localPosition = cameraPosition;
+                viewCamera.transform.localRotation = cameraRotation;
+                _pitch = NormalizePitch(cameraRotation.eulerAngles.x);
             }
 
             if (_characterController != null)
@@ -519,6 +642,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             viewCamera = viewCamera != null
                 ? viewCamera
                 : GetComponentInChildren<UnityCamera>(true);
+        }
+
+        private void CaptureAuthoredCameraPose()
+        {
+            if (_hasAuthoredCameraPose || viewCamera == null)
+            {
+                return;
+            }
+
+            _authoredCameraLocalPosition = viewCamera.transform.localPosition;
+            _authoredCameraLocalRotation = viewCamera.transform.localRotation;
+            _hasAuthoredCameraPose = true;
         }
 
         private void HandleCursorInput()

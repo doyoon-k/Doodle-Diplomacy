@@ -29,6 +29,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField] private NarrativeScenarioAsset narrativeScenario;
         [SerializeField] private FirstContactVehicleRouteController vehicleRoute;
         [SerializeField] private FirstContactSecretElevatorSequence secretElevatorSequence;
+        [SerializeField] private FirstContactFacilityElevatorArrival facilityElevatorArrival;
         [SerializeField] private Transform newsCameraAnchor;
         [SerializeField, Min(0f)] private float newsExitBlendSeconds = 0.8f;
         [Header("Car Conversation Timing")]
@@ -48,18 +49,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField, Min(0f)] private float directorVehicleExitSeconds = 1.1f;
         [Header("Pizza Restaurant Sequence")]
         [Tooltip("Distance the player walks from the vehicle exit before the approach dialogue begins.")]
-        [SerializeField, Min(0f)] private float pizzaApproachDialogueTravelDistance = 2.5f;
-        [SerializeField, Min(0)] private int citizenEncounterGuidePointIndex = 2;
-        [SerializeField, Min(0.5f)] private float citizenEncounterStartDistance = 3.25f;
-        [SerializeField, Min(1f)] private float citizenPrivateExchangeDistance = 6f;
+        [SerializeField, HideInInspector, Min(0f)] private float pizzaApproachDialogueTravelDistance = 2.5f;
+        [SerializeField, HideInInspector, Min(0)] private int citizenEncounterGuidePointIndex = 2;
+        [SerializeField, HideInInspector, Min(0.5f)] private float citizenEncounterStartDistance = 3.25f;
+        [SerializeField, HideInInspector, Min(1f)] private float citizenPrivateExchangeDistance = 6f;
         [SerializeField, Min(0f)] private float citizenLookTurnSeconds = 0.45f;
         [SerializeField, Min(0f)] private float citizenDialogueExitPauseSeconds = 0.35f;
         [SerializeField] private Transform citizenSpeakerActor;
         [SerializeField] private Transform[] citizenLookActors = Array.Empty<Transform>();
         [Header("Storage Secret Entrance")]
-        [SerializeField, Min(0)] private int secretRevealGuidePointIndex = 7;
-        [SerializeField, Min(0.5f)] private float secretRevealStartDistance = 3.25f;
+        [SerializeField, HideInInspector, Min(0)] private int secretRevealGuidePointIndex = 7;
+        [SerializeField, HideInInspector, Min(0.5f)] private float secretRevealStartDistance = 3.25f;
         [SerializeField, Min(0f)] private float minimumElevatorDescentSeconds = 2.5f;
+        [Header("Facility Elevator Arrival")]
+        [SerializeField, Min(0f)] private float facilityArrivalLeadSeconds = 0.35f;
+        [SerializeField, Min(0f)] private float facilityArrivalShakeSeconds = 0.8f;
+        [SerializeField, Min(0f)] private float facilityArrivalShakePosition = 0.028f;
+        [SerializeField, Min(0f)] private float facilityArrivalShakeRotation = 0.55f;
+        [SerializeField, Min(0.1f)] private float facilityArrivalShakeFrequency = 12f;
         [Header("Facility Briefing")]
         [SerializeField] private Transform briefingWideCameraAnchor;
         [SerializeField] private Transform briefingProjectorCameraAnchor;
@@ -69,6 +76,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField, Min(0f)] private float briefingExitBlendSeconds = 0.55f;
         [Tooltip("Raised for BriefingSlide* runtime cues. Add the projector image swap here when slide resources are ready.")]
         [SerializeField] private BriefingVisualCueEvent briefingVisualCue = new();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [Header("Debug Shortcuts")]
+        [Tooltip("Editor and Development Build only. Skips the news, drive and exit animation, then starts outside the parked car.")]
+        [SerializeField] private bool enableDebugShortcuts = true;
+        [SerializeField] private Key skipToVehicleExitKey = Key.F8;
+#endif
 
         private Coroutine _seatRoutine;
         private Coroutine _newsRoutine;
@@ -79,7 +92,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Coroutine _citizenEncounterRoutine;
         private Coroutine _pizzaPrivateExchangeRoutine;
         private Coroutine _secretDoorRevealRoutine;
+        private Coroutine _elevatorBoardZoneRoutine;
         private Coroutine _elevatorRideRoutine;
+        private Coroutine _facilityArrivalRoutine;
         private Coroutine _facilityCorridorDialogueRoutine;
         private FirstContactNewsSubtitleDisplay _dialogueDisplay;
         private readonly List<NarrativeBeat> _activeDialogueBeats = new();
@@ -97,6 +112,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Transform _activeBriefingCameraAnchor;
         private bool _facilityGuideAtBriefing;
         private bool _facilityCorridorDialogueComplete;
+        private bool _surfaceVehicleExitCompleted;
+        private FirstContactIntroNarrativeZone _pizzaApproachZone;
+        private FirstContactIntroNarrativeZone _citizenEncounterZone;
+        private FirstContactIntroNarrativeZone _privateExchangeZone;
+        private FirstContactIntroNarrativeZone _secretDoorRevealZone;
+        private FirstContactIntroNarrativeZone _elevatorBoardZone;
 
         public bool IsBusy => _busy;
         public FirstContactIntroSegment Segment => segment;
@@ -166,6 +187,27 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             SubscribeGuide();
         }
 
+        private void Update()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!enableDebugShortcuts ||
+                !_begun ||
+                segment != FirstContactIntroSegment.Surface ||
+                _surfaceVehicleExitCompleted ||
+                skipToVehicleExitKey == Key.None ||
+                Keyboard.current == null)
+            {
+                return;
+            }
+
+            var shortcut = Keyboard.current[skipToVehicleExitKey];
+            if (shortcut != null && shortcut.wasPressedThisFrame)
+            {
+                DebugSkipToVehicleExit();
+            }
+#endif
+        }
+
         private void OnDisable()
         {
             UnsubscribeNewsPlaybackClock();
@@ -175,6 +217,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             player?.RestoreView();
             hud?.SetCrosshairVisible(true);
             secretElevatorSequence?.ResetSequence();
+            facilityElevatorArrival?.PrepareClosed();
+            ResetSurfaceNarrativeZones();
         }
 
         public void Begin()
@@ -186,6 +230,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             _begun = true;
             _busy = false;
+            _surfaceVehicleExitCompleted = false;
             SubscribeGuide();
             player?.SetControlEnabled(true);
             secretElevatorSequence?.ResetSequence();
@@ -223,14 +268,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _facilityGuideAtBriefing = false;
                 _facilityCorridorDialogueComplete = false;
                 player?.SetContextualInteraction(null);
+                player?.SetMovementEnabled(false);
+                player?.SetInteractionEnabled(false);
+                player?.SetLookEnabled(false);
                 briefingSeatInteraction?.SetAvailable(false);
                 meetingRoomInteraction?.SetAvailable(false);
-                hud?.SetObjective(
-                    "first_contact.intro.objective.follow_to_briefing",
-                    "Follow the director to the briefing room.");
-                guide?.Begin(player != null ? player.transform : null);
-                _facilityCorridorDialogueRoutine = StartCoroutine(
-                    FacilityCorridorDialogueRoutine());
+                hud?.ClearObjective();
+                guide?.Stop();
+                facilityElevatorArrival?.PrepareClosed();
+                _facilityArrivalRoutine = StartCoroutine(
+                    FacilityArrivalRoutine());
             }
         }
 
@@ -292,10 +339,22 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _secretDoorRevealRoutine = null;
             }
 
+            if (_elevatorBoardZoneRoutine != null)
+            {
+                StopCoroutine(_elevatorBoardZoneRoutine);
+                _elevatorBoardZoneRoutine = null;
+            }
+
             if (_elevatorRideRoutine != null)
             {
                 StopCoroutine(_elevatorRideRoutine);
                 _elevatorRideRoutine = null;
+            }
+
+            if (_facilityArrivalRoutine != null)
+            {
+                StopCoroutine(_facilityArrivalRoutine);
+                _facilityArrivalRoutine = null;
             }
 
             if (_facilityCorridorDialogueRoutine != null)
@@ -306,6 +365,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             _facilityGuideAtBriefing = false;
             _facilityCorridorDialogueComplete = false;
+            _surfaceVehicleExitCompleted = false;
             _activeBriefingCameraAnchor = null;
 
             UnsubscribeNewsPlaybackClock();
@@ -321,6 +381,53 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             hud?.ClearPrompt();
             hud?.SetCrosshairVisible(true);
             secretElevatorSequence?.ResetSequence();
+            facilityElevatorArrival?.PrepareClosed();
+            ResetSurfaceNarrativeZones();
+        }
+
+        private IEnumerator FacilityArrivalRoutine()
+        {
+            float arrivalLeadSeconds = mode != null && mode.EnteredFromPreloadedScene
+                ? 0f
+                : facilityArrivalLeadSeconds;
+            if (arrivalLeadSeconds > 0f)
+            {
+                yield return new WaitForSecondsRealtime(arrivalLeadSeconds);
+            }
+
+            if (player != null && facilityArrivalShakeSeconds > 0f)
+            {
+                yield return player.ShakeView(
+                    facilityArrivalShakeSeconds,
+                    facilityArrivalShakePosition,
+                    facilityArrivalShakeRotation,
+                    facilityArrivalShakeFrequency);
+            }
+
+            if (facilityElevatorArrival != null &&
+                facilityElevatorArrival.IsConfigured)
+            {
+                yield return facilityElevatorArrival.ArriveAndOpenRoutine();
+            }
+
+            if (!_begun || segment != FirstContactIntroSegment.Facility)
+            {
+                _facilityArrivalRoutine = null;
+                yield break;
+            }
+
+            guide?.Begin(
+                player != null ? player.transform : null,
+                warpToStart: false);
+            player?.SetLookEnabled(true);
+            player?.SetMovementEnabled(true);
+            player?.SetInteractionEnabled(true);
+            hud?.SetObjective(
+                "first_contact.intro.objective.follow_to_briefing",
+                "Follow the director to the briefing room.");
+            _facilityCorridorDialogueRoutine = StartCoroutine(
+                FacilityCorridorDialogueRoutine());
+            _facilityArrivalRoutine = null;
         }
 
         private IEnumerator NewsBroadcastRoutine()
@@ -764,6 +871,100 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 "Exit the vehicle.");
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [ContextMenu("DEBUG/Skip To Vehicle Exit")]
+        public void DebugSkipToVehicleExit()
+        {
+            if (!_begun ||
+                segment != FirstContactIntroSegment.Surface ||
+                _surfaceVehicleExitCompleted)
+            {
+                return;
+            }
+
+            EnsureVehicleRoute();
+            Transform exitTarget = exitVehicleInteraction != null
+                ? exitVehicleInteraction.Target
+                : null;
+            if (player == null || vehicleRoute == null || exitTarget == null)
+            {
+                Debug.LogError(
+                    "[FirstContactIntro] Debug vehicle-exit skip requires the player, " +
+                    "authored vehicle route, and vehicle exit target.",
+                    this);
+                return;
+            }
+
+            if (!vehicleRoute.SnapToParkedPose())
+            {
+                return;
+            }
+
+            CancelSurfaceLeadInForDebugSkip();
+            PrepareSurfaceDirectorActor();
+            SnapSurfaceDirectorToExit();
+
+            exitVehicleInteraction.SetAvailable(false);
+            player.SetContextualInteraction(null);
+            player.RestoreView();
+            vehicleRoute.DetachPlayer(player.transform);
+            player.Teleport(exitTarget, seated: false);
+            CompleteVehicleExitState(player);
+
+            Debug.Log(
+                $"[FirstContactIntro] Skipped to vehicle exit with {skipToVehicleExitKey}.",
+                this);
+        }
+
+        private void CancelSurfaceLeadInForDebugSkip()
+        {
+            StopTrackedCoroutine(ref _newsRoutine);
+            StopTrackedCoroutine(ref _carArrivalRoutine);
+            StopTrackedCoroutine(ref _vehicleExitRoutine);
+            StopTrackedCoroutine(ref _directorVehicleExitRoutine);
+            UnsubscribeNewsPlaybackClock();
+            newsBroadcast?.StopBroadcast();
+            guide?.Stop();
+            _dialogueDisplay?.HideImmediate();
+            hud?.ClearPrompt();
+            hud?.SetCrosshairVisible(true);
+            _busy = true;
+        }
+
+        private void SnapSurfaceDirectorToExit()
+        {
+            if (!_surfaceDirectorPrepared ||
+                vehicleDirectorActor == null ||
+                directorVehicleExitAnchor == null)
+            {
+                Debug.LogWarning(
+                    "[FirstContactIntro] Director debug exit pose is not fully authored. " +
+                    "The player skip will continue without snapping the director.",
+                    this);
+                _directorReadyToGuide = false;
+                return;
+            }
+
+            vehicleDirectorActor.SetParent(null, true);
+            vehicleDirectorActor.SetPositionAndRotation(
+                directorVehicleExitAnchor.position,
+                directorVehicleExitAnchor.rotation);
+            guide?.ApplyVisualForwardCorrection();
+            _directorReadyToGuide = true;
+        }
+
+        private void StopTrackedCoroutine(ref Coroutine routine)
+        {
+            if (routine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(routine);
+            routine = null;
+        }
+#endif
+
         public bool HandleInteraction(
             FirstContactIntroInteractable interactable,
             FirstContactIntroPlayerController sourcePlayer)
@@ -846,11 +1047,49 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield return null;
             }
 
+            CompleteVehicleExitState(sourcePlayer);
+            _vehicleExitRoutine = null;
+        }
+
+        private void CompleteVehicleExitState(
+            FirstContactIntroPlayerController sourcePlayer)
+        {
+            if (sourcePlayer == null)
+            {
+                _busy = false;
+                return;
+            }
+
             sourcePlayer.SetLookEnabled(true);
             sourcePlayer.SetMovementEnabled(true);
             sourcePlayer.SetInteractionEnabled(true);
-            guide?.AddManualHoldPoint(citizenEncounterGuidePointIndex);
-            guide?.AddManualHoldPoint(secretRevealGuidePointIndex);
+            ResolveSurfaceNarrativeZones();
+            BindSurfaceNarrativeZones(sourcePlayer.transform);
+            // A named guide point owns its pause behaviour through Pause On Arrival.
+            // Integer holds remain only as a compatibility fallback for old scenes
+            // that do not have an authored zone/guide-point reference.
+            if (_citizenEncounterZone == null ||
+                _citizenEncounterZone.GuideHoldPoint == null)
+            {
+                guide?.AddManualHoldPoint(citizenEncounterGuidePointIndex);
+            }
+
+            if (_secretDoorRevealZone == null ||
+                _secretDoorRevealZone.GuideHoldPoint == null)
+            {
+                guide?.AddManualHoldPoint(secretRevealGuidePointIndex);
+            }
+
+            // The director waits here only until the player catches up. This is
+            // intentionally independent from Pause On Arrival because the line
+            // itself must play while both characters continue walking.
+            if (_privateExchangeZone != null &&
+                _privateExchangeZone.GuideHoldPoint != null)
+            {
+                guide?.AddSequenceHoldPoint(
+                    _privateExchangeZone.GuideHoldPoint);
+            }
+
             guide?.Begin(
                 sourcePlayer.transform,
                 warpToStart: !_directorReadyToGuide);
@@ -862,8 +1101,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             hud?.SetObjective(
                 "first_contact.intro.objective.follow_director",
                 "Follow the director.");
+            _surfaceVehicleExitCompleted = true;
             _busy = false;
-            _vehicleExitRoutine = null;
         }
 
         private IEnumerator PizzaApproachDialogueRoutine(Transform sourcePlayer)
@@ -874,22 +1113,40 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield break;
             }
 
-            Vector3 startPosition = sourcePlayer.position;
-            float requiredDistance = Mathf.Max(0f, pizzaApproachDialogueTravelDistance);
-            while (_begun &&
-                   guide != null &&
-                   guide.CurrentPointIndex < citizenEncounterGuidePointIndex &&
-                   HorizontalDistance(startPosition, sourcePlayer.position) < requiredDistance)
+            if (_pizzaApproachZone != null)
             {
-                yield return null;
+                yield return WaitForNarrativeZoneRoutine(_pizzaApproachZone);
+                if (_begun)
+                {
+                    yield return PlayDialogueEventRoutine(
+                        ResolveZoneDialogueEvent(
+                            _pizzaApproachZone,
+                            "intro.pizza.approach"));
+                    _dialogueDisplay?.Hide();
+                }
             }
-
-            bool reachedCitizenEncounter = guide == null ||
-                                           guide.CurrentPointIndex >= citizenEncounterGuidePointIndex;
-            if (_begun && !reachedCitizenEncounter)
+            else
             {
-                yield return PlayDialogueEventRoutine("intro.pizza.approach");
-                _dialogueDisplay?.Hide();
+                Vector3 startPosition = sourcePlayer.position;
+                float requiredDistance = Mathf.Max(
+                    0f,
+                    pizzaApproachDialogueTravelDistance);
+                while (_begun &&
+                       guide != null &&
+                       guide.CurrentPointIndex < citizenEncounterGuidePointIndex &&
+                       HorizontalDistance(startPosition, sourcePlayer.position) < requiredDistance)
+                {
+                    yield return null;
+                }
+
+                bool reachedCitizenEncounter = guide == null ||
+                                               guide.CurrentPointIndex >=
+                                               citizenEncounterGuidePointIndex;
+                if (_begun && !reachedCitizenEncounter)
+                {
+                    yield return PlayDialogueEventRoutine("intro.pizza.approach");
+                    _dialogueDisplay?.Hide();
+                }
             }
 
             _pizzaApproachDialogueRoutine = null;
@@ -1134,6 +1391,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             if (segment == FirstContactIntroSegment.Surface)
             {
+                if (_citizenEncounterZone != null ||
+                    _secretDoorRevealZone != null)
+                {
+                    // Named guide targets drive the surface sequence. The integer event
+                    // is retained only as a fallback for older authored scenes.
+                    return;
+                }
+
                 if (pointIndex == citizenEncounterGuidePointIndex &&
                     _citizenEncounterRoutine == null)
                 {
@@ -1160,13 +1425,47 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             TryEnableBriefingSeat();
         }
 
+        private void HandleGuideNamedHold(
+            FirstContactIntroGuidePoint point)
+        {
+            if (segment != FirstContactIntroSegment.Surface || point == null)
+            {
+                return;
+            }
+
+            if (_citizenEncounterZone != null &&
+                point == _citizenEncounterZone.GuideHoldPoint &&
+                _citizenEncounterRoutine == null)
+            {
+                _citizenEncounterRoutine = StartCoroutine(
+                    CitizenEncounterRoutine());
+                return;
+            }
+
+            if (_secretDoorRevealZone != null &&
+                point == _secretDoorRevealZone.GuideHoldPoint &&
+                _secretDoorRevealRoutine == null)
+            {
+                _secretDoorRevealRoutine = StartCoroutine(
+                    SecretDoorRevealRoutine());
+            }
+        }
+
         private IEnumerator CitizenEncounterRoutine()
         {
-            while (_begun && player != null && guide != null &&
-                   HorizontalDistance(player.transform.position, guide.transform.position) >
-                   citizenEncounterStartDistance)
+            if (_citizenEncounterZone != null)
             {
-                yield return null;
+                yield return WaitForNarrativeZoneRoutine(_citizenEncounterZone);
+            }
+            else
+            {
+                while (_begun && player != null && guide != null &&
+                       HorizontalDistance(
+                           player.transform.position,
+                           guide.transform.position) > citizenEncounterStartDistance)
+                {
+                    yield return null;
+                }
             }
 
             if (!_begun)
@@ -1198,7 +1497,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             yield return PlayDialogueEventRoutine(
-                "intro.pizza.citizen_encounter",
+                ResolveZoneDialogueEvent(
+                    _citizenEncounterZone,
+                    "intro.pizza.citizen_encounter"),
                 playWhileSequenceBusy: true);
 
             if (citizenDialogueExitPauseSeconds > 0f)
@@ -1283,29 +1584,81 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private IEnumerator PizzaPrivateExchangeRoutine()
         {
-            while (_begun && !HasPartyLeftCitizenEarshot())
+            if (_privateExchangeZone != null)
             {
-                yield return null;
+                yield return WaitForNarrativeZoneRoutine(_privateExchangeZone);
+            }
+            else
+            {
+                while (_begun &&
+                       !HasPartyLeftCitizenEarshot() &&
+                       !HasGuideReachedSecretHold())
+                {
+                    yield return null;
+                }
             }
 
             if (_begun)
             {
+                // The authored zone can activate while the director is still
+                // approaching its hold point. Wait until the hold is actually
+                // active before releasing it, otherwise a later arrival at the
+                // point leaves the guide paused with no routine left to resume it.
+                FirstContactIntroGuidePoint privateHoldPoint =
+                    _privateExchangeZone != null
+                        ? _privateExchangeZone.GuideHoldPoint
+                        : null;
+                while (_begun &&
+                       guide != null &&
+                       privateHoldPoint != null &&
+                       !guide.IsWaitingAt(privateHoldPoint))
+                {
+                    yield return null;
+                }
+
+                // Release the catch-up gate before showing the line so the director
+                // starts moving on the same frame that the walk-and-talk begins.
+                if (guide != null && guide.IsWaitingForRelease)
+                {
+                    guide.Resume();
+                }
+
                 yield return PlayDialogueEventRoutine(
-                    "intro.pizza.private_exchange");
+                    ResolveZoneDialogueEvent(
+                        _privateExchangeZone,
+                        "intro.pizza.private_exchange"));
                 _dialogueDisplay?.Hide();
             }
 
             _pizzaPrivateExchangeRoutine = null;
         }
 
+        private bool HasGuideReachedSecretHold()
+        {
+            // The storage sequence waits for this exchange to finish. If an authored
+            // earshot distance is larger than the restaurant, reaching the storage
+            // hold must still release the exchange instead of deadlocking both flows.
+            return guide != null &&
+                   guide.IsWaitingForRelease &&
+                   guide.CurrentPointIndex > secretRevealGuidePointIndex;
+        }
+
         private IEnumerator SecretDoorRevealRoutine()
         {
-            while (_begun && player != null && guide != null &&
-                   HorizontalDistance(
-                       player.transform.position,
-                       guide.transform.position) > secretRevealStartDistance)
+            if (_secretDoorRevealZone != null)
             {
-                yield return null;
+                yield return WaitForNarrativeZoneRoutine(
+                    _secretDoorRevealZone);
+            }
+            else
+            {
+                while (_begun && player != null && guide != null &&
+                       HorizontalDistance(
+                           player.transform.position,
+                           guide.transform.position) > secretRevealStartDistance)
+                {
+                    yield return null;
+                }
             }
 
             while (_begun && _pizzaPrivateExchangeRoutine != null)
@@ -1326,7 +1679,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             hud?.ClearObjective();
 
             yield return PlayDialogueEventRoutine(
-                "intro.pizza.storage.approach",
+                ResolveZoneDialogueEvent(
+                    _secretDoorRevealZone,
+                    "intro.pizza.storage.approach"),
                 playWhileSequenceBusy: true);
 
             if (secretElevatorSequence != null)
@@ -1336,7 +1691,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             yield return PlayDialogueEventRoutine(
-                "intro.pizza.storage.reveal",
+                ResolveZoneFollowupDialogueEvent(
+                    _secretDoorRevealZone,
+                    "intro.pizza.storage.reveal"),
                 playWhileSequenceBusy: true);
 
             player?.SetMovementEnabled(true);
@@ -1357,6 +1714,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             sourcePlayer.SetLookEnabled(true);
             hud?.ClearPrompt();
             hud?.ClearObjective();
+            mode?.PreloadNextSegment();
 
             if (secretElevatorSequence != null)
             {
@@ -1376,7 +1734,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield return new WaitForSecondsRealtime(remaining);
             }
 
-            secretElevatorSequence?.StopDescent();
             sourcePlayer.SetLookEnabled(false);
             _elevatorRideRoutine = null;
             mode?.CompleteSegment();
@@ -1418,6 +1775,153 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             return closestDistance;
+        }
+
+        private void ResolveSurfaceNarrativeZones()
+        {
+            if (segment != FirstContactIntroSegment.Surface)
+            {
+                return;
+            }
+
+            FirstContactIntroSceneReferences sceneReferences =
+                GetComponent<FirstContactIntroSceneReferences>();
+            FirstContactIntroNarrativeZone[] zones =
+                sceneReferences != null && sceneReferences.TriggerRoot != null
+                    ? sceneReferences.TriggerRoot.GetComponentsInChildren<
+                        FirstContactIntroNarrativeZone>(true)
+                    : FindObjectsByType<FirstContactIntroNarrativeZone>(
+                        FindObjectsInactive.Include,
+                        FindObjectsSortMode.None);
+
+            _pizzaApproachZone = null;
+            _citizenEncounterZone = null;
+            _privateExchangeZone = null;
+            _secretDoorRevealZone = null;
+            _elevatorBoardZone = null;
+            for (int i = 0; i < zones.Length; i++)
+            {
+                FirstContactIntroNarrativeZone zone = zones[i];
+                if (zone == null || zone.gameObject.scene != gameObject.scene)
+                {
+                    continue;
+                }
+
+                switch (zone.Stage)
+                {
+                    case FirstContactIntroNarrativeStage.PizzaApproach:
+                        _pizzaApproachZone = zone;
+                        break;
+                    case FirstContactIntroNarrativeStage.CitizenEncounter:
+                        _citizenEncounterZone = zone;
+                        break;
+                    case FirstContactIntroNarrativeStage.PrivateExchange:
+                        _privateExchangeZone = zone;
+                        break;
+                    case FirstContactIntroNarrativeStage.SecretDoorReveal:
+                        _secretDoorRevealZone = zone;
+                        break;
+                    case FirstContactIntroNarrativeStage.ElevatorBoard:
+                        _elevatorBoardZone = zone;
+                        break;
+                }
+            }
+        }
+
+        private void BindSurfaceNarrativeZones(Transform sourcePlayer)
+        {
+            FirstContactIntroNarrativeZone[] zones =
+            {
+                _pizzaApproachZone,
+                _citizenEncounterZone,
+                _privateExchangeZone,
+                _secretDoorRevealZone,
+                _elevatorBoardZone
+            };
+            Transform director = guide != null ? guide.transform : null;
+            for (int i = 0; i < zones.Length; i++)
+            {
+                if (zones[i] == null)
+                {
+                    continue;
+                }
+
+                zones[i].ResetRuntimeState();
+                zones[i].BindActors(sourcePlayer, director);
+            }
+        }
+
+        private void ResetSurfaceNarrativeZones()
+        {
+            FirstContactIntroNarrativeZone[] zones =
+            {
+                _pizzaApproachZone,
+                _citizenEncounterZone,
+                _privateExchangeZone,
+                _secretDoorRevealZone,
+                _elevatorBoardZone
+            };
+            for (int i = 0; i < zones.Length; i++)
+            {
+                zones[i]?.ResetRuntimeState();
+            }
+        }
+
+        private IEnumerator WaitForNarrativeZoneRoutine(
+            FirstContactIntroNarrativeZone zone)
+        {
+            if (zone == null)
+            {
+                yield break;
+            }
+
+            zone.BindActors(
+                player != null ? player.transform : null,
+                guide != null ? guide.transform : null);
+            zone.Arm(
+                resetTriggered: true,
+                rememberActorEntries:
+                    zone.Stage == FirstContactIntroNarrativeStage.PrivateExchange);
+            while (_begun && !zone.HasTriggered)
+            {
+                yield return null;
+            }
+
+            zone.Disarm();
+        }
+
+        private static string ResolveZoneDialogueEvent(
+            FirstContactIntroNarrativeZone zone,
+            string fallback)
+        {
+            return zone != null && !string.IsNullOrWhiteSpace(zone.DialogueEvent)
+                ? zone.DialogueEvent
+                : fallback;
+        }
+
+        private static string ResolveZoneFollowupDialogueEvent(
+            FirstContactIntroNarrativeZone zone,
+            string fallback)
+        {
+            return zone != null &&
+                   !string.IsNullOrWhiteSpace(zone.FollowupDialogueEvent)
+                ? zone.FollowupDialogueEvent
+                : fallback;
+        }
+
+        private IEnumerator ElevatorBoardZoneRoutine()
+        {
+            yield return WaitForNarrativeZoneRoutine(_elevatorBoardZone);
+            if (_begun)
+            {
+                elevatorInteraction?.SetAvailable(true);
+                if (player != null && elevatorInteraction != null)
+                {
+                    player.SetContextualInteraction(elevatorInteraction);
+                }
+            }
+
+            _elevatorBoardZoneRoutine = null;
         }
 
         private static IEnumerator TurnActorsTowardRoutine(
@@ -1480,10 +1984,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             if (segment == FirstContactIntroSegment.Surface)
             {
-                elevatorInteraction?.SetAvailable(true);
                 hud?.SetObjective(
                     "first_contact.intro.objective.board_elevator",
                     "Board the elevator and use the control.");
+                if (_elevatorBoardZone != null)
+                {
+                    if (_elevatorBoardZoneRoutine == null)
+                    {
+                        _elevatorBoardZoneRoutine = StartCoroutine(
+                            ElevatorBoardZoneRoutine());
+                    }
+                }
+                else
+                {
+                    elevatorInteraction?.SetAvailable(true);
+                }
             }
             else
             {
@@ -1503,8 +2018,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             guide.ReachedManualHoldPoint -= HandleGuideManualHold;
+            guide.ReachedNamedHoldPoint -= HandleGuideNamedHold;
             guide.ReachedDestination -= HandleGuideDestination;
             guide.ReachedManualHoldPoint += HandleGuideManualHold;
+            guide.ReachedNamedHoldPoint += HandleGuideNamedHold;
             guide.ReachedDestination += HandleGuideDestination;
         }
 
@@ -1516,6 +2033,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             guide.ReachedManualHoldPoint -= HandleGuideManualHold;
+            guide.ReachedNamedHoldPoint -= HandleGuideNamedHold;
             guide.ReachedDestination -= HandleGuideDestination;
         }
     }

@@ -274,7 +274,7 @@ namespace DoodleDiplomacy.Localization.Editor
 
             string absolutePath = ToAbsolutePath(ManifestPath);
             Directory.CreateDirectory(Path.GetDirectoryName(absolutePath) ?? string.Empty);
-            File.WriteAllText(absolutePath, JsonUtility.ToJson(manifest, true) + Environment.NewLine);
+            File.WriteAllText(absolutePath, JsonUtility.ToJson(manifest, true) + System.Environment.NewLine);
         }
 
         private static bool ContainsCatalog(IReadOnlyList<string> paths)

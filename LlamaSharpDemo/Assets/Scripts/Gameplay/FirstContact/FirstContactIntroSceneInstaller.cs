@@ -13,6 +13,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             public FirstContactIntroPlayerController Player;
             public Vector3 PlayerPositionInElevatorSpace;
             public Quaternion PlayerRotationInElevatorSpace;
+            public FirstContactIntroGuideController Guide;
+            public Vector3 GuidePositionInElevatorSpace;
+            public Quaternion GuideRotationInElevatorSpace;
         }
 
         [SerializeField] private string sceneId = "first-contact-intro";
@@ -77,6 +80,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 elevatorSpace = references.ExitPoint;
             }
 
+            FirstContactIntroSequenceController sequence =
+                defaultModeBehaviour != null
+                    ? defaultModeBehaviour.SequenceController
+                    : FindComponentInScene<FirstContactIntroSequenceController>();
+            FirstContactIntroGuideController guide = sequence != null
+                ? sequence.Guide
+                : null;
             var handoffState = new ElevatorHandoffState
             {
                 Player = player,
@@ -84,16 +94,30 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     elevatorSpace.InverseTransformPoint(player.transform.position),
                 PlayerRotationInElevatorSpace =
                     Quaternion.Inverse(elevatorSpace.rotation) *
-                    player.transform.rotation
+                    player.transform.rotation,
+                Guide = guide,
+                GuidePositionInElevatorSpace = guide != null
+                    ? elevatorSpace.InverseTransformPoint(guide.transform.position)
+                    : Vector3.zero,
+                GuideRotationInElevatorSpace = guide != null
+                    ? Quaternion.Inverse(elevatorSpace.rotation) *
+                      guide.transform.rotation
+                    : Quaternion.identity
             };
 
             // The player is already detached from the car by this point. Make it a
             // root once more so the old Surface roots can be suspended and unloaded
             // without disabling the rig that the player is still controlling.
             player.transform.SetParent(null, true);
-            defaultModeBehaviour?.SequenceController?
-                .ReleasePlayerForSceneHandoff(player);
+            sequence?.ReleasePlayerForSceneHandoff(player);
             DontDestroyOnLoad(player.gameObject);
+            if (guide != null)
+            {
+                guide.transform.SetParent(null, true);
+                sequence?.ReleaseGuideForSceneHandoff(guide);
+                DontDestroyOnLoad(guide.gameObject);
+            }
+
             return handoffState;
         }
 
@@ -149,6 +173,39 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     ? defaultModeBehaviour.SequenceController
                     : FindComponentInScene<FirstContactIntroSequenceController>();
             sequence?.AdoptPlayerFromSceneHandoff(player, facilityHud);
+
+            FirstContactIntroGuideController authoredFacilityGuide =
+                sequence != null ? sequence.Guide : null;
+            FirstContactIntroGuideController guide = elevatorState.Guide;
+            if (guide != null)
+            {
+                guide.Stop();
+                guide.transform.SetParent(null, true);
+                guide.transform.SetPositionAndRotation(
+                    elevatorSpace.TransformPoint(
+                        elevatorState.GuidePositionInElevatorSpace),
+                    elevatorSpace.rotation *
+                    elevatorState.GuideRotationInElevatorSpace);
+                if (guide.gameObject.scene != gameObject.scene)
+                {
+                    SceneManager.MoveGameObjectToScene(
+                        guide.gameObject,
+                        gameObject.scene);
+                }
+
+                if (authoredFacilityGuide != null &&
+                    authoredFacilityGuide != guide)
+                {
+                    guide.CopyConfigurationFrom(authoredFacilityGuide);
+                }
+
+                sequence?.AdoptGuideFromSceneHandoff(guide);
+                if (authoredFacilityGuide != null &&
+                    authoredFacilityGuide != guide)
+                {
+                    authoredFacilityGuide.gameObject.SetActive(false);
+                }
+            }
 
             // Keep the authored Facility rig for direct scene testing. During the
             // real Surface handoff the persistent rig owns the camera and listener.

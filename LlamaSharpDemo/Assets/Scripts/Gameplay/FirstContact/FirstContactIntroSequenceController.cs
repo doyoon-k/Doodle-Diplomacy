@@ -125,6 +125,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public bool IsBusy => _busy;
         public FirstContactIntroSegment Segment => segment;
         public Transform NewsCameraAnchor => newsCameraAnchor;
+        public FirstContactIntroGuideController Guide => guide;
 
         public void SetNewsBroadcast(FirstContactNewsBroadcastPlayer broadcast)
         {
@@ -162,6 +163,37 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             hud = introHud;
             player.Configure(player.ViewCamera, hud);
             _receivedPersistentPlayerHandoff = true;
+        }
+
+        public void ReleaseGuideForSceneHandoff(
+            FirstContactIntroGuideController guideController)
+        {
+            if (guide == null || guide != guideController)
+            {
+                return;
+            }
+
+            UnsubscribeGuide();
+            guideController.Stop();
+            guide = null;
+            vehicleDirectorActor = null;
+            _surfaceDirectorPrepared = false;
+            _directorReadyToGuide = false;
+            _authoredSurfaceGuide = null;
+            _directorOriginalParent = null;
+        }
+
+        public void AdoptGuideFromSceneHandoff(
+            FirstContactIntroGuideController guideController)
+        {
+            if (guideController == null)
+            {
+                return;
+            }
+
+            UnsubscribeGuide();
+            guide = guideController;
+            SubscribeGuide();
         }
 
         public void Configure(
@@ -1303,6 +1335,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void RestoreSurfaceDirectorActor()
         {
+            // Restore the car-authored Adjutant only when the Surface segment is
+            // stopped or restarted before a successful elevator handoff. The
+            // handoff path clears _surfaceDirectorPrepared and transfers the same
+            // actor to Facility, so it intentionally bypasses this reset.
             if (!_surfaceDirectorPrepared)
             {
                 return;

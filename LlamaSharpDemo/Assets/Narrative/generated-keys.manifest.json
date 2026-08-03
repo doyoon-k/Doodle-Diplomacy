@@ -649,6 +649,16 @@
             "key": "first_contact.intro.facility.briefing.move_when_ready",
             "scenarioId": "first_contact_day1",
             "beatId": "briefing_move_when_ready_0130"
+        },
+        {
+            "key": "first_contact.intro.pizza.storage.approach.line_0131",
+            "scenarioId": "first_contact_day1",
+            "beatId": "pizza_storage_approach_line_0131"
+        },
+        {
+            "key": "first_contact.intro.pizza.approach.line_0132",
+            "scenarioId": "first_contact_day1",
+            "beatId": "pizza_approach_line_0132"
         }
     ]
 }

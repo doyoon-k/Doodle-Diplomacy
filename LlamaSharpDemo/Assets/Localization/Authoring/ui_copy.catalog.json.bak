@@ -1729,6 +1729,23 @@
       "tags": []
     },
     {
+      "key": "first_contact.intro.objective.board_elevator",
+      "sourceText": "Board the elevator and use the control.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "엘리베이터에 탑승한 뒤 조작 버튼을 누르십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · concealed elevator",
+      "status": "final",
+      "tags": []
+    },
+    {
       "key": "first_contact.intro.objective.follow_to_briefing",
       "sourceText": "Follow the director to the briefing room.",
       "localizedTexts": [

@@ -487,7 +487,7 @@ MonoBehaviour:
     speakerLocalizationKey: 
     speakerFallback: DIRECTOR
     localizationKey: first_contact.intro.pizza.director_alien_joke
-    sourceText: What else? We are obviously here to meet aliens. Ha!
+    sourceText: What else? We are obviously here to meet aliens. Ha Ha.
     advance: automatic
     minimumSeconds: 3.4
     situation: The director states the truth as if it were a joke.
@@ -501,9 +501,9 @@ MonoBehaviour:
     - automatic
     localizedTexts:
     - locale: ko-KR
-      text: "\uC5B4\uCA50 \uC77C\uC774\uAE34\uC694! \uC774 \uD53C\uC790\uC9D1 \uC9C0\uD558\uB85C
+      text: "\uC5B4\uCA50 \uC77C\uC774\uAE34\uC694. \uC774 \uD53C\uC790\uC9D1 \uC9C0\uD558\uB85C
         \uAC00\uBA74 \uC678\uACC4\uC778\uC744 \uB9CC\uB0A0 \uC218 \uC788\uB2E4\uACE0
-        \uD574\uC11C \uC654\uC8E0."
+        \uD574\uC11C \uC654\uC2B5\uB2C8\uB2E4."
       status: final
   - id: pizza_awkward_silence
     sectionId: pizza_restaurant
@@ -3944,4 +3944,56 @@ MonoBehaviour:
     - locale: ko-KR
       text: "\uC544\uBB34\uD2BC. \uC774\uC81C \uC900\uBE44\uAC00 \uB418\uBA74 \uC774\uB3D9\uD558\uC2DC\uC9C0\uC694."
       status: final
+  - id: pizza_storage_approach_line_0131
+    sectionId: pizza_restaurant
+    order: 75
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    triggerEvent: intro.pizza.storage.approach
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.pizza.storage.approach.line_0131
+    sourceText: We are here.
+    advance: automatic
+    minimumSeconds: 2
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774 \uACF3 \uC785\uB2C8\uB2E4."
+      status: draft
+  - id: pizza_approach_line_0132
+    sectionId: pizza_restaurant
+    order: 2
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    triggerEvent: intro.pizza.approach
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.pizza.approach.line_0132
+    sourceText: What...? Aren't you Mr. President?
+    advance: automatic
+    minimumSeconds: 3
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC544\uB2C8...? \uB300\uD1B5\uB839\uB2D8 \uC544\uB2C8\uC138\uC694?"
+      status: draft
   localizationEntries: []

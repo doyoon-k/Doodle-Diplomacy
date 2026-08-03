@@ -23,6 +23,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? "first-contact-intro" : modeId.Trim();
         public GameState CurrentState => _currentState;
         public FirstContactIntroSceneReferences SceneReferences => sceneReferences;
+        public FirstContactIntroSequenceController SequenceController => sequenceController;
         public bool EnteredFromPreloadedScene { get; private set; }
 
         public void Configure(

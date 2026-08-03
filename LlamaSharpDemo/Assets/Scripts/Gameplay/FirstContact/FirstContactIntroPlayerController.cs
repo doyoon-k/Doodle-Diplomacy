@@ -552,6 +552,33 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         }
 
         /// <summary>
+        /// Moves the existing player rig between matching authored spaces without
+        /// resetting the camera's local pose. This keeps the exact yaw and pitch
+        /// the player chose while an additive scene handoff happens around them.
+        /// </summary>
+        public void RepositionPreservingView(
+            Vector3 worldPosition,
+            Quaternion worldRotation)
+        {
+            EnsureReferences();
+            bool controllerWasEnabled =
+                _characterController != null && _characterController.enabled;
+            if (_characterController != null)
+            {
+                _characterController.enabled = false;
+            }
+
+            transform.SetPositionAndRotation(worldPosition, worldRotation);
+
+            if (_characterController != null)
+            {
+                _characterController.enabled = controllerWasEnabled;
+            }
+
+            _verticalVelocity = 0f;
+        }
+
+        /// <summary>
         /// Moves the player through the current world to a target pose. This is used
         /// for the short physical step from the rear seat to the outside of the car.
         /// </summary>

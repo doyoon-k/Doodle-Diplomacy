@@ -534,7 +534,7 @@
       "speakerLocalizationKey": "",
       "speakerFallback": "DIRECTOR",
       "localizationKey": "first_contact.intro.pizza.director_alien_joke",
-      "sourceText": "What else? We are obviously here to meet aliens. Ha!",
+      "sourceText": "What else? We are obviously here to meet aliens. Ha Ha.",
       "advance": "automatic",
       "minimumSeconds": 3.4,
       "situation": "The director states the truth as if it were a joke.",
@@ -550,7 +550,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "어쩐 일이긴요! 이 피자집 지하로 가면 외계인을 만날 수 있다고 해서 왔죠.",
+          "text": "어쩐 일이긴요. 이 피자집 지하로 가면 외계인을 만날 수 있다고 해서 왔습니다.",
           "status": "final"
         }
       ]
@@ -2275,7 +2275,12 @@
       "beforeAction": "The pair leave the dining room and cross the kitchen.",
       "afterAction": "The director steps toward the shelf.",
       "stageDirection": "Keep the player in first person with free camera look.",
-      "tags": ["intro", "pizza", "storage", "automatic"],
+      "tags": [
+        "intro",
+        "pizza",
+        "storage",
+        "automatic"
+      ],
       "localizedTexts": [
         {
           "locale": "ko-KR",
@@ -2306,7 +2311,12 @@
       "beforeAction": "The shelf moves aside, two knocks sound, and the wall opens.",
       "afterAction": "The director gestures toward the elevator.",
       "stageDirection": "Let the player look into the newly opened passage.",
-      "tags": ["intro", "pizza", "secret-door", "automatic"],
+      "tags": [
+        "intro",
+        "pizza",
+        "secret-door",
+        "automatic"
+      ],
       "localizedTexts": [
         {
           "locale": "ko-KR",
@@ -2337,7 +2347,13 @@
       "beforeAction": "The president reacts to the concealed entrance.",
       "afterAction": "The director walks into the elevator.",
       "stageDirection": "Resume the director route only after this line finishes.",
-      "tags": ["intro", "pizza", "secret-door", "director", "automatic"],
+      "tags": [
+        "intro",
+        "pizza",
+        "secret-door",
+        "director",
+        "automatic"
+      ],
       "localizedTexts": [
         {
           "locale": "ko-KR",
@@ -2368,7 +2384,12 @@
       "beforeAction": "The player presses the elevator control and the concealed door closes.",
       "afterAction": "The director begins explaining the classified facility.",
       "stageDirection": "Keep the camera under player control inside the elevator.",
-      "tags": ["intro", "elevator", "president", "automatic"],
+      "tags": [
+        "intro",
+        "elevator",
+        "president",
+        "automatic"
+      ],
       "localizedTexts": [
         {
           "locale": "ko-KR",
@@ -2399,7 +2420,13 @@
       "beforeAction": "The president asks where the elevator leads.",
       "afterAction": "The director explains the translator project.",
       "stageDirection": "The elevator hum continues beneath the dialogue.",
-      "tags": ["intro", "elevator", "director", "exposition", "automatic"],
+      "tags": [
+        "intro",
+        "elevator",
+        "director",
+        "exposition",
+        "automatic"
+      ],
       "localizedTexts": [
         {
           "locale": "ko-KR",
@@ -2430,7 +2457,13 @@
       "beforeAction": "The director describes the government's contact organization.",
       "afterAction": "The elevator arrives at the underground facility.",
       "stageDirection": "Complete the surface segment after this line.",
-      "tags": ["intro", "elevator", "director", "darpa", "automatic"],
+      "tags": [
+        "intro",
+        "elevator",
+        "director",
+        "darpa",
+        "automatic"
+      ],
       "localizedTexts": [
         {
           "locale": "ko-KR",
@@ -2456,7 +2489,13 @@
       "sourceText": "There is one thing we learned from that first encounter.",
       "advance": "automatic",
       "minimumSeconds": 3.8,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그 첫 조우에서 한 가지 알아낸 사실이 있습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그 첫 조우에서 한 가지 알아낸 사실이 있습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "facility_corridor_what_0074",
@@ -2475,7 +2514,13 @@
       "sourceText": "What is it?",
       "advance": "automatic",
       "minimumSeconds": 2,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그게 뭔가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그게 뭔가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "facility_corridor_signal_0075",
@@ -2494,7 +2539,13 @@
       "sourceText": "They probably communicate by emitting some kind of brainwave signal outside their bodies.",
       "advance": "automatic",
       "minimumSeconds": 5.4,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그들은 아마도...일종의 뇌파를 외부로 방출하여 서로 소통하는 것 같습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그들은 아마도...일종의 뇌파를 외부로 방출하여 서로 소통하는 것 같습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "facility_corridor_telepathy_0076",
@@ -2513,7 +2564,13 @@
       "sourceText": "Are you talking about something like telepathy?",
       "advance": "automatic",
       "minimumSeconds": 3,
-      "localizedTexts": [{"locale": "ko-KR", "text": "텔레파시 같은걸 말하는건가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "텔레파시 같은걸 말하는건가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "facility_corridor_close_0077",
@@ -2532,7 +2589,13 @@
       "sourceText": "Uh... something like that.",
       "advance": "automatic",
       "minimumSeconds": 2.2,
-      "localizedTexts": [{"locale": "ko-KR", "text": "어...그런 셈이지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "어...그런 셈이지요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_assignment_question_0078",
@@ -2551,7 +2614,13 @@
       "sourceText": "So what exactly am I supposed to do?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그래서 내가 할일이 대체 뭔가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그래서 내가 할일이 대체 뭔가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_assignment_0079",
@@ -2570,7 +2639,13 @@
       "sourceText": "From now on, you will conduct humanity's first official diplomatic meeting with extraterrestrials.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "각하는 이제부터 인류 최초로 외계인과 공식 외교 회담을 하실겁니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "각하는 이제부터 인류 최초로 외계인과 공식 외교 회담을 하실겁니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_language_question_0080",
@@ -2589,7 +2664,13 @@
       "sourceText": "Fine. But how? Did they say they speak English?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "좋아. 그런데 무슨 수로? 그들이 영어라도 할 줄 안다고 하던가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "좋아. 그런데 무슨 수로? 그들이 영어라도 할 줄 안다고 하던가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_build_translator_0081",
@@ -2608,7 +2689,13 @@
       "sourceText": "Exactly. So first, we need to build a translator.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "맞습니다. 그래서 우선 번역기를 만들어야 겠지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "맞습니다. 그래서 우선 번역기를 만들어야 겠지요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_prototype_0082",
@@ -2627,7 +2714,13 @@
       "sourceText": "DARPA and our best minds have completed a prototype translator.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "DARPA와 최고의 인재들을 구성해 연구를 진행했고 번역기의 프로토타입을 완성했습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "DARPA와 최고의 인재들을 구성해 연구를 진행했고 번역기의 프로토타입을 완성했습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_ready_question_0083",
@@ -2646,7 +2739,13 @@
       "sourceText": "Huh. So can we talk to them right away now?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "허. 그럼 이제 그들과 바로 대화할 수 있는 건가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "허. 그럼 이제 그들과 바로 대화할 수 있는 건가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_handoff_0084",
@@ -2665,7 +2764,13 @@
       "sourceText": "Dr. Hwang, who led the translator project, will explain the details. Doctor?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "자세한 건 번역기 개발 책임자인 황 박사가 설명드릴 겁니다. 황 박사?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자세한 건 번역기 개발 책임자인 황 박사가 설명드릴 겁니다. 황 박사?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_prototype_limits_0085",
@@ -2684,7 +2789,13 @@
       "sourceText": "The device is complete, but we still need alien-language data to optimize the algorithm.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "에...장치는 완성했지만 아직 외계어 데이터를 수집해서 알고리즘 최적화 과정을 거쳐야 합니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "에...장치는 완성했지만 아직 외계어 데이터를 수집해서 알고리즘 최적화 과정을 거쳐야 합니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_not_complete_0086",
@@ -2703,7 +2814,13 @@
       "sourceText": "Then it isn't finished.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그럼 완성된 게 아니잖나?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그럼 완성된 게 아니잖나?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_prototype_reply_0087",
@@ -2722,7 +2839,13 @@
       "sourceText": "That is why it is a prototype.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그래서 프로토타입인 거지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그래서 프로토타입인 거지요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_how_it_works_0088",
@@ -2741,7 +2864,13 @@
       "sourceText": "Hmm... fine. How exactly does this thing work?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "흠…좋아. 그래서 이게 대체 어떻게 작동한다는건가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "흠…좋아. 그래서 이게 대체 어떻게 작동한다는건가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_principle_0089",
@@ -2760,7 +2889,13 @@
       "sourceText": "Ahem... yes. The principle behind our translator is simple.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "흠흠…예. 저희 번역기의 원리는 간단합니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "흠흠…예. 저희 번역기의 원리는 간단합니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_fft_0090",
@@ -2779,7 +2914,13 @@
       "sourceText": "First, a multichannel phased-array receiver simultaneously samples the neuroelectromagnetic signals emitted extracranially by an alien subject. We then apply a fast Fourier transform to the time-domain evoked-potential waveform and decompose it into a frequency spectrum.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "우선 외계 개체가 두개외로 방사하는 신경전자기 신호를 다채널 위상배열 수신기로 동시 표본화한 뒤, 유발전위의 시간영역 파형에 고속 푸리에 변환을 적용하여 주파수별 스펙트럼으로 분해합니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "우선 외계 개체가 두개외로 방사하는 신경전자기 신호를 다채널 위상배열 수신기로 동시 표본화한 뒤, 유발전위의 시간영역 파형에 고속 푸리에 변환을 적용하여 주파수별 스펙트럼으로 분해합니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_feature_vector_0091",
@@ -2798,7 +2939,13 @@
       "sourceText": "Next, an adaptive band-pass filter removes baseline drift and physiological noise. Phase delay, amplitude-modulation rate, and harmonic distribution are normalized and reconstructed as a multidimensional feature vector.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그다음 기저선 편차와 생리적 잡음을 적응형 대역통과 필터로 제거하고, 위상 지연값과 진폭 변조율, 고조파 분포를 정규화하여 다차원 특징 벡터로 재구성하지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그다음 기저선 편차와 생리적 잡음을 적응형 대역통과 필터로 제거하고, 위상 지연값과 진폭 변조율, 고조파 분포를 정규화하여 다차원 특징 벡터로 재구성하지요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_mahalanobis_0092",
@@ -2817,7 +2964,13 @@
       "sourceText": "We feed that vector into a stimulus-specific cross-correlation matrix and combine multivariate discriminant analysis with non-hierarchical clustering to estimate semantic proximity between waveforms. When an unknown signal arrives, a Bayesian estimator calculates its posterior probability and the Mahalanobis distance to the existing semantic groups—",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "이 특징 벡터를 자극물별 교차상관 행렬에 대입하고, 다변량 판별분석과 비계층적 군집화를 병행하면 개별 파형 사이의 의미론적 근접도를 추정할 수 있습니다. 이후 미지 신호가 수신되면 베이즈 추정기를 통해 사후확률을 산출하고 기존 의미군과의 마할라노비스 거리를—", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이 특징 벡터를 자극물별 교차상관 행렬에 대입하고, 다변량 판별분석과 비계층적 군집화를 병행하면 개별 파형 사이의 의미론적 근접도를 추정할 수 있습니다. 이후 미지 신호가 수신되면 베이즈 추정기를 통해 사후확률을 산출하고 기존 의미군과의 마할라노비스 거리를—",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_director_interrupt_0093",
@@ -2836,7 +2989,13 @@
       "sourceText": "Dr. Hwang?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "황 박사?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "황 박사?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_recursive_interpolation_0094",
@@ -2855,7 +3014,13 @@
       "sourceText": "—and by defining a decision boundary that minimizes that distance, we can recursively interpolate the superordinate concepts of unseen vocabulary from limited samples. Once enough signals accumulate, the topological connectivity of the semantic space can be—",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "—최소화하는 판별경계를 설정함으로써 제한된 표본만으로도 미관측 어휘의 상위 개념을 재귀적으로 보간할 수 있으며, 충분한 신호가 누적될 경우 의미공간의 위상적 연결 구조를—", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "—최소화하는 판별경계를 설정함으로써 제한된 표본만으로도 미관측 어휘의 상위 개념을 재귀적으로 보간할 수 있으며, 충분한 신호가 누적될 경우 의미공간의 위상적 연결 구조를—",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_president_interrupt_0095",
@@ -2874,7 +3039,13 @@
       "sourceText": "Dr. Hwang?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "황 박사?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "황 박사?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_realtime_update_0096",
@@ -2893,7 +3064,13 @@
       "sourceText": "—updated in real time to enable bidirectional neurolinguistic conversion... ah, yes?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "—실시간으로 갱신하여 양방향 신경언어 변환을…아, 예?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "—실시간으로 갱신하여 양방향 신경언어 변환을…아, 예?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_explain_simply_0097",
@@ -2912,7 +3089,13 @@
       "sourceText": "Explain it more simply. I did not understand a word of that.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "좀 더 쉽게 설명해봐. 뭐라는지 하나도 모르겠군.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "좀 더 쉽게 설명해봐. 뭐라는지 하나도 모르겠군.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_apology_0098",
@@ -2931,7 +3114,13 @@
       "sourceText": "Ah... I am sorry.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "아…죄송합니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "아…죄송합니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_basic_premise_0099",
@@ -2950,7 +3139,13 @@
       "sourceText": "Ahem... the basic premise is this. When you look at an object, your brain processes information about it and produces a signal.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "쿨럭…우선 기본적인 전제는 이렇습니다. 어떤 사물을 볼 때 뇌는 해당 사물에 대한 정보를 처리하면서 신호를 발생시킵니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "쿨럭…우선 기본적인 전제는 이렇습니다. 어떤 사물을 볼 때 뇌는 해당 사물에 대한 정보를 처리하면서 신호를 발생시킵니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_collect_waveforms_0100",
@@ -2969,7 +3164,13 @@
       "sourceText": "The same is true for the aliens. We will use that principle to collect the waveforms they emit when they look at specific objects.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "이는 외계인도 마찬가지 입니다. 이 원리를 이용해서 먼저 저들이 특정 사물을 볼 때 방출되는 뇌파의 파형을 수집할 예정입니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이는 외계인도 마찬가지 입니다. 이 원리를 이용해서 먼저 저들이 특정 사물을 볼 때 방출되는 뇌파의 파형을 수집할 예정입니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_banana_example_0101",
@@ -2988,7 +3189,13 @@
       "sourceText": "For example, the brainwave they emit when shown a banana probably means banana.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "예를 들어 바나나를 보여줬을 때 저들이 내뿜는 뇌파는 아마도 바나나를 의미하는 뇌파겠지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "예를 들어 바나나를 보여줬을 때 저들이 내뿜는 뇌파는 아마도 바나나를 의미하는 뇌파겠지요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_database_limit_0102",
@@ -3007,7 +3214,13 @@
       "sourceText": "But we cannot show them every object on Earth and build an enormous database map one item at a time.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "하지만 지구에 존재하는 모든 사물들을 전부 보여줘가며 거대한 데이터베이스 맵을 만들수는 없는 법입니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "하지만 지구에 존재하는 모든 사물들을 전부 보여줘가며 거대한 데이터베이스 맵을 만들수는 없는 법입니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_algorithm_solution_0103",
@@ -3026,7 +3239,13 @@
       "sourceText": "That is the problem our brilliant algorithm is designed to solve.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그래서 저희가 개발한 천재적인 알고리즘으로 이를 해결하려고 합니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그래서 저희가 개발한 천재적인 알고리즘으로 이를 해결하려고 합니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_task_simple_0104",
@@ -3045,7 +3264,13 @@
       "sourceText": "Your job is simple, Mr. President.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "대통령님이 하실 일은 간단합니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "대통령님이 하실 일은 간단합니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_task_question_0105",
@@ -3064,7 +3289,13 @@
       "sourceText": "What is it?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그게 뭔가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그게 뭔가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_draw_categories_0106",
@@ -3083,7 +3314,13 @@
       "sourceText": "You will draw and show them pictures of various objects that fit categories we have defined in advance.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "저들에게 저희가 미리 정의해둔 카테고리에 해당하는 다양한 사물의 그림들을 그려서 보여주시는 겁니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "저들에게 저희가 미리 정의해둔 카테고리에 해당하는 다양한 사물의 그림들을 그려서 보여주시는 겁니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_food_examples_0107",
@@ -3102,7 +3339,13 @@
       "sourceText": "For example, apples and bananas are both food.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "예를 들어 사과와 바나나는 둘 다 음식입니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "예를 들어 사과와 바나나는 둘 다 음식입니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_similar_patterns_0108",
@@ -3121,7 +3364,13 @@
       "sourceText": "They look different, but because they are both food, some similar patterns should appear in the brainwaves produced when viewing them.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "생긴 것은 달라도 둘 다 음식이기 때문에 이 두 사물을 볼 때 발생하는 뇌파의 패턴은 어느정도 비슷한 패턴들이 관찰되기 마련입니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "생긴 것은 달라도 둘 다 음식이기 때문에 이 두 사물을 볼 때 발생하는 뇌파의 패턴은 어느정도 비슷한 패턴들이 관찰되기 마련입니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_president_agrees_0109",
@@ -3140,7 +3389,13 @@
       "sourceText": "Right.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그렇지.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그렇지.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_unseen_translation_0110",
@@ -3159,7 +3414,13 @@
       "sourceText": "If our algorithm analyzes groups of similar patterns, it can automatically translate an uncollected word whenever that word belongs to a category we have already analyzed.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "이렇게 비슷한 패턴들을 모아서 저희 알고리즘으로 분석하면 수집하지 않았던 단어라도 분석이 완료된 카테고리에 해당하는 단어라면 자동으로 번역이 되는 겁니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이렇게 비슷한 패턴들을 모아서 저희 알고리즘으로 분석하면 수집하지 않았던 단어라도 분석이 완료된 카테고리에 해당하는 단어라면 자동으로 번역이 되는 겁니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_magic_0111",
@@ -3178,7 +3439,13 @@
       "sourceText": "That is practically magic.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "마법이 따로 없네.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "마법이 따로 없네.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_category_basis_0112",
@@ -3197,7 +3464,13 @@
       "sourceText": "Good. What determines the categories?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "좋아. 그럼 그 카테고리를 정하는 기준은 뭔가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "좋아. 그럼 그 카테고리를 정하는 기준은 뭔가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_alien_motive_0113",
@@ -3216,7 +3489,13 @@
       "sourceText": "Looking back at everything they have done on Earth, they seem to have come here to study and understand our civilization.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "그동안 저들이 지구에서 한 행적들을 한번 돌아보면 아마 저희 문명을 조사하고 이해하고자 방문한 것 같습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "그동안 저들이 지구에서 한 행적들을 한번 돌아보면 아마 저희 문명을 조사하고 이해하고자 방문한 것 같습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_cows_and_corn_0114",
@@ -3235,7 +3514,13 @@
       "sourceText": "They abducted cattle from ranches and landed in cornfields to collect corn.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "목장에서 소를 납치하고 옥수수밭에 착륙하여 옥수수들을 채취해가기도 하고", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "목장에서 소를 납치하고 옥수수밭에 착륙하여 옥수수들을 채취해가기도 하고",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_military_recon_0115",
@@ -3254,7 +3539,13 @@
       "sourceText": "They have also repeatedly appeared near military installations to conduct reconnaissance.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "군사 시설 근처에 계속 나타나서 정찰을 하고 가기도 하고 말이지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "군사 시설 근처에 계속 나타나서 정찰을 하고 가기도 하고 말이지요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_four_categories_0116",
@@ -3273,7 +3564,13 @@
       "sourceText": "So, for now, we have chosen danger, protection, food, and tools as the categories.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "따라서 카테고리들은 우선 위험, 보호, 음식, 도구로 정했습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "따라서 카테고리들은 우선 위험, 보호, 음식, 도구로 정했습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_why_draw_0117",
@@ -3292,7 +3589,13 @@
       "sourceText": "Hmm... fine. But why do I personally have to draw the pictures and show them?",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "음…좋아. 근데 왜 굳이 그림을 내가 직접 그려서 보여 줘야 하는 건가?", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "음…좋아. 근데 왜 굳이 그림을 내가 직접 그려서 보여 줘야 하는 건가?",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_researchers_ignored_0118",
@@ -3311,7 +3614,13 @@
       "sourceText": "Our researchers already tried showing pictures to the aliens waiting here, but there was no response.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "예. 안 그래도 대기 중인 외계인들에게 저희 연구원들이 먼저 그림을 보여줘 봤는데 아무 반응이 없었습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "예. 안 그래도 대기 중인 외계인들에게 저희 연구원들이 먼저 그림을 보여줘 봤는데 아무 반응이 없었습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_tv_response_0119",
@@ -3330,7 +3639,13 @@
       "sourceText": "We finally gave up and watched television in the waiting room. The moment you appeared on screen, every instrument started screaming.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "결국 포기하고 다 같이 대기실 TV나 보고 있었는데, 화면에 각하가 나오자 갑자기 계측기가 미친 듯이 울리기 시작했지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "결국 포기하고 다 같이 대기실 TV나 보고 있었는데, 화면에 각하가 나오자 갑자기 계측기가 미친 듯이 울리기 시작했지요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_wanted_president_0120",
@@ -3349,7 +3664,13 @@
       "sourceText": "It seems you were the person they wanted to meet from the beginning.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "아무래도 저들이 만나고 싶었던 사람은 처음부터 각하였던 모양입니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "아무래도 저들이 만나고 싶었던 사람은 처음부터 각하였던 모양입니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_creepy_0121",
@@ -3368,7 +3689,13 @@
       "sourceText": "Damn it... that is unsettling.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "이런 젠장…그거 참 소름돋네.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이런 젠장…그거 참 소름돋네.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_no_malice_0122",
@@ -3387,7 +3714,13 @@
       "sourceText": "I do not think you need to worry too much. They do not appear hostile.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "너무 걱정하지는 않으셔도 될 것 같습니다. 악의는 없어 보여요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "너무 걱정하지는 않으셔도 될 것 같습니다. 악의는 없어 보여요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_wearing_suits_0123",
@@ -3406,7 +3739,13 @@
       "sourceText": "They arrived wearing proper suits.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "양복을 갖춰 입고 왔더군요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "양복을 갖춰 입고 왔더군요.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_diplomatic_intent_0124",
@@ -3425,7 +3764,13 @@
       "sourceText": "They seem to have studied our civilization and come with a diplomatic purpose.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "저희 문명에 대해 어느 정도 조사를 하고 외교적인 목적이 있는 것 같습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "저희 문명에 대해 어느 정도 조사를 하고 외교적인 목적이 있는 것 같습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_alien_suits_0125",
@@ -3444,7 +3789,13 @@
       "sourceText": "Aliens in suits. That is absurd.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "허. 양복을 입은 외계인이라니 어이가 없군.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "허. 양복을 입은 외계인이라니 어이가 없군.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_tie_joke_0126",
@@ -3463,7 +3814,13 @@
       "sourceText": "Did they wear ties too? Red ones or blue ones, perhaps? Ha!",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "넥타이도 맸던가? 혹시 빨간색이나 파란색이던가? 하하", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "넥타이도 맸던가? 혹시 빨간색이나 파란색이던가? 하하",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_black_tie_0127",
@@ -3482,7 +3839,13 @@
       "sourceText": "They wore black ties.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "검은색 넥타이를 매고 왔습니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "검은색 넥타이를 매고 왔습니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_smart_0128",
@@ -3501,7 +3864,13 @@
       "sourceText": "Smart.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "영리하네.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "영리하네.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_not_interested_0129",
@@ -3520,7 +3889,13 @@
       "sourceText": "They probably are not very interested in that.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "아마 별로 관심이 없을겁니다.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "아마 별로 관심이 없을겁니다.",
+          "status": "final"
+        }
+      ]
     },
     {
       "id": "briefing_move_when_ready_0130",
@@ -3539,11 +3914,79 @@
       "sourceText": "In any case, we can move on when you are ready.",
       "advance": "player",
       "minimumSeconds": 0.35,
-      "localizedTexts": [{"locale": "ko-KR", "text": "아무튼. 이제 준비가 되면 이동하시지요.", "status": "final"}]
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "아무튼. 이제 준비가 되면 이동하시지요.",
+          "status": "final"
+        }
+      ]
+    },
+    {
+      "id": "pizza_storage_approach_line_0131",
+      "sectionId": "pizza_restaurant",
+      "order": 75,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "triggerEvent": "intro.pizza.storage.approach",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.pizza.storage.approach.line_0131",
+      "sourceText": "We are here.",
+      "advance": "automatic",
+      "minimumSeconds": 2,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": [],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이 곳 입니다.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "pizza_approach_line_0132",
+      "sectionId": "pizza_restaurant",
+      "order": 2,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "triggerEvent": "intro.pizza.approach",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.pizza.approach.line_0132",
+      "sourceText": "What...? Aren't you Mr. President?",
+      "advance": "automatic",
+      "minimumSeconds": 3,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": [],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "아니...? 대통령님 아니세요?",
+          "status": "draft"
+        }
+      ]
     }
   ],
   "localizationEntries": [],
   "authoring": {
-    "nextBeatSerial": 131
+    "nextBeatSerial": 133
   }
 }

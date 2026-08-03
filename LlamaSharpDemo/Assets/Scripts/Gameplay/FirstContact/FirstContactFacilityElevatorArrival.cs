@@ -18,18 +18,44 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Header("Arrival Timing")]
         [SerializeField, Min(0f)] private float closedHoldSeconds = 1.4f;
         [SerializeField, Min(0.05f)] private float doorOpenSeconds = 1.6f;
+        [SerializeField, Min(0.05f)] private float doorCloseSeconds = 1.15f;
 
         private Vector3 _leftClosedLocalPosition;
         private Quaternion _leftClosedLocalRotation;
         private Vector3 _rightClosedLocalPosition;
         private Quaternion _rightClosedLocalRotation;
         private bool _captured;
+        private bool _isOpen;
 
         public bool IsConfigured =>
             leftDoor != null &&
             rightDoor != null &&
             leftOpenAnchor != null &&
             rightOpenAnchor != null;
+
+        public bool IsOpen => _isOpen;
+
+        public bool TryGetDoorFacingRotation(
+            Vector3 cabinPosition,
+            out Quaternion rotation)
+        {
+            rotation = Quaternion.identity;
+            if (leftDoor == null || rightDoor == null)
+            {
+                return false;
+            }
+
+            Vector3 doorCenter = (leftDoor.position + rightDoor.position) * 0.5f;
+            Vector3 towardDoor = doorCenter - cabinPosition;
+            towardDoor = Vector3.ProjectOnPlane(towardDoor, Vector3.up);
+            if (towardDoor.sqrMagnitude <= 0.0001f)
+            {
+                return false;
+            }
+
+            rotation = Quaternion.LookRotation(towardDoor.normalized, Vector3.up);
+            return true;
+        }
 
         private void Awake()
         {
@@ -57,6 +83,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _rightClosedLocalPosition,
                 _rightClosedLocalRotation);
             SetDoorCollidersEnabled(true);
+            _isOpen = false;
         }
 
         public IEnumerator ArriveAndOpenRoutine()
@@ -73,6 +100,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             PlayOneShot(arrivalChimeClip, 0.65f);
+            yield return OpenRoutine();
+        }
+
+        public IEnumerator OpenRoutine()
+        {
+            CaptureClosedState();
+            if (!IsConfigured || _isOpen)
+            {
+                yield break;
+            }
+
             PlayOneShot(doorMotorClip, 0.55f);
 
             Vector3 leftStartPosition = leftDoor.localPosition;
@@ -101,6 +139,46 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 rightOpenAnchor.localPosition,
                 rightOpenAnchor.localRotation);
             SetDoorCollidersEnabled(false);
+            _isOpen = true;
+        }
+
+        public IEnumerator CloseRoutine()
+        {
+            CaptureClosedState();
+            if (!IsConfigured || !_isOpen)
+            {
+                PrepareClosed();
+                yield break;
+            }
+
+            PlayOneShot(doorMotorClip, 0.55f);
+            Vector3 leftStartPosition = leftDoor.localPosition;
+            Quaternion leftStartRotation = leftDoor.localRotation;
+            Vector3 rightStartPosition = rightDoor.localPosition;
+            Quaternion rightStartRotation = rightDoor.localRotation;
+            float elapsed = 0f;
+            float duration = Mathf.Max(0.05f, doorCloseSeconds);
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+                leftDoor.SetLocalPositionAndRotation(
+                    Vector3.Lerp(leftStartPosition, _leftClosedLocalPosition, progress),
+                    Quaternion.Slerp(leftStartRotation, _leftClosedLocalRotation, progress));
+                rightDoor.SetLocalPositionAndRotation(
+                    Vector3.Lerp(rightStartPosition, _rightClosedLocalPosition, progress),
+                    Quaternion.Slerp(rightStartRotation, _rightClosedLocalRotation, progress));
+                yield return null;
+            }
+
+            leftDoor.SetLocalPositionAndRotation(
+                _leftClosedLocalPosition,
+                _leftClosedLocalRotation);
+            rightDoor.SetLocalPositionAndRotation(
+                _rightClosedLocalPosition,
+                _rightClosedLocalRotation);
+            SetDoorCollidersEnabled(true);
+            _isOpen = false;
         }
 
         private void CaptureClosedState()

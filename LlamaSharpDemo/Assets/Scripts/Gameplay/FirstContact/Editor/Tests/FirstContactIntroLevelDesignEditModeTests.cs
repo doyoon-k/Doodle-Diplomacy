@@ -329,5 +329,51 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor.Tests
                 UnityEngine.Object.DestroyImmediate(targetObject);
             }
         }
+
+        [Test]
+        public void PlayerRepositionPreservingView_KeepsCurrentCameraPose()
+        {
+            GameObject playerObject = new("Player");
+            GameObject cameraObject = new("Camera");
+            try
+            {
+                cameraObject.transform.SetParent(playerObject.transform, false);
+                UnityCamera camera = cameraObject.AddComponent<UnityCamera>();
+                FirstContactIntroPlayerController player =
+                    playerObject.AddComponent<FirstContactIntroPlayerController>();
+                player.Configure(camera, null);
+
+                Vector3 currentCameraPosition = new(0.08f, 1.61f, -0.12f);
+                Quaternion currentCameraRotation = Quaternion.Euler(-31f, 0f, 0f);
+                cameraObject.transform.SetLocalPositionAndRotation(
+                    currentCameraPosition,
+                    currentCameraRotation);
+                Vector3 targetPosition = new(12f, -3f, 7f);
+                Quaternion targetRotation = Quaternion.Euler(0f, 143f, 0f);
+
+                player.RepositionPreservingView(targetPosition, targetRotation);
+
+                Assert.That(
+                    Vector3.Distance(playerObject.transform.position, targetPosition),
+                    Is.LessThan(0.0001f));
+                Assert.That(
+                    Quaternion.Angle(playerObject.transform.rotation, targetRotation),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    Vector3.Distance(
+                        cameraObject.transform.localPosition,
+                        currentCameraPosition),
+                    Is.LessThan(0.0001f));
+                Assert.That(
+                    Quaternion.Angle(
+                        cameraObject.transform.localRotation,
+                        currentCameraRotation),
+                    Is.LessThan(0.001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
     }
 }

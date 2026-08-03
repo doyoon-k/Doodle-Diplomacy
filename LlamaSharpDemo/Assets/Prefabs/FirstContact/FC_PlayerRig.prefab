@@ -73,7 +73,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactIntroPlayerController
   viewCamera: {fileID: 8402564073767592808}
   hud: {fileID: 0}
-  moveSpeed: 3.4
+  moveSpeed: 1.8
   sprintMultiplier: 1.45
   gravity: -22
   mouseSensitivity: 0.09

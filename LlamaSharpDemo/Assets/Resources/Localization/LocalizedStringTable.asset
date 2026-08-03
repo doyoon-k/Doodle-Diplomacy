@@ -1031,12 +1031,12 @@ MonoBehaviour:
     - locale: ko-KR
       text: "\uB300\uD1B5\uB839\uB2D8\uC774 \uC5EC\uAE34 \uC5B4\uCA50 \uC77C\uB85C...?"
   - key: first_contact.intro.pizza.director_alien_joke
-    sourceText: What else? We are obviously here to meet aliens. Ha!
+    sourceText: What else? We are obviously here to meet aliens. Ha Ha.
     translations:
     - locale: ko-KR
-      text: "\uC5B4\uCA50 \uC77C\uC774\uAE34\uC694! \uC774 \uD53C\uC790\uC9D1 \uC9C0\uD558\uB85C
+      text: "\uC5B4\uCA50 \uC77C\uC774\uAE34\uC694. \uC774 \uD53C\uC790\uC9D1 \uC9C0\uD558\uB85C
         \uAC00\uBA74 \uC678\uACC4\uC778\uC744 \uB9CC\uB0A0 \uC218 \uC788\uB2E4\uACE0
-        \uD574\uC11C \uC654\uC8E0."
+        \uD574\uC11C \uC654\uC2B5\uB2C8\uB2E4."
   - key: first_contact.intro.pizza.citizens_laugh
     sourceText: Hahaha! That is a good one.
     translations:
@@ -1554,3 +1554,13 @@ MonoBehaviour:
     translations:
     - locale: ko-KR
       text: "\uC544\uBB34\uD2BC. \uC774\uC81C \uC900\uBE44\uAC00 \uB418\uBA74 \uC774\uB3D9\uD558\uC2DC\uC9C0\uC694."
+  - key: first_contact.intro.pizza.storage.approach.line_0131
+    sourceText: We are here.
+    translations:
+    - locale: ko-KR
+      text: "\uC774 \uACF3 \uC785\uB2C8\uB2E4."
+  - key: first_contact.intro.pizza.approach.line_0132
+    sourceText: What...? Aren't you Mr. President?
+    translations:
+    - locale: ko-KR
+      text: "\uC544\uB2C8...? \uB300\uD1B5\uB839\uB2D8 \uC544\uB2C8\uC138\uC694?"

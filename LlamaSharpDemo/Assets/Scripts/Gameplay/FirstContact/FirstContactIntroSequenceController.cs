@@ -92,6 +92,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Coroutine _citizenEncounterRoutine;
         private Coroutine _pizzaPrivateExchangeRoutine;
         private Coroutine _secretDoorRevealRoutine;
+        private Coroutine _elevatorCallRoutine;
         private Coroutine _elevatorBoardZoneRoutine;
         private Coroutine _elevatorRideRoutine;
         private Coroutine _facilityArrivalRoutine;
@@ -112,7 +113,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Transform _activeBriefingCameraAnchor;
         private bool _facilityGuideAtBriefing;
         private bool _facilityCorridorDialogueComplete;
+        private bool _receivedPersistentPlayerHandoff;
         private bool _surfaceVehicleExitCompleted;
+        private bool _surfaceElevatorCalled;
         private FirstContactIntroNarrativeZone _pizzaApproachZone;
         private FirstContactIntroNarrativeZone _citizenEncounterZone;
         private FirstContactIntroNarrativeZone _privateExchangeZone;
@@ -131,6 +134,34 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public void SetNewsCameraAnchor(Transform cameraAnchor)
         {
             newsCameraAnchor = cameraAnchor;
+        }
+
+        public void ReleasePlayerForSceneHandoff(
+            FirstContactIntroPlayerController playerController)
+        {
+            if (player == null || player != playerController)
+            {
+                return;
+            }
+
+            playerController.SetContextualInteraction(null);
+            vehicleRoute?.Configure(null);
+            player = null;
+        }
+
+        public void AdoptPlayerFromSceneHandoff(
+            FirstContactIntroPlayerController playerController,
+            FirstContactIntroHud introHud)
+        {
+            if (playerController == null)
+            {
+                return;
+            }
+
+            player = playerController;
+            hud = introHud;
+            player.Configure(player.ViewCamera, hud);
+            _receivedPersistentPlayerHandoff = true;
         }
 
         public void Configure(
@@ -231,6 +262,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _begun = true;
             _busy = false;
             _surfaceVehicleExitCompleted = false;
+            _surfaceElevatorCalled = false;
             SubscribeGuide();
             player?.SetControlEnabled(true);
             secretElevatorSequence?.ResetSequence();
@@ -268,9 +300,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _facilityGuideAtBriefing = false;
                 _facilityCorridorDialogueComplete = false;
                 player?.SetContextualInteraction(null);
-                player?.SetMovementEnabled(false);
                 player?.SetInteractionEnabled(false);
-                player?.SetLookEnabled(false);
+                player?.SetMovementEnabled(_receivedPersistentPlayerHandoff);
+                player?.SetLookEnabled(_receivedPersistentPlayerHandoff);
                 briefingSeatInteraction?.SetAvailable(false);
                 meetingRoomInteraction?.SetAvailable(false);
                 hud?.ClearObjective();
@@ -339,6 +371,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _secretDoorRevealRoutine = null;
             }
 
+            if (_elevatorCallRoutine != null)
+            {
+                StopCoroutine(_elevatorCallRoutine);
+                _elevatorCallRoutine = null;
+            }
+
             if (_elevatorBoardZoneRoutine != null)
             {
                 StopCoroutine(_elevatorBoardZoneRoutine);
@@ -366,6 +404,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _facilityGuideAtBriefing = false;
             _facilityCorridorDialogueComplete = false;
             _surfaceVehicleExitCompleted = false;
+            _surfaceElevatorCalled = false;
             _activeBriefingCameraAnchor = null;
 
             UnsubscribeNewsPlaybackClock();
@@ -383,6 +422,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             secretElevatorSequence?.ResetSequence();
             facilityElevatorArrival?.PrepareClosed();
             ResetSurfaceNarrativeZones();
+            _receivedPersistentPlayerHandoff = false;
         }
 
         private IEnumerator FacilityArrivalRoutine()
@@ -988,21 +1028,19 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     if (segment == FirstContactIntroSegment.Surface &&
                         secretElevatorSequence != null)
                     {
-                        if (!secretElevatorSequence.IsRevealed ||
-                            !secretElevatorSequence.IsInsideElevator(
-                                sourcePlayer.transform))
+                        if (!secretElevatorSequence.IsRevealed)
                         {
                             hud?.SetObjective(
-                                "first_contact.intro.objective.board_elevator",
-                                "Board the elevator and use the control.");
+                                "first_contact.intro.objective.follow_director",
+                                "Follow the director.");
                             return false;
                         }
 
                         interactable.SetAvailable(false);
                         _busy = true;
                         sourcePlayer.SetContextualInteraction(null);
-                        _elevatorRideRoutine = StartCoroutine(
-                            ElevatorRideRoutine(sourcePlayer));
+                        _elevatorCallRoutine = StartCoroutine(
+                            SurfaceElevatorCallRoutine(sourcePlayer));
                         return true;
                     }
 
@@ -1709,7 +1747,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private IEnumerator ElevatorRideRoutine(
             FirstContactIntroPlayerController sourcePlayer)
         {
-            sourcePlayer.SetMovementEnabled(false);
+            // The closed authored cabin keeps the player inside. Movement and look
+            // remain live while the Facility scene loads additively in the background.
+            sourcePlayer.SetMovementEnabled(true);
             sourcePlayer.SetInteractionEnabled(false);
             sourcePlayer.SetLookEnabled(true);
             hud?.ClearPrompt();
@@ -1734,9 +1774,46 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield return new WaitForSecondsRealtime(remaining);
             }
 
-            sourcePlayer.SetLookEnabled(false);
             _elevatorRideRoutine = null;
             mode?.CompleteSegment();
+        }
+
+        private IEnumerator SurfaceElevatorCallRoutine(
+            FirstContactIntroPlayerController sourcePlayer)
+        {
+            sourcePlayer.SetInteractionEnabled(false);
+            sourcePlayer.SetLookEnabled(true);
+            hud?.ClearPrompt();
+            hud?.SetObjective(
+                "first_contact.intro.objective.board_elevator",
+                "Wait for the elevator, then board.");
+
+            yield return secretElevatorSequence.CallElevatorRoutine();
+            if (!_begun || segment != FirstContactIntroSegment.Surface)
+            {
+                _elevatorCallRoutine = null;
+                _busy = false;
+                yield break;
+            }
+
+            guide?.Stop();
+            guide?.ApplyVisualForwardCorrection();
+            yield return secretElevatorSequence.BoardDirectorRoutine(
+                guide != null ? guide.transform : null);
+
+            _surfaceElevatorCalled = true;
+            sourcePlayer.SetMovementEnabled(true);
+            sourcePlayer.SetInteractionEnabled(true);
+            hud?.SetObjective(
+                "first_contact.intro.objective.board_elevator",
+                "Board the elevator.");
+            _busy = false;
+            _elevatorCallRoutine = null;
+            if (_elevatorBoardZoneRoutine == null)
+            {
+                _elevatorBoardZoneRoutine = StartCoroutine(
+                    ElevatorBoardZoneRoutine());
+            }
         }
 
         private bool HasPartyLeftCitizenEarshot()
@@ -1911,14 +1988,28 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private IEnumerator ElevatorBoardZoneRoutine()
         {
-            yield return WaitForNarrativeZoneRoutine(_elevatorBoardZone);
-            if (_begun)
+            if (_elevatorBoardZone != null)
             {
-                elevatorInteraction?.SetAvailable(true);
-                if (player != null && elevatorInteraction != null)
+                yield return WaitForNarrativeZoneRoutine(_elevatorBoardZone);
+            }
+            else
+            {
+                while (_begun && player != null &&
+                       secretElevatorSequence != null &&
+                       !secretElevatorSequence.IsInsideElevator(player.transform))
                 {
-                    player.SetContextualInteraction(elevatorInteraction);
+                    yield return null;
                 }
+            }
+
+            if (_begun && _surfaceElevatorCalled && player != null &&
+                secretElevatorSequence != null &&
+                secretElevatorSequence.IsInsideElevator(player.transform))
+            {
+                _busy = true;
+                player.SetContextualInteraction(null);
+                _elevatorRideRoutine = StartCoroutine(
+                    ElevatorRideRoutine(player));
             }
 
             _elevatorBoardZoneRoutine = null;
@@ -1986,19 +2077,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 hud?.SetObjective(
                     "first_contact.intro.objective.board_elevator",
-                    "Board the elevator and use the control.");
-                if (_elevatorBoardZone != null)
-                {
-                    if (_elevatorBoardZoneRoutine == null)
-                    {
-                        _elevatorBoardZoneRoutine = StartCoroutine(
-                            ElevatorBoardZoneRoutine());
-                    }
-                }
-                else
-                {
-                    elevatorInteraction?.SetAvailable(true);
-                }
+                    "Call the elevator.");
+                elevatorInteraction?.SetAvailable(true);
             }
             else
             {

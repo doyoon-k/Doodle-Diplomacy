@@ -10,11 +10,17 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Header("Secret Entrance")]
         [SerializeField] private Transform movableShelf;
         [SerializeField] private Transform shelfOpenAnchor;
+        [SerializeField] private Transform secondaryMovableShelf;
+        [SerializeField] private Transform secondaryShelfOpenAnchor;
+        [SerializeField] private Transform floorHatch;
+        [SerializeField] private Transform hatchOpenAnchor;
         [SerializeField] private Transform secretWallPanel;
         [SerializeField] private Transform wallOpenAnchor;
         [SerializeField] private Transform directorStandAnchor;
         [SerializeField] private Transform knockTarget;
+        [SerializeField] private Transform directorBoardingAnchor;
         [SerializeField] private BoxCollider elevatorBoardingVolume;
+        [SerializeField] private FirstContactFacilityElevatorArrival elevatorDoors;
 
         [Header("Elevator Ride")]
         [SerializeField] private Transform elevatorCabinMotionRoot;
@@ -36,6 +42,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private Vector3 _shelfClosedPosition;
         private Quaternion _shelfClosedRotation;
+        private Vector3 _secondaryShelfClosedPosition;
+        private Quaternion _secondaryShelfClosedRotation;
+        private Vector3 _hatchClosedPosition;
+        private Quaternion _hatchClosedRotation;
         private Vector3 _wallClosedPosition;
         private Quaternion _wallClosedRotation;
         private Vector3 _cabinRestLocalPosition;
@@ -48,6 +58,47 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private bool _revealed;
 
         public bool IsRevealed => _revealed;
+        public bool AreElevatorDoorsOpen =>
+            elevatorDoors != null && elevatorDoors.IsOpen;
+        public Transform ElevatorTransitionSpace =>
+            elevatorDoors != null
+                ? elevatorDoors.transform
+                : elevatorBoardingVolume != null
+                    ? elevatorBoardingVolume.transform
+                    : null;
+
+        public bool TryGetDoorFacingRotation(out Quaternion rotation)
+        {
+            rotation = Quaternion.identity;
+            if (elevatorBoardingVolume == null)
+            {
+                return false;
+            }
+
+            Vector3 cabinCenter =
+                elevatorBoardingVolume.transform.TransformPoint(
+                    elevatorBoardingVolume.center);
+            if (elevatorDoors != null &&
+                elevatorDoors.TryGetDoorFacingRotation(cabinCenter, out rotation))
+            {
+                return true;
+            }
+
+            if (secretWallPanel == null)
+            {
+                return false;
+            }
+
+            Vector3 towardDoor = secretWallPanel.position - cabinCenter;
+            towardDoor = Vector3.ProjectOnPlane(towardDoor, Vector3.up);
+            if (towardDoor.sqrMagnitude <= 0.0001f)
+            {
+                return false;
+            }
+
+            rotation = Quaternion.LookRotation(towardDoor.normalized, Vector3.up);
+            return true;
+        }
 
         public void Configure(
             Transform shelf,
@@ -96,6 +147,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     _shelfClosedRotation);
             }
 
+            if (secondaryMovableShelf != null)
+            {
+                secondaryMovableShelf.SetPositionAndRotation(
+                    _secondaryShelfClosedPosition,
+                    _secondaryShelfClosedRotation);
+            }
+
+            if (floorHatch != null)
+            {
+                floorHatch.SetPositionAndRotation(
+                    _hatchClosedPosition,
+                    _hatchClosedRotation);
+                SetCollidersEnabled(floorHatch, true);
+            }
+
             if (secretWallPanel != null)
             {
                 secretWallPanel.SetPositionAndRotation(
@@ -103,6 +169,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     _wallClosedRotation);
                 SetWallColliderEnabled(true);
             }
+
+            elevatorDoors?.PrepareClosed();
 
             _revealed = false;
         }
@@ -124,13 +192,47 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             PlayOneShot(shelfMoveClip ?? GetFallbackMotorClip(), 0.55f);
-            if (movableShelf != null && shelfOpenAnchor != null)
+            bool hasSecondShelf = movableShelf != null &&
+                                  shelfOpenAnchor != null &&
+                                  secondaryMovableShelf != null &&
+                                  secondaryShelfOpenAnchor != null;
+            if (hasSecondShelf)
+            {
+                yield return MoveTransformPairRoutine(
+                    movableShelf,
+                    shelfOpenAnchor,
+                    secondaryMovableShelf,
+                    secondaryShelfOpenAnchor,
+                    shelfMoveSeconds);
+            }
+            else if (movableShelf != null && shelfOpenAnchor != null)
             {
                 yield return MoveTransformRoutine(
                     movableShelf,
                     shelfOpenAnchor.position,
                     shelfOpenAnchor.rotation,
                     shelfMoveSeconds);
+            }
+
+            if (floorHatch != null && hatchOpenAnchor != null)
+            {
+                if (unlockPauseSeconds > 0f)
+                {
+                    yield return new WaitForSecondsRealtime(unlockPauseSeconds);
+                }
+
+                PlayOneShot(doorMotorClip ?? GetFallbackMotorClip(), 0.65f);
+                yield return MoveTransformRoutine(
+                    floorHatch,
+                    hatchOpenAnchor.position,
+                    hatchOpenAnchor.rotation,
+                    wallOpenSeconds);
+                // The open panel slides underneath the surrounding authored floor.
+                // Its collider must not remain in the stair mouth after the visual
+                // has finished moving, especially when the route is rebaked nearby.
+                SetCollidersEnabled(floorHatch, false);
+                _revealed = true;
+                yield break;
             }
 
             if (pauseBeforeFirstKnock > 0f)
@@ -164,6 +266,30 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _revealed = true;
         }
 
+        public IEnumerator CallElevatorRoutine()
+        {
+            if (!_revealed || elevatorDoors == null)
+            {
+                yield break;
+            }
+
+            yield return elevatorDoors.ArriveAndOpenRoutine();
+        }
+
+        public IEnumerator BoardDirectorRoutine(Transform director)
+        {
+            if (director == null || directorBoardingAnchor == null)
+            {
+                yield break;
+            }
+
+            yield return MoveActorRoutine(
+                director,
+                directorBoardingAnchor.position,
+                directorBoardingAnchor.rotation,
+                directorApproachSeconds);
+        }
+
         public bool IsInsideElevator(Transform actor)
         {
             if (actor == null || elevatorBoardingVolume == null)
@@ -181,6 +307,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public IEnumerator CloseDoorRoutine()
         {
+            if (elevatorDoors != null && elevatorDoors.IsConfigured)
+            {
+                yield return elevatorDoors.CloseRoutine();
+                yield break;
+            }
+
             if (!_revealed || secretWallPanel == null)
             {
                 yield break;
@@ -311,6 +443,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _shelfClosedRotation = movableShelf.rotation;
             }
 
+            if (secondaryMovableShelf != null)
+            {
+                _secondaryShelfClosedPosition = secondaryMovableShelf.position;
+                _secondaryShelfClosedRotation = secondaryMovableShelf.rotation;
+            }
+
+            if (floorHatch != null)
+            {
+                _hatchClosedPosition = floorHatch.position;
+                _hatchClosedRotation = floorHatch.rotation;
+            }
+
             if (secretWallPanel != null)
             {
                 _wallClosedPosition = secretWallPanel.position;
@@ -338,6 +482,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             Collider[] colliders = secretWallPanel.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                colliders[i].enabled = enabled;
+            }
+        }
+
+        private static void SetCollidersEnabled(Transform root, bool enabled)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
             for (int i = 0; i < colliders.Length; i++)
             {
                 colliders[i].enabled = enabled;
@@ -474,6 +632,42 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             movingTransform.SetPositionAndRotation(targetPosition, targetRotation);
+        }
+
+        private static IEnumerator MoveTransformPairRoutine(
+            Transform first,
+            Transform firstTarget,
+            Transform second,
+            Transform secondTarget,
+            float seconds)
+        {
+            if (first == null || firstTarget == null ||
+                second == null || secondTarget == null)
+            {
+                yield break;
+            }
+
+            Vector3 firstStartPosition = first.position;
+            Quaternion firstStartRotation = first.rotation;
+            Vector3 secondStartPosition = second.position;
+            Quaternion secondStartRotation = second.rotation;
+            float elapsed = 0f;
+            float duration = Mathf.Max(0.01f, seconds);
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+                first.SetPositionAndRotation(
+                    Vector3.Lerp(firstStartPosition, firstTarget.position, progress),
+                    Quaternion.Slerp(firstStartRotation, firstTarget.rotation, progress));
+                second.SetPositionAndRotation(
+                    Vector3.Lerp(secondStartPosition, secondTarget.position, progress),
+                    Quaternion.Slerp(secondStartRotation, secondTarget.rotation, progress));
+                yield return null;
+            }
+
+            first.SetPositionAndRotation(firstTarget.position, firstTarget.rotation);
+            second.SetPositionAndRotation(secondTarget.position, secondTarget.rotation);
         }
     }
 }

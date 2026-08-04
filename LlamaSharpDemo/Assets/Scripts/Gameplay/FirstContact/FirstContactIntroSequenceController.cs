@@ -1783,9 +1783,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private IEnumerator ElevatorRideRoutine(
             FirstContactIntroPlayerController sourcePlayer)
         {
-            // The closed authored cabin keeps the player inside. Movement and look
-            // remain live while the Facility scene loads additively in the background.
-            sourcePlayer.SetMovementEnabled(true);
+            // Lock only locomotion as soon as the authored boarding volume accepts
+            // the player. This removes the short window where they could sprint back
+            // through the doorway while the physical doors were still closing.
+            sourcePlayer.SetMovementEnabled(false);
             sourcePlayer.SetInteractionEnabled(false);
             sourcePlayer.SetLookEnabled(true);
             hud?.ClearPrompt();
@@ -1797,6 +1798,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield return secretElevatorSequence.CloseDoorRoutine();
                 secretElevatorSequence.BeginDescent();
             }
+
+            // Once the doors are fully closed their authored colliders contain the
+            // player, so free movement can safely continue during the hidden load.
+            sourcePlayer.SetMovementEnabled(true);
 
             float descentStartedAt = Time.realtimeSinceStartup;
             yield return PlayDialogueEventRoutine(

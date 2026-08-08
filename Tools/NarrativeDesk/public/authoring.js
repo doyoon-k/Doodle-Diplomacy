@@ -122,6 +122,7 @@ export function createDialogueBeat(document, options = {}) {
     type: "dialogue",
     status: "draft",
     runtimeCue: "",
+    briefingLookTarget: Number(anchor?.briefingLookTarget || 0),
     triggerEvent: String(anchor?.triggerEvent || ""),
     condition: "",
     repeat: String(anchor?.repeat || "once"),

@@ -368,6 +368,9 @@ function renderBeatEditor(beat) {
     const name = field.dataset.field;
     field.value = name === "tags" ? (beat.tags || []).join(", ") : beat[name] ?? "";
   });
+  $("#briefingLookTargetField").classList.toggle(
+    "hidden",
+    beat.sectionId !== "facility_briefing");
   renderSpeakerEditor(beat);
   renderPlaybackConnection(beat);
   renderMediaTiming(beat);
@@ -1031,7 +1034,7 @@ function wireEvents() {
     const field = event.target.closest("[data-field]"); const beat = currentBeat(); if (!field || !beat) return;
     const name = field.dataset.field; const oldId = beat.id;
     if (name === "tags") beat.tags = field.value.split(",").map((value) => value.trim()).filter(Boolean);
-    else if (name === "minimumSeconds") beat[name] = Number(field.value || 0);
+    else if (name === "minimumSeconds" || name === "briefingLookTarget") beat[name] = Number(field.value || 0);
     else beat[name] = field.value;
     if (name === "id") state.selectedBeatId = beat.id;
     markDirty("scenario"); renderBeatHeading(beat); renderBeatPreview(beat);

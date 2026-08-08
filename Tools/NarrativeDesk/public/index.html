@@ -86,6 +86,16 @@
               <label>표시 시간
                 <span class="duration-field"><input data-field="minimumSeconds" type="number" min="0.1" step="0.1" /><button id="estimateDurationButton" type="button" class="ghost compact">자동 계산</button></span>
               </label>
+              <label id="briefingLookTargetField" class="hidden">브리핑 시선 대상
+                <select data-field="briefingLookTarget">
+                  <option value="0">연출 큐 기본값</option>
+                  <option value="1">현재 시선 유지</option>
+                  <option value="2">국장</option>
+                  <option value="3">황 박사 · 발표</option>
+                  <option value="4">황 박사 · 질의응답</option>
+                  <option value="5">프로젝터 화면</option>
+                </select>
+              </label>
             </div>
             <div id="customSpeakerFields" class="field-grid two hidden">
               <label>화자 ID<input id="customSpeakerId" placeholder="예: scientist" /></label>

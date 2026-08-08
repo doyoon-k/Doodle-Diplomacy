@@ -39,6 +39,7 @@ test("creates a dialogue after the selected beat with inherited playback context
   assert.equal(beat.order, 15);
   assert.equal(beat.triggerEvent, "intro.pizza.encounter");
   assert.equal(beat.runtimeCue, "");
+  assert.equal(beat.briefingLookTarget, 0);
   assert.equal(beat.speakerFallback, "PRESIDENT");
   assert.equal(beat.localizedTexts[0].text, "피자를 먹으러 들렀습니다.");
   assert.ok(beat.minimumSeconds >= 1.8);

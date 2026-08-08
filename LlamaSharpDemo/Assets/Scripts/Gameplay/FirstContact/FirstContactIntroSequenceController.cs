@@ -70,6 +70,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Header("Facility Briefing")]
         [SerializeField] private Transform briefingWideCameraAnchor;
         [SerializeField] private Transform briefingProjectorCameraAnchor;
+        [SerializeField] private FirstContactBriefingPresentation briefingPresentation;
         [SerializeField, Min(0f)] private float facilityCorridorLeadSeconds = 0.65f;
         [SerializeField, Min(0f)] private float briefingSeatMoveSeconds = 0.45f;
         [SerializeField, Min(0f)] private float briefingCameraBlendSeconds = 0.55f;
@@ -126,6 +127,32 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public FirstContactIntroSegment Segment => segment;
         public Transform NewsCameraAnchor => newsCameraAnchor;
         public FirstContactIntroGuideController Guide => guide;
+
+        public bool TryCaptureDialogueForSceneHandoff(
+            out string speaker,
+            out string dialogue)
+        {
+            speaker = string.Empty;
+            dialogue = string.Empty;
+            return segment == FirstContactIntroSegment.Surface &&
+                   _dialogueDisplay != null &&
+                   _dialogueDisplay.TryCaptureVisibleDialogue(
+                       out speaker,
+                       out dialogue);
+        }
+
+        public void RestoreDialogueFromSceneHandoff(
+            string speaker,
+            string dialogue)
+        {
+            if (segment != FirstContactIntroSegment.Facility ||
+                string.IsNullOrWhiteSpace(dialogue))
+            {
+                return;
+            }
+
+            GetDialogueDisplay()?.ShowDialogueImmediate(speaker, dialogue);
+        }
 
         public void SetNewsBroadcast(FirstContactNewsBroadcastPlayer broadcast)
         {
@@ -588,7 +615,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private IEnumerator PlayDialogueEventRoutine(
             string triggerEvent,
-            bool playWhileSequenceBusy = false)
+            bool playWhileSequenceBusy = false,
+            bool preserveLastLineForSceneHandoff = false)
         {
             NarrativeScenarioAsset scenario = GetNarrativeScenario();
             if (scenario == null || string.IsNullOrWhiteSpace(triggerEvent))
@@ -623,7 +651,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 NarrativeBeat beat = _activeDialogueBeats[i];
                 NarrativeTrace.Emit(scenario.ScenarioId, beat.id, "enter");
-                yield return PrepareDialogueBeatRoutine(beat.runtimeCue);
+                yield return PrepareDialogueBeatRoutine(beat);
 
                 bool silentBeat = IsSilentDialogueBeat(beat);
                 if (silentBeat)
@@ -634,6 +662,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 {
                     display?.ShowDialogue(beat.ResolveSpeaker(), beat.ResolveText());
                 }
+
+                bool preserveCurrentLine =
+                    preserveLastLineForSceneHandoff &&
+                    i == _activeDialogueBeats.Count - 1 &&
+                    !silentBeat;
 
                 float elapsed = 0f;
                 float duration = Mathf.Max(0.1f, beat.minimumSeconds);
@@ -657,7 +690,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
 
                 display?.SetAdvancePromptVisible(false);
-                display?.Hide();
+                if (!preserveCurrentLine)
+                {
+                    display?.Hide();
+                }
+
                 NarrativeTrace.Emit(scenario.ScenarioId, beat.id, "exit");
                 HandleDialogueRuntimeCue(beat.runtimeCue);
 
@@ -679,10 +716,35 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                    Keyboard.current.spaceKey.wasPressedThisFrame;
         }
 
-        private IEnumerator PrepareDialogueBeatRoutine(string runtimeCue)
+        private IEnumerator PrepareDialogueBeatRoutine(NarrativeBeat beat)
         {
+            string runtimeCue = beat?.runtimeCue ?? string.Empty;
+            BriefingLookTarget authoredLookTarget = beat?.briefingLookTarget ??
+                BriefingLookTarget.UseRuntimeCue;
             if (string.IsNullOrWhiteSpace(runtimeCue))
             {
+                if (briefingPresentation == null ||
+                    !briefingPresentation.HandlesAuthoredLookTarget(authoredLookTarget))
+                {
+                    yield break;
+                }
+            }
+
+            if (briefingPresentation != null &&
+                (briefingPresentation.HandlesCue(runtimeCue) ||
+                 briefingPresentation.HandlesAuthoredLookTarget(authoredLookTarget)))
+            {
+                if (runtimeCue.StartsWith(
+                        "BriefingSlide",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    briefingVisualCue?.Invoke(runtimeCue);
+                }
+
+                yield return briefingPresentation.PrepareCue(
+                    runtimeCue,
+                    player,
+                    authoredLookTarget);
                 yield break;
             }
 
@@ -1401,7 +1463,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             sourcePlayer.Teleport(interactable.Target, seated: true);
-            if (briefingWideCameraAnchor != null)
+            briefingPresentation?.BeginPresentation();
+            if (briefingPresentation == null && briefingWideCameraAnchor != null)
             {
                 yield return sourcePlayer.BlendViewToAnchor(
                     briefingWideCameraAnchor,
@@ -1414,6 +1477,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 playWhileSequenceBusy: true);
 
             _dialogueDisplay?.Hide();
+            briefingPresentation?.EndPresentation();
             _activeBriefingCameraAnchor = null;
             yield return sourcePlayer.BlendToRestoredView(
                 briefingExitBlendSeconds);
@@ -1804,9 +1868,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             sourcePlayer.SetMovementEnabled(true);
 
             float descentStartedAt = Time.realtimeSinceStartup;
+            // The Surface HUD is destroyed during the handoff. Keep the final
+            // line visible so the installer can mirror it onto the Facility HUD.
             yield return PlayDialogueEventRoutine(
                 "intro.elevator.descent",
-                playWhileSequenceBusy: true);
+                playWhileSequenceBusy: true,
+                preserveLastLineForSceneHandoff: true);
 
             float elapsed = Time.realtimeSinceStartup - descentStartedAt;
             float remaining = Mathf.Max(0f, minimumElevatorDescentSeconds - elapsed);

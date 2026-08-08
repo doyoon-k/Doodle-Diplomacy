@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18a0837ab2bfcea4d96d454c654064be, type: 3}
+  m_Name: FirstContactBriefingSlides
+  m_EditorClassIdentifier: Assembly-CSharp::DoodleDiplomacy.Gameplay.FirstContact.FirstContactBriefingSlideDeck
+  technical: {fileID: 2800000, guid: 81fb04de5accda44f8618f2eb297b4cb, type: 3}
+  objectSignal: {fileID: 2800000, guid: d126ade2fb1aca341816146564639dc0, type: 3}
+  banana: {fileID: 2800000, guid: 74dc1c116f5fc10448065fc5d6eb3a02, type: 3}
+  database: {fileID: 2800000, guid: cbcd8e31e1af0364ea5639b2a9f731a5, type: 3}
+  presidentTask: {fileID: 2800000, guid: acd2a37e19767064aafb241598c7660c, type: 3}
+  foodCluster: {fileID: 2800000, guid: 11365b59f82da9d42922217729d3f4fd, type: 3}
+  ufoEvidence: {fileID: 2800000, guid: 460b1310432fb6c42b0bebe71478dcf3, type: 3}
+  categories: {fileID: 2800000, guid: f80a3094c8f983e4b8299e66fbaf9ab8, type: 3}

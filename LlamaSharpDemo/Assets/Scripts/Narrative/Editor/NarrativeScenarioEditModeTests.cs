@@ -23,7 +23,7 @@ namespace DoodleDiplomacy.Narrative.Editor
             {
                 scenario.ApplyDocument(NarrativeScenarioJson.Parse(json));
                 Assert.That(scenario.ScenarioId, Is.EqualTo("first_contact_day1"));
-                Assert.That(scenario.Beats.Count, Is.EqualTo(130));
+                Assert.That(scenario.Beats.Count, Is.EqualTo(134));
                 Assert.That(
                     scenario.TryGetBeatByRuntimeCue("CategoryCalibrated", out NarrativeBeat beat),
                     Is.True);
@@ -47,7 +47,7 @@ namespace DoodleDiplomacy.Narrative.Editor
                 Assert.That(
                     scenario.Beats.Count(item =>
                         item.triggerEvent == "intro.facility.briefing"),
-                    Is.EqualTo(53));
+                    Is.EqualTo(55));
                 Assert.That(
                     scenario.TryGetBeat(
                         "facility_corridor_discovery_0073",
@@ -66,6 +66,62 @@ namespace DoodleDiplomacy.Narrative.Editor
                         out NarrativeBeat bananaBeat),
                     Is.True);
                 Assert.That(bananaBeat.runtimeCue, Is.EqualTo("BriefingSlideBanana"));
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "briefing_assignment_question_0078",
+                        out NarrativeBeat assignmentQuestionBeat),
+                    Is.True);
+                Assert.That(
+                    assignmentQuestionBeat.briefingLookTarget,
+                    Is.EqualTo(BriefingLookTarget.Director));
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "briefing_presentation_end_0116a",
+                        out NarrativeBeat presentationEndBeat),
+                    Is.True);
+                Assert.That(presentationEndBeat.runtimeCue, Is.Empty);
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "briefing_questions_0116b",
+                        out NarrativeBeat questionsBeat),
+                    Is.True);
+                Assert.That(questionsBeat.runtimeCue, Is.EqualTo("BriefingQAndAStart"));
+                Assert.That(
+                    scenario.Beats
+                        .Where(item =>
+                            item.triggerEvent == "intro.facility.briefing" &&
+                            item.order > questionsBeat.order)
+                        .All(item =>
+                            string.IsNullOrEmpty(item.runtimeCue) ||
+                            !item.runtimeCue.StartsWith("BriefingSlide")),
+                    Is.True,
+                    "Q&A dialogue must not turn presentation slides back on.");
+                Assert.That(
+                    scenario.Beats
+                        .Where(item =>
+                            item.triggerEvent == "intro.facility.briefing" &&
+                            item.speakerId == "director")
+                        .All(item =>
+                            item.runtimeCue == "BriefingLookDirector"),
+                    Is.True,
+                    "Every director line in the briefing must turn the president toward the director.");
+                BriefingLookTarget[] validBriefingLookTargets =
+                {
+                    BriefingLookTarget.UseRuntimeCue,
+                    BriefingLookTarget.KeepCurrent,
+                    BriefingLookTarget.Director,
+                    BriefingLookTarget.HwangPresentation,
+                    BriefingLookTarget.HwangQa,
+                    BriefingLookTarget.Projector
+                };
+                Assert.That(
+                    scenario.Beats
+                        .Where(item => item.sectionId == "facility_briefing")
+                        .All(item =>
+                            validBriefingLookTargets.Contains(
+                                item.briefingLookTarget)),
+                    Is.True,
+                    "Briefing look targets must use a supported Narrative Desk option.");
             }
             finally
             {

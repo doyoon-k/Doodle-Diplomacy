@@ -1,4 +1,12 @@
 const placeholderPattern = /\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+const briefingLookTargets = new Set([
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+]);
 
 export function placeholders(text = "") {
   return [...new Set([...String(text).matchAll(placeholderPattern)].map((match) => match[1]))].sort();
@@ -50,6 +58,13 @@ export function validateScenario(document) {
 
     if (beat?.enabled !== false && !String(beat?.triggerEvent || "").trim() && !String(beat?.runtimeCue || "").trim()) {
       push("warning", "No playback connection. Add a trigger event or a runtime cue before expecting this beat to play in game.", id, "triggerEvent");
+    }
+
+    const briefingLookTarget = Number(beat?.briefingLookTarget ?? 0);
+    if (!briefingLookTargets.has(briefingLookTarget)) {
+      push("error", `Unknown briefing look target: ${briefingLookTarget}`, id, "briefingLookTarget");
+    } else if (briefingLookTarget !== 0 && beat?.sectionId !== "facility_briefing") {
+      push("warning", "Briefing look target is only used in the facility briefing section.", id, "briefingLookTarget");
     }
 
     const sourceVariables = placeholders(beat?.sourceText);

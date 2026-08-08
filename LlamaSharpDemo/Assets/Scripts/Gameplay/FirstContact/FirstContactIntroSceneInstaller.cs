@@ -16,6 +16,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             public FirstContactIntroGuideController Guide;
             public Vector3 GuidePositionInElevatorSpace;
             public Quaternion GuideRotationInElevatorSpace;
+            public bool HasDialogue;
+            public string DialogueSpeaker;
+            public string DialogueText;
         }
 
         [SerializeField] private string sceneId = "first-contact-intro";
@@ -87,6 +90,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactIntroGuideController guide = sequence != null
                 ? sequence.Guide
                 : null;
+            string dialogueSpeaker = string.Empty;
+            string dialogueText = string.Empty;
+            bool hasDialogue = sequence != null &&
+                               sequence.TryCaptureDialogueForSceneHandoff(
+                                   out dialogueSpeaker,
+                                   out dialogueText);
             var handoffState = new ElevatorHandoffState
             {
                 Player = player,
@@ -102,7 +111,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 GuideRotationInElevatorSpace = guide != null
                     ? Quaternion.Inverse(elevatorSpace.rotation) *
                       guide.transform.rotation
-                    : Quaternion.identity
+                    : Quaternion.identity,
+                HasDialogue = hasDialogue,
+                DialogueSpeaker = hasDialogue ? dialogueSpeaker : string.Empty,
+                DialogueText = hasDialogue ? dialogueText : string.Empty
             };
 
             // The player is already detached from the car by this point. Make it a
@@ -173,6 +185,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     ? defaultModeBehaviour.SequenceController
                     : FindComponentInScene<FirstContactIntroSequenceController>();
             sequence?.AdoptPlayerFromSceneHandoff(player, facilityHud);
+            if (elevatorState.HasDialogue)
+            {
+                sequence?.RestoreDialogueFromSceneHandoff(
+                    elevatorState.DialogueSpeaker,
+                    elevatorState.DialogueText);
+            }
 
             FirstContactIntroGuideController authoredFacilityGuide =
                 sequence != null ? sequence.Guide : null;
@@ -200,6 +218,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
 
                 sequence?.AdoptGuideFromSceneHandoff(guide);
+                RebindBriefingDirectorLookTarget(guide);
                 if (authoredFacilityGuide != null &&
                     authoredFacilityGuide != guide)
                 {
@@ -214,6 +233,22 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 authoredFacilityPlayer.gameObject.SetActive(false);
             }
+        }
+
+        private void RebindBriefingDirectorLookTarget(
+            FirstContactIntroGuideController guide)
+        {
+            FirstContactBriefingPresentation presentation =
+                FindComponentInScene<FirstContactBriefingPresentation>();
+            FirstContactBriefingLookTarget lookTarget = guide != null
+                ? guide.GetComponentInChildren<FirstContactBriefingLookTarget>(true)
+                : null;
+            if (presentation == null || lookTarget == null)
+            {
+                return;
+            }
+
+            presentation.SetDirectorLookTarget(lookTarget.transform);
         }
 
         private T FindComponentInScene<T>() where T : Component

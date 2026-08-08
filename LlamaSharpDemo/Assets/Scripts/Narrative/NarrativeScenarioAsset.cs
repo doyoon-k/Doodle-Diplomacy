@@ -111,6 +111,7 @@ namespace DoodleDiplomacy.Narrative
         public string type = "dialogue";
         public string status = "draft";
         public string runtimeCue = string.Empty;
+        public BriefingLookTarget briefingLookTarget;
         public string triggerEvent = string.Empty;
         public string condition = string.Empty;
         public string repeat = "once";
@@ -165,6 +166,16 @@ namespace DoodleDiplomacy.Narrative
 
             return result;
         }
+    }
+
+    public enum BriefingLookTarget
+    {
+        UseRuntimeCue = 0,
+        KeepCurrent = 1,
+        Director = 2,
+        HwangPresentation = 3,
+        HwangQa = 4,
+        Projector = 5
     }
 
     [Serializable]

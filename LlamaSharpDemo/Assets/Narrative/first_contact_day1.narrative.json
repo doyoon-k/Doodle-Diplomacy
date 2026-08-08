@@ -2600,11 +2600,12 @@
     {
       "id": "briefing_assignment_question_0078",
       "sectionId": "facility_briefing",
-      "order": 0,
+      "order": 5,
       "enabled": true,
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "BriefingWide",
+      "briefingLookTarget": 2,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -2629,7 +2630,8 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookDirector",
+      "briefingLookTarget": 2,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -2655,6 +2657,7 @@
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "BriefingWide",
+      "briefingLookTarget": 2,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -2679,7 +2682,8 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookDirector",
+      "briefingLookTarget": 2,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -2704,7 +2708,8 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookDirector",
+      "briefingLookTarget": 2,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -2730,6 +2735,7 @@
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "BriefingWide",
+      "briefingLookTarget": 2,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -2754,7 +2760,8 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookDirector",
+      "briefingLookTarget": 2,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -2780,11 +2787,12 @@
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "BriefingWide",
+      "briefingLookTarget": 3,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.prototype_limits",
       "sourceText": "The device is complete, but we still need alien-language data to optimize the algorithm.",
       "advance": "player",
@@ -2805,6 +2813,7 @@
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "BriefingWide",
+      "briefingLookTarget": 3,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -2830,11 +2839,12 @@
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "BriefingWide",
+      "briefingLookTarget": 3,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.prototype_reply",
       "sourceText": "That is why it is a prototype.",
       "advance": "player",
@@ -2855,6 +2865,7 @@
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "BriefingWide",
+      "briefingLookTarget": 3,
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -2879,12 +2890,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingProjectorTechnical",
+      "runtimeCue": "BriefingSlideTechnical",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.principle",
       "sourceText": "Ahem... yes. The principle behind our translator is simple.",
       "advance": "player",
@@ -2895,7 +2906,8 @@
           "text": "흠흠…예. 저희 번역기의 원리는 간단합니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_fft_0090",
@@ -2909,18 +2921,19 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.fft",
-      "sourceText": "First, a multichannel phased-array receiver simultaneously samples the neuroelectromagnetic signals emitted extracranially by an alien subject. We then apply a fast Fourier transform to the time-domain evoked-potential waveform and decompose it into a frequency spectrum.",
-      "advance": "player",
-      "minimumSeconds": 0.35,
+      "sourceText": "First, a multichannel phased-array receiver simultaneously samples the neuroelectromagnetic signals emitted by an alien subject.",
+      "advance": "automatic",
+      "minimumSeconds": 2,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "우선 외계 개체가 두개외로 방사하는 신경전자기 신호를 다채널 위상배열 수신기로 동시 표본화한 뒤, 유발전위의 시간영역 파형에 고속 푸리에 변환을 적용하여 주파수별 스펙트럼으로 분해합니다.",
+          "text": "우선 외계 개체가 방사하는 신경전자기 신호를 다채널 위상배열 수신기로 동시에 표본화합니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_feature_vector_0091",
@@ -2934,18 +2947,19 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.feature_vector",
-      "sourceText": "Next, an adaptive band-pass filter removes baseline drift and physiological noise. Phase delay, amplitude-modulation rate, and harmonic distribution are normalized and reconstructed as a multidimensional feature vector.",
-      "advance": "player",
-      "minimumSeconds": 0.35,
+      "sourceText": "Next, we apply a fast Fourier transform, remove noise, and reconstruct the result as a multidimensional feature vector.",
+      "advance": "automatic",
+      "minimumSeconds": 2,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "그다음 기저선 편차와 생리적 잡음을 적응형 대역통과 필터로 제거하고, 위상 지연값과 진폭 변조율, 고조파 분포를 정규화하여 다차원 특징 벡터로 재구성하지요.",
+          "text": "그 신호에 고속 푸리에 변환을 적용해 주파수별 스펙트럼으로 분해하고, 잡음을 제거해 다차원 특징 벡터로 재구성하지요.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_mahalanobis_0092",
@@ -2959,18 +2973,19 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.mahalanobis",
-      "sourceText": "We feed that vector into a stimulus-specific cross-correlation matrix and combine multivariate discriminant analysis with non-hierarchical clustering to estimate semantic proximity between waveforms. When an unknown signal arrives, a Bayesian estimator calculates its posterior probability and the Mahalanobis distance to the existing semantic groups—",
-      "advance": "player",
-      "minimumSeconds": 0.35,
+      "sourceText": "Cross-correlation, discriminant analysis, and clustering let us estimate semantic proximity. Then we calculate posterior probability and the Mahalanobis distance to existing semantic groups—",
+      "advance": "automatic",
+      "minimumSeconds": 3,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "이 특징 벡터를 자극물별 교차상관 행렬에 대입하고, 다변량 판별분석과 비계층적 군집화를 병행하면 개별 파형 사이의 의미론적 근접도를 추정할 수 있습니다. 이후 미지 신호가 수신되면 베이즈 추정기를 통해 사후확률을 산출하고 기존 의미군과의 마할라노비스 거리를—",
+          "text": "교차상관과 판별분석, 군집화를 병행하면 파형 사이의 의미론적 근접도를 추정할 수 있습니다. 이후 미지 신호의 사후확률과 기존 의미군과의 마할라노비스 거리를—",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_director_interrupt_0093",
@@ -2979,7 +2994,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookDirector",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -2987,15 +3002,16 @@
       "speakerFallback": "DIRECTOR",
       "localizationKey": "first_contact.intro.facility.briefing.director_interrupt",
       "sourceText": "Dr. Hwang?",
-      "advance": "player",
-      "minimumSeconds": 0.35,
+      "advance": "automatic",
+      "minimumSeconds": 1.8,
       "localizedTexts": [
         {
           "locale": "ko-KR",
           "text": "황 박사?",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 2
     },
     {
       "id": "briefing_recursive_interpolation_0094",
@@ -3004,23 +3020,24 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingProjectorTechnical",
+      "runtimeCue": "BriefingLookProjector",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.recursive_interpolation",
-      "sourceText": "—and by defining a decision boundary that minimizes that distance, we can recursively interpolate the superordinate concepts of unseen vocabulary from limited samples. Once enough signals accumulate, the topological connectivity of the semantic space can be—",
-      "advance": "player",
-      "minimumSeconds": 0.35,
+      "sourceText": "—and a decision boundary that minimizes that distance lets us recursively interpolate superordinate concepts from limited samples, while the semantic space—",
+      "advance": "automatic",
+      "minimumSeconds": 2,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "—최소화하는 판별경계를 설정함으로써 제한된 표본만으로도 미관측 어휘의 상위 개념을 재귀적으로 보간할 수 있으며, 충분한 신호가 누적될 경우 의미공간의 위상적 연결 구조를—",
+          "text": "—최소화하는 판별경계를 설정하면 제한된 표본으로도 미관측 어휘의 상위 개념을 재귀적으로 보간할 수 있으며—",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_president_interrupt_0095",
@@ -3029,7 +3046,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3037,15 +3054,16 @@
       "speakerFallback": "PRESIDENT",
       "localizationKey": "first_contact.intro.facility.briefing.president_interrupt",
       "sourceText": "Dr. Hwang?",
-      "advance": "player",
-      "minimumSeconds": 0.35,
+      "advance": "automatic",
+      "minimumSeconds": 1.8,
       "localizedTexts": [
         {
           "locale": "ko-KR",
           "text": "황 박사?",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_realtime_update_0096",
@@ -3054,23 +3072,24 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingProjectorTechnical",
+      "runtimeCue": "BriefingLookHwangPresentation",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.realtime_update",
-      "sourceText": "—updated in real time to enable bidirectional neurolinguistic conversion... ah, yes?",
+      "sourceText": "—updates its connections in real time for bidirectional neurolinguistic conversion... ah, yes?",
       "advance": "player",
-      "minimumSeconds": 0.35,
+      "minimumSeconds": 2,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "—실시간으로 갱신하여 양방향 신경언어 변환을…아, 예?",
+          "text": "—의미공간의 연결 구조를 실시간으로 갱신해 양방향 신경언어 변환을…아, 예?",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_explain_simply_0097",
@@ -3079,7 +3098,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookDirector",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -3095,7 +3114,8 @@
           "text": "좀 더 쉽게 설명해봐. 뭐라는지 하나도 모르겠군.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_apology_0098",
@@ -3104,12 +3124,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookHwangPresentation",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.apology",
       "sourceText": "Ah... I am sorry.",
       "advance": "player",
@@ -3120,7 +3140,8 @@
           "text": "아…죄송합니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_basic_premise_0099",
@@ -3129,12 +3150,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingProjectorSimple",
+      "runtimeCue": "BriefingSlideObjectSignal",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.basic_premise",
       "sourceText": "Ahem... the basic premise is this. When you look at an object, your brain processes information about it and produces a signal.",
       "advance": "player",
@@ -3145,7 +3166,8 @@
           "text": "쿨럭…우선 기본적인 전제는 이렇습니다. 어떤 사물을 볼 때 뇌는 해당 사물에 대한 정보를 처리하면서 신호를 발생시킵니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_collect_waveforms_0100",
@@ -3154,12 +3176,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideObjectSignal",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.collect_waveforms",
       "sourceText": "The same is true for the aliens. We will use that principle to collect the waveforms they emit when they look at specific objects.",
       "advance": "player",
@@ -3170,7 +3192,8 @@
           "text": "이는 외계인도 마찬가지 입니다. 이 원리를 이용해서 먼저 저들이 특정 사물을 볼 때 방출되는 뇌파의 파형을 수집할 예정입니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 5
     },
     {
       "id": "briefing_banana_example_0101",
@@ -3184,18 +3207,19 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.banana_example",
-      "sourceText": "For example, the brainwave they emit when shown a banana probably means banana.",
+      "sourceText": "For example, if we show them a banana, we can record the response waveform produced when they see it.",
       "advance": "player",
       "minimumSeconds": 0.35,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "예를 들어 바나나를 보여줬을 때 저들이 내뿜는 뇌파는 아마도 바나나를 의미하는 뇌파겠지요.",
+          "text": "예를 들어 바나나를 보여주면, 바나나를 본 순간의 반응 파형을 얻을 수 있겠지요.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_database_limit_0102",
@@ -3209,7 +3233,7 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.database_limit",
       "sourceText": "But we cannot show them every object on Earth and build an enormous database map one item at a time.",
       "advance": "player",
@@ -3220,7 +3244,8 @@
           "text": "하지만 지구에 존재하는 모든 사물들을 전부 보여줘가며 거대한 데이터베이스 맵을 만들수는 없는 법입니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_algorithm_solution_0103",
@@ -3229,23 +3254,24 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingProjectorSimple",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.algorithm_solution",
-      "sourceText": "That is the problem our brilliant algorithm is designed to solve.",
+      "sourceText": "That is why our algorithm looks for response patterns repeated across different objects.",
       "advance": "player",
       "minimumSeconds": 0.35,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "그래서 저희가 개발한 천재적인 알고리즘으로 이를 해결하려고 합니다.",
+          "text": "그래서 저희 알고리즘은 개별 사물이 아니라 여러 반응에서 반복되는 공통 패턴을 찾습니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_task_simple_0104",
@@ -3254,12 +3280,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookHwangPresentation",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.task_simple",
       "sourceText": "Your job is simple, Mr. President.",
       "advance": "player",
@@ -3270,7 +3296,8 @@
           "text": "대통령님이 하실 일은 간단합니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_task_question_0105",
@@ -3279,7 +3306,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3295,7 +3322,8 @@
           "text": "그게 뭔가?",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_draw_categories_0106",
@@ -3304,23 +3332,24 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingProjectorSimple",
+      "runtimeCue": "BriefingSlidePresidentTask",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.draw_categories",
-      "sourceText": "You will draw and show them pictures of various objects that fit categories we have defined in advance.",
+      "sourceText": "You will draw objects that fit our predefined categories and show them to the aliens. The device records each response.",
       "advance": "player",
       "minimumSeconds": 0.35,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "저들에게 저희가 미리 정의해둔 카테고리에 해당하는 다양한 사물의 그림들을 그려서 보여주시는 겁니다.",
+          "text": "저희가 미리 정해둔 분류에 맞춰 여러 사물의 그림을 직접 그려 저들에게 보여주시면 됩니다. 그러면 장치가 그때마다 저들의 반응을 기록합니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_food_examples_0107",
@@ -3334,7 +3363,7 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.food_examples",
       "sourceText": "For example, apples and bananas are both food.",
       "advance": "player",
@@ -3345,7 +3374,8 @@
           "text": "예를 들어 사과와 바나나는 둘 다 음식입니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 5
     },
     {
       "id": "briefing_similar_patterns_0108",
@@ -3354,23 +3384,24 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideFoodCluster",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.similar_patterns",
-      "sourceText": "They look different, but because they are both food, some similar patterns should appear in the brainwaves produced when viewing them.",
+      "sourceText": "They look different, but comparing the two responses should reveal a shared pattern.",
       "advance": "player",
       "minimumSeconds": 0.35,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "생긴 것은 달라도 둘 다 음식이기 때문에 이 두 사물을 볼 때 발생하는 뇌파의 패턴은 어느정도 비슷한 패턴들이 관찰되기 마련입니다.",
+          "text": "생김새는 달라도 둘 다 음식이므로, 두 사물을 볼 때의 반응을 비교하면 어느 정도 비슷한 패턴이 나타날 겁니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_president_agrees_0109",
@@ -3379,7 +3410,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3395,7 +3426,8 @@
           "text": "그렇지.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_unseen_translation_0110",
@@ -3404,23 +3436,24 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideFoodCluster",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.unseen_translation",
-      "sourceText": "If our algorithm analyzes groups of similar patterns, it can automatically translate an uncollected word whenever that word belongs to a category we have already analyzed.",
+      "sourceText": "If we analyze those shared patterns, a new signal can still reveal meaning that belongs to a category the machine already learned.",
       "advance": "player",
       "minimumSeconds": 0.35,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "이렇게 비슷한 패턴들을 모아서 저희 알고리즘으로 분석하면 수집하지 않았던 단어라도 분석이 완료된 카테고리에 해당하는 단어라면 자동으로 번역이 되는 겁니다.",
+          "text": "그 패턴들을 모아 분석하면 처음 보는 신호에서도 이미 학습한 분류에 해당하는 의미를 찾아낼 수 있습니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_magic_0111",
@@ -3429,7 +3462,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3445,7 +3478,8 @@
           "text": "마법이 따로 없네.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_category_basis_0112",
@@ -3454,7 +3488,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookHwangPresentation",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3470,7 +3504,8 @@
           "text": "좋아. 그럼 그 카테고리를 정하는 기준은 뭔가?",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_alien_motive_0113",
@@ -3484,7 +3519,7 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.alien_motive",
       "sourceText": "Looking back at everything they have done on Earth, they seem to have come here to study and understand our civilization.",
       "advance": "player",
@@ -3495,7 +3530,8 @@
           "text": "그동안 저들이 지구에서 한 행적들을 한번 돌아보면 아마 저희 문명을 조사하고 이해하고자 방문한 것 같습니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 5
     },
     {
       "id": "briefing_cows_and_corn_0114",
@@ -3504,12 +3540,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideUfoEvidence",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.cows_and_corn",
       "sourceText": "They abducted cattle from ranches and landed in cornfields to collect corn.",
       "advance": "player",
@@ -3520,7 +3556,8 @@
           "text": "목장에서 소를 납치하고 옥수수밭에 착륙하여 옥수수들을 채취해가기도 하고",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 5
     },
     {
       "id": "briefing_military_recon_0115",
@@ -3529,12 +3566,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideUfoEvidence",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.military_recon",
       "sourceText": "They have also repeatedly appeared near military installations to conduct reconnaissance.",
       "advance": "player",
@@ -3545,7 +3582,8 @@
           "text": "군사 시설 근처에 계속 나타나서 정찰을 하고 가기도 하고 말이지요.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_four_categories_0116",
@@ -3559,18 +3597,71 @@
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.four_categories",
-      "sourceText": "So, for now, we have chosen danger, protection, food, and tools as the categories.",
+      "sourceText": "So the four categories we will calibrate first are danger, protection, food, and tools.",
       "advance": "player",
       "minimumSeconds": 0.35,
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "따라서 카테고리들은 우선 위험, 보호, 음식, 도구로 정했습니다.",
+          "text": "따라서 우선 보정할 분류는 위험, 보호, 음식, 도구, 네 가지로 정했습니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
+    },
+    {
+      "id": "briefing_presentation_end_0116a",
+      "sectionId": "facility_briefing",
+      "order": 385,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "",
+      "triggerEvent": "intro.facility.briefing",
+      "repeat": "once-per-session",
+      "speakerId": "doctor_hwang",
+      "speakerLocalizationKey": "speaker.doctor_hwang",
+      "speakerFallback": "Dr. Hwang",
+      "localizationKey": "first_contact.intro.facility.briefing.presentation_end",
+      "sourceText": "That concludes the briefing.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "브리핑은 여기까지입니다.",
+          "status": "final"
+        }
+      ],
+      "briefingLookTarget": 3
+    },
+    {
+      "id": "briefing_questions_0116b",
+      "sectionId": "facility_briefing",
+      "order": 388,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "BriefingQAndAStart",
+      "triggerEvent": "intro.facility.briefing",
+      "repeat": "once-per-session",
+      "speakerId": "doctor_hwang",
+      "speakerLocalizationKey": "speaker.doctor_hwang",
+      "speakerFallback": "Dr. Hwang",
+      "localizationKey": "first_contact.intro.facility.briefing.questions",
+      "sourceText": "Any questions?",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "질문 있으십니까?",
+          "status": "final"
+        }
+      ],
+      "briefingLookTarget": 4
     },
     {
       "id": "briefing_why_draw_0117",
@@ -3579,7 +3670,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3595,7 +3686,8 @@
           "text": "음…좋아. 근데 왜 굳이 그림을 내가 직접 그려서 보여 줘야 하는 건가?",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_researchers_ignored_0118",
@@ -3604,12 +3696,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlidePresidentResponse",
+      "runtimeCue": "BriefingLookHwangQA",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.researchers_ignored",
       "sourceText": "Our researchers already tried showing pictures to the aliens waiting here, but there was no response.",
       "advance": "player",
@@ -3620,7 +3712,8 @@
           "text": "예. 안 그래도 대기 중인 외계인들에게 저희 연구원들이 먼저 그림을 보여줘 봤는데 아무 반응이 없었습니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_tv_response_0119",
@@ -3629,12 +3722,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlidePresidentResponse",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.tv_response",
       "sourceText": "We finally gave up and watched television in the waiting room. The moment you appeared on screen, every instrument started screaming.",
       "advance": "player",
@@ -3645,7 +3738,8 @@
           "text": "결국 포기하고 다 같이 대기실 TV나 보고 있었는데, 화면에 각하가 나오자 갑자기 계측기가 미친 듯이 울리기 시작했지요.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_wanted_president_0120",
@@ -3654,12 +3748,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlidePresidentResponse",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.wanted_president",
       "sourceText": "It seems you were the person they wanted to meet from the beginning.",
       "advance": "player",
@@ -3670,7 +3764,8 @@
           "text": "아무래도 저들이 만나고 싶었던 사람은 처음부터 각하였던 모양입니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_creepy_0121",
@@ -3679,7 +3774,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3695,7 +3790,8 @@
           "text": "이런 젠장…그거 참 소름돋네.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_no_malice_0122",
@@ -3704,12 +3800,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.no_malice",
       "sourceText": "I do not think you need to worry too much. They do not appear hostile.",
       "advance": "player",
@@ -3720,7 +3816,8 @@
           "text": "너무 걱정하지는 않으셔도 될 것 같습니다. 악의는 없어 보여요.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_wearing_suits_0123",
@@ -3729,7 +3826,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideSuits",
+      "runtimeCue": "BriefingLookDirector",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -3745,7 +3842,8 @@
           "text": "양복을 갖춰 입고 왔더군요.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 2
     },
     {
       "id": "briefing_diplomatic_intent_0124",
@@ -3754,12 +3852,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideSuits",
+      "runtimeCue": "BriefingLookHwangQA",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.diplomatic_intent",
       "sourceText": "They seem to have studied our civilization and come with a diplomatic purpose.",
       "advance": "player",
@@ -3770,7 +3868,8 @@
           "text": "저희 문명에 대해 어느 정도 조사를 하고 외교적인 목적이 있는 것 같습니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 4
     },
     {
       "id": "briefing_alien_suits_0125",
@@ -3779,7 +3878,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3795,7 +3894,8 @@
           "text": "허. 양복을 입은 외계인이라니 어이가 없군.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_tie_joke_0126",
@@ -3804,7 +3904,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3820,7 +3920,8 @@
           "text": "넥타이도 맸던가? 혹시 빨간색이나 파란색이던가? 하하",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "briefing_black_tie_0127",
@@ -3829,7 +3930,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingSlideSuits",
+      "runtimeCue": "BriefingLookDirector",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "director",
@@ -3845,7 +3946,8 @@
           "text": "검은색 넥타이를 매고 왔습니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 2
     },
     {
       "id": "briefing_smart_0128",
@@ -3854,7 +3956,7 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "president",
@@ -3870,7 +3972,8 @@
           "text": "영리하네.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 2
     },
     {
       "id": "briefing_not_interested_0129",
@@ -3879,12 +3982,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "BriefingLookHwangQA",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.not_interested",
       "sourceText": "They probably are not very interested in that.",
       "advance": "player",
@@ -3895,7 +3998,8 @@
           "text": "아마 별로 관심이 없을겁니다.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 4
     },
     {
       "id": "briefing_move_when_ready_0130",
@@ -3904,12 +4008,12 @@
       "enabled": true,
       "type": "dialogue",
       "status": "final",
-      "runtimeCue": "BriefingWide",
+      "runtimeCue": "",
       "triggerEvent": "intro.facility.briefing",
       "repeat": "once-per-session",
       "speakerId": "doctor_hwang",
       "speakerLocalizationKey": "speaker.doctor_hwang",
-      "speakerFallback": "DR. HWANG",
+      "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.intro.facility.briefing.move_when_ready",
       "sourceText": "In any case, we can move on when you are ready.",
       "advance": "player",
@@ -3920,7 +4024,8 @@
           "text": "아무튼. 이제 준비가 되면 이동하시지요.",
           "status": "final"
         }
-      ]
+      ],
+      "briefingLookTarget": 1
     },
     {
       "id": "pizza_storage_approach_line_0131",
@@ -3983,10 +4088,42 @@
           "status": "draft"
         }
       ]
+    },
+    {
+      "id": "facility_corridor_line_0135",
+      "sectionId": "facility_corridor",
+      "order": 50,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "triggerEvent": "intro.facility.corridor",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.facility.corridor.line_0135",
+      "sourceText": "sit down",
+      "advance": "automatic",
+      "minimumSeconds": 3,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": [],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "우선 자리에 앉으시죠. 자세한 내용은 브리핑을 통해 알게되실 겁니다.",
+          "status": "draft"
+        }
+      ]
     }
   ],
   "localizationEntries": [],
   "authoring": {
-    "nextBeatSerial": 133
+    "nextBeatSerial": 136
   }
 }

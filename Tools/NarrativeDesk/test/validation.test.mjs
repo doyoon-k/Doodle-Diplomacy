@@ -29,6 +29,20 @@ test("warns when an enabled beat has no in-game playback connection", () => {
   assert.ok(issues.some((issue) => issue.severity === "warning" && issue.beatId === "orphan" && issue.field === "triggerEvent"));
 });
 
+test("rejects an unknown briefing look target", () => {
+  const issues = validateScenario({
+    scenarioId: "test", sourceLocale: "en-US", locales: ["en-US"],
+    sections: [{ id: "facility_briefing" }],
+    beats: [{
+      id: "line", sectionId: "facility_briefing", type: "dialogue",
+      triggerEvent: "intro.facility.briefing", briefingLookTarget: 99,
+      sourceText: "Hello",
+    }],
+  });
+  assert.ok(issues.some((issue) =>
+    issue.severity === "error" && issue.field === "briefingLookTarget"));
+});
+
 test("the checked-in First Contact scenario validates without errors", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const file = path.resolve(here, "../../../LlamaSharpDemo/Assets/Narrative/first_contact_day1.narrative.json");

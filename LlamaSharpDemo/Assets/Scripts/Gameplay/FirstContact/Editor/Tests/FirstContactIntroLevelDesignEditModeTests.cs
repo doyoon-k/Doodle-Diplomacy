@@ -8,6 +8,37 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor.Tests
     public sealed class FirstContactIntroLevelDesignEditModeTests
     {
         [Test]
+        public void BriefingPresentation_CanRetargetDirectorToPersistentGuide()
+        {
+            GameObject presentationObject = new("Briefing Presentation");
+            GameObject persistentGuide = new("Persistent Adjutant");
+            GameObject lookTargetObject = new("LOOK_Director");
+            try
+            {
+                lookTargetObject.transform.SetParent(
+                    persistentGuide.transform,
+                    false);
+                FirstContactBriefingPresentation presentation =
+                    presentationObject.AddComponent<FirstContactBriefingPresentation>();
+
+                presentation.SetDirectorLookTarget(lookTargetObject.transform);
+
+                Assert.That(
+                    presentation.DirectorLookTarget,
+                    Is.SameAs(lookTargetObject.transform));
+                Assert.That(
+                    presentation.HandlesAuthoredLookTarget(
+                        DoodleDiplomacy.Narrative.BriefingLookTarget.Director),
+                    Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(presentationObject);
+                UnityEngine.Object.DestroyImmediate(persistentGuide);
+            }
+        }
+
+        [Test]
         public void NarrativeZone_RequiresEveryConfiguredActorInsideAuthoredBox()
         {
             GameObject zoneObject = new("Narrative Zone");
@@ -373,6 +404,41 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor.Tests
             finally
             {
                 UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
+        [Test]
+        public void DialogueDisplay_ImmediateRestoreCanBeCapturedForSceneHandoff()
+        {
+            GameObject hudObject = new("HUD");
+            try
+            {
+                hudObject.AddComponent<Canvas>();
+                FirstContactNewsSubtitleDisplay display =
+                    hudObject.AddComponent<FirstContactNewsSubtitleDisplay>();
+
+                display.ShowDialogueImmediate(
+                    "DIRECTOR",
+                    "The facility briefing continues below.");
+
+                Assert.That(
+                    display.TryCaptureVisibleDialogue(
+                        out string speaker,
+                        out string dialogue),
+                    Is.True);
+                Assert.That(speaker, Is.EqualTo("DIRECTOR"));
+                Assert.That(
+                    dialogue,
+                    Is.EqualTo("The facility briefing continues below."));
+                CanvasGroup canvasGroup = hudObject
+                    .transform
+                    .Find("NewsTranscript_Runtime")
+                    .GetComponent<CanvasGroup>();
+                Assert.That(canvasGroup.alpha, Is.EqualTo(1f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(hudObject);
             }
         }
     }

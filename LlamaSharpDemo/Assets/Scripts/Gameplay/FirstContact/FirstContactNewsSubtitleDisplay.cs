@@ -41,7 +41,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             if (_root != null)
             {
-                Destroy(_root);
+                if (Application.isPlaying)
+                {
+                    Destroy(_root);
+                }
+                else
+                {
+                    DestroyImmediate(_root);
+                }
             }
         }
 
@@ -60,7 +67,35 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             Show(speaker, dialogue, newsStyle: false);
         }
 
-        private void Show(string speaker, string dialogue, bool newsStyle)
+        public void ShowDialogueImmediate(string speaker, string dialogue)
+        {
+            Show(speaker, dialogue, newsStyle: false, showImmediately: true);
+        }
+
+        public bool TryCaptureVisibleDialogue(out string speaker, out string dialogue)
+        {
+            speaker = string.Empty;
+            dialogue = string.Empty;
+            if (_root == null ||
+                !_root.activeSelf ||
+                _canvasGroup == null ||
+                _canvasGroup.alpha <= 0f ||
+                _speakerText == null ||
+                _dialogueText == null)
+            {
+                return false;
+            }
+
+            speaker = _speakerText.text ?? string.Empty;
+            dialogue = _dialogueText.text ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(dialogue);
+        }
+
+        private void Show(
+            string speaker,
+            string dialogue,
+            bool newsStyle,
+            bool showImmediately = false)
         {
             EnsureLayout();
             if (_root == null)
@@ -74,7 +109,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             SetAdvancePromptVisible(false);
             RefreshFont();
             _root.SetActive(true);
-            FadeTo(1f, FadeSeconds);
+            if (showImmediately)
+            {
+                if (_fadeRoutine != null)
+                {
+                    StopCoroutine(_fadeRoutine);
+                    _fadeRoutine = null;
+                }
+
+                _canvasGroup.alpha = 1f;
+            }
+            else
+            {
+                FadeTo(1f, FadeSeconds);
+            }
         }
 
         public void SetAdvancePromptVisible(bool visible)

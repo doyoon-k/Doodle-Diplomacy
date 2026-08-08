@@ -581,6 +581,16 @@
             "beatId": "briefing_four_categories_0116"
         },
         {
+            "key": "first_contact.intro.facility.briefing.presentation_end",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_presentation_end_0116a"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.questions",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_questions_0116b"
+        },
+        {
             "key": "first_contact.intro.facility.briefing.why_draw",
             "scenarioId": "first_contact_day1",
             "beatId": "briefing_why_draw_0117"
@@ -659,6 +669,11 @@
             "key": "first_contact.intro.pizza.approach.line_0132",
             "scenarioId": "first_contact_day1",
             "beatId": "pizza_approach_line_0132"
+        },
+        {
+            "key": "first_contact.intro.facility.corridor.line_0135",
+            "scenarioId": "first_contact_day1",
+            "beatId": "facility_corridor_line_0135"
         }
     ]
 }

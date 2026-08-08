@@ -1,3 +1,4 @@
+using System.Linq;
 using DoodleDiplomacy.Gameplay;
 using DoodleDiplomacy.Gameplay.FirstContact;
 using DoodleDiplomacy.Narrative;
@@ -150,7 +151,65 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             StringAssert.Contains(
                 "briefingProjectorCameraAnchor: {fileID: 520970492}",
                 sceneText);
-            StringAssert.Contains("manualHoldPointIndices: 04000000", sceneText);
+            StringAssert.Contains(
+                "projectorCloseupCameraAnchor: {fileID: 520970492}",
+                sceneText);
+            StringAssert.Contains("briefingPresentation: {fileID:", sceneText);
+            StringAssert.Contains("m_Name: ProjectorImageSurface", sceneText);
+            StringAssert.Contains("m_Name: VIEW_PresidentSeatedPreview", sceneText);
+            StringAssert.Contains("m_Name: LOOK_ProjectorPresentation", sceneText);
+            StringAssert.Contains("m_Name: LOOK_Hwang_Presentation", sceneText);
+            StringAssert.Contains("m_Name: LOOK_Hwang_QA", sceneText);
+            StringAssert.Contains("m_Name: LOOK_Director", sceneText);
+            FirstContactBriefingSlideDeck slideDeck =
+                AssetDatabase.LoadAssetAtPath<FirstContactBriefingSlideDeck>(
+                    "Assets/Art/FirstContact/Briefing/FirstContactBriefingSlides.asset");
+            Assert.IsNotNull(slideDeck);
+            foreach (FirstContactBriefingSlideId slideId in
+                     System.Enum.GetValues(typeof(FirstContactBriefingSlideId)))
+            {
+                Assert.IsNotNull(
+                    slideDeck.GetSlide(slideId),
+                    $"Briefing slide {slideId} must have artwork assigned.");
+            }
+
+            EditorSceneManager.OpenScene(IntroFacilityScenePath);
+            FirstContactBriefingPresentation presentation =
+                Object.FindFirstObjectByType<FirstContactBriefingPresentation>(
+                    FindObjectsInactive.Include);
+            Assert.IsNotNull(presentation);
+            Transform projectorCloseupCameraAnchor = new SerializedObject(presentation)
+                .FindProperty("projectorCloseupCameraAnchor")
+                .objectReferenceValue as Transform;
+            Assert.IsNotNull(projectorCloseupCameraAnchor);
+            Assert.AreEqual("SHOT_Projector_Closeup", projectorCloseupCameraAnchor.name);
+            Transform directorLookTarget = new SerializedObject(presentation)
+                .FindProperty("directorLookTarget")
+                .objectReferenceValue as Transform;
+            Assert.IsNotNull(directorLookTarget);
+            Assert.AreEqual("LOOK_Director", directorLookTarget.name);
+            GameObject directorPrefabRoot = directorLookTarget.root.gameObject;
+            Assert.AreEqual(
+                "Adjutant",
+                directorPrefabRoot.name);
+            Assert.AreEqual(
+                "Assets/Prefabs/Adjutant.prefab",
+                PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(
+                    directorPrefabRoot));
+
+            FirstContactIntroGuideController adjutantGuide =
+                Object.FindObjectsByType<FirstContactIntroGuideController>(
+                        FindObjectsInactive.Include,
+                        FindObjectsSortMode.None)
+                    .First(item => item.gameObject.name == "Adjutant");
+            Assert.AreEqual(10, adjutantGuide.PathPoints.Count);
+            Assert.IsTrue(adjutantGuide.PathPoints.All(point => point != null));
+            SerializedProperty holdPointIndices = new SerializedObject(adjutantGuide)
+                .FindProperty("manualHoldPointIndices");
+            Assert.AreEqual(1, holdPointIndices.arraySize);
+            Assert.AreEqual(
+                4,
+                holdPointIndices.GetArrayElementAtIndex(0).intValue);
 
             NarrativeScenarioAsset scenario =
                 AssetDatabase.LoadAssetAtPath<NarrativeScenarioAsset>(

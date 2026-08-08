@@ -33,6 +33,11 @@ empty for an ordinary line; it is only for Unity-side camera, actor, or sequence
 A yellow playback warning means that a beat has neither a trigger event nor a runtime cue
 and may not be reachable in game.
 
+In the First Contact facility briefing, the main dialogue card also exposes
+**브리핑 시선 대상**. Choose **현재 시선 유지**, **국장**, **황 박사**, or
+**프로젝터 화면** per line. This is independent from `runtimeCue`, so a response can
+keep the current slide while the president looks at a character.
+
 News beats also show a media timing budget read from the First Contact scene and the
 referenced MP4 file. The card compares the in-game clip duration with the sum of all
 dialogue durations on the same `intro.news.clip.*` event and highlights overflow in red.

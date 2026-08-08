@@ -89,6 +89,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: NewsUfoArchive
+    briefingLookTarget: 0
     triggerEvent: intro.news.clip.0
     condition: UFO VHS footage is playing on the in-car television
     repeat: once-per-session
@@ -123,6 +124,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: NewsFieldReporter
+    briefingLookTarget: 0
     triggerEvent: intro.news.clip.1
     condition: The field reporter clip is playing
     repeat: once-per-session
@@ -157,6 +159,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: NewsEyewitness
+    briefingLookTarget: 0
     triggerEvent: intro.news.clip.2
     condition: The eyewitness interview clip is playing
     repeat: once-per-session
@@ -191,6 +194,7 @@ MonoBehaviour:
     type: caption
     status: final
     runtimeCue: NewsRedmondPhoto
+    briefingLookTarget: 0
     triggerEvent: intro.news.clip.3
     condition: The still photograph named ufo_oregon.jpg is shown as evidence from
       the same Redmond incident
@@ -229,6 +233,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: NewsAirForceExplanation
+    briefingLookTarget: 0
     triggerEvent: intro.news.clip.4
     condition: The Air Force press conference clip begins
     repeat: once-per-session
@@ -263,6 +268,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: NewsAirForceWarning
+    briefingLookTarget: 0
     triggerEvent: intro.news.clip.4
     condition: The Air Force press conference continues
     repeat: once-per-session
@@ -296,6 +302,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: CarAfterNewsPresident
+    briefingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: The in-car television has powered off and the view returns to the
       president.
@@ -329,6 +336,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: CarAfterNewsDirectorCover
+    briefingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: The president questions the cover story.
     repeat: once-per-session
@@ -360,6 +368,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: CarAfterNewsDirectorArrival
+    briefingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: The director looks out of the stopped vehicle.
     repeat: once-per-session
@@ -389,6 +398,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: CarPizzaSignPresident
+    briefingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: The camera holds on the Zaucer Pizza sign outside the vehicle.
     repeat: once-per-session
@@ -419,6 +429,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: CarPizzaSignDirector
+    briefingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: The president finishes commenting on the restaurant.
     repeat: once-per-session
@@ -450,6 +461,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PizzaCitizenQuestion
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The president enters the dining area and the patrons recognize him.
     repeat: once-per-session
@@ -480,6 +492,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PizzaDirectorAlienJoke
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: A patron asks why the president is at the restaurant.
     repeat: once-per-session
@@ -512,6 +525,7 @@ MonoBehaviour:
     type: system
     status: final
     runtimeCue: PizzaAwkwardSilence
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The director has just claimed that the party came to meet aliens.
     repeat: once-per-session
@@ -545,6 +559,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PizzaCitizensLaugh
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The director claims they are meeting aliens.
     repeat: once-per-session
@@ -575,6 +590,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PizzaPresidentCover
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The patrons laugh at the director's alien remark.
     repeat: once-per-session
@@ -606,6 +622,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PizzaCitizenFarewell
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The president asks the patrons to keep his visit quiet.
     repeat: once-per-session
@@ -638,6 +655,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PizzaPresidentInsane
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.private_exchange
     condition: The president and director have walked far enough from every patron
       to speak privately.
@@ -670,6 +688,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PizzaDirectorPrivateReply
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.private_exchange
     condition: The president rebukes the director under his breath.
     repeat: once-per-session
@@ -701,6 +720,7 @@ MonoBehaviour:
     type: caption
     status: placeholder
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: encounter.opening.card.0
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -730,6 +750,7 @@ MonoBehaviour:
     type: caption
     status: placeholder
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: encounter.opening.card.1
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -760,6 +781,7 @@ MonoBehaviour:
     type: caption
     status: placeholder
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: encounter.opening.card.2
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -789,6 +811,7 @@ MonoBehaviour:
     type: caption
     status: placeholder
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: encounter.opening.card.3
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -818,6 +841,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PreflightIntro
+    briefingLookTarget: 0
     triggerEvent: preflight.started
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -850,6 +874,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: TabletTools
+    briefingLookTarget: 0
     triggerEvent: preflight.controls.tools
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -880,6 +905,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: TabletStyle
+    briefingLookTarget: 0
     triggerEvent: preflight.controls.style
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -912,6 +938,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: TabletHistoryAndSend
+    briefingLookTarget: 0
     triggerEvent: preflight.controls.history_and_send
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -943,6 +970,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PreflightDrawing
+    briefingLookTarget: 0
     triggerEvent: preflight.canvas.unlocked
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -975,6 +1003,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: PreflightPassed
+    briefingLookTarget: 0
     triggerEvent: preflight.completed
     condition: practice probe passed or local analysis was overridden
     repeat: once-per-session
@@ -1007,6 +1036,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: DelegationArrival
+    briefingLookTarget: 0
     triggerEvent: encounter.opening.delegation_seated
     condition: first play
     repeat: once-per-session
@@ -1037,6 +1067,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FirstCategory
+    briefingLookTarget: 0
     triggerEvent: terminal.category.opened
     condition: first category with zero traces
     repeat: once-per-session
@@ -1067,6 +1098,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FirstDrawing
+    briefingLookTarget: 0
     triggerEvent: drawing.surface.opened
     condition: first drawing opened
     repeat: once-per-session
@@ -1097,6 +1129,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FirstLabel
+    briefingLookTarget: 0
     triggerEvent: sample.label.opened
     condition: first label input opened
     repeat: once-per-session
@@ -1128,6 +1161,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FirstTrace
+    briefingLookTarget: 0
     triggerEvent: terminal.trace.accepted
     condition: first accepted trace
     repeat: once-per-session
@@ -1161,6 +1195,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: MoreSamples
+    briefingLookTarget: 0
     triggerEvent: terminal.trace.accepted
     condition: second accepted trace
     repeat: once-per-session
@@ -1193,6 +1228,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: CategoryCalibrated
+    briefingLookTarget: 0
     triggerEvent: terminal.group.stable
     condition: required traces accepted for current category
     repeat: once-per-category
@@ -1225,6 +1261,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BootstrapCalibrated
+    briefingLookTarget: 0
     triggerEvent: terminal.bootstrap.complete
     condition: all bootstrap categories calibrated
     repeat: once-per-session
@@ -1256,6 +1293,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: TranslationSucceeded
+    briefingLookTarget: 0
     triggerEvent: terminal.translation.complete
     condition: automatic demonstration result displayed
     repeat: once-per-session
@@ -1288,6 +1326,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.duplicate
     condition: the label repeats a sample already accepted for this category
     repeat: first-occurrence
@@ -1320,6 +1359,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.recorded.category_mismatch
     condition: the response is recorded but the sample does not advance the active
       category trace
@@ -1354,6 +1394,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: pattern.meaning.requested
     condition: an off-category response pattern becomes stable without an assigned
       meaning
@@ -1388,6 +1429,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.blank
     condition: the drawing surface contains too little visible information
     repeat: every-occurrence
@@ -1417,6 +1459,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.text_or_symbol
     condition: the drawing contains writing or symbolic notation
     repeat: every-occurrence
@@ -1448,6 +1491,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.scene_or_action
     condition: the drawing depicts a scene or action instead of one object
     repeat: every-occurrence
@@ -1479,6 +1523,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.multiple_objects
     condition: more than one distinct object is visible
     repeat: every-occurrence
@@ -1509,6 +1554,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.unresolved_object
     condition: the vision check cannot identify one concrete object
     repeat: every-occurrence
@@ -1539,6 +1585,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.label_correction.label_mismatch
     condition: the written label does not describe the drawing
     repeat: every-occurrence
@@ -1571,6 +1618,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.label_action_or_abstract
     condition: the label names an action or abstract idea
     repeat: every-occurrence
@@ -1603,6 +1651,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.label_broad_category
     condition: the label is a category rather than a specific subject
     repeat: every-occurrence
@@ -1633,6 +1682,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.label_multiple_subjects
     condition: the label names more than one subject
     repeat: every-occurrence
@@ -1663,6 +1713,7 @@ MonoBehaviour:
     type: reactive
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: sample.rejected.label_classification_claim
     condition: the label argues how the subject should be interpreted
     repeat: every-occurrence
@@ -1694,6 +1745,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.very_dissatisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1724,6 +1776,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.dissatisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1753,6 +1806,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.neutral
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1782,6 +1836,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.satisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1811,6 +1866,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.very_satisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1841,6 +1897,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.very_dissatisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1870,6 +1927,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.dissatisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1900,6 +1958,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.neutral
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1929,6 +1988,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.satisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1958,6 +2018,7 @@ MonoBehaviour:
     type: reaction
     status: final
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: alien.reaction.very_satisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1988,6 +2049,7 @@ MonoBehaviour:
     type: dialogue
     status: draft
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: 
     repeat: once-per-session
@@ -2016,6 +2078,7 @@ MonoBehaviour:
     type: dialogue
     status: draft
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: 
     repeat: once-per-session
@@ -2042,6 +2105,7 @@ MonoBehaviour:
     type: dialogue
     status: draft
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: 
     repeat: once-per-session
@@ -2070,6 +2134,7 @@ MonoBehaviour:
     type: dialogue
     status: draft
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: intro.news.clip.2
     condition: 
     repeat: once-per-session
@@ -2097,6 +2162,7 @@ MonoBehaviour:
     type: dialogue
     status: draft
     runtimeCue: PizzaApproachPresidentComment
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.approach
     condition: The president and director are walking from the parked car toward
       the restaurant entrance.
@@ -2132,6 +2198,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: StoragePresidentQuestion
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.storage.approach
     condition: The president and the director reach the back of the storeroom.
     repeat: once-per-session
@@ -2162,6 +2229,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: StorageRevealPresident
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.storage.reveal
     condition: The concealed wall panel has opened and exposed an elevator.
     repeat: once-per-session
@@ -2192,6 +2260,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: StorageRevealDirector
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.storage.reveal
     condition: The secret elevator entrance is open.
     repeat: once-per-session
@@ -2223,6 +2292,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: ElevatorDescentQuestion
+    briefingLookTarget: 0
     triggerEvent: intro.elevator.descent
     condition: The hidden elevator has begun descending.
     repeat: once-per-session
@@ -2254,6 +2324,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: ElevatorDescentFirstContact
+    briefingLookTarget: 0
     triggerEvent: intro.elevator.descent
     condition: The elevator is descending to the classified facility.
     repeat: once-per-session
@@ -2291,6 +2362,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: ElevatorDescentDarpa
+    briefingLookTarget: 0
     triggerEvent: intro.elevator.descent
     condition: The elevator continues descending.
     repeat: once-per-session
@@ -2326,6 +2398,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FacilityCorridorDirector
+    briefingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2353,6 +2426,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FacilityCorridorPresident
+    briefingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2379,6 +2453,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FacilityCorridorDirector
+    briefingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2408,6 +2483,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FacilityCorridorPresident
+    briefingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2434,6 +2510,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: FacilityCorridorDirector
+    briefingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2455,11 +2532,12 @@ MonoBehaviour:
       status: final
   - id: briefing_assignment_question_0078
     sectionId: facility_briefing
-    order: 0
+    order: 5
     enabled: 1
     type: dialogue
     status: final
     runtimeCue: BriefingWide
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2485,7 +2563,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2514,6 +2593,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingWide
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2540,7 +2620,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2567,7 +2648,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2596,6 +2678,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingWide
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2622,7 +2705,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2652,12 +2736,13 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingWide
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.prototype_limits
     sourceText: The device is complete, but we still need alien-language data to
       optimize the algorithm.
@@ -2681,6 +2766,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingWide
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2707,12 +2793,13 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingWide
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.prototype_reply
     sourceText: That is why it is a prototype.
     advance: player
@@ -2733,6 +2820,7 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingWide
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2759,13 +2847,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingProjectorTechnical
+    runtimeCue: BriefingSlideTechnical
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.principle
     sourceText: Ahem... yes. The principle behind our translator is simple.
     advance: player
@@ -2787,19 +2876,18 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingProjectorTechnical
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.fft
     sourceText: First, a multichannel phased-array receiver simultaneously samples
-      the neuroelectromagnetic signals emitted extracranially by an alien subject.
-      We then apply a fast Fourier transform to the time-domain evoked-potential
-      waveform and decompose it into a frequency spectrum.
-    advance: player
-    minimumSeconds: 0.35
+      the neuroelectromagnetic signals emitted by an alien subject.
+    advance: automatic
+    minimumSeconds: 2
     situation: 
     beforeAction: 
     afterAction: 
@@ -2807,12 +2895,9 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uC6B0\uC120 \uC678\uACC4 \uAC1C\uCCB4\uAC00 \uB450\uAC1C\uC678\uB85C
-        \uBC29\uC0AC\uD558\uB294 \uC2E0\uACBD\uC804\uC790\uAE30 \uC2E0\uD638\uB97C
-        \uB2E4\uCC44\uB110 \uC704\uC0C1\uBC30\uC5F4 \uC218\uC2E0\uAE30\uB85C \uB3D9\uC2DC
-        \uD45C\uBCF8\uD654\uD55C \uB4A4, \uC720\uBC1C\uC804\uC704\uC758 \uC2DC\uAC04\uC601\uC5ED
-        \uD30C\uD615\uC5D0 \uACE0\uC18D \uD478\uB9AC\uC5D0 \uBCC0\uD658\uC744 \uC801\uC6A9\uD558\uC5EC
-        \uC8FC\uD30C\uC218\uBCC4 \uC2A4\uD399\uD2B8\uB7FC\uC73C\uB85C \uBD84\uD574\uD569\uB2C8\uB2E4."
+      text: "\uC6B0\uC120 \uC678\uACC4 \uAC1C\uCCB4\uAC00 \uBC29\uC0AC\uD558\uB294
+        \uC2E0\uACBD\uC804\uC790\uAE30 \uC2E0\uD638\uB97C \uB2E4\uCC44\uB110 \uC704\uC0C1\uBC30\uC5F4
+        \uC218\uC2E0\uAE30\uB85C \uB3D9\uC2DC\uC5D0 \uD45C\uBCF8\uD654\uD569\uB2C8\uB2E4."
       status: final
   - id: briefing_feature_vector_0091
     sectionId: facility_briefing
@@ -2821,18 +2906,18 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingProjectorTechnical
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.feature_vector
-    sourceText: Next, an adaptive band-pass filter removes baseline drift and physiological
-      noise. Phase delay, amplitude-modulation rate, and harmonic distribution are
-      normalized and reconstructed as a multidimensional feature vector.
-    advance: player
-    minimumSeconds: 0.35
+    sourceText: Next, we apply a fast Fourier transform, remove noise, and reconstruct
+      the result as a multidimensional feature vector.
+    advance: automatic
+    minimumSeconds: 2
     situation: 
     beforeAction: 
     afterAction: 
@@ -2840,11 +2925,10 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uADF8\uB2E4\uC74C \uAE30\uC800\uC120 \uD3B8\uCC28\uC640 \uC0DD\uB9AC\uC801
-        \uC7A1\uC74C\uC744 \uC801\uC751\uD615 \uB300\uC5ED\uD1B5\uACFC \uD544\uD130\uB85C
-        \uC81C\uAC70\uD558\uACE0, \uC704\uC0C1 \uC9C0\uC5F0\uAC12\uACFC \uC9C4\uD3ED
-        \uBCC0\uC870\uC728, \uACE0\uC870\uD30C \uBD84\uD3EC\uB97C \uC815\uADDC\uD654\uD558\uC5EC
-        \uB2E4\uCC28\uC6D0 \uD2B9\uC9D5 \uBCA1\uD130\uB85C \uC7AC\uAD6C\uC131\uD558\uC9C0\uC694."
+      text: "\uADF8 \uC2E0\uD638\uC5D0 \uACE0\uC18D \uD478\uB9AC\uC5D0 \uBCC0\uD658\uC744
+        \uC801\uC6A9\uD574 \uC8FC\uD30C\uC218\uBCC4 \uC2A4\uD399\uD2B8\uB7FC\uC73C\uB85C
+        \uBD84\uD574\uD558\uACE0, \uC7A1\uC74C\uC744 \uC81C\uAC70\uD574 \uB2E4\uCC28\uC6D0
+        \uD2B9\uC9D5 \uBCA1\uD130\uB85C \uC7AC\uAD6C\uC131\uD558\uC9C0\uC694."
       status: final
   - id: briefing_mahalanobis_0092
     sectionId: facility_briefing
@@ -2853,20 +2937,19 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingProjectorTechnical
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.mahalanobis
-    sourceText: "We feed that vector into a stimulus-specific cross-correlation matrix
-      and combine multivariate discriminant analysis with non-hierarchical clustering
-      to estimate semantic proximity between waveforms. When an unknown signal arrives,
-      a Bayesian estimator calculates its posterior probability and the Mahalanobis
-      distance to the existing semantic groups\u2014"
-    advance: player
-    minimumSeconds: 0.35
+    sourceText: "Cross-correlation, discriminant analysis, and clustering let us
+      estimate semantic proximity. Then we calculate posterior probability and the
+      Mahalanobis distance to existing semantic groups\u2014"
+    advance: automatic
+    minimumSeconds: 3
     situation: 
     beforeAction: 
     afterAction: 
@@ -2874,14 +2957,12 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uC774 \uD2B9\uC9D5 \uBCA1\uD130\uB97C \uC790\uADF9\uBB3C\uBCC4 \uAD50\uCC28\uC0C1\uAD00
-        \uD589\uB82C\uC5D0 \uB300\uC785\uD558\uACE0, \uB2E4\uBCC0\uB7C9 \uD310\uBCC4\uBD84\uC11D\uACFC
-        \uBE44\uACC4\uCE35\uC801 \uAD70\uC9D1\uD654\uB97C \uBCD1\uD589\uD558\uBA74
-        \uAC1C\uBCC4 \uD30C\uD615 \uC0AC\uC774\uC758 \uC758\uBBF8\uB860\uC801 \uADFC\uC811\uB3C4\uB97C
-        \uCD94\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC774\uD6C4 \uBBF8\uC9C0
-        \uC2E0\uD638\uAC00 \uC218\uC2E0\uB418\uBA74 \uBCA0\uC774\uC988 \uCD94\uC815\uAE30\uB97C
-        \uD1B5\uD574 \uC0AC\uD6C4\uD655\uB960\uC744 \uC0B0\uCD9C\uD558\uACE0 \uAE30\uC874
-        \uC758\uBBF8\uAD70\uACFC\uC758 \uB9C8\uD560\uB77C\uB178\uBE44\uC2A4 \uAC70\uB9AC\uB97C\u2014"
+      text: "\uAD50\uCC28\uC0C1\uAD00\uACFC \uD310\uBCC4\uBD84\uC11D, \uAD70\uC9D1\uD654\uB97C
+        \uBCD1\uD589\uD558\uBA74 \uD30C\uD615 \uC0AC\uC774\uC758 \uC758\uBBF8\uB860\uC801
+        \uADFC\uC811\uB3C4\uB97C \uCD94\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.
+        \uC774\uD6C4 \uBBF8\uC9C0 \uC2E0\uD638\uC758 \uC0AC\uD6C4\uD655\uB960\uACFC
+        \uAE30\uC874 \uC758\uBBF8\uAD70\uACFC\uC758 \uB9C8\uD560\uB77C\uB178\uBE44\uC2A4
+        \uAC70\uB9AC\uB97C\u2014"
       status: final
   - id: briefing_director_interrupt_0093
     sectionId: facility_briefing
@@ -2889,7 +2970,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2898,8 +2980,8 @@ MonoBehaviour:
     speakerFallback: DIRECTOR
     localizationKey: first_contact.intro.facility.briefing.director_interrupt
     sourceText: Dr. Hwang?
-    advance: player
-    minimumSeconds: 0.35
+    advance: automatic
+    minimumSeconds: 1.8
     situation: 
     beforeAction: 
     afterAction: 
@@ -2915,20 +2997,20 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingProjectorTechnical
+    runtimeCue: BriefingLookProjector
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.recursive_interpolation
-    sourceText: "\u2014and by defining a decision boundary that minimizes that distance,
-      we can recursively interpolate the superordinate concepts of unseen vocabulary
-      from limited samples. Once enough signals accumulate, the topological connectivity
-      of the semantic space can be\u2014"
-    advance: player
-    minimumSeconds: 0.35
+    sourceText: "\u2014and a decision boundary that minimizes that distance lets
+      us recursively interpolate superordinate concepts from limited samples, while
+      the semantic space\u2014"
+    advance: automatic
+    minimumSeconds: 2
     situation: 
     beforeAction: 
     afterAction: 
@@ -2937,11 +3019,9 @@ MonoBehaviour:
     localizedTexts:
     - locale: ko-KR
       text: "\u2014\uCD5C\uC18C\uD654\uD558\uB294 \uD310\uBCC4\uACBD\uACC4\uB97C
-        \uC124\uC815\uD568\uC73C\uB85C\uC368 \uC81C\uD55C\uB41C \uD45C\uBCF8\uB9CC\uC73C\uB85C\uB3C4
+        \uC124\uC815\uD558\uBA74 \uC81C\uD55C\uB41C \uD45C\uBCF8\uC73C\uB85C\uB3C4
         \uBBF8\uAD00\uCE21 \uC5B4\uD718\uC758 \uC0C1\uC704 \uAC1C\uB150\uC744 \uC7AC\uADC0\uC801\uC73C\uB85C
-        \uBCF4\uAC04\uD560 \uC218 \uC788\uC73C\uBA70, \uCDA9\uBD84\uD55C \uC2E0\uD638\uAC00
-        \uB204\uC801\uB420 \uACBD\uC6B0 \uC758\uBBF8\uACF5\uAC04\uC758 \uC704\uC0C1\uC801
-        \uC5F0\uACB0 \uAD6C\uC870\uB97C\u2014"
+        \uBCF4\uAC04\uD560 \uC218 \uC788\uC73C\uBA70\u2014"
       status: final
   - id: briefing_president_interrupt_0095
     sectionId: facility_briefing
@@ -2949,7 +3029,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2958,8 +3039,8 @@ MonoBehaviour:
     speakerFallback: PRESIDENT
     localizationKey: first_contact.intro.facility.briefing.president_interrupt
     sourceText: Dr. Hwang?
-    advance: player
-    minimumSeconds: 0.35
+    advance: automatic
+    minimumSeconds: 1.8
     situation: 
     beforeAction: 
     afterAction: 
@@ -2975,18 +3056,19 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingProjectorTechnical
+    runtimeCue: BriefingLookHwangPresentation
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.realtime_update
-    sourceText: "\u2014updated in real time to enable bidirectional neurolinguistic
+    sourceText: "\u2014updates its connections in real time for bidirectional neurolinguistic
       conversion... ah, yes?"
     advance: player
-    minimumSeconds: 0.35
+    minimumSeconds: 2
     situation: 
     beforeAction: 
     afterAction: 
@@ -2994,8 +3076,9 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\u2014\uC2E4\uC2DC\uAC04\uC73C\uB85C \uAC31\uC2E0\uD558\uC5EC \uC591\uBC29\uD5A5
-        \uC2E0\uACBD\uC5B8\uC5B4 \uBCC0\uD658\uC744\u2026\uC544, \uC608?"
+      text: "\u2014\uC758\uBBF8\uACF5\uAC04\uC758 \uC5F0\uACB0 \uAD6C\uC870\uB97C
+        \uC2E4\uC2DC\uAC04\uC73C\uB85C \uAC31\uC2E0\uD574 \uC591\uBC29\uD5A5 \uC2E0\uACBD\uC5B8\uC5B4
+        \uBCC0\uD658\uC744\u2026\uC544, \uC608?"
       status: final
   - id: briefing_explain_simply_0097
     sectionId: facility_briefing
@@ -3003,7 +3086,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3030,13 +3114,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookHwangPresentation
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.apology
     sourceText: Ah... I am sorry.
     advance: player
@@ -3056,13 +3141,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingProjectorSimple
+    runtimeCue: BriefingSlideObjectSignal
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.basic_premise
     sourceText: Ahem... the basic premise is this. When you look at an object, your
       brain processes information about it and produces a signal.
@@ -3086,13 +3172,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideObjectSignal
+    runtimeCue: 
+    briefingLookTarget: 5
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.collect_waveforms
     sourceText: The same is true for the aliens. We will use that principle to collect
       the waveforms they emit when they look at specific objects.
@@ -3117,15 +3204,16 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingSlideBanana
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.banana_example
-    sourceText: For example, the brainwave they emit when shown a banana probably
-      means banana.
+    sourceText: For example, if we show them a banana, we can record the response
+      waveform produced when they see it.
     advance: player
     minimumSeconds: 0.35
     situation: 
@@ -3135,9 +3223,9 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uC608\uB97C \uB4E4\uC5B4 \uBC14\uB098\uB098\uB97C \uBCF4\uC5EC\uC92C\uC744
-        \uB54C \uC800\uB4E4\uC774 \uB0B4\uBFDC\uB294 \uB1CC\uD30C\uB294 \uC544\uB9C8\uB3C4
-        \uBC14\uB098\uB098\uB97C \uC758\uBBF8\uD558\uB294 \uB1CC\uD30C\uACA0\uC9C0\uC694."
+      text: "\uC608\uB97C \uB4E4\uC5B4 \uBC14\uB098\uB098\uB97C \uBCF4\uC5EC\uC8FC\uBA74,
+        \uBC14\uB098\uB098\uB97C \uBCF8 \uC21C\uAC04\uC758 \uBC18\uC751 \uD30C\uD615\uC744
+        \uC5BB\uC744 \uC218 \uC788\uACA0\uC9C0\uC694."
       status: final
   - id: briefing_database_limit_0102
     sectionId: facility_briefing
@@ -3146,12 +3234,13 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingSlideDatabase
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.database_limit
     sourceText: But we cannot show them every object on Earth and build an enormous
       database map one item at a time.
@@ -3175,15 +3264,17 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingProjectorSimple
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.algorithm_solution
-    sourceText: That is the problem our brilliant algorithm is designed to solve.
+    sourceText: That is why our algorithm looks for response patterns repeated across
+      different objects.
     advance: player
     minimumSeconds: 0.35
     situation: 
@@ -3193,9 +3284,9 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uADF8\uB798\uC11C \uC800\uD76C\uAC00 \uAC1C\uBC1C\uD55C \uCC9C\uC7AC\uC801\uC778
-        \uC54C\uACE0\uB9AC\uC998\uC73C\uB85C \uC774\uB97C \uD574\uACB0\uD558\uB824\uACE0
-        \uD569\uB2C8\uB2E4."
+      text: "\uADF8\uB798\uC11C \uC800\uD76C \uC54C\uACE0\uB9AC\uC998\uC740 \uAC1C\uBCC4
+        \uC0AC\uBB3C\uC774 \uC544\uB2C8\uB77C \uC5EC\uB7EC \uBC18\uC751\uC5D0\uC11C
+        \uBC18\uBCF5\uB418\uB294 \uACF5\uD1B5 \uD328\uD134\uC744 \uCC3E\uC2B5\uB2C8\uB2E4."
       status: final
   - id: briefing_task_simple_0104
     sectionId: facility_briefing
@@ -3203,13 +3294,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookHwangPresentation
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.task_simple
     sourceText: Your job is simple, Mr. President.
     advance: player
@@ -3229,7 +3321,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3255,16 +3348,17 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingProjectorSimple
+    runtimeCue: BriefingSlidePresidentTask
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.draw_categories
-    sourceText: You will draw and show them pictures of various objects that fit
-      categories we have defined in advance.
+    sourceText: You will draw objects that fit our predefined categories and show
+      them to the aliens. The device records each response.
     advance: player
     minimumSeconds: 0.35
     situation: 
@@ -3274,10 +3368,11 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uC800\uB4E4\uC5D0\uAC8C \uC800\uD76C\uAC00 \uBBF8\uB9AC \uC815\uC758\uD574\uB454
-        \uCE74\uD14C\uACE0\uB9AC\uC5D0 \uD574\uB2F9\uD558\uB294 \uB2E4\uC591\uD55C
-        \uC0AC\uBB3C\uC758 \uADF8\uB9BC\uB4E4\uC744 \uADF8\uB824\uC11C \uBCF4\uC5EC\uC8FC\uC2DC\uB294
-        \uAC81\uB2C8\uB2E4."
+      text: "\uC800\uD76C\uAC00 \uBBF8\uB9AC \uC815\uD574\uB454 \uBD84\uB958\uC5D0
+        \uB9DE\uCDB0 \uC5EC\uB7EC \uC0AC\uBB3C\uC758 \uADF8\uB9BC\uC744 \uC9C1\uC811
+        \uADF8\uB824 \uC800\uB4E4\uC5D0\uAC8C \uBCF4\uC5EC\uC8FC\uC2DC\uBA74 \uB429\uB2C8\uB2E4.
+        \uADF8\uB7EC\uBA74 \uC7A5\uCE58\uAC00 \uADF8\uB54C\uB9C8\uB2E4 \uC800\uB4E4\uC758
+        \uBC18\uC751\uC744 \uAE30\uB85D\uD569\uB2C8\uB2E4."
       status: final
   - id: briefing_food_examples_0107
     sectionId: facility_briefing
@@ -3286,12 +3381,13 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingSlideFoodCluster
+    briefingLookTarget: 5
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.food_examples
     sourceText: For example, apples and bananas are both food.
     advance: player
@@ -3312,16 +3408,17 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideFoodCluster
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.similar_patterns
-    sourceText: They look different, but because they are both food, some similar
-      patterns should appear in the brainwaves produced when viewing them.
+    sourceText: They look different, but comparing the two responses should reveal
+      a shared pattern.
     advance: player
     minimumSeconds: 0.35
     situation: 
@@ -3331,10 +3428,10 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uC0DD\uAE34 \uAC83\uC740 \uB2EC\uB77C\uB3C4 \uB458 \uB2E4 \uC74C\uC2DD\uC774\uAE30
-        \uB54C\uBB38\uC5D0 \uC774 \uB450 \uC0AC\uBB3C\uC744 \uBCFC \uB54C \uBC1C\uC0DD\uD558\uB294
-        \uB1CC\uD30C\uC758 \uD328\uD134\uC740 \uC5B4\uB290\uC815\uB3C4 \uBE44\uC2B7\uD55C
-        \uD328\uD134\uB4E4\uC774 \uAD00\uCC30\uB418\uAE30 \uB9C8\uB828\uC785\uB2C8\uB2E4."
+      text: "\uC0DD\uAE40\uC0C8\uB294 \uB2EC\uB77C\uB3C4 \uB458 \uB2E4 \uC74C\uC2DD\uC774\uBBC0\uB85C,
+        \uB450 \uC0AC\uBB3C\uC744 \uBCFC \uB54C\uC758 \uBC18\uC751\uC744 \uBE44\uAD50\uD558\uBA74
+        \uC5B4\uB290 \uC815\uB3C4 \uBE44\uC2B7\uD55C \uD328\uD134\uC774 \uB098\uD0C0\uB0A0
+        \uAC81\uB2C8\uB2E4."
       status: final
   - id: briefing_president_agrees_0109
     sectionId: facility_briefing
@@ -3342,7 +3439,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3368,17 +3466,17 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideFoodCluster
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.unseen_translation
-    sourceText: If our algorithm analyzes groups of similar patterns, it can automatically
-      translate an uncollected word whenever that word belongs to a category we have
-      already analyzed.
+    sourceText: If we analyze those shared patterns, a new signal can still reveal
+      meaning that belongs to a category the machine already learned.
     advance: player
     minimumSeconds: 0.35
     situation: 
@@ -3388,12 +3486,10 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uC774\uB807\uAC8C \uBE44\uC2B7\uD55C \uD328\uD134\uB4E4\uC744 \uBAA8\uC544\uC11C
-        \uC800\uD76C \uC54C\uACE0\uB9AC\uC998\uC73C\uB85C \uBD84\uC11D\uD558\uBA74
-        \uC218\uC9D1\uD558\uC9C0 \uC54A\uC558\uB358 \uB2E8\uC5B4\uB77C\uB3C4 \uBD84\uC11D\uC774
-        \uC644\uB8CC\uB41C \uCE74\uD14C\uACE0\uB9AC\uC5D0 \uD574\uB2F9\uD558\uB294
-        \uB2E8\uC5B4\uB77C\uBA74 \uC790\uB3D9\uC73C\uB85C \uBC88\uC5ED\uC774 \uB418\uB294
-        \uAC81\uB2C8\uB2E4."
+      text: "\uADF8 \uD328\uD134\uB4E4\uC744 \uBAA8\uC544 \uBD84\uC11D\uD558\uBA74
+        \uCC98\uC74C \uBCF4\uB294 \uC2E0\uD638\uC5D0\uC11C\uB3C4 \uC774\uBBF8 \uD559\uC2B5\uD55C
+        \uBD84\uB958\uC5D0 \uD574\uB2F9\uD558\uB294 \uC758\uBBF8\uB97C \uCC3E\uC544\uB0BC
+        \uC218 \uC788\uC2B5\uB2C8\uB2E4."
       status: final
   - id: briefing_magic_0111
     sectionId: facility_briefing
@@ -3401,7 +3497,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3427,7 +3524,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookHwangPresentation
+    briefingLookTarget: 3
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3455,12 +3553,13 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingSlideUfoEvidence
+    briefingLookTarget: 5
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.alien_motive
     sourceText: Looking back at everything they have done on Earth, they seem to
       have come here to study and understand our civilization.
@@ -3484,13 +3583,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideUfoEvidence
+    runtimeCue: 
+    briefingLookTarget: 5
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.cows_and_corn
     sourceText: They abducted cattle from ranches and landed in cornfields to collect
       corn.
@@ -3513,13 +3613,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideUfoEvidence
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.military_recon
     sourceText: They have also repeatedly appeared near military installations to
       conduct reconnaissance.
@@ -3542,15 +3643,16 @@ MonoBehaviour:
     type: dialogue
     status: final
     runtimeCue: BriefingSlideCategories
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.four_categories
-    sourceText: So, for now, we have chosen danger, protection, food, and tools as
-      the categories.
+    sourceText: So the four categories we will calibrate first are danger, protection,
+      food, and tools.
     advance: player
     minimumSeconds: 0.35
     situation: 
@@ -3560,8 +3662,63 @@ MonoBehaviour:
     tags: []
     localizedTexts:
     - locale: ko-KR
-      text: "\uB530\uB77C\uC11C \uCE74\uD14C\uACE0\uB9AC\uB4E4\uC740 \uC6B0\uC120
-        \uC704\uD5D8, \uBCF4\uD638, \uC74C\uC2DD, \uB3C4\uAD6C\uB85C \uC815\uD588\uC2B5\uB2C8\uB2E4."
+      text: "\uB530\uB77C\uC11C \uC6B0\uC120 \uBCF4\uC815\uD560 \uBD84\uB958\uB294
+        \uC704\uD5D8, \uBCF4\uD638, \uC74C\uC2DD, \uB3C4\uAD6C, \uB124 \uAC00\uC9C0\uB85C
+        \uC815\uD588\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_presentation_end_0116a
+    sectionId: facility_briefing
+    order: 385
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: 
+    briefingLookTarget: 3
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.intro.facility.briefing.presentation_end
+    sourceText: That concludes the briefing.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uBE0C\uB9AC\uD551\uC740 \uC5EC\uAE30\uAE4C\uC9C0\uC785\uB2C8\uB2E4."
+      status: final
+  - id: briefing_questions_0116b
+    sectionId: facility_briefing
+    order: 388
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingQAndAStart
+    briefingLookTarget: 4
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.intro.facility.briefing.questions
+    sourceText: Any questions?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC9C8\uBB38 \uC788\uC73C\uC2ED\uB2C8\uAE4C?"
       status: final
   - id: briefing_why_draw_0117
     sectionId: facility_briefing
@@ -3569,7 +3726,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3598,13 +3756,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlidePresidentResponse
+    runtimeCue: BriefingLookHwangQA
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.researchers_ignored
     sourceText: Our researchers already tried showing pictures to the aliens waiting
       here, but there was no response.
@@ -3627,13 +3786,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlidePresidentResponse
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.tv_response
     sourceText: We finally gave up and watched television in the waiting room. The
       moment you appeared on screen, every instrument started screaming.
@@ -3657,13 +3817,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlidePresidentResponse
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.wanted_president
     sourceText: It seems you were the person they wanted to meet from the beginning.
     advance: player
@@ -3684,7 +3845,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3710,13 +3872,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.no_malice
     sourceText: I do not think you need to worry too much. They do not appear hostile.
     advance: player
@@ -3737,7 +3900,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideSuits
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3763,13 +3927,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideSuits
+    runtimeCue: BriefingLookHwangQA
+    briefingLookTarget: 4
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.diplomatic_intent
     sourceText: They seem to have studied our civilization and come with a diplomatic
       purpose.
@@ -3792,7 +3957,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3819,7 +3985,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3846,7 +4013,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingSlideSuits
+    runtimeCue: BriefingLookDirector
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3872,7 +4040,8 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 2
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3898,13 +4067,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: BriefingLookHwangQA
+    briefingLookTarget: 4
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.not_interested
     sourceText: They probably are not very interested in that.
     advance: player
@@ -3924,13 +4094,14 @@ MonoBehaviour:
     enabled: 1
     type: dialogue
     status: final
-    runtimeCue: BriefingWide
+    runtimeCue: 
+    briefingLookTarget: 1
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
     speakerId: doctor_hwang
     speakerLocalizationKey: speaker.doctor_hwang
-    speakerFallback: DR. HWANG
+    speakerFallback: Dr. Hwang
     localizationKey: first_contact.intro.facility.briefing.move_when_ready
     sourceText: In any case, we can move on when you are ready.
     advance: player
@@ -3951,6 +4122,7 @@ MonoBehaviour:
     type: dialogue
     status: draft
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.storage.approach
     condition: 
     repeat: once-per-session
@@ -3977,6 +4149,7 @@ MonoBehaviour:
     type: dialogue
     status: draft
     runtimeCue: 
+    briefingLookTarget: 0
     triggerEvent: intro.pizza.approach
     condition: 
     repeat: once-per-session
@@ -3995,5 +4168,34 @@ MonoBehaviour:
     localizedTexts:
     - locale: ko-KR
       text: "\uC544\uB2C8...? \uB300\uD1B5\uB839\uB2D8 \uC544\uB2C8\uC138\uC694?"
+      status: draft
+  - id: facility_corridor_line_0135
+    sectionId: facility_corridor
+    order: 50
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    triggerEvent: intro.facility.corridor
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.facility.corridor.line_0135
+    sourceText: sit down
+    advance: automatic
+    minimumSeconds: 3
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC6B0\uC120 \uC790\uB9AC\uC5D0 \uC549\uC73C\uC2DC\uC8E0. \uC790\uC138\uD55C
+        \uB0B4\uC6A9\uC740 \uBE0C\uB9AC\uD551\uC744 \uD1B5\uD574 \uC54C\uAC8C\uB418\uC2E4
+        \uAC81\uB2C8\uB2E4."
       status: draft
   localizationEntries: []

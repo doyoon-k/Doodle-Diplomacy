@@ -15,4 +15,9 @@ namespace DoodleDiplomacy.Gameplay
     {
         MonoBehaviour GetModeBehaviour(FlowEntryDefinition entry);
     }
+
+    public interface IGameplaySceneEntryPreparer
+    {
+        void PrepareEntry(FlowEntryDefinition entry);
+    }
 }

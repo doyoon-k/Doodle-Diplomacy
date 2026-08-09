@@ -57,9 +57,14 @@ MonoBehaviour:
       the aliens will only respond to the president.
   - id: preflight
     title: Tablet preflight
-    order: 7
+    order: 8
     summary: Dr. Hwang checks the president's drawing and walks through the local
       probe controls before the delegation enters.
+  - id: meeting_room_arrival
+    title: Meeting room arrival
+    order: 7
+    summary: The president takes the existing gameplay seat, meets Obama, and prepares
+      for the alien delegation.
   - id: arrival
     title: Delegation arrival
     order: 10
@@ -82,6 +87,286 @@ MonoBehaviour:
     order: 50
     summary: A new signal is translated using the categories calibrated by the player.
   beats:
+  - id: meeting_president_who_are_you_0136
+    sectionId: meeting_room_arrival
+    order: 0
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 2
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.meeting.who_are_you
+    sourceText: Who are you?
+    advance: player
+    minimumSeconds: 0.35
+    situation: Obama has entered the meeting room carrying coffee.
+    beforeAction: 
+    afterAction: 
+    stageDirection: The president looks toward Obama.
+    tags:
+    - meeting
+    - obama
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC790\uB124\uB294 \uBB54\uAC00?"
+      status: draft
+  - id: meeting_obama_introduction_0137
+    sectionId: meeting_room_arrival
+    order: 10
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 2
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: obama
+    speakerLocalizationKey: 
+    speakerFallback: OBAMA
+    localizationKey: first_contact.intro.meeting.obama_introduction
+    sourceText: Ah. I'm Barack Obama, CIA, Mr. President.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - meeting
+    - obama
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC544. \uC800\uB294 CIA \uC18C\uC18D \uBC30\uB7ED \uC624\uBC14\uB9C8\uB77C\uACE0
+        \uD569\uB2C8\uB2E4 \uAC01\uD558."
+      status: draft
+  - id: meeting_president_familiar_0138
+    sectionId: meeting_room_arrival
+    order: 20
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 2
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.meeting.familiar
+    sourceText: You look familiar.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - meeting
+    - obama
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uBB54\uAC00 \uB0AF\uC774 \uC775\uC740\uB370."
+      status: draft
+  - id: meeting_director_cover_0139
+    sectionId: meeting_room_arrival
+    order: 30
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 3
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.meeting.cover
+    sourceText: He's an agent we're cultivating as a politician under cover.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: The president turns toward the director.
+    tags:
+    - meeting
+    - director
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC704\uC7A5 \uC815\uCE58\uC778\uC73C\uB85C\uC368 \uC800\uD76C\uAC00
+        \uC721\uC131\uC911\uC778 \uC694\uC6D0\uC785\uB2C8\uB2E4."
+      status: draft
+  - id: meeting_director_observer_0140
+    sectionId: meeting_room_arrival
+    order: 40
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 3
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.meeting.observer
+    sourceText: He has work related to this matter, so he'll be observing.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - meeting
+    - director
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uBC88 \uC0AC\uC548\uACFC \uAD00\uB828\uB41C \uC5C5\uBB34\uAC00
+        \uC788\uC5B4\uC11C \uCC38\uAD00\uD558\uAE30\uB85C \uD588\uC2B5\uB2C8\uB2E4."
+      status: draft
+  - id: meeting_president_rumor_0141
+    sectionId: meeting_room_arrival
+    order: 50
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 3
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.meeting.rumor
+    sourceText: Huh. So the rumors were true?
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: The president keeps looking at the director.
+    tags:
+    - meeting
+    - director
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uD5C8. \uC18C\uBB38\uC774 \uC0AC\uC2E4\uC774\uC5C8\uB098?"
+      status: draft
+  - id: meeting_director_secret_0142
+    sectionId: meeting_room_arrival
+    order: 60
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 3
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: director
+    speakerLocalizationKey: 
+    speakerFallback: DIRECTOR
+    localizationKey: first_contact.intro.meeting.secret
+    sourceText: It's as classified as our contact with aliens, so you'll have to
+      keep it secret.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags:
+    - meeting
+    - director
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC800\uD76C\uAC00 \uC9C0\uAE08 \uC678\uACC4\uC778\uACFC \uC811\uCD09\uD558\uB294
+        \uAC83\uB9CC\uD07C\uC774\uB098 \uADF9\uBE44\uC774\uB2C8 \uBE44\uBC00\uC744
+        \uC9C0\uCF1C \uC8FC\uC154\uC57C \uD560 \uAC81\uB2C8\uB2E4."
+      status: draft
+  - id: meeting_president_restless_0143
+    sectionId: meeting_room_arrival
+    order: 70
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 3
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: president
+    speakerLocalizationKey: 
+    speakerFallback: PRESIDENT
+    localizationKey: first_contact.intro.meeting.restless
+    sourceText: I'm dying to tell someone. Being president isn't all it's cracked
+      up to be.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: The president keeps looking at the director.
+    tags:
+    - meeting
+    - director
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC785\uC774 \uADFC\uC9C8\uAC70\uB824\uC11C \uC8FD\uACA0\uB124. \uB300\uD1B5\uB839\uB3C4
+        \uBCC4 \uAC70 \uC544\uB2C8\uB77C\uB2C8\uAE4C \uAE00\uC384."
+      status: draft
+  - id: meeting_hwang_ready_0144
+    sectionId: meeting_room_arrival
+    order: 80
+    enabled: 1
+    type: dialogue
+    status: draft
+    runtimeCue: 
+    briefingLookTarget: 0
+    meetingLookTarget: 4
+    triggerEvent: intro.meeting.arrival
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.intro.meeting.ready
+    sourceText: They are on their way to the meeting room now. We should prepare.
+    advance: player
+    minimumSeconds: 0.35
+    situation: The delegation is about to arrive.
+    beforeAction: 
+    afterAction: 
+    stageDirection: The president turns toward Dr. Hwang before control passes to
+      preflight.
+    tags:
+    - meeting
+    - hwang
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uC81C \uADF8\uB4E4\uC774 \uD68C\uB2F4\uC7A5\uC73C\uB85C \uC624\uACE0\uC788\uB2E4\uACE0
+        \uD569\uB2C8\uB2E4. \uC900\uBE44\uD558\uC2DC\uC9C0\uC694."
+      status: draft
   - id: news_ufo_archive
     sectionId: news_broadcast
     order: 0
@@ -90,6 +375,7 @@ MonoBehaviour:
     status: final
     runtimeCue: NewsUfoArchive
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.news.clip.0
     condition: UFO VHS footage is playing on the in-car television
     repeat: once-per-session
@@ -125,6 +411,7 @@ MonoBehaviour:
     status: final
     runtimeCue: NewsFieldReporter
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.news.clip.1
     condition: The field reporter clip is playing
     repeat: once-per-session
@@ -160,6 +447,7 @@ MonoBehaviour:
     status: final
     runtimeCue: NewsEyewitness
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.news.clip.2
     condition: The eyewitness interview clip is playing
     repeat: once-per-session
@@ -195,6 +483,7 @@ MonoBehaviour:
     status: final
     runtimeCue: NewsRedmondPhoto
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.news.clip.3
     condition: The still photograph named ufo_oregon.jpg is shown as evidence from
       the same Redmond incident
@@ -234,6 +523,7 @@ MonoBehaviour:
     status: final
     runtimeCue: NewsAirForceExplanation
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.news.clip.4
     condition: The Air Force press conference clip begins
     repeat: once-per-session
@@ -269,6 +559,7 @@ MonoBehaviour:
     status: final
     runtimeCue: NewsAirForceWarning
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.news.clip.4
     condition: The Air Force press conference continues
     repeat: once-per-session
@@ -303,6 +594,7 @@ MonoBehaviour:
     status: final
     runtimeCue: CarAfterNewsPresident
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: The in-car television has powered off and the view returns to the
       president.
@@ -337,6 +629,7 @@ MonoBehaviour:
     status: final
     runtimeCue: CarAfterNewsDirectorCover
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: The president questions the cover story.
     repeat: once-per-session
@@ -369,6 +662,7 @@ MonoBehaviour:
     status: final
     runtimeCue: CarAfterNewsDirectorArrival
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: The director looks out of the stopped vehicle.
     repeat: once-per-session
@@ -399,6 +693,7 @@ MonoBehaviour:
     status: final
     runtimeCue: CarPizzaSignPresident
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: The camera holds on the Zaucer Pizza sign outside the vehicle.
     repeat: once-per-session
@@ -430,6 +725,7 @@ MonoBehaviour:
     status: final
     runtimeCue: CarPizzaSignDirector
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: The president finishes commenting on the restaurant.
     repeat: once-per-session
@@ -462,6 +758,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaCitizenQuestion
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The president enters the dining area and the patrons recognize him.
     repeat: once-per-session
@@ -493,6 +790,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaDirectorAlienJoke
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: A patron asks why the president is at the restaurant.
     repeat: once-per-session
@@ -526,6 +824,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaAwkwardSilence
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The director has just claimed that the party came to meet aliens.
     repeat: once-per-session
@@ -560,6 +859,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaCitizensLaugh
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The director claims they are meeting aliens.
     repeat: once-per-session
@@ -591,6 +891,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaPresidentCover
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The patrons laugh at the director's alien remark.
     repeat: once-per-session
@@ -623,6 +924,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaCitizenFarewell
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.citizen_encounter
     condition: The president asks the patrons to keep his visit quiet.
     repeat: once-per-session
@@ -656,6 +958,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaPresidentInsane
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.private_exchange
     condition: The president and director have walked far enough from every patron
       to speak privately.
@@ -689,6 +992,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PizzaDirectorPrivateReply
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.private_exchange
     condition: The president rebukes the director under his breath.
     repeat: once-per-session
@@ -721,6 +1025,7 @@ MonoBehaviour:
     status: placeholder
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: encounter.opening.card.0
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -751,6 +1056,7 @@ MonoBehaviour:
     status: placeholder
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: encounter.opening.card.1
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -782,6 +1088,7 @@ MonoBehaviour:
     status: placeholder
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: encounter.opening.card.2
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -812,6 +1119,7 @@ MonoBehaviour:
     status: placeholder
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: encounter.opening.card.3
     condition: first play and placeholder montage enabled
     repeat: once-per-session
@@ -842,6 +1150,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PreflightIntro
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: preflight.started
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -875,6 +1184,7 @@ MonoBehaviour:
     status: final
     runtimeCue: TabletTools
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: preflight.controls.tools
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -906,6 +1216,7 @@ MonoBehaviour:
     status: final
     runtimeCue: TabletStyle
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: preflight.controls.style
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -939,6 +1250,7 @@ MonoBehaviour:
     status: final
     runtimeCue: TabletHistoryAndSend
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: preflight.controls.history_and_send
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -971,6 +1283,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PreflightDrawing
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: preflight.canvas.unlocked
     condition: first play and preflight enabled
     repeat: once-per-session
@@ -1004,6 +1317,7 @@ MonoBehaviour:
     status: final
     runtimeCue: PreflightPassed
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: preflight.completed
     condition: practice probe passed or local analysis was overridden
     repeat: once-per-session
@@ -1037,6 +1351,7 @@ MonoBehaviour:
     status: final
     runtimeCue: DelegationArrival
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: encounter.opening.delegation_seated
     condition: first play
     repeat: once-per-session
@@ -1068,6 +1383,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FirstCategory
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: terminal.category.opened
     condition: first category with zero traces
     repeat: once-per-session
@@ -1099,6 +1415,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FirstDrawing
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: drawing.surface.opened
     condition: first drawing opened
     repeat: once-per-session
@@ -1130,6 +1447,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FirstLabel
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.label.opened
     condition: first label input opened
     repeat: once-per-session
@@ -1162,6 +1480,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FirstTrace
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: terminal.trace.accepted
     condition: first accepted trace
     repeat: once-per-session
@@ -1196,6 +1515,7 @@ MonoBehaviour:
     status: final
     runtimeCue: MoreSamples
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: terminal.trace.accepted
     condition: second accepted trace
     repeat: once-per-session
@@ -1229,6 +1549,7 @@ MonoBehaviour:
     status: final
     runtimeCue: CategoryCalibrated
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: terminal.group.stable
     condition: required traces accepted for current category
     repeat: once-per-category
@@ -1262,6 +1583,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BootstrapCalibrated
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: terminal.bootstrap.complete
     condition: all bootstrap categories calibrated
     repeat: once-per-session
@@ -1294,6 +1616,7 @@ MonoBehaviour:
     status: final
     runtimeCue: TranslationSucceeded
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: terminal.translation.complete
     condition: automatic demonstration result displayed
     repeat: once-per-session
@@ -1327,6 +1650,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.duplicate
     condition: the label repeats a sample already accepted for this category
     repeat: first-occurrence
@@ -1360,6 +1684,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.recorded.category_mismatch
     condition: the response is recorded but the sample does not advance the active
       category trace
@@ -1395,6 +1720,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: pattern.meaning.requested
     condition: an off-category response pattern becomes stable without an assigned
       meaning
@@ -1430,6 +1756,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.blank
     condition: the drawing surface contains too little visible information
     repeat: every-occurrence
@@ -1460,6 +1787,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.text_or_symbol
     condition: the drawing contains writing or symbolic notation
     repeat: every-occurrence
@@ -1492,6 +1820,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.scene_or_action
     condition: the drawing depicts a scene or action instead of one object
     repeat: every-occurrence
@@ -1524,6 +1853,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.multiple_objects
     condition: more than one distinct object is visible
     repeat: every-occurrence
@@ -1555,6 +1885,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.unresolved_object
     condition: the vision check cannot identify one concrete object
     repeat: every-occurrence
@@ -1586,6 +1917,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.label_correction.label_mismatch
     condition: the written label does not describe the drawing
     repeat: every-occurrence
@@ -1619,6 +1951,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.label_action_or_abstract
     condition: the label names an action or abstract idea
     repeat: every-occurrence
@@ -1652,6 +1985,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.label_broad_category
     condition: the label is a category rather than a specific subject
     repeat: every-occurrence
@@ -1683,6 +2017,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.label_multiple_subjects
     condition: the label names more than one subject
     repeat: every-occurrence
@@ -1714,6 +2049,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: sample.rejected.label_classification_claim
     condition: the label argues how the subject should be interpreted
     repeat: every-occurrence
@@ -1746,6 +2082,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.very_dissatisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1777,6 +2114,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.dissatisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1807,6 +2145,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.neutral
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1837,6 +2176,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.satisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1867,6 +2207,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.very_satisfied
     condition: 'reaction subtitle variant: mutter'
     repeat: contextual
@@ -1898,6 +2239,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.very_dissatisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1928,6 +2270,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.dissatisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1959,6 +2302,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.neutral
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -1989,6 +2333,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.satisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -2019,6 +2364,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: alien.reaction.very_satisfied
     condition: 'reaction subtitle variant: narration'
     repeat: contextual
@@ -2050,6 +2396,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.after_news
     condition: 
     repeat: once-per-session
@@ -2079,6 +2426,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: 
     repeat: once-per-session
@@ -2106,6 +2454,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.car.pizza_sign
     condition: 
     repeat: once-per-session
@@ -2135,6 +2484,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.news.clip.2
     condition: 
     repeat: once-per-session
@@ -2163,6 +2513,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: PizzaApproachPresidentComment
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.approach
     condition: The president and director are walking from the parked car toward
       the restaurant entrance.
@@ -2199,6 +2550,7 @@ MonoBehaviour:
     status: final
     runtimeCue: StoragePresidentQuestion
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.storage.approach
     condition: The president and the director reach the back of the storeroom.
     repeat: once-per-session
@@ -2230,6 +2582,7 @@ MonoBehaviour:
     status: final
     runtimeCue: StorageRevealPresident
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.storage.reveal
     condition: The concealed wall panel has opened and exposed an elevator.
     repeat: once-per-session
@@ -2261,6 +2614,7 @@ MonoBehaviour:
     status: final
     runtimeCue: StorageRevealDirector
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.storage.reveal
     condition: The secret elevator entrance is open.
     repeat: once-per-session
@@ -2293,6 +2647,7 @@ MonoBehaviour:
     status: final
     runtimeCue: ElevatorDescentQuestion
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.elevator.descent
     condition: The hidden elevator has begun descending.
     repeat: once-per-session
@@ -2325,6 +2680,7 @@ MonoBehaviour:
     status: final
     runtimeCue: ElevatorDescentFirstContact
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.elevator.descent
     condition: The elevator is descending to the classified facility.
     repeat: once-per-session
@@ -2363,6 +2719,7 @@ MonoBehaviour:
     status: final
     runtimeCue: ElevatorDescentDarpa
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.elevator.descent
     condition: The elevator continues descending.
     repeat: once-per-session
@@ -2399,6 +2756,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FacilityCorridorDirector
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2427,6 +2785,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FacilityCorridorPresident
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2454,6 +2813,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FacilityCorridorDirector
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2484,6 +2844,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FacilityCorridorPresident
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2511,6 +2872,7 @@ MonoBehaviour:
     status: final
     runtimeCue: FacilityCorridorDirector
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session
@@ -2538,6 +2900,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingWide
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2565,6 +2928,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2594,6 +2958,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingWide
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2622,6 +2987,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2650,6 +3016,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2679,6 +3046,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingWide
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2707,6 +3075,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2737,6 +3106,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingWide
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2767,6 +3137,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingWide
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2794,6 +3165,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingWide
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2821,6 +3193,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingWide
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2849,6 +3222,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlideTechnical
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2877,6 +3251,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingProjectorTechnical
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2907,6 +3282,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingProjectorTechnical
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2938,6 +3314,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingProjectorTechnical
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2972,6 +3349,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -2999,6 +3377,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookProjector
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3031,6 +3410,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3058,6 +3438,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookHwangPresentation
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3088,6 +3469,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3116,6 +3498,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookHwangPresentation
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3143,6 +3526,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlideObjectSignal
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3174,6 +3558,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 5
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3205,6 +3590,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlideBanana
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3235,6 +3621,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlideDatabase
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3266,6 +3653,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3296,6 +3684,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookHwangPresentation
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3323,6 +3712,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3350,6 +3740,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlidePresidentTask
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3382,6 +3773,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlideFoodCluster
     briefingLookTarget: 5
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3410,6 +3802,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3441,6 +3834,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3468,6 +3862,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3499,6 +3894,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3526,6 +3922,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookHwangPresentation
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3554,6 +3951,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlideUfoEvidence
     briefingLookTarget: 5
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3585,6 +3983,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 5
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3615,6 +4014,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3644,6 +4044,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingSlideCategories
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3674,6 +4075,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 3
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3701,6 +4103,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingQAndAStart
     briefingLookTarget: 4
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3728,6 +4131,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3758,6 +4162,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookHwangQA
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3788,6 +4193,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3819,6 +4225,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3847,6 +4254,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3874,6 +4282,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3902,6 +4311,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3929,6 +4339,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookHwangQA
     briefingLookTarget: 4
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3959,6 +4370,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -3987,6 +4399,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -4015,6 +4428,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookDirector
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -4042,6 +4456,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 2
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -4069,6 +4484,7 @@ MonoBehaviour:
     status: final
     runtimeCue: BriefingLookHwangQA
     briefingLookTarget: 4
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -4096,6 +4512,7 @@ MonoBehaviour:
     status: final
     runtimeCue: 
     briefingLookTarget: 1
+    meetingLookTarget: 0
     triggerEvent: intro.facility.briefing
     condition: 
     repeat: once-per-session
@@ -4123,6 +4540,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.storage.approach
     condition: 
     repeat: once-per-session
@@ -4150,6 +4568,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.pizza.approach
     condition: 
     repeat: once-per-session
@@ -4177,6 +4596,7 @@ MonoBehaviour:
     status: draft
     runtimeCue: 
     briefingLookTarget: 0
+    meetingLookTarget: 0
     triggerEvent: intro.facility.corridor
     condition: 
     repeat: once-per-session

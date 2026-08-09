@@ -87,6 +87,16 @@ namespace DoodleDiplomacy.Gameplay
                 return;
             }
 
+            if (_loadedEntryScene.IsValid() &&
+                _loadedEntryScene.isLoaded &&
+                string.Equals(
+                    _loadedEntryScene.name,
+                    definition.sceneName,
+                    System.StringComparison.Ordinal))
+            {
+                return;
+            }
+
             if (_loadRoutine != null ||
                 _preloadedEntryIndex == nextIndex ||
                 _preloadingEntryIndex == nextIndex)
@@ -119,6 +129,29 @@ namespace DoodleDiplomacy.Gameplay
             if (gameplayModeHost == null)
             {
                 Debug.LogError("[GameFlowDirector] GameplayModeHost is missing.", this);
+                _loadRoutine = null;
+                yield break;
+            }
+
+            if (_loadedEntryScene.IsValid() &&
+                _loadedEntryScene.isLoaded &&
+                string.Equals(
+                    _loadedEntryScene.name,
+                    definition.sceneName,
+                    System.StringComparison.Ordinal))
+            {
+                gameplayModeHost.ExitActiveMode();
+                if (!TryEnterLoadedEntry(
+                        index,
+                        definition,
+                        _loadedEntryScene,
+                        wasPreloaded: false,
+                        handoffState: null))
+                {
+                    _loadRoutine = null;
+                    yield break;
+                }
+
                 _loadRoutine = null;
                 yield break;
             }
@@ -298,6 +331,11 @@ namespace DoodleDiplomacy.Gameplay
             {
                 Debug.LogError($"[GameFlowDirector] Scene '{definition.sceneName}' has no IGameplaySceneInstaller.", this);
                 return false;
+            }
+
+            if (installer is IGameplaySceneEntryPreparer preparer)
+            {
+                preparer.PrepareEntry(definition);
             }
 
             bool appliedHandoffState = false;

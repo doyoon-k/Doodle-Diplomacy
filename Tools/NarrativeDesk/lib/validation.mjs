@@ -7,6 +7,7 @@ const briefingLookTargets = new Set([
   4,
   5,
 ]);
+const meetingLookTargets = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
 
 export function placeholders(text = "") {
   return [...new Set([...String(text).matchAll(placeholderPattern)].map((match) => match[1]))].sort();
@@ -65,6 +66,13 @@ export function validateScenario(document) {
       push("error", `Unknown briefing look target: ${briefingLookTarget}`, id, "briefingLookTarget");
     } else if (briefingLookTarget !== 0 && beat?.sectionId !== "facility_briefing") {
       push("warning", "Briefing look target is only used in the facility briefing section.", id, "briefingLookTarget");
+    }
+
+    const meetingLookTarget = Number(beat?.meetingLookTarget ?? 0);
+    if (!meetingLookTargets.has(meetingLookTarget)) {
+      push("error", `Unknown meeting look target: ${meetingLookTarget}`, id, "meetingLookTarget");
+    } else if (meetingLookTarget !== 0 && beat?.sectionId !== "meeting_room_arrival") {
+      push("warning", "Meeting look target is only used in the meeting room arrival section.", id, "meetingLookTarget");
     }
 
     const sourceVariables = placeholders(beat?.sourceText);

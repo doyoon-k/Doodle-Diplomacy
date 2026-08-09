@@ -31,7 +31,7 @@ public sealed class DrawingBrushPreview : MonoBehaviour
 
     private void Awake()
     {
-        _propertyBlock = new MaterialPropertyBlock();
+        EnsurePropertyBlock();
         InitializeAssignedRenderers();
         Hide();
     }
@@ -234,10 +234,17 @@ public sealed class DrawingBrushPreview : MonoBehaviour
             return;
         }
 
-        targetRenderer.GetPropertyBlock(_propertyBlock);
-        _propertyBlock.SetColor(BaseColorId, color);
-        _propertyBlock.SetColor(ColorId, color);
-        targetRenderer.SetPropertyBlock(_propertyBlock);
+        MaterialPropertyBlock propertyBlock = EnsurePropertyBlock();
+        targetRenderer.GetPropertyBlock(propertyBlock);
+        propertyBlock.SetColor(BaseColorId, color);
+        propertyBlock.SetColor(ColorId, color);
+        targetRenderer.SetPropertyBlock(propertyBlock);
+    }
+
+    private MaterialPropertyBlock EnsurePropertyBlock()
+    {
+        _propertyBlock ??= new MaterialPropertyBlock();
+        return _propertyBlock;
     }
 
     private static Mesh BuildUnitDiscMesh(int segmentCount)

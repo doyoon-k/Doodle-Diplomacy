@@ -30,6 +30,8 @@ namespace DoodleDiplomacy.Gameplay
         [SerializeField] private DrawingBoardController drawingBoard;
         [Tooltip("Bridge that exports drawing textures into AI pipeline state.")]
         [SerializeField] private DrawingExportBridge drawingExportBridge;
+        [Tooltip("Physical tablet controls configured with the authoritative gameplay host at runtime.")]
+        [SerializeField] private TabletPhysicalControlsController tabletPhysicalControls;
 
         [Header("UI")]
         [Tooltip("Subtitle presenter used for dialogue and reaction captions.")]
@@ -48,6 +50,7 @@ namespace DoodleDiplomacy.Gameplay
         public DialogueSystem DialogueSystem => dialogueSystem;
         public DrawingBoardController DrawingBoard => drawingBoard;
         public DrawingExportBridge DrawingExportBridge => drawingExportBridge;
+        public TabletPhysicalControlsController TabletPhysicalControls => tabletPhysicalControls;
         public SubtitleDisplay SubtitleDisplay => subtitleDisplay;
         public TerminalDisplay TerminalDisplay => terminalDisplay;
         public SharedMonitorDisplay SharedMonitorDisplay => sharedMonitorDisplay;
@@ -60,6 +63,11 @@ namespace DoodleDiplomacy.Gameplay
             if (interactionManager != null)
             {
                 interactionManager.ConfigureGameplayModeHost(host);
+            }
+
+            if (tabletPhysicalControls != null)
+            {
+                tabletPhysicalControls.ConfigureGameplayModeHost(host);
             }
         }
 
@@ -124,6 +132,7 @@ namespace DoodleDiplomacy.Gameplay
             valid &= Require(dialogueSystem, nameof(dialogueSystem), logErrors);
             valid &= Require(drawingBoard, nameof(drawingBoard), logErrors);
             valid &= Require(drawingExportBridge, nameof(drawingExportBridge), logErrors);
+            valid &= Require(tabletPhysicalControls, nameof(tabletPhysicalControls), logErrors);
             valid &= Require(subtitleDisplay, nameof(subtitleDisplay), logErrors);
             valid &= Require(terminalDisplay, nameof(terminalDisplay), logErrors);
             valid &= Require(sharedMonitorDisplay, nameof(sharedMonitorDisplay), logErrors);

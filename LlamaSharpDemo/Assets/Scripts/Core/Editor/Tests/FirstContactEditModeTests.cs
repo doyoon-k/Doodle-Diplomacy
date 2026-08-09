@@ -666,6 +666,45 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
+        public void TerminalScreenPlaneEditorDoesNotCaptureUnrelatedAncestor()
+        {
+            var meetingRoomObject = new GameObject("MeetingRoom_Integrated");
+            try
+            {
+                var terminalObject = new GameObject("Terminal");
+                terminalObject.transform.SetParent(
+                    meetingRoomObject.transform,
+                    false);
+                terminalObject.AddComponent<TerminalDisplay>();
+                var canvasObject = new GameObject(
+                    "TerminalCanvas",
+                    typeof(RectTransform));
+                canvasObject.transform.SetParent(terminalObject.transform, false);
+                var screenObject = new GameObject(
+                    "ScreenPanel",
+                    typeof(RectTransform));
+                screenObject.transform.SetParent(canvasObject.transform, false);
+
+                Assert.IsFalse(
+                    global::TerminalScreenPlaneLayoutEditor.TryGetScreenRect(
+                        meetingRoomObject.transform,
+                        out _),
+                    "Selecting the meeting-room root must not lock Scene View to a nested terminal screen.");
+                Assert.IsTrue(
+                    global::TerminalScreenPlaneLayoutEditor.TryGetScreenRect(
+                        terminalObject.transform,
+                        out RectTransform resolvedScreen));
+                Assert.AreSame(
+                    screenObject.GetComponent<RectTransform>(),
+                    resolvedScreen);
+            }
+            finally
+            {
+                Object.DestroyImmediate(meetingRoomObject);
+            }
+        }
+
+        [Test]
         public void ProbeFeedbackMapsDomainIssuesWithoutControllerState()
         {
             FirstContactProbeLabelFeedback feedback =

@@ -817,10 +817,10 @@ MonoBehaviour:
     - locale: ko-KR
       text: "[ E ]  \uC549\uAE30"
   - key: first_contact.intro.prompt.enter_meeting
-    sourceText: '[ E ]  ENTER MEETING ROOM'
+    sourceText: '[ E ]  OPEN MEETING ROOM'
     translations:
     - locale: ko-KR
-      text: "[ E ]  \uD68C\uB2F4\uC7A5 \uC785\uC7A5"
+      text: "[ E ]  \uD68C\uB2F4\uC7A5 \uBB38 \uC5F4\uAE30"
   - key: first_contact.news.station
     sourceText: KSEA 7 NEWS
     translations:
@@ -1568,3 +1568,67 @@ MonoBehaviour:
       text: "\uC6B0\uC120 \uC790\uB9AC\uC5D0 \uC549\uC73C\uC2DC\uC8E0. \uC790\uC138\uD55C
         \uB0B4\uC6A9\uC740 \uBE0C\uB9AC\uD551\uC744 \uD1B5\uD574 \uC54C\uAC8C\uB418\uC2E4
         \uAC81\uB2C8\uB2E4."
+  - key: first_contact.intro.meeting.sit_prompt
+    sourceText: '[ E ]  SIT IN THE PRESIDENT''S CHAIR'
+    translations:
+    - locale: ko-KR
+      text: "[ E ]  \uB300\uD1B5\uB839 \uC88C\uC11D\uC5D0 \uC549\uAE30"
+  - key: first_contact.intro.meeting.who_are_you
+    sourceText: Who are you?
+    translations:
+    - locale: ko-KR
+      text: "\uC790\uB124\uB294 \uBB54\uAC00?"
+  - key: first_contact.intro.meeting.obama_introduction
+    sourceText: Ah. I'm Barack Obama, CIA, Mr. President.
+    translations:
+    - locale: ko-KR
+      text: "\uC544. \uC800\uB294 CIA \uC18C\uC18D \uBC30\uB7ED \uC624\uBC14\uB9C8\uB77C\uACE0
+        \uD569\uB2C8\uB2E4 \uAC01\uD558."
+  - key: first_contact.intro.meeting.familiar
+    sourceText: You look familiar.
+    translations:
+    - locale: ko-KR
+      text: "\uBB54\uAC00 \uB0AF\uC774 \uC775\uC740\uB370."
+  - key: first_contact.intro.meeting.cover
+    sourceText: He's an agent we're cultivating as a politician under cover.
+    translations:
+    - locale: ko-KR
+      text: "\uC704\uC7A5 \uC815\uCE58\uC778\uC73C\uB85C\uC368 \uC800\uD76C\uAC00
+        \uC721\uC131\uC911\uC778 \uC694\uC6D0\uC785\uB2C8\uB2E4."
+  - key: first_contact.intro.meeting.observer
+    sourceText: He has work related to this matter, so he'll be observing.
+    translations:
+    - locale: ko-KR
+      text: "\uC774\uBC88 \uC0AC\uC548\uACFC \uAD00\uB828\uB41C \uC5C5\uBB34\uAC00
+        \uC788\uC5B4\uC11C \uCC38\uAD00\uD558\uAE30\uB85C \uD588\uC2B5\uB2C8\uB2E4."
+  - key: first_contact.intro.meeting.rumor
+    sourceText: Huh. So the rumors were true?
+    translations:
+    - locale: ko-KR
+      text: "\uD5C8. \uC18C\uBB38\uC774 \uC0AC\uC2E4\uC774\uC5C8\uB098?"
+  - key: first_contact.intro.meeting.secret
+    sourceText: It's as classified as our contact with aliens, so you'll have to
+      keep it secret.
+    translations:
+    - locale: ko-KR
+      text: "\uC800\uD76C\uAC00 \uC9C0\uAE08 \uC678\uACC4\uC778\uACFC \uC811\uCD09\uD558\uB294
+        \uAC83\uB9CC\uD07C\uC774\uB098 \uADF9\uBE44\uC774\uB2C8 \uBE44\uBC00\uC744
+        \uC9C0\uCF1C \uC8FC\uC154\uC57C \uD560 \uAC81\uB2C8\uB2E4."
+  - key: first_contact.intro.meeting.restless
+    sourceText: I'm dying to tell someone. Being president isn't all it's cracked
+      up to be.
+    translations:
+    - locale: ko-KR
+      text: "\uC785\uC774 \uADFC\uC9C8\uAC70\uB824\uC11C \uC8FD\uACA0\uB124. \uB300\uD1B5\uB839\uB3C4
+        \uBCC4 \uAC70 \uC544\uB2C8\uB77C\uB2C8\uAE4C \uAE00\uC384."
+  - key: first_contact.intro.meeting.ready
+    sourceText: They are on their way to the meeting room now. We should prepare.
+    translations:
+    - locale: ko-KR
+      text: "\uC774\uC81C \uADF8\uB4E4\uC774 \uD68C\uB2F4\uC7A5\uC73C\uB85C \uC624\uACE0\uC788\uB2E4\uACE0
+        \uD569\uB2C8\uB2E4. \uC900\uBE44\uD558\uC2DC\uC9C0\uC694."
+  - key: first_contact.intro.objective.take_meeting_seat
+    sourceText: Take the president's seat.
+    translations:
+    - locale: ko-KR
+      text: "\uB300\uD1B5\uB839 \uC88C\uC11D\uC5D0 \uC549\uC73C\uC2ED\uC2DC\uC624."

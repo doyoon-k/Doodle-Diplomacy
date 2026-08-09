@@ -371,6 +371,9 @@ function renderBeatEditor(beat) {
   $("#briefingLookTargetField").classList.toggle(
     "hidden",
     beat.sectionId !== "facility_briefing");
+  $("#meetingLookTargetField").classList.toggle(
+    "hidden",
+    beat.sectionId !== "meeting_room_arrival");
   renderSpeakerEditor(beat);
   renderPlaybackConnection(beat);
   renderMediaTiming(beat);
@@ -1034,11 +1037,15 @@ function wireEvents() {
     const field = event.target.closest("[data-field]"); const beat = currentBeat(); if (!field || !beat) return;
     const name = field.dataset.field; const oldId = beat.id;
     if (name === "tags") beat.tags = field.value.split(",").map((value) => value.trim()).filter(Boolean);
-    else if (name === "minimumSeconds" || name === "briefingLookTarget") beat[name] = Number(field.value || 0);
+    else if (name === "minimumSeconds" || name === "briefingLookTarget" || name === "meetingLookTarget") beat[name] = Number(field.value || 0);
     else beat[name] = field.value;
     if (name === "id") state.selectedBeatId = beat.id;
     markDirty("scenario"); renderBeatHeading(beat); renderBeatPreview(beat);
     if (["id", "type", "status", "sectionId", "situation", "localizationKey", "triggerEvent"].includes(name)) renderList();
+    if (name === "sectionId") {
+      $("#briefingLookTargetField").classList.toggle("hidden", beat.sectionId !== "facility_briefing");
+      $("#meetingLookTargetField").classList.toggle("hidden", beat.sectionId !== "meeting_room_arrival");
+    }
     if (["triggerEvent", "runtimeCue"].includes(name)) renderPlaybackConnection(beat);
     if (["minimumSeconds", "triggerEvent", "sectionId"].includes(name)) renderMediaTiming(beat);
     if (["speakerId", "speakerFallback", "speakerLocalizationKey"].includes(name)) renderSpeakerEditor(beat);

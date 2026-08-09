@@ -23,7 +23,7 @@ namespace DoodleDiplomacy.Narrative.Editor
             {
                 scenario.ApplyDocument(NarrativeScenarioJson.Parse(json));
                 Assert.That(scenario.ScenarioId, Is.EqualTo("first_contact_day1"));
-                Assert.That(scenario.Beats.Count, Is.EqualTo(134));
+                Assert.That(scenario.Beats.Count, Is.EqualTo(144));
                 Assert.That(
                     scenario.TryGetBeatByRuntimeCue("CategoryCalibrated", out NarrativeBeat beat),
                     Is.True);
@@ -43,11 +43,15 @@ namespace DoodleDiplomacy.Narrative.Editor
                 Assert.That(
                     scenario.Beats.Count(item =>
                         item.triggerEvent == "intro.facility.corridor"),
-                    Is.EqualTo(5));
+                    Is.EqualTo(6));
                 Assert.That(
                     scenario.Beats.Count(item =>
                         item.triggerEvent == "intro.facility.briefing"),
                     Is.EqualTo(55));
+                Assert.That(
+                    scenario.Beats.Count(item =>
+                        item.triggerEvent == "intro.meeting.arrival"),
+                    Is.EqualTo(9));
                 Assert.That(
                     scenario.TryGetBeat(
                         "facility_corridor_discovery_0073",
@@ -122,6 +126,22 @@ namespace DoodleDiplomacy.Narrative.Editor
                                 item.briefingLookTarget)),
                     Is.True,
                     "Briefing look targets must use a supported Narrative Desk option.");
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "meeting_director_cover_0139",
+                        out NarrativeBeat meetingDirectorBeat),
+                    Is.True);
+                Assert.That(
+                    meetingDirectorBeat.meetingLookTarget,
+                    Is.EqualTo(MeetingLookTarget.Director));
+                Assert.That(
+                    scenario.TryGetBeat(
+                        "meeting_hwang_ready_0144",
+                        out NarrativeBeat meetingHwangBeat),
+                    Is.True);
+                Assert.That(
+                    meetingHwangBeat.meetingLookTarget,
+                    Is.EqualTo(MeetingLookTarget.Hwang));
             }
             finally
             {

@@ -43,6 +43,20 @@ test("rejects an unknown briefing look target", () => {
     issue.severity === "error" && issue.field === "briefingLookTarget"));
 });
 
+test("rejects an unknown meeting look target", () => {
+  const issues = validateScenario({
+    scenarioId: "test", sourceLocale: "en-US", locales: ["en-US"],
+    sections: [{ id: "meeting_room_arrival" }],
+    beats: [{
+      id: "line", sectionId: "meeting_room_arrival", type: "dialogue",
+      triggerEvent: "intro.meeting.arrival", meetingLookTarget: 99,
+      sourceText: "Hello",
+    }],
+  });
+  assert.ok(issues.some((issue) =>
+    issue.severity === "error" && issue.field === "meetingLookTarget"));
+});
+
 test("the checked-in First Contact scenario validates without errors", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const file = path.resolve(here, "../../../LlamaSharpDemo/Assets/Narrative/first_contact_day1.narrative.json");

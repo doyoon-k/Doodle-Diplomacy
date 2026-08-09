@@ -79,9 +79,11 @@ namespace DoodleDiplomacy.Editor
                 }
 
                 Vector3 position = lookTarget.transform.position;
-                float size = Mathf.Max(
-                    0.035f,
-                    HandleUtility.GetHandleSize(position) * 0.08f);
+                if (!TryGetHandleSize(sceneView, position, out float size))
+                {
+                    continue;
+                }
+
                 Handles.color = lookTarget.SceneViewColor;
 
                 if (Handles.Button(
@@ -94,7 +96,8 @@ namespace DoodleDiplomacy.Editor
                     Selection.activeGameObject = lookTarget.gameObject;
                 }
 
-                if (origin != null)
+                if (origin != null &&
+                    IsDrawableFromSceneView(sceneView, origin.position))
                 {
                     Handles.DrawDottedLine(origin.position, position, 5f);
                 }
@@ -104,6 +107,62 @@ namespace DoodleDiplomacy.Editor
                     lookTarget.name,
                     EditorStyles.miniBoldLabel);
             }
+        }
+
+        private static bool TryGetHandleSize(
+            SceneView sceneView,
+            Vector3 position,
+            out float size)
+        {
+            size = 0f;
+            if (!IsDrawableFromSceneView(sceneView, position))
+            {
+                return false;
+            }
+
+            float handleSize = HandleUtility.GetHandleSize(position);
+            if (!float.IsFinite(handleSize))
+            {
+                return false;
+            }
+
+            size = Mathf.Max(0.035f, handleSize * 0.08f);
+            return true;
+        }
+
+        private static bool IsDrawableFromSceneView(
+            SceneView sceneView,
+            Vector3 position)
+        {
+            UnityEngine.Camera camera = sceneView != null
+                ? sceneView.camera
+                : null;
+            if (camera == null ||
+                !float.IsFinite(position.x) ||
+                !float.IsFinite(position.y) ||
+                !float.IsFinite(position.z))
+            {
+                return false;
+            }
+
+            Vector3 cameraPosition = camera.transform.position;
+            Vector3 cameraForward = camera.transform.forward;
+            if (!float.IsFinite(cameraPosition.x) ||
+                !float.IsFinite(cameraPosition.y) ||
+                !float.IsFinite(cameraPosition.z) ||
+                !float.IsFinite(cameraForward.x) ||
+                !float.IsFinite(cameraForward.y) ||
+                !float.IsFinite(cameraForward.z))
+            {
+                return false;
+            }
+
+            float depth = Vector3.Dot(
+                cameraForward,
+                position - cameraPosition);
+            return float.IsFinite(depth) &&
+                   depth > Mathf.Max(0.001f, camera.nearClipPlane) &&
+                   depth < camera.farClipPlane;
         }
     }
 }

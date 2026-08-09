@@ -11,6 +11,11 @@
             "surface": "dialogue"
         },
         {
+            "key": "first_contact.intro.meeting.sit_prompt",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
             "key": "first_contact.intro.objective.board_elevator",
             "screenId": "first_contact.intro",
             "surface": "caption"
@@ -42,6 +47,11 @@
         },
         {
             "key": "first_contact.intro.objective.take_briefing_seat",
+            "screenId": "first_contact.intro",
+            "surface": "caption"
+        },
+        {
+            "key": "first_contact.intro.objective.take_meeting_seat",
             "screenId": "first_contact.intro",
             "surface": "caption"
         },

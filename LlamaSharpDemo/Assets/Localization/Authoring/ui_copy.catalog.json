@@ -1814,6 +1814,23 @@
       "tags": []
     },
     {
+      "key": "first_contact.intro.objective.take_meeting_seat",
+      "sourceText": "Take the president's seat.",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "대통령 좌석에 앉으십시오.",
+          "status": "final"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "interactive intro objective · meeting seat",
+      "status": "final",
+      "tags": ["meeting"]
+    },
+    {
       "key": "first_contact.intro.prompt.exit_vehicle",
       "sourceText": "[ E ]  EXIT VEHICLE",
       "localizedTexts": [
@@ -1865,19 +1882,36 @@
       "tags": []
     },
     {
-      "key": "first_contact.intro.prompt.enter_meeting",
-      "sourceText": "[ E ]  ENTER MEETING ROOM",
+      "key": "first_contact.intro.meeting.sit_prompt",
+      "sourceText": "[ E ]  SIT IN THE PRESIDENT'S CHAIR",
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "[ E ]  회담장 입장",
+          "text": "[ E ]  대통령 좌석에 앉기",
+          "status": "draft"
+        }
+      ],
+      "domain": "first_contact.intro",
+      "surface": "caption",
+      "screenId": "first_contact.intro",
+      "context": "existing gameplay room · president seat interaction",
+      "status": "draft",
+      "tags": ["meeting"]
+    },
+    {
+      "key": "first_contact.intro.prompt.enter_meeting",
+      "sourceText": "[ E ]  OPEN MEETING ROOM",
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "[ E ]  회담장 문 열기",
           "status": "final"
         }
       ],
       "domain": "first_contact.intro",
       "surface": "caption",
       "screenId": "first_contact.intro",
-      "context": "interactive intro prompt · meeting room",
+      "context": "interactive intro prompt · meeting room door",
       "status": "final",
       "tags": []
     },

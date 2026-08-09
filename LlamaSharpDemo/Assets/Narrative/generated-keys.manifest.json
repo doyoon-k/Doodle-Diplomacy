@@ -1,6 +1,51 @@
 {
     "entries": [
         {
+            "key": "first_contact.intro.meeting.who_are_you",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_president_who_are_you_0136"
+        },
+        {
+            "key": "first_contact.intro.meeting.obama_introduction",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_obama_introduction_0137"
+        },
+        {
+            "key": "first_contact.intro.meeting.familiar",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_president_familiar_0138"
+        },
+        {
+            "key": "first_contact.intro.meeting.cover",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_director_cover_0139"
+        },
+        {
+            "key": "first_contact.intro.meeting.observer",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_director_observer_0140"
+        },
+        {
+            "key": "first_contact.intro.meeting.rumor",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_president_rumor_0141"
+        },
+        {
+            "key": "first_contact.intro.meeting.secret",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_director_secret_0142"
+        },
+        {
+            "key": "first_contact.intro.meeting.restless",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_president_restless_0143"
+        },
+        {
+            "key": "first_contact.intro.meeting.ready",
+            "scenarioId": "first_contact_day1",
+            "beatId": "meeting_hwang_ready_0144"
+        },
+        {
             "key": "first_contact.intro.news.ufo_archive",
             "scenarioId": "first_contact_day1",
             "beatId": "news_ufo_archive"

@@ -112,6 +112,7 @@ namespace DoodleDiplomacy.Narrative
         public string status = "draft";
         public string runtimeCue = string.Empty;
         public BriefingLookTarget briefingLookTarget;
+        public MeetingLookTarget meetingLookTarget;
         public string triggerEvent = string.Empty;
         public string condition = string.Empty;
         public string repeat = "once";
@@ -176,6 +177,18 @@ namespace DoodleDiplomacy.Narrative
         HwangPresentation = 3,
         HwangQa = 4,
         Projector = 5
+    }
+
+    public enum MeetingLookTarget
+    {
+        UseSpeakerDefault = 0,
+        KeepCurrent = 1,
+        Obama = 2,
+        Director = 3,
+        Hwang = 4,
+        Door = 5,
+        Coffee = 6,
+        Terminal = 7
     }
 
     [Serializable]

@@ -73,6 +73,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 flow.CompleteCurrentEntry();
             }
+#if UNITY_EDITOR
+            else if (GetComponent<FirstContactIntroSceneInstaller>()
+                     ?.TryStartEmbeddedGameplayForDirectPreview() == true)
+            {
+                return;
+            }
+#endif
             else
             {
                 Debug.LogWarning("[FirstContactIntroMode] No game flow controller is available.", this);

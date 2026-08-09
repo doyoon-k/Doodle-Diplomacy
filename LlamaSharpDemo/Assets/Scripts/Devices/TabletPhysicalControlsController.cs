@@ -16,8 +16,6 @@ namespace DoodleDiplomacy.Devices
         [SerializeField] private DrawingBoardController drawingBoard;
         [Tooltip("Camera used to raycast pointer input against tablet control colliders.")]
         [SerializeField] private UnityEngine.Camera inputCamera;
-        [Tooltip("Gameplay mode host used to route tablet control actions in the current mode.")]
-        [SerializeField] private GameplayModeHost gameplayModeHost;
         [Tooltip("Root GameObject that is enabled when tablet controls are available.")]
         [SerializeField] private GameObject controlsRoot;
 
@@ -165,8 +163,11 @@ namespace DoodleDiplomacy.Devices
         private float _spectrumPositionNormalized;
         private Color _selectedColor = Color.black;
         private IDrawingControlFeature _drawingControls;
+        private GameplayModeHost _gameplayModeHost;
         private TabletTutorialHighlightGroup _tutorialHighlightGroup;
         private bool _tutorialInputLocked;
+
+        public GameplayModeHost GameplayModeHost => _gameplayModeHost;
 
         private void SetDrawingBoard(DrawingBoardController targetDrawingBoard)
         {
@@ -203,16 +204,16 @@ namespace DoodleDiplomacy.Devices
 
         private void ValidateInspectorReferences()
         {
-            gameplayModeHost = gameplayModeHost != null ? gameplayModeHost : GameplayModeHost.Instance;
-            if (gameplayModeHost == null)
-            {
-                Debug.LogError("[TabletPhysicalControlsController] GameplayModeHost must be assigned in the Inspector.", this);
-            }
-
             if (inputCamera == null)
             {
                 Debug.LogError("[TabletPhysicalControlsController] Input camera must be assigned in the Inspector.", this);
             }
+        }
+
+        public void ConfigureGameplayModeHost(GameplayModeHost host)
+        {
+            _gameplayModeHost = host;
+            RefreshStateFromGameplayModeHost();
         }
 
         public void Initialize(DrawingBoardController targetDrawingBoard)
@@ -370,8 +371,9 @@ namespace DoodleDiplomacy.Devices
 
         private void RefreshStateFromGameplayModeHost()
         {
-            ValidateInspectorReferences();
-            GameState state = gameplayModeHost != null ? gameplayModeHost.CurrentState : GameState.Title;
+            GameState state = _gameplayModeHost != null
+                ? _gameplayModeHost.CurrentState
+                : GameState.Title;
             OnGameStateChanged(state);
         }
 

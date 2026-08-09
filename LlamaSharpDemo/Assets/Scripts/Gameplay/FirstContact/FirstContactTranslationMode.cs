@@ -38,6 +38,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private FirstContactSemanticMemory _semanticMemory;
         private FirstContactBootstrapMapBuilder _bootstrapMapBuilder;
         private FirstContactEncounterDirector _encounterDirector;
+        private FirstContactMeetingArrivalController _meetingArrival;
         private TabletPhysicalControlsController _tabletControls;
         private FirstContactSessionContext _session;
         private Coroutine _routine;
@@ -89,6 +90,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public void Exit()
         {
             StopActiveRoutine();
+            _meetingArrival?.StopPresentation();
             _encounterDirector?.StopPresentation();
             _tabletControls?.ClearTutorialHighlight();
             // A preflight probe validates the real authoring path but must never seed
@@ -233,6 +235,16 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             ResolveRuntimeServices();
             ClearTechnicalFailureState();
+            if (_meetingArrival != null &&
+                _meetingArrival.ShouldPlay(_context, _startWithIntro))
+            {
+                yield return _meetingArrival.PlayRoutine(
+                    _context,
+                    config != null && config.narrativeSettings != null
+                        ? config.narrativeSettings.narrativeScenario
+                        : null);
+            }
+
             _runtimeWaveformSessionSeed = UnityEngine.Random.Range(1, int.MaxValue);
             _bootstrapMapBuilder.Reset(_runtimeWaveformSessionSeed);
             _session = new FirstContactSessionContext();
@@ -1919,6 +1931,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _encounterDirector = gameObject.AddComponent<FirstContactEncounterDirector>();
             }
 
+            _meetingArrival = FindFirstObjectByType<FirstContactMeetingArrivalController>(
+                FindObjectsInactive.Include);
+
             _encounterDirector.Configure(_context, config != null ? config.narrativeSettings : null);
         }
 
@@ -2147,6 +2162,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void StopActiveRoutine()
         {
+            _meetingArrival?.StopPresentation();
             if (_routine != null)
             {
                 StopCoroutine(_routine);

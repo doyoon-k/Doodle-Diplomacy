@@ -315,8 +315,15 @@ public sealed class FirstContactIntroGuidePointEditor : Editor
         {
             normal = { textColor = color }
         };
+        Vector3 labelPosition =
+            point.transform.position + Vector3.up * 1.2f;
+        if (!FirstContactSceneViewHandleSafety.IsDrawable(labelPosition))
+        {
+            return;
+        }
+
         Handles.Label(
-            point.transform.position + Vector3.up * 1.2f,
+            labelPosition,
             $"{point.RouteOrder:00}  {point.DisplayName}{suffix}",
             style);
     }
@@ -377,14 +384,60 @@ public sealed class FirstContactIntroGuideControllerEditor : Editor
         {
             if (points[i] != null && points[i + 1] != null)
             {
+                Vector3 start = points[i].position;
+                Vector3 end = points[i + 1].position;
+                if (!FirstContactSceneViewHandleSafety.IsDrawable(start) ||
+                    !FirstContactSceneViewHandleSafety.IsDrawable(end))
+                {
+                    continue;
+                }
+
                 Handles.DrawAAPolyLine(
                     selected ? 4f : 2f,
-                    points[i].position,
-                    points[i + 1].position);
+                    start,
+                    end);
             }
         }
 
         Handles.color = previous;
+    }
+}
+
+internal static class FirstContactSceneViewHandleSafety
+{
+    public static bool IsDrawable(Vector3 position)
+    {
+        SceneView sceneView = SceneView.currentDrawingSceneView ??
+                              SceneView.lastActiveSceneView;
+        UnityEngine.Camera camera = sceneView != null
+            ? sceneView.camera
+            : null;
+        if (camera == null ||
+            !float.IsFinite(position.x) ||
+            !float.IsFinite(position.y) ||
+            !float.IsFinite(position.z))
+        {
+            return false;
+        }
+
+        Vector3 cameraPosition = camera.transform.position;
+        Vector3 cameraForward = camera.transform.forward;
+        if (!float.IsFinite(cameraPosition.x) ||
+            !float.IsFinite(cameraPosition.y) ||
+            !float.IsFinite(cameraPosition.z) ||
+            !float.IsFinite(cameraForward.x) ||
+            !float.IsFinite(cameraForward.y) ||
+            !float.IsFinite(cameraForward.z))
+        {
+            return false;
+        }
+
+        float depth = Vector3.Dot(
+            cameraForward,
+            position - cameraPosition);
+        return float.IsFinite(depth) &&
+               depth > Mathf.Max(0.001f, camera.nearClipPlane) &&
+               depth < camera.farClipPlane;
     }
 }
 

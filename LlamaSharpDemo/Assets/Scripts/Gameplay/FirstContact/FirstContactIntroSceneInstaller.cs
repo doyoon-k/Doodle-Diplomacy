@@ -1,3 +1,5 @@
+using System;
+using DoodleDiplomacy.Data;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -6,8 +8,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     [DisallowMultipleComponent]
     public sealed class FirstContactIntroSceneInstaller : MonoBehaviour,
         IGameplaySceneInstaller,
+        IGameplaySceneModeResolver,
+        IGameplaySceneEntryPreparer,
         IGameplaySceneHandoff
     {
+        private const string TranslationModeTag = "first-contact-translation";
+
         private sealed class ElevatorHandoffState
         {
             public FirstContactIntroPlayerController Player;
@@ -24,7 +30,29 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField] private string sceneId = "first-contact-intro";
         [SerializeField] private FirstContactIntroMode defaultModeBehaviour;
 
+        [Header("Embedded Meeting Gameplay")]
+        [Tooltip("Gameplay references moved from GameScene into the Facility scene.")]
+        [SerializeField] private SceneReferenceHub embeddedGameplayReferences;
+        [Tooltip("Inactive camera/UI/gameplay systems enabled after the president takes the meeting seat.")]
+        [SerializeField] private GameObject embeddedGameplayRoot;
+        [Tooltip("Facility-only presentation roots hidden when the embedded meeting gameplay begins.")]
+        [SerializeField] private GameObject[] introPresentationRoots = Array.Empty<GameObject>();
+
+        private bool _embeddedGameplayPrepared;
+
         public string SceneId => string.IsNullOrWhiteSpace(sceneId) ? gameObject.scene.name : sceneId;
+
+        private void Awake()
+        {
+            FirstContactIntroSceneReferences references =
+                defaultModeBehaviour != null
+                    ? defaultModeBehaviour.SceneReferences
+                    : FindComponentInScene<FirstContactIntroSceneReferences>();
+            FirstContactTemporaryAudio.Apply(
+                references,
+                FindComponentInScene<FirstContactSecretElevatorSequence>(),
+                FindComponentInScene<FirstContactFacilityElevatorArrival>());
+        }
 
         public void Configure(string id, FirstContactIntroMode mode)
         {
@@ -32,8 +60,63 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             defaultModeBehaviour = mode;
         }
 
+        public void ConfigureEmbeddedGameplay(
+            SceneReferenceHub gameplayReferences,
+            GameObject gameplayRoot,
+            GameObject[] presentationRoots)
+        {
+            embeddedGameplayReferences = gameplayReferences;
+            embeddedGameplayRoot = gameplayRoot;
+            introPresentationRoots = presentationRoots ?? Array.Empty<GameObject>();
+        }
+
+        public void PrepareEntry(FlowEntryDefinition entry)
+        {
+            _embeddedGameplayPrepared = IsEmbeddedGameplayEntry(entry);
+            if (embeddedGameplayRoot != null)
+            {
+                embeddedGameplayRoot.SetActive(_embeddedGameplayPrepared);
+            }
+
+            for (int i = 0; i < introPresentationRoots.Length; i++)
+            {
+                GameObject root = introPresentationRoots[i];
+                if (root != null)
+                {
+                    root.SetActive(!_embeddedGameplayPrepared);
+                }
+            }
+
+            FirstContactIntroSequenceController sequence =
+                defaultModeBehaviour != null
+                    ? defaultModeBehaviour.SequenceController
+                    : FindComponentInScene<FirstContactIntroSequenceController>();
+            if (sequence?.Player != null)
+            {
+                sequence.Player.gameObject.SetActive(!_embeddedGameplayPrepared);
+            }
+
+            if (sequence?.Guide != null)
+            {
+                // The Facility director is scene continuity, not an intro-only
+                // presentation object. Keep the actor who walked in with the
+                // player alive when the embedded meeting gameplay takes over.
+                sequence.Guide.gameObject.SetActive(true);
+            }
+
+            if (sequence != null)
+            {
+                sequence.RebindMeetingCastContinuity();
+            }
+        }
+
         public GameplayModeContext CreateContext(GameplayModeHost host)
         {
+            if (_embeddedGameplayPrepared && embeddedGameplayReferences != null)
+            {
+                return embeddedGameplayReferences.CreateContext(host);
+            }
+
             return new GameplayModeContext(
                 null,
                 null,
@@ -52,6 +135,95 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             return defaultModeBehaviour;
         }
+
+        public MonoBehaviour GetModeBehaviour(FlowEntryDefinition entry)
+        {
+            if (IsEmbeddedGameplayEntry(entry) && embeddedGameplayReferences != null)
+            {
+                return embeddedGameplayReferences.GetModeBehaviour(entry);
+            }
+
+            return defaultModeBehaviour;
+        }
+
+        private bool IsEmbeddedGameplayEntry(FlowEntryDefinition entry)
+        {
+            return embeddedGameplayReferences != null &&
+                   entry != null &&
+                   string.Equals(
+                       entry.entryTag,
+                       TranslationModeTag,
+                       StringComparison.Ordinal);
+        }
+
+#if UNITY_EDITOR
+        public bool TryStartEmbeddedGameplayForDirectPreview()
+        {
+            const string meetingEntryPath =
+                "Assets/Data/FirstContact/FlowEntry_FirstContactTranslationAfterIntro.asset";
+            FlowEntryDefinition directPreviewMeetingEntry =
+                UnityEditor.AssetDatabase.LoadAssetAtPath<FlowEntryDefinition>(meetingEntryPath);
+            if (embeddedGameplayReferences == null ||
+                embeddedGameplayRoot == null ||
+                directPreviewMeetingEntry == null ||
+                !IsEmbeddedGameplayEntry(directPreviewMeetingEntry))
+            {
+                Debug.LogError(
+                    "[FirstContactIntroSceneInstaller] Direct meeting preview references are incomplete.",
+                    this);
+                return false;
+            }
+
+            MonoBehaviour modeBehaviour = GetModeBehaviour(directPreviewMeetingEntry);
+            if (modeBehaviour is not IGameplayMode ||
+                modeBehaviour is not IGameplaySessionController session)
+            {
+                Debug.LogError(
+                    "[FirstContactIntroSceneInstaller] The direct meeting preview mode is invalid.",
+                    modeBehaviour != null ? modeBehaviour : this);
+                return false;
+            }
+
+            GameplayModeHost host = GameplayModeHost.Instance;
+            bool createdPreviewHost = host == null;
+            if (createdPreviewHost)
+            {
+                var hostObject = new GameObject("DirectPreview_GameplayModeHost")
+                {
+                    hideFlags = HideFlags.DontSave
+                };
+                host = hostObject.AddComponent<GameplayModeHost>();
+            }
+
+            // Bind consumers before activating the dormant gameplay hierarchy so
+            // their first OnEnable/Update observes the same authoritative host.
+            embeddedGameplayReferences.ConfigureRuntime(host);
+            PrepareEntry(directPreviewMeetingEntry);
+
+            GameplayModeContext context = CreateContext(host);
+            context.Services.Register(directPreviewMeetingEntry);
+            if (!host.EnterMode(modeBehaviour, context))
+            {
+                PrepareEntry(null);
+                if (createdPreviewHost)
+                {
+                    Destroy(host.gameObject);
+                }
+
+                return false;
+            }
+
+            if (directPreviewMeetingEntry.autoStartSession)
+            {
+                session.StartGame(directPreviewMeetingEntry.startSessionWithIntro);
+            }
+
+            Debug.Log(
+                "[FirstContactIntroSceneInstaller] Entered embedded meeting mode for direct Facility preview.",
+                this);
+            return true;
+        }
+#endif
 
         public object CaptureHandoffState()
         {
@@ -219,6 +391,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
                 sequence?.AdoptGuideFromSceneHandoff(guide);
                 RebindBriefingDirectorLookTarget(guide);
+                sequence?.RebindMeetingCastContinuity();
                 if (authoredFacilityGuide != null &&
                     authoredFacilityGuide != guide)
                 {

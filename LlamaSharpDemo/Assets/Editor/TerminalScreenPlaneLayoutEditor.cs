@@ -1,3 +1,4 @@
+using DoodleDiplomacy.Devices;
 using UnityEditor;
 using UnityEngine;
 
@@ -247,6 +248,14 @@ internal static class TerminalScreenPlaneLayoutEditor
             }
 
             current = current.parent;
+        }
+
+        bool selectedTerminalRoot =
+            selectedTransform.GetComponent<TerminalDisplay>() != null ||
+            selectedTransform.name == "TerminalCanvas";
+        if (!selectedTerminalRoot)
+        {
+            return false;
         }
 
         RectTransform[] descendants =

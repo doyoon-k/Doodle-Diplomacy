@@ -25,6 +25,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField] private FirstContactIntroInteractable elevatorInteraction;
         [SerializeField] private FirstContactIntroInteractable briefingSeatInteraction;
         [SerializeField] private FirstContactIntroInteractable meetingRoomInteraction;
+        [SerializeField] private FirstContactIntroInteractable meetingSeatInteraction;
         [SerializeField] private FirstContactNewsBroadcastPlayer newsBroadcast;
         [SerializeField] private NarrativeScenarioAsset narrativeScenario;
         [SerializeField] private FirstContactVehicleRouteController vehicleRoute;
@@ -77,9 +78,25 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField, Min(0f)] private float briefingExitBlendSeconds = 0.55f;
         [Tooltip("Raised for BriefingSlide* runtime cues. Add the projector image swap here when slide resources are ready.")]
         [SerializeField] private BriefingVisualCueEvent briefingVisualCue = new();
+        [Header("Facility Meeting Room")]
+        [SerializeField] private FirstContactMeetingArrivalController meetingArrival;
+        [Tooltip("The same Doctor Hwang actor used during the Facility briefing.")]
+        [SerializeField] private Transform meetingHwangActor;
+        [Tooltip("Authored corridor points Doctor Hwang follows after the briefing ends.")]
+        [SerializeField] private Transform[] meetingHwangApproachPath = Array.Empty<Transform>();
+        [SerializeField, Min(0.1f)] private float meetingHwangWalkSpeed = 2.1f;
+        [Tooltip("Authored standing pose reached by Doctor Hwang inside the meeting room.")]
+        [SerializeField] private Transform meetingHwangPose;
+        [SerializeField, Min(0f)] private float meetingHwangEnterSeconds = 1.1f;
+        [Tooltip("Authored standing pose reached by the same director who guides the player from the briefing room.")]
+        [SerializeField] private Transform meetingDirectorPose;
+        [SerializeField, Min(0f)] private float meetingDoorOpenSeconds = 0.8f;
+        [SerializeField, Min(0f)] private float meetingDirectorMoveSeconds = 1.1f;
+        [SerializeField, Min(0f)] private float meetingSeatMoveSeconds = 0.5f;
+        [SerializeField, Min(0f)] private float meetingSeatViewBlendSeconds = 0.55f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [Header("Debug Shortcuts")]
-        [Tooltip("Editor and Development Build only. Skips the news, drive and exit animation, then starts outside the parked car.")]
+        [Tooltip("Editor and Development Build only. On Surface, skips to the vehicle exit. During the Facility briefing, skips the entire briefing presentation.")]
         [SerializeField] private bool enableDebugShortcuts = true;
         [SerializeField] private Key skipToVehicleExitKey = Key.F8;
 #endif
@@ -98,6 +115,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Coroutine _elevatorRideRoutine;
         private Coroutine _facilityArrivalRoutine;
         private Coroutine _facilityCorridorDialogueRoutine;
+        private Coroutine _meetingHwangApproachRoutine;
+        private Coroutine _meetingRoomEntryRoutine;
+        private Coroutine _meetingSeatRoutine;
         private FirstContactNewsSubtitleDisplay _dialogueDisplay;
         private readonly List<NarrativeBeat> _activeDialogueBeats = new();
         private bool _begun;
@@ -126,7 +146,46 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public bool IsBusy => _busy;
         public FirstContactIntroSegment Segment => segment;
         public Transform NewsCameraAnchor => newsCameraAnchor;
+        public FirstContactIntroPlayerController Player => player;
         public FirstContactIntroGuideController Guide => guide;
+        public Transform DoctorHwangActor => meetingHwangActor;
+
+        public void RebindMeetingCastContinuity()
+        {
+            if (meetingArrival == null)
+            {
+                foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+                {
+                    meetingArrival = root.GetComponentInChildren<
+                        FirstContactMeetingArrivalController>(true);
+                    if (meetingArrival != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (meetingArrival == null)
+            {
+                return;
+            }
+
+            FirstContactMeetingLookTarget directorTarget = guide != null
+                ? guide.GetComponentInChildren<FirstContactMeetingLookTarget>(true)
+                : null;
+            if (guide != null)
+            {
+                meetingArrival.RebindDirector(guide.transform, directorTarget);
+            }
+
+            FirstContactMeetingLookTarget hwangTarget = meetingHwangActor != null
+                ? meetingHwangActor.GetComponentInChildren<FirstContactMeetingLookTarget>(true)
+                : null;
+            if (meetingHwangActor != null)
+            {
+                meetingArrival.RebindDoctorHwang(meetingHwangActor, hwangTarget);
+            }
+        }
 
         public bool TryCaptureDialogueForSceneHandoff(
             out string speaker,
@@ -249,6 +308,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             newsCameraAnchor = broadcastCameraAnchor;
         }
 
+        public void ConfigureMeetingRoom(
+            FirstContactIntroInteractable roomInteraction,
+            FirstContactIntroInteractable seatInteraction)
+        {
+            meetingRoomInteraction = roomInteraction;
+            meetingSeatInteraction = seatInteraction;
+        }
+
         private IEnumerator Start()
         {
             yield return null;
@@ -282,8 +349,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!enableDebugShortcuts ||
                 !_begun ||
-                segment != FirstContactIntroSegment.Surface ||
-                _surfaceVehicleExitCompleted ||
                 skipToVehicleExitKey == Key.None ||
                 Keyboard.current == null)
             {
@@ -293,7 +358,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             var shortcut = Keyboard.current[skipToVehicleExitKey];
             if (shortcut != null && shortcut.wasPressedThisFrame)
             {
-                DebugSkipToVehicleExit();
+                if (segment == FirstContactIntroSegment.Surface &&
+                    !_surfaceVehicleExitCompleted)
+                {
+                    DebugSkipToVehicleExit();
+                }
+                else if (segment == FirstContactIntroSegment.Facility)
+                {
+                    DebugSkipBriefing();
+                }
             }
 #endif
         }
@@ -328,6 +401,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             if (segment == FirstContactIntroSegment.Surface)
             {
+                FirstContactTemporaryAudio.StartSurfaceVehicleLoop();
                 EnsureVehicleRoute();
                 PrepareSurfaceDirectorActor();
                 exitVehicleInteraction?.SetAvailable(false);
@@ -356,6 +430,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
             else
             {
+                RebindMeetingCastContinuity();
+                FirstContactTemporaryAudio.StartFacilityAmbience();
                 _facilityGuideAtBriefing = false;
                 _facilityCorridorDialogueComplete = false;
                 player?.SetContextualInteraction(null);
@@ -364,6 +440,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 player?.SetLookEnabled(_receivedPersistentPlayerHandoff);
                 briefingSeatInteraction?.SetAvailable(false);
                 meetingRoomInteraction?.SetAvailable(false);
+                meetingSeatInteraction?.SetAvailable(false);
                 hud?.ClearObjective();
                 guide?.Stop();
                 facilityElevatorArrival?.PrepareClosed();
@@ -460,6 +537,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _facilityCorridorDialogueRoutine = null;
             }
 
+            if (_meetingHwangApproachRoutine != null)
+            {
+                StopCoroutine(_meetingHwangApproachRoutine);
+                _meetingHwangApproachRoutine = null;
+            }
+
+            if (_meetingRoomEntryRoutine != null)
+            {
+                StopCoroutine(_meetingRoomEntryRoutine);
+                _meetingRoomEntryRoutine = null;
+            }
+
+            if (_meetingSeatRoutine != null)
+            {
+                StopCoroutine(_meetingSeatRoutine);
+                _meetingSeatRoutine = null;
+            }
+
             _facilityGuideAtBriefing = false;
             _facilityCorridorDialogueComplete = false;
             _surfaceVehicleExitCompleted = false;
@@ -467,6 +562,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _activeBriefingCameraAnchor = null;
 
             UnsubscribeNewsPlaybackClock();
+            FirstContactTemporaryAudio.StopSurfaceAudio();
             newsBroadcast?.StopBroadcast();
             guide?.Stop();
             vehicleRoute?.StopAndRestore();
@@ -478,6 +574,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             hud?.ClearObjective();
             hud?.ClearPrompt();
             hud?.SetCrosshairVisible(true);
+            meetingSeatInteraction?.SetAvailable(false);
             secretElevatorSequence?.ResetSequence();
             facilityElevatorArrival?.PrepareClosed();
             ResetSurfaceNarrativeZones();
@@ -531,6 +628,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private IEnumerator NewsBroadcastRoutine()
         {
+            FirstContactTemporaryAudio.PlaySurfaceTelevisionNoise();
             SubscribeNewsPlaybackClock();
             vehicleRoute?.SetCruisePaused(true);
             yield return newsBroadcast.PlayBroadcastRoutine();
@@ -1065,6 +1163,40 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _busy = true;
         }
 
+        [ContextMenu("DEBUG/Skip Facility Briefing")]
+        public void DebugSkipBriefing()
+        {
+            if (!_begun ||
+                segment != FirstContactIntroSegment.Facility ||
+                _seatRoutine == null)
+            {
+                return;
+            }
+
+            Transform exitTarget = briefingSeatInteraction != null
+                ? briefingSeatInteraction.SecondaryTarget
+                : null;
+            if (player == null || exitTarget == null)
+            {
+                Debug.LogError(
+                    "[FirstContactIntro] Debug briefing skip requires the player " +
+                    "and the briefing seat exit target.",
+                    this);
+                return;
+            }
+
+            StopTrackedCoroutine(ref _seatRoutine);
+            _dialogueDisplay?.HideImmediate();
+            briefingPresentation?.EndPresentation();
+            _activeBriefingCameraAnchor = null;
+            player.RestoreView();
+            CompleteBriefingState(player, exitTarget);
+
+            Debug.Log(
+                $"[FirstContactIntro] Skipped the Facility briefing with {skipToVehicleExitKey}.",
+                this);
+        }
+
         private void SnapSurfaceDirectorToExit()
         {
             if (!_surfaceDirectorPrepared ||
@@ -1141,20 +1273,250 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     goto case FirstContactIntroInteractionAction.EnterMeetingRoom;
 
                 case FirstContactIntroInteractionAction.EnterMeetingRoom:
-                    _busy = true;
-                    sourcePlayer.SetContextualInteraction(null);
-                    sourcePlayer.SetControlEnabled(false);
-                    hud?.ClearObjective();
-                    mode?.CompleteSegment();
+                    _meetingRoomEntryRoutine = StartCoroutine(
+                        MeetingRoomEntryRoutine(interactable, sourcePlayer));
                     return true;
 
                 case FirstContactIntroInteractionAction.TakeBriefingSeat:
                     _seatRoutine = StartCoroutine(SeatRoutine(interactable, sourcePlayer));
                     return true;
 
+                case FirstContactIntroInteractionAction.TakeMeetingSeat:
+                    _meetingSeatRoutine = StartCoroutine(
+                        MeetingSeatRoutine(interactable, sourcePlayer));
+                    return true;
+
                 default:
                     return false;
             }
+        }
+
+        private IEnumerator MeetingRoomEntryRoutine(
+            FirstContactIntroInteractable interactable,
+            FirstContactIntroPlayerController sourcePlayer)
+        {
+            _busy = true;
+            FirstContactTemporaryAudio.StartMeetingAmbience();
+            interactable.SetAvailable(false);
+            sourcePlayer.SetContextualInteraction(null);
+            sourcePlayer.SetMovementEnabled(false);
+            sourcePlayer.SetInteractionEnabled(false);
+            hud?.ClearPrompt();
+
+            Transform door = interactable.Target;
+            Transform openPose = interactable.SecondaryTarget;
+            if (door != null && openPose != null)
+            {
+                yield return MoveTransformToPoseRoutine(
+                    door,
+                    openPose,
+                    meetingDoorOpenSeconds);
+            }
+
+            yield return MoveMeetingCastIntoRoomRoutine();
+
+            if (!_begun || segment != FirstContactIntroSegment.Facility)
+            {
+                _meetingRoomEntryRoutine = null;
+                yield break;
+            }
+
+            meetingSeatInteraction?.SetAvailable(true);
+            sourcePlayer.SetLookEnabled(true);
+            sourcePlayer.SetMovementEnabled(true);
+            sourcePlayer.SetInteractionEnabled(true);
+            hud?.SetObjective(
+                "first_contact.intro.objective.take_meeting_seat",
+                "Take the president's seat.");
+            _busy = false;
+            _meetingRoomEntryRoutine = null;
+        }
+
+        private IEnumerator MeetingSeatRoutine(
+            FirstContactIntroInteractable interactable,
+            FirstContactIntroPlayerController sourcePlayer)
+        {
+            _busy = true;
+            interactable.SetAvailable(false);
+            Collider seatCollider = interactable.GetComponent<Collider>();
+            if (seatCollider != null)
+            {
+                seatCollider.enabled = false;
+            }
+
+            sourcePlayer.SetContextualInteraction(null);
+            sourcePlayer.SetMovementEnabled(false);
+            sourcePlayer.SetLookEnabled(false);
+            sourcePlayer.SetInteractionEnabled(false);
+            hud?.SetCrosshairVisible(false);
+            hud?.ClearPrompt();
+            hud?.ClearObjective();
+
+            if (interactable.Target != null)
+            {
+                yield return sourcePlayer.MoveToWorldPose(
+                    interactable.Target,
+                    meetingSeatMoveSeconds);
+                sourcePlayer.Teleport(interactable.Target, seated: false);
+            }
+
+            Transform seatedView = interactable.SecondaryTarget;
+            if (seatedView != null)
+            {
+                yield return sourcePlayer.BlendViewToAnchor(
+                    seatedView,
+                    meetingSeatViewBlendSeconds);
+            }
+
+            _meetingSeatRoutine = null;
+            mode?.CompleteSegment();
+        }
+
+        private static IEnumerator MoveTransformToPoseRoutine(
+            Transform subject,
+            Transform destination,
+            float seconds)
+        {
+            yield return MoveTransformToWorldPoseRoutine(
+                subject,
+                destination.position,
+                destination.rotation,
+                seconds);
+        }
+
+        private static IEnumerator MoveTransformToWorldPoseRoutine(
+            Transform subject,
+            Vector3 destinationPosition,
+            Quaternion destinationRotation,
+            float seconds)
+        {
+            Vector3 startPosition = subject.position;
+            Quaternion startRotation = subject.rotation;
+            float duration = Mathf.Max(0f, seconds);
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = duration <= 0.0001f
+                    ? 1f
+                    : Mathf.Clamp01(elapsed / duration);
+                float eased = progress * progress * (3f - 2f * progress);
+                subject.SetPositionAndRotation(
+                    Vector3.Lerp(startPosition, destinationPosition, eased),
+                    Quaternion.Slerp(startRotation, destinationRotation, eased));
+                yield return null;
+            }
+
+            subject.SetPositionAndRotation(destinationPosition, destinationRotation);
+        }
+
+        private IEnumerator MoveMeetingCastIntoRoomRoutine()
+        {
+            guide?.Stop();
+            if (_meetingHwangApproachRoutine != null)
+            {
+                StopCoroutine(_meetingHwangApproachRoutine);
+                _meetingHwangApproachRoutine = null;
+            }
+
+            Transform director = guide != null && meetingDirectorPose != null
+                ? guide.transform
+                : null;
+            Transform hwang = meetingHwangActor != null && meetingHwangPose != null
+                ? meetingHwangActor
+                : null;
+
+            if (hwang != null && meetingHwangPose.parent != null)
+            {
+                // The briefing placeholder root is hidden when embedded meeting
+                // gameplay takes over. Move the same actor under the authored
+                // meeting hierarchy before that transition instead of revealing
+                // a second staged copy.
+                hwang.SetParent(meetingHwangPose.parent, true);
+            }
+
+            if (director == null && hwang == null)
+            {
+                yield break;
+            }
+
+            Vector3 directorStartPosition = director != null
+                ? director.position
+                : Vector3.zero;
+            Quaternion directorStartRotation = director != null
+                ? director.rotation
+                : Quaternion.identity;
+            Vector3 hwangStartPosition = hwang != null
+                ? hwang.position
+                : Vector3.zero;
+            Quaternion hwangStartRotation = hwang != null
+                ? hwang.rotation
+                : Quaternion.identity;
+            float duration = Mathf.Max(
+                director != null ? meetingDirectorMoveSeconds : 0f,
+                hwang != null ? meetingHwangEnterSeconds : 0f);
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                if (director != null)
+                {
+                    ApplyPoseProgress(
+                        director,
+                        directorStartPosition,
+                        directorStartRotation,
+                        meetingDirectorPose,
+                        meetingDirectorMoveSeconds,
+                        elapsed);
+                }
+
+                if (hwang != null)
+                {
+                    ApplyPoseProgress(
+                        hwang,
+                        hwangStartPosition,
+                        hwangStartRotation,
+                        meetingHwangPose,
+                        meetingHwangEnterSeconds,
+                        elapsed);
+                }
+
+                yield return null;
+            }
+
+            if (director != null)
+            {
+                director.SetPositionAndRotation(
+                    meetingDirectorPose.position,
+                    meetingDirectorPose.rotation);
+                guide.ApplyVisualForwardCorrection();
+            }
+
+            if (hwang != null)
+            {
+                hwang.SetPositionAndRotation(
+                    meetingHwangPose.position,
+                    meetingHwangPose.rotation);
+            }
+        }
+
+        private static void ApplyPoseProgress(
+            Transform subject,
+            Vector3 startPosition,
+            Quaternion startRotation,
+            Transform destination,
+            float seconds,
+            float elapsed)
+        {
+            float duration = Mathf.Max(0f, seconds);
+            float progress = duration <= 0.0001f
+                ? 1f
+                : Mathf.Clamp01(elapsed / duration);
+            float eased = progress * progress * (3f - 2f * progress);
+            subject.SetPositionAndRotation(
+                Vector3.Lerp(startPosition, destination.position, eased),
+                Quaternion.Slerp(startRotation, destination.rotation, eased));
         }
 
         private IEnumerator VehicleExitRoutine(
@@ -1165,6 +1527,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             sourcePlayer.SetLookEnabled(false);
             sourcePlayer.SetInteractionEnabled(false);
 
+            FirstContactTemporaryAudio.PlaySurfaceCarDoor();
             vehicleRoute?.DetachPlayer(sourcePlayer.transform);
             Transform exitTarget = interactable.Target;
             if (exitTarget != null)
@@ -1195,6 +1558,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             sourcePlayer.SetLookEnabled(true);
             sourcePlayer.SetMovementEnabled(true);
             sourcePlayer.SetInteractionEnabled(true);
+            FirstContactTemporaryAudio.StopSurfaceVehicleLoop();
             ResolveSurfaceNarrativeZones();
             BindSurfaceNarrativeZones(sourcePlayer.transform);
             // A named guide point owns its pause behaviour through Pause On Arrival.
@@ -1250,6 +1614,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield return WaitForNarrativeZoneRoutine(_pizzaApproachZone);
                 if (_begun)
                 {
+                    FirstContactTemporaryAudio.StartPizzaMusic();
                     yield return PlayDialogueEventRoutine(
                         ResolveZoneDialogueEvent(
                             _pizzaApproachZone,
@@ -1276,6 +1641,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                                                citizenEncounterGuidePointIndex;
                 if (_begun && !reachedCitizenEncounter)
                 {
+                    FirstContactTemporaryAudio.StartPizzaMusic();
                     yield return PlayDialogueEventRoutine("intro.pizza.approach");
                     _dialogueDisplay?.Hide();
                 }
@@ -1482,17 +1848,70 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             yield return sourcePlayer.BlendToRestoredView(
                 briefingExitBlendSeconds);
 
-            sourcePlayer.Teleport(interactable.SecondaryTarget, seated: false);
+            CompleteBriefingState(sourcePlayer, interactable.SecondaryTarget);
+        }
+
+        private void CompleteBriefingState(
+            FirstContactIntroPlayerController sourcePlayer,
+            Transform exitTarget)
+        {
+            sourcePlayer.Teleport(exitTarget, seated: false);
             hud?.SetCrosshairVisible(true);
             sourcePlayer.SetLookEnabled(true);
             sourcePlayer.SetMovementEnabled(true);
             sourcePlayer.SetInteractionEnabled(true);
+            StartHwangMeetingApproach();
             guide?.Resume();
             hud?.SetObjective(
                 "first_contact.intro.objective.follow_to_meeting",
                 "Follow the director to the meeting room.");
             _busy = false;
             _seatRoutine = null;
+        }
+
+        private void StartHwangMeetingApproach()
+        {
+            if (_meetingHwangApproachRoutine != null ||
+                meetingHwangActor == null ||
+                meetingHwangApproachPath == null ||
+                meetingHwangApproachPath.Length == 0)
+            {
+                return;
+            }
+
+            meetingHwangActor.gameObject.SetActive(true);
+            _meetingHwangApproachRoutine = StartCoroutine(
+                MoveHwangAlongMeetingApproachRoutine());
+        }
+
+        private IEnumerator MoveHwangAlongMeetingApproachRoutine()
+        {
+            Transform actor = meetingHwangActor;
+            for (int i = 0;
+                 _begun && actor != null && i < meetingHwangApproachPath.Length;
+                 i++)
+            {
+                Transform waypoint = meetingHwangApproachPath[i];
+                if (waypoint == null)
+                {
+                    continue;
+                }
+
+                Vector3 destination = waypoint.position;
+                // Facility route anchors sit on the NavMesh floor while the
+                // current placeholder uses its centre as the transform origin.
+                // Preserve the authored actor height during this corridor walk.
+                destination.y = actor.position.y;
+                float distance = Vector3.Distance(actor.position, destination);
+                float seconds = distance / Mathf.Max(0.1f, meetingHwangWalkSpeed);
+                yield return MoveTransformToWorldPoseRoutine(
+                    actor,
+                    destination,
+                    waypoint.rotation,
+                    seconds);
+            }
+
+            _meetingHwangApproachRoutine = null;
         }
 
         private IEnumerator FacilityCorridorDialogueRoutine()
@@ -1855,6 +2274,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             sourcePlayer.SetLookEnabled(true);
             hud?.ClearPrompt();
             hud?.ClearObjective();
+            FirstContactTemporaryAudio.StopSurfaceAudio();
             mode?.PreloadNextSegment();
 
             if (secretElevatorSequence != null)

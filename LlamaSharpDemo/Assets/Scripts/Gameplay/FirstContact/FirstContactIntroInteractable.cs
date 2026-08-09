@@ -8,7 +8,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         ExitVehicle,
         UseElevator,
         TakeBriefingSeat,
-        EnterMeetingRoom
+        EnterMeetingRoom,
+        TakeMeetingSeat
     }
 
     [DisallowMultipleComponent]

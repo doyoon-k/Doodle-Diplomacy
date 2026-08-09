@@ -68,6 +68,8 @@ namespace DoodleDiplomacy.Camera
 
         public CameraMode CurrentMode => _currentMode;
         public UnityEngine.Camera TargetCamera => targetCamera;
+        public CinemachineBrain Brain => brain;
+        public CinemachineCamera DefaultViewCamera => defaultCamera;
         public bool IsTransitioning => _isTransitioning;
 
         private void Awake()
@@ -141,7 +143,7 @@ namespace DoodleDiplomacy.Camera
                 return;
             }
 
-            if (_currentMode == mode && modeCamera.enabled)
+            if (_currentMode == mode && IsOnlyEnabledModeCamera(modeCamera))
             {
                 return;
             }
@@ -232,6 +234,20 @@ namespace DoodleDiplomacy.Camera
                 selectedCamera.enabled = true;
                 selectedCamera.Prioritize();
             }
+        }
+
+        private bool IsOnlyEnabledModeCamera(CinemachineCamera selectedCamera)
+        {
+            foreach (CinemachineCamera modeCamera in EnumerateModeCameras())
+            {
+                if (modeCamera != null &&
+                    modeCamera.enabled != (modeCamera == selectedCamera))
+                {
+                    return false;
+                }
+            }
+
+            return selectedCamera != null && selectedCamera.enabled;
         }
 
         private IEnumerator WaitForBlendRoutine(CinemachineCamera selectedCamera, CameraMode mode)

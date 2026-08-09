@@ -644,6 +644,23 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
+            AudioClip temporaryClip = frequency switch
+            {
+                760f => FirstContactTemporaryAudio.LoadClip(
+                    FirstContactTemporaryAudioClip.TerminalSuccess),
+                540f => FirstContactTemporaryAudio.LoadClip(
+                    FirstContactTemporaryAudioClip.AlienLight),
+                420f => FirstContactTemporaryAudio.LoadClip(
+                    FirstContactTemporaryAudioClip.AlienPulse),
+                _ => FirstContactTemporaryAudio.LoadClip(
+                    FirstContactTemporaryAudioClip.TerminalHover)
+            };
+            if (temporaryClip != null)
+            {
+                _signalAudio.PlayOneShot(temporaryClip);
+                return;
+            }
+
             if (_signalBeep != null)
             {
                 Destroy(_signalBeep);

@@ -125,6 +125,31 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             CaptureInitialState(force: true);
         }
 
+        public void ApplyTemporaryAudioClips(
+            AudioClip shelfMove,
+            AudioClip knock,
+            AudioClip doorMotor,
+            AudioClip descentLoop)
+        {
+            if (audioSource == null)
+            {
+                audioSource = GetComponent<AudioSource>();
+                if (audioSource == null)
+                {
+                    audioSource = gameObject.AddComponent<AudioSource>();
+                }
+
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 0f;
+                audioSource.dopplerLevel = 0f;
+            }
+
+            shelfMoveClip = shelfMove;
+            knockClip = knock;
+            doorMotorClip = doorMotor;
+            descentLoopClip = descentLoop;
+        }
+
         private void Awake()
         {
             CaptureInitialState(force: false);

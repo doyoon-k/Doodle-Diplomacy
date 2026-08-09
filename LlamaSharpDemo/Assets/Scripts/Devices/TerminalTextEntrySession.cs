@@ -455,6 +455,7 @@ namespace DoodleDiplomacy.Devices
                 KeyCode.DownArrow => keyboard.downArrowKey,
                 KeyCode.W => keyboard.wKey,
                 KeyCode.S => keyboard.sKey,
+                KeyCode.E => keyboard.eKey,
                 KeyCode.Return => keyboard.enterKey,
                 KeyCode.KeypadEnter => keyboard.numpadEnterKey,
                 KeyCode.Space => keyboard.spaceKey,

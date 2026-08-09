@@ -35,6 +35,27 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public bool IsOpen => _isOpen;
 
+        public void ApplyTemporaryAudioClips(
+            AudioClip arrivalChime,
+            AudioClip doorMotor)
+        {
+            if (audioSource == null)
+            {
+                audioSource = GetComponent<AudioSource>();
+                if (audioSource == null)
+                {
+                    audioSource = gameObject.AddComponent<AudioSource>();
+                }
+
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 0f;
+                audioSource.dopplerLevel = 0f;
+            }
+
+            arrivalChimeClip = arrivalChime;
+            doorMotorClip = doorMotor;
+        }
+
         public bool TryGetDoorFacingRotation(
             Vector3 cabinPosition,
             out Quaternion rotation)

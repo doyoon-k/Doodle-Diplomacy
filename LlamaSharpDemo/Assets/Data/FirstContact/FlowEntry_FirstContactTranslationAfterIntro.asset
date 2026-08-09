@@ -16,7 +16,7 @@ MonoBehaviour:
   entryType: 0
   storyDay: 1
   entryTag: first-contact-translation
-  sceneName: GameScene
-  unloadPreviousScene: 1
+  sceneName: FC_Intro_Facility
+  unloadPreviousScene: 0
   autoStartSession: 1
   startSessionWithIntro: 1

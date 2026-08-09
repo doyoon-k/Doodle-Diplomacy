@@ -54,8 +54,14 @@
     {
       "id": "preflight",
       "title": "Tablet preflight",
-      "order": 7,
+      "order": 8,
       "summary": "Dr. Hwang checks the president's drawing and walks through the local probe controls before the delegation enters."
+    },
+    {
+      "id": "meeting_room_arrival",
+      "title": "Meeting room arrival",
+      "order": 7,
+      "summary": "The president takes the existing gameplay seat, meets Obama, and prepares for the alien delegation."
     },
     {
       "id": "arrival",
@@ -89,6 +95,303 @@
     }
   ],
   "beats": [
+    {
+      "id": "meeting_president_who_are_you_0136",
+      "sectionId": "meeting_room_arrival",
+      "order": 0,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 2,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.meeting.who_are_you",
+      "sourceText": "Who are you?",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "Obama has entered the meeting room carrying coffee.",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "The president looks toward Obama.",
+      "tags": ["meeting", "obama"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "자네는 뭔가?",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_obama_introduction_0137",
+      "sectionId": "meeting_room_arrival",
+      "order": 10,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 2,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "obama",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "OBAMA",
+      "localizationKey": "first_contact.intro.meeting.obama_introduction",
+      "sourceText": "Ah. I'm Barack Obama, CIA, Mr. President.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": ["meeting", "obama"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "아. 저는 CIA 소속 배럭 오바마라고 합니다 각하.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_president_familiar_0138",
+      "sectionId": "meeting_room_arrival",
+      "order": 20,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 2,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.meeting.familiar",
+      "sourceText": "You look familiar.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": ["meeting", "obama"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "뭔가 낯이 익은데.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_director_cover_0139",
+      "sectionId": "meeting_room_arrival",
+      "order": 30,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 3,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.meeting.cover",
+      "sourceText": "He's an agent we're cultivating as a politician under cover.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "The president turns toward the director.",
+      "tags": ["meeting", "director"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "위장 정치인으로써 저희가 육성중인 요원입니다.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_director_observer_0140",
+      "sectionId": "meeting_room_arrival",
+      "order": 40,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 3,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.meeting.observer",
+      "sourceText": "He has work related to this matter, so he'll be observing.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": ["meeting", "director"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이번 사안과 관련된 업무가 있어서 참관하기로 했습니다.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_president_rumor_0141",
+      "sectionId": "meeting_room_arrival",
+      "order": 50,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 3,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.meeting.rumor",
+      "sourceText": "Huh. So the rumors were true?",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "The president keeps looking at the director.",
+      "tags": ["meeting", "director"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "허. 소문이 사실이었나?",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_director_secret_0142",
+      "sectionId": "meeting_room_arrival",
+      "order": 60,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 3,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "director",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "DIRECTOR",
+      "localizationKey": "first_contact.intro.meeting.secret",
+      "sourceText": "It's as classified as our contact with aliens, so you'll have to keep it secret.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "",
+      "tags": ["meeting", "director"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "저희가 지금 외계인과 접촉하는 것만큼이나 극비이니 비밀을 지켜 주셔야 할 겁니다.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_president_restless_0143",
+      "sectionId": "meeting_room_arrival",
+      "order": 70,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 3,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "president",
+      "speakerLocalizationKey": "",
+      "speakerFallback": "PRESIDENT",
+      "localizationKey": "first_contact.intro.meeting.restless",
+      "sourceText": "I'm dying to tell someone. Being president isn't all it's cracked up to be.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "The president keeps looking at the director.",
+      "tags": ["meeting", "director"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "입이 근질거려서 죽겠네. 대통령도 별 거 아니라니까 글쎄.",
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "id": "meeting_hwang_ready_0144",
+      "sectionId": "meeting_room_arrival",
+      "order": 80,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "draft",
+      "runtimeCue": "",
+      "briefingLookTarget": 0,
+      "meetingLookTarget": 4,
+      "triggerEvent": "intro.meeting.arrival",
+      "condition": "",
+      "repeat": "once-per-session",
+      "speakerId": "doctor_hwang",
+      "speakerLocalizationKey": "speaker.doctor_hwang",
+      "speakerFallback": "Dr. Hwang",
+      "localizationKey": "first_contact.intro.meeting.ready",
+      "sourceText": "They are on their way to the meeting room now. We should prepare.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "situation": "The delegation is about to arrive.",
+      "beforeAction": "",
+      "afterAction": "",
+      "stageDirection": "The president turns toward Dr. Hwang before control passes to preflight.",
+      "tags": ["meeting", "hwang"],
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이제 그들이 회담장으로 오고있다고 합니다. 준비하시지요.",
+          "status": "draft"
+        }
+      ]
+    },
     {
       "id": "news_ufo_archive",
       "sectionId": "news_broadcast",
@@ -4124,6 +4427,6 @@
   ],
   "localizationEntries": [],
   "authoring": {
-    "nextBeatSerial": 136
+    "nextBeatSerial": 145
   }
 }

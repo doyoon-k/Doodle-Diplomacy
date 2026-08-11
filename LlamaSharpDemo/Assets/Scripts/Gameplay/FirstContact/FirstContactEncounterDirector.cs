@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DoodleDiplomacy.Audio;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Core;
 using DoodleDiplomacy.Devices;
@@ -632,6 +633,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     _signalAudio.playOnAwake = false;
                     _signalAudio.spatialBlend = 0f;
                     _signalAudio.volume = 0.08f;
+                    GameAudio.Route(_signalAudio, GameAudioBus.Ui);
                 }
             }
         }

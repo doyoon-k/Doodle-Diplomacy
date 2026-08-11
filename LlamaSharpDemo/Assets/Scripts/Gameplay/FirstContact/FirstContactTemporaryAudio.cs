@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DoodleDiplomacy.Audio;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -182,20 +183,23 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 ConfigureLoop(
                     ref _vehicleLoop,
                     FirstContactTemporaryAudioClip.CarEngineLoop,
-                    0.055f);
-                ConfigureOneShot(ref _televisionNoise);
-                ConfigureOneShot(ref _carDoor);
+                    0.055f,
+                    GameAudioBus.Sfx);
+                ConfigureOneShot(ref _televisionNoise, GameAudioBus.Ambience);
+                ConfigureOneShot(ref _carDoor, GameAudioBus.Sfx);
                 return;
             }
 
             ConfigureLoop(
                 ref _facilityHum,
                 FirstContactTemporaryAudioClip.FacilityHum,
-                0.07f);
+                0.07f,
+                GameAudioBus.Ambience);
             ConfigureLoop(
                 ref _facilityComputerAmbience,
                 FirstContactTemporaryAudioClip.FacilityComputerAmbience,
-                0.045f);
+                0.045f,
+                GameAudioBus.Ambience);
         }
 
         public void StartVehicleLoop()
@@ -248,7 +252,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ConfigureLoop(
                 ref _pizzaMusic,
                 FirstContactTemporaryAudioClip.PizzaHouseLoop,
-                0.035f);
+                0.035f,
+                GameAudioBus.Music);
             if (_pizzaMusic != null && !_pizzaMusic.isPlaying)
             {
                 _pizzaMusic.Play();
@@ -265,7 +270,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             ConfigureLoop(
                 ref _meetingAmbience,
                 FirstContactTemporaryAudioClip.MeetingAiry,
-                0.04f);
+                0.04f,
+                GameAudioBus.Ambience);
             if (_meetingAmbience != null && !_meetingAmbience.isPlaying)
             {
                 _meetingAmbience.Play();
@@ -319,26 +325,32 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private void ConfigureLoop(
             ref AudioSource source,
             FirstContactTemporaryAudioClip clip,
-            float volume)
+            float volume,
+            GameAudioBus bus)
         {
-            source ??= CreateSource();
+            source ??= CreateSource(bus);
+            GameAudio.Route(source, bus);
             source.clip = FirstContactTemporaryAudio.LoadClip(clip);
             source.loop = true;
             source.volume = volume;
         }
 
-        private void ConfigureOneShot(ref AudioSource source)
+        private void ConfigureOneShot(
+            ref AudioSource source,
+            GameAudioBus bus)
         {
-            source ??= CreateSource();
+            source ??= CreateSource(bus);
+            GameAudio.Route(source, bus);
             source.loop = false;
         }
 
-        private AudioSource CreateSource()
+        private AudioSource CreateSource(GameAudioBus bus)
         {
             AudioSource source = gameObject.AddComponent<AudioSource>();
             source.playOnAwake = false;
             source.spatialBlend = 0f;
             source.dopplerLevel = 0f;
+            GameAudio.Route(source, bus);
             return source;
         }
     }

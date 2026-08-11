@@ -1,4 +1,5 @@
 using System.Collections;
+using DoodleDiplomacy.Audio;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -122,6 +123,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             elevatorCabinMotionRoot = cabinMotionRoot;
             elevatorCabinLight = cabinLight;
             audioSource = source;
+            GameAudio.Route(audioSource, GameAudioBus.Sfx);
             CaptureInitialState(force: true);
         }
 
@@ -144,6 +146,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 audioSource.dopplerLevel = 0f;
             }
 
+            GameAudio.Route(audioSource, GameAudioBus.Sfx);
+
             shelfMoveClip = shelfMove;
             knockClip = knock;
             doorMotorClip = doorMotor;
@@ -152,6 +156,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void Awake()
         {
+            GameAudio.Route(audioSource, GameAudioBus.Sfx);
             CaptureInitialState(force: false);
             ResetSequence();
         }

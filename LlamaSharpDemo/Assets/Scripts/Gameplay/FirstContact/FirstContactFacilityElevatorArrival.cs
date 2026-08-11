@@ -1,4 +1,5 @@
 using System.Collections;
+using DoodleDiplomacy.Audio;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -52,6 +53,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 audioSource.dopplerLevel = 0f;
             }
 
+            GameAudio.Route(audioSource, GameAudioBus.Sfx);
+
             arrivalChimeClip = arrivalChime;
             doorMotorClip = doorMotor;
         }
@@ -80,6 +83,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void Awake()
         {
+            GameAudio.Route(audioSource, GameAudioBus.Sfx);
             CaptureClosedState();
             PrepareClosed();
         }

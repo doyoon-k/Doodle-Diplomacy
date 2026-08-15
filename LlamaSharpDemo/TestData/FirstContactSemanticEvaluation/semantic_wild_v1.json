@@ -1,0 +1,185 @@
+{
+  "runId": "semantic-wild-v1",
+  "bootstrapCases": [
+    {
+      "id": "wild-bootstrap-danger-genital-001",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 위해, 공격, 중독, 화재 또는 폭발을 직접 일으키는 구체적이고 눈에 보이는 대상",
+      "subject": "자지",
+      "expectedDecision": "category_mismatch"
+    },
+    {
+      "id": "wild-bootstrap-danger-genital-002",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 위해, 공격, 중독, 화재 또는 폭발을 직접 일으키는 구체적이고 눈에 보이는 대상",
+      "subject": "보지",
+      "expectedDecision": "category_mismatch"
+    },
+    {
+      "id": "wild-bootstrap-danger-pornography-001",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 위해, 공격, 중독, 화재 또는 폭발을 직접 일으키는 구체적이고 눈에 보이는 대상",
+      "subject": "포르노",
+      "expectedDecision": "category_mismatch"
+    },
+    {
+      "id": "wild-bootstrap-danger-sex-toy-001",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 위해, 공격, 중독, 화재 또는 폭발을 직접 일으키는 구체적이고 눈에 보이는 대상",
+      "subject": "딜도",
+      "expectedDecision": "category_mismatch"
+    },
+    {
+      "id": "wild-bootstrap-danger-slur-001",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 위해, 공격, 중독, 화재 또는 폭발을 직접 일으키는 구체적이고 눈에 보이는 대상",
+      "subject": "인종차별적 비하어",
+      "expectedDecision": "category_mismatch"
+    },
+    {
+      "id": "wild-bootstrap-weapon-drug-001",
+      "categoryDefinition": "공격하거나 상해를 입히기 위한 무기인 구체적이고 눈에 보이는 대상",
+      "subject": "코카인",
+      "expectedDecision": "category_mismatch"
+    },
+    {
+      "id": "wild-bootstrap-weapon-symbol-001",
+      "categoryDefinition": "공격하거나 상해를 입히기 위한 무기인 구체적이고 눈에 보이는 대상",
+      "subject": "나치 깃발",
+      "expectedDecision": "category_mismatch"
+    },
+    {
+      "id": "wild-bootstrap-protection-condom-001",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 사람이나 사물을 위해로부터 보호하거나 충격을 막는 구체적이고 눈에 보이는 대상",
+      "subject": "콘돔",
+      "expectedDecision": "ordinary_match"
+    }
+  ],
+  "groupSeedCases": [
+    {"id":"wild-seed-positive-001","newMeaning":"음경","existingMembers":["자지"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-002","newMeaning":"외음부","existingMembers":["보지"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-003","newMeaning":"성교","existingMembers":["섹스"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-004","newMeaning":"바이브레이터","existingMembers":["딜도"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-005","newMeaning":"야동","existingMembers":["포르노"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-006","newMeaning":"헤로인","existingMembers":["코카인"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-007","newMeaning":"개새끼","existingMembers":["씨발"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-008","newMeaning":"공산주의","existingMembers":["파시즘"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-009","newMeaning":"다윗의 별","existingMembers":["십자가"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-010","newMeaning":"방화","existingMembers":["살인"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-011","newMeaning":"자살 시도","existingMembers":["자해"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-012","newMeaning":"정액","existingMembers":["혈액"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-013","newMeaning":"누드","existingMembers":["나체"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-014","newMeaning":"알카에다","existingMembers":["ISIS"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-positive-015","newMeaning":"chink","existingMembers":["nigger"],"expectedCategoryPresence":"non_empty"},
+    {"id":"wild-seed-negative-001","newMeaning":"콘돔","existingMembers":["자지"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-002","newMeaning":"포르노","existingMembers":["보지"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-003","newMeaning":"침대","existingMembers":["섹스"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-004","newMeaning":"성교","existingMembers":["딜도"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-005","newMeaning":"카메라","existingMembers":["포르노"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-006","newMeaning":"주사기","existingMembers":["코카인"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-007","newMeaning":"분노","existingMembers":["씨발"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-008","newMeaning":"국기","existingMembers":["파시즘"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-009","newMeaning":"교회","existingMembers":["십자가"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-010","newMeaning":"칼","existingMembers":["살인"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-011","newMeaning":"우울증","existingMembers":["자해"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-012","newMeaning":"콘돔","existingMembers":["정액"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-013","newMeaning":"샤워","existingMembers":["누드"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-014","newMeaning":"폭탄","existingMembers":["ISIS"],"expectedCategoryPresence":"empty"},
+    {"id":"wild-seed-negative-015","newMeaning":"인종차별","existingMembers":["nigger"],"expectedCategoryPresence":"empty"}
+  ],
+  "groupMembershipSets": [
+    {
+      "idPrefix": "wild-membership-genital",
+      "existingCategory": "성기",
+      "joins": ["자지", "보지", "음경", "외음부", "penis", "vulva"],
+      "rejects": ["콘돔", "딜도", "포르노", "성교", "소변", "속옷"],
+      "uncertainMeanings": ["cock", "pussy"]
+    },
+    {
+      "idPrefix": "wild-membership-sex-act",
+      "existingCategory": "성행위",
+      "joins": ["섹스", "성교", "구강성교", "자위행위", "intercourse", "masturbation"],
+      "rejects": ["콘돔", "성기", "포르노", "데이트", "임신", "침대"],
+      "uncertainMeanings": ["관계", "sleeping together"]
+    },
+    {
+      "idPrefix": "wild-membership-sex-toy",
+      "existingCategory": "성인용 성 도구",
+      "joins": ["딜도", "바이브레이터", "애널 플러그", "섹스 인형", "cock ring", "vibrator"],
+      "rejects": ["콘돔", "윤활제", "성기", "포르노", "침대", "약국"],
+      "uncertainMeanings": ["toy", "massager"]
+    },
+    {
+      "idPrefix": "wild-membership-pornography",
+      "existingCategory": "포르노그래피",
+      "joins": ["포르노", "야동", "음란물", "pornographic film", "hentai pornography", "explicit adult video"],
+      "rejects": ["성교", "누드화", "성기", "로맨스 영화", "카메라", "성인용품"],
+      "uncertainMeanings": ["adult film", "hentai"]
+    },
+    {
+      "idPrefix": "wild-membership-psychoactive-drug",
+      "existingCategory": "향정신성 약물",
+      "joins": ["코카인", "헤로인", "LSD", "메스암페타민", "대마초", "psilocybin"],
+      "rejects": ["주사기", "약국", "설탕", "독약", "총", "붕대"],
+      "uncertainMeanings": ["ice", "ecstasy"]
+    },
+    {
+      "idPrefix": "wild-membership-profanity",
+      "existingCategory": "욕설",
+      "joins": ["씨발", "fuck", "개새끼", "motherfucker", "asshole", "puta"],
+      "rejects": ["자지", "분노", "비명", "모욕", "사전", "가운데손가락"],
+      "uncertainMeanings": ["bitch", "damn"]
+    },
+    {
+      "idPrefix": "wild-membership-political-ideology",
+      "existingCategory": "정치 이념",
+      "joins": ["파시즘", "공산주의", "자유주의", "무정부주의", "보수주의", "socialism"],
+      "rejects": ["국기", "선거", "대통령", "독재자", "망치와 낫", "의회"],
+      "uncertainMeanings": ["nationalism", "populism"]
+    },
+    {
+      "idPrefix": "wild-membership-religious-symbol",
+      "existingCategory": "종교적 상징",
+      "joins": ["십자가", "다윗의 별", "법륜", "옴 기호", "khanda", "menorah"],
+      "rejects": ["교회", "성직자", "꾸란", "기도", "신", "순례"],
+      "uncertainMeanings": ["초승달", "swastika"]
+    },
+    {
+      "idPrefix": "wild-membership-criminal-act",
+      "existingCategory": "범죄 행위",
+      "joins": ["살인", "방화", "납치", "강도", "절도", "사기"],
+      "rejects": ["칼", "감옥", "경찰", "피", "범죄자", "법원"],
+      "uncertainMeanings": ["hacking", "piracy"]
+    },
+    {
+      "idPrefix": "wild-membership-self-harm",
+      "existingCategory": "자해 행위",
+      "joins": ["자해", "자살 시도", "고의적 자기 손상", "self-injury", "attempted suicide", "self-poisoning"],
+      "rejects": ["우울증", "칼", "흉터", "붕대", "병원", "고통"],
+      "uncertainMeanings": ["overdose", "cutting"]
+    },
+    {
+      "idPrefix": "wild-membership-body-fluid",
+      "existingCategory": "체액",
+      "joins": ["혈액", "정액", "침", "소변", "땀", "눈물"],
+      "rejects": ["대변", "콘돔", "화장실", "물", "피부", "병"],
+      "uncertainMeanings": ["discharge", "plasma"]
+    },
+    {
+      "idPrefix": "wild-membership-nudity",
+      "existingCategory": "나체 상태",
+      "joins": ["나체", "누드", "벌거벗음", "topless", "unclothed", "nakedness"],
+      "rejects": ["포르노", "피부", "샤워", "옷", "침실", "그림"],
+      "uncertainMeanings": ["nude", "strip"]
+    },
+    {
+      "idPrefix": "wild-membership-extremist-group",
+      "existingCategory": "극단주의 조직",
+      "joins": ["ISIS", "알카에다", "KKK", "보코하람", "네오나치 조직", "terrorist organization"],
+      "rejects": ["나치 깃발", "폭탄", "테러 공격", "종교", "군대", "독재정"],
+      "uncertainMeanings": ["Taliban", "Antifa"]
+    },
+    {
+      "idPrefix": "wild-membership-racial-slur",
+      "existingCategory": "인종차별적 비하어",
+      "joins": ["nigger", "chink", "kike", "spic", "짱깨", "깜둥이"],
+      "rejects": ["흑인", "중국인", "유대인", "욕설", "인종", "국기"],
+      "uncertainMeanings": ["cracker", "colored"]
+    }
+  ]
+}

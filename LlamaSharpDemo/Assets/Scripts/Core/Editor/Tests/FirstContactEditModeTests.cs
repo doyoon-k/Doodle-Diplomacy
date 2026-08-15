@@ -1947,6 +1947,15 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         }
 
         [Test]
+        public void SemanticPromptSerializationPreservesMultilingualTextAndEscapesJsonSyntax()
+        {
+            Assert.AreEqual("\"طبلة\"", FirstContactPromptJson.SerializeString("طبلة"));
+            Assert.AreEqual(
+                "\"quote: \\\" and slash: \\\\\"",
+                FirstContactPromptJson.SerializeString("quote: \" and slash: \\"));
+        }
+
+        [Test]
         public void SemanticGroupAssetsSeparateSeedAndMembershipPrompts()
         {
             const string seedPipelinePath =
@@ -1981,8 +1990,9 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.AreEqual(1, membershipPipeline.steps.Count);
 
             string seedInput = seedPipeline.steps[0].userPromptTemplate;
-            StringAssert.Contains("{{new_meaning_json}}", seedInput);
-            StringAssert.Contains("{{existing_members_json}}", seedInput);
+            StringAssert.Contains("{{seed_members_json}}", seedInput);
+            StringAssert.DoesNotContain("new_meaning", seedInput.ToLowerInvariant());
+            StringAssert.DoesNotContain("existing_members", seedInput.ToLowerInvariant());
             StringAssert.DoesNotContain("existing_category", seedInput.ToLowerInvariant());
             StringAssert.DoesNotContain("group_id", seedInput.ToLowerInvariant());
             StringAssert.DoesNotContain("ref", seedInput.ToLowerInvariant());
@@ -1997,10 +2007,9 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             string seedPrompt = seedProfile.systemPromptTemplate;
             string membershipPrompt = membershipProfile.systemPromptTemplate;
             StringAssert.Contains("may use any language", seedPrompt);
-            StringAssert.Contains("every EXISTING_MEMBER", seedPrompt);
-            StringAssert.Contains("is a kind of CATEGORY", seedPrompt);
-            StringAssert.Contains("without leading or trailing", seedPrompt);
-            StringAssert.Contains("obscure", seedPrompt);
+            StringAssert.Contains("Interpret each label in MEMBERS_JSON separately", seedPrompt);
+            StringAssert.Contains("Technical, fictional, unusual", seedPrompt);
+            StringAssert.Contains("language used by most labels", seedPrompt);
             StringAssert.Contains("may use any language", membershipPrompt);
             StringAssert.Contains("Use EXISTING_CATEGORY exactly", membershipPrompt);
             StringAssert.DoesNotContain("EXISTING_MEMBER", membershipPrompt);
@@ -2061,6 +2070,59 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsTrue(result.IsUncertain);
         }
 
+        [Test]
+        public void SemanticGroupSeedVerificationRequiresEveryMemberToJoin()
+        {
+            var memberResults = new[]
+            {
+                new FirstContactSemanticGroupFitResult
+                {
+                    Decision = FirstContactSemanticGroupFitResult.JoinDecision,
+                    Category = "무기"
+                },
+                new FirstContactSemanticGroupFitResult
+                {
+                    Decision = FirstContactSemanticGroupFitResult.RejectDecision
+                }
+            };
+
+            FirstContactSemanticGroupFitResult result =
+                FirstContactSemanticGroupFitResult.ResolveSeedMemberVerifications(
+                    "무기",
+                    memberResults);
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual(FirstContactSemanticGroupFitResult.RejectDecision, result.Decision);
+            Assert.IsFalse(result.JoinsGroup);
+            Assert.AreEqual(string.Empty, result.Category);
+        }
+
+        [Test]
+        public void SemanticGroupSeedVerificationKeepsCategoryWhenAllMembersJoin()
+        {
+            var memberResults = new[]
+            {
+                new FirstContactSemanticGroupFitResult
+                {
+                    Decision = FirstContactSemanticGroupFitResult.JoinDecision,
+                    Category = "weapon"
+                },
+                new FirstContactSemanticGroupFitResult
+                {
+                    Decision = FirstContactSemanticGroupFitResult.JoinDecision,
+                    Category = "weapon"
+                }
+            };
+
+            FirstContactSemanticGroupFitResult result =
+                FirstContactSemanticGroupFitResult.ResolveSeedMemberVerifications(
+                    " .weapon. ",
+                    memberResults);
+
+            Assert.IsTrue(result.JoinsGroup);
+            Assert.AreEqual("weapon", result.Category);
+        }
+
         [TestCase(" `.weapon.` ", "weapon")]
         [TestCase("[도구]", "도구")]
         [TestCase("sci-fi weapons", "sci-fi weapons")]
@@ -2119,8 +2181,11 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             };
 
             Assert.IsNotNull(serializeMethod);
-            string serialized = (string)serializeMethod.Invoke(null, new object[] { members });
-            Assert.AreEqual("[\"칼\",\"총\"]", serialized);
+            SemanticCardRecord newCard = CreateCard("폭탄", Unit(1f, 1f));
+            string serialized = (string)serializeMethod.Invoke(
+                null,
+                new object[] { newCard, members });
+            Assert.AreEqual("[\"칼\",\"총\",\"폭탄\"]", serialized);
             StringAssert.DoesNotContain("\\u", serialized);
         }
 

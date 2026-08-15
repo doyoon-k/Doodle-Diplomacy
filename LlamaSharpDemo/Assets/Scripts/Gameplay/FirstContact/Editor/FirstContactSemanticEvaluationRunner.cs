@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using UnityEditor;
 using UnityEngine;
 
@@ -33,6 +32,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
             "Assets/ScriptableObjects/Pipeline/FirstContactSemanticGroupFitPipeline.asset";
         private const string DiverseDatasetRelativePath =
             "TestData/FirstContactSemanticEvaluation/semantic_diverse_v1.json";
+        private const string WildDatasetRelativePath =
+            "TestData/FirstContactSemanticEvaluation/semantic_wild_v1.json";
         private const double PollIntervalSeconds = 0.5d;
         private const double RequestSettleSeconds = 0.25d;
 
@@ -59,9 +60,23 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
         public static string DiverseDatasetPath => Path.Combine(
             ProjectDirectory,
             DiverseDatasetRelativePath.Replace('/', Path.DirectorySeparatorChar));
+        public static string WildDatasetPath => Path.Combine(
+            ProjectDirectory,
+            WildDatasetRelativePath.Replace('/', Path.DirectorySeparatorChar));
 
         [MenuItem("Tools/First Contact/Run Diverse Semantic Dataset")]
         public static void RunDiverseDataset()
+        {
+            QueueDataset(DiverseDatasetPath, "diverse");
+        }
+
+        [MenuItem("Tools/First Contact/Run Wild Semantic Dataset")]
+        public static void RunWildDataset()
+        {
+            QueueDataset(WildDatasetPath, "wild");
+        }
+
+        private static void QueueDataset(string datasetPath, string datasetName)
         {
             if (_session != null)
             {
@@ -70,10 +85,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
                 return;
             }
 
-            if (!File.Exists(DiverseDatasetPath))
+            if (!File.Exists(datasetPath))
             {
                 UnityEngine.Debug.LogError(
-                    $"[FirstContactSemanticEvaluation] Dataset not found: {DiverseDatasetPath}");
+                    $"[FirstContactSemanticEvaluation] Dataset not found: {datasetPath}");
                 return;
             }
 
@@ -87,13 +102,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
             try
             {
                 Directory.CreateDirectory(EvaluationDirectory);
-                File.Copy(DiverseDatasetPath, RequestPath, overwrite: false);
+                File.Copy(datasetPath, RequestPath, overwrite: false);
                 TryStartPendingRequest(ignoreSettleTime: true);
             }
             catch (Exception ex)
             {
                 UnityEngine.Debug.LogError(
-                    $"[FirstContactSemanticEvaluation] Could not queue diverse dataset: {ex.Message}");
+                    $"[FirstContactSemanticEvaluation] Could not queue {datasetName} dataset: {ex.Message}");
             }
         }
 
@@ -101,6 +116,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
         public static void RunPendingRequest()
         {
             TryStartPendingRequest(ignoreSettleTime: true);
+        }
+
+        [MenuItem("Tools/First Contact/Cancel Semantic Evaluation")]
+        public static void CancelEvaluation()
+        {
+            if (_session == null)
+            {
+                return;
+            }
+
+            UnityEngine.Debug.LogWarning(
+                $"[FirstContactSemanticEvaluation] Cancelled run='{_session.Request.runId}' " +
+                $"after {_session.Results.Count}/{_session.Items.Count} cases.");
+            CancelActiveEvaluation();
         }
 
         [MenuItem("Tools/First Contact/Open Semantic Evaluation Folder")]
@@ -174,7 +203,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
             _session = new EvaluationSession(
                 request,
                 BuildWorkItems(request, bootstrap, groupSeed, groupMembership),
-                new RoutingEditorLlmService(logTraffic: false));
+                new RoutingEditorLlmService(logTraffic: false),
+                groupMembership);
             UnityEngine.Debug.Log(
                 $"[FirstContactSemanticEvaluation] Started run='{request.runId}' " +
                 $"cases={_session.Items.Count}. No Play Mode or drawing input is used.");
@@ -230,37 +260,62 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
                 return 0;
             }
 
-            int count = (request.bootstrapCases?.Length ?? 0) +
-                        (request.groupSeedCases?.Length ?? 0) +
-                        (request.groupMembershipCases?.Length ?? 0);
-            foreach (FirstContactBootstrapEvaluationSet set in
-                     request.bootstrapSets ?? Array.Empty<FirstContactBootstrapEvaluationSet>())
+            int count = 0;
+            if (IncludesKind(request, BootstrapKind))
             {
-                if (set == null)
+                count += request.bootstrapCases?.Length ?? 0;
+                foreach (FirstContactBootstrapEvaluationSet set in
+                         request.bootstrapSets ?? Array.Empty<FirstContactBootstrapEvaluationSet>())
                 {
-                    continue;
-                }
+                    if (set == null)
+                    {
+                        continue;
+                    }
 
-                count += (set.ordinaryMatches?.Length ?? 0) +
-                         (set.mismatches?.Length ?? 0) +
-                         (set.uncertainSubjects?.Length ?? 0);
+                    count += (set.ordinaryMatches?.Length ?? 0) +
+                             (set.mismatches?.Length ?? 0) +
+                             (set.uncertainSubjects?.Length ?? 0);
+                }
             }
 
-            foreach (FirstContactGroupMembershipEvaluationSet set in
-                     request.groupMembershipSets ??
-                     Array.Empty<FirstContactGroupMembershipEvaluationSet>())
+            if (IncludesKind(request, GroupSeedKind))
             {
-                if (set == null)
-                {
-                    continue;
-                }
+                count += request.groupSeedCases?.Length ?? 0;
+            }
 
-                count += (set.joins?.Length ?? 0) +
-                         (set.rejects?.Length ?? 0) +
-                         (set.uncertainMeanings?.Length ?? 0);
+            if (IncludesKind(request, GroupMembershipKind))
+            {
+                count += request.groupMembershipCases?.Length ?? 0;
+                foreach (FirstContactGroupMembershipEvaluationSet set in
+                         request.groupMembershipSets ??
+                         Array.Empty<FirstContactGroupMembershipEvaluationSet>())
+                {
+                    if (set == null)
+                    {
+                        continue;
+                    }
+
+                    count += (set.joins?.Length ?? 0) +
+                             (set.rejects?.Length ?? 0) +
+                             (set.uncertainMeanings?.Length ?? 0);
+                }
             }
 
             return count;
+        }
+
+        internal static bool IncludesKind(
+            FirstContactSemanticEvaluationRequest request,
+            string kind)
+        {
+            string[] includedKinds = request?.includeKinds;
+            if (includedKinds == null || includedKinds.Length == 0)
+            {
+                return true;
+            }
+
+            return includedKinds.Any(candidate =>
+                string.Equals(candidate?.Trim(), kind, StringComparison.OrdinalIgnoreCase));
         }
 
         private static List<EvaluationWorkItem> BuildWorkItems(
@@ -317,9 +372,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
                 }
 
                 string[] members = testCase.existingMembers ?? Array.Empty<string>();
+                string[] seedMembers = members
+                    .Concat(new[] { testCase.newMeaning ?? string.Empty })
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .ToArray();
                 var state = new PipelineState();
-                state.SetString("new_meaning_json", SerializeJson(testCase.newMeaning));
-                state.SetString("existing_members_json", JsonSerializer.Serialize(members));
+                state.SetString(
+                    "seed_members_json",
+                    FirstContactPromptJson.SerializeStringArray(seedMembers));
                 items.Add(new EvaluationWorkItem(
                     ResolveCaseId(testCase.id, GroupSeedKind, items.Count),
                     GroupSeedKind,
@@ -377,6 +437,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
                     "uncertain");
             }
 
+            items.RemoveAll(item => !IncludesKind(request, item.Kind));
             return items;
         }
 
@@ -460,6 +521,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
 
             EvaluationWorkItem item = session.Items[session.NextIndex++];
             var stopwatch = Stopwatch.StartNew();
+            if (string.Equals(item.Kind, GroupSeedKind, StringComparison.Ordinal))
+            {
+                RunSeedCase(session, item, stopwatch);
+                return;
+            }
+
             PromptPipelineSimulator.Run(
                 item.Pipeline,
                 item.State,
@@ -480,6 +547,137 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
                 session.Service);
         }
 
+        private static void RunSeedCase(
+            EvaluationSession session,
+            EvaluationWorkItem item,
+            Stopwatch stopwatch)
+        {
+            PromptPipelineSimulator.Run(
+                item.Pipeline,
+                item.State,
+                seedState =>
+                {
+                    string category = FirstContactSemanticCategory.Normalize(
+                        seedState.GetString("category"));
+                    if (category.Length == 0)
+                    {
+                        seedState.SetString(
+                            "decision",
+                            FirstContactSemanticGroupFitResult.RejectDecision);
+                        FinishCase(session, item, seedState, string.Empty, stopwatch);
+                        return;
+                    }
+
+                    string[] labels = (item.ExistingMembers ?? Array.Empty<string>())
+                        .Concat(new[] { item.NewMeaning ?? string.Empty })
+                        .Where(label => !string.IsNullOrWhiteSpace(label))
+                        .ToArray();
+                    VerifySeedMember(
+                        session,
+                        item,
+                        seedState,
+                        category,
+                        labels,
+                        0,
+                        new List<FirstContactSemanticGroupFitResult>(labels.Length),
+                        stopwatch);
+                },
+                error => FinishCase(session, item, null, error, stopwatch),
+                message => UnityEngine.Debug.Log(
+                    $"[FirstContactSemanticEvaluation:{item.Id}] {message}"),
+                session.Service);
+        }
+
+        private static void VerifySeedMember(
+            EvaluationSession session,
+            EvaluationWorkItem item,
+            PipelineState seedState,
+            string category,
+            IReadOnlyList<string> labels,
+            int index,
+            List<FirstContactSemanticGroupFitResult> memberResults,
+            Stopwatch stopwatch)
+        {
+            if (index >= labels.Count)
+            {
+                FirstContactSemanticGroupFitResult aggregate =
+                    FirstContactSemanticGroupFitResult.ResolveSeedMemberVerifications(
+                        category,
+                        memberResults);
+                seedState.SetString("decision", aggregate.Decision);
+                FinishCase(
+                    session,
+                    item,
+                    seedState,
+                    aggregate.IsSuccess ? string.Empty : aggregate.Error,
+                    stopwatch);
+                return;
+            }
+
+            var membershipState = new PipelineState();
+            membershipState.SetString("new_meaning_json", SerializeJson(labels[index]));
+            membershipState.SetString("existing_category_json", SerializeJson(category));
+            PromptPipelineSimulator.Run(
+                session.GroupMembershipPipeline,
+                membershipState,
+                finalState =>
+                {
+                    if (!FirstContactSemanticGroupFitResult.TryFromMembershipPipelineState(
+                            finalState,
+                            category,
+                            out FirstContactSemanticGroupFitResult memberResult))
+                    {
+                        FinishCase(
+                            session,
+                            item,
+                            seedState,
+                            memberResult?.Error ?? "Seed member verification failed.",
+                            stopwatch);
+                        return;
+                    }
+
+                    memberResults.Add(memberResult);
+                    if (!memberResult.JoinsGroup)
+                    {
+                        seedState.SetString(
+                            "decision",
+                            FirstContactSemanticGroupFitResult.RejectDecision);
+                        FinishCase(session, item, seedState, string.Empty, stopwatch);
+                        return;
+                    }
+
+                    VerifySeedMember(
+                        session,
+                        item,
+                        seedState,
+                        category,
+                        labels,
+                        index + 1,
+                        memberResults,
+                        stopwatch);
+                },
+                error => FinishCase(session, item, seedState, error, stopwatch),
+                message => UnityEngine.Debug.Log(
+                    $"[FirstContactSemanticEvaluation:{item.Id}/member-{index + 1}] {message}"),
+                session.Service);
+        }
+
+        private static void FinishCase(
+            EvaluationSession session,
+            EvaluationWorkItem item,
+            PipelineState state,
+            string error,
+            Stopwatch stopwatch)
+        {
+            stopwatch.Stop();
+            session.Results.Add(BuildResult(
+                item,
+                state,
+                error,
+                stopwatch.Elapsed.TotalSeconds));
+            RunNextCase();
+        }
+
         private static FirstContactSemanticEvaluationCaseResult BuildResult(
             EvaluationWorkItem item,
             PipelineState state,
@@ -497,6 +695,23 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
                 if (string.Equals(item.Kind, GroupSeedKind, StringComparison.Ordinal))
                 {
                     category = FirstContactSemanticCategory.Normalize(state.GetString("category"));
+                    decision = state.GetString("decision").Trim();
+                }
+                else if (string.Equals(item.Kind, GroupMembershipKind, StringComparison.Ordinal))
+                {
+                    if (FirstContactSemanticGroupFitResult.TryFromMembershipPipelineState(
+                            state,
+                            item.ExistingCategory,
+                            out FirstContactSemanticGroupFitResult membershipResult))
+                    {
+                        decision = membershipResult.Decision;
+                        category = membershipResult.Category;
+                    }
+                    else if (string.IsNullOrWhiteSpace(error))
+                    {
+                        error = membershipResult?.Error ??
+                                "Semantic group membership result could not be parsed.";
+                    }
                 }
                 else
                 {
@@ -547,18 +762,29 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
             {
                 if (string.Equals(expected, NonEmptyExpectation, StringComparison.OrdinalIgnoreCase))
                 {
-                    return !string.IsNullOrWhiteSpace(category);
+                    return string.Equals(
+                               decision,
+                               FirstContactSemanticGroupFitResult.JoinDecision,
+                               StringComparison.OrdinalIgnoreCase) &&
+                           !string.IsNullOrWhiteSpace(category);
                 }
 
                 if (string.Equals(expected, EmptyExpectation, StringComparison.OrdinalIgnoreCase))
                 {
-                    return string.IsNullOrWhiteSpace(category);
+                    return string.Equals(
+                        decision,
+                        FirstContactSemanticGroupFitResult.RejectDecision,
+                        StringComparison.OrdinalIgnoreCase);
                 }
 
                 return string.Equals(
-                    FirstContactSemanticCategory.Normalize(category),
-                    FirstContactSemanticCategory.Normalize(expected),
-                    StringComparison.OrdinalIgnoreCase);
+                           decision,
+                           FirstContactSemanticGroupFitResult.JoinDecision,
+                           StringComparison.OrdinalIgnoreCase) &&
+                       string.Equals(
+                           FirstContactSemanticCategory.Normalize(category),
+                           FirstContactSemanticCategory.Normalize(expected),
+                           StringComparison.OrdinalIgnoreCase);
             }
 
             return string.Equals(decision, expected, StringComparison.OrdinalIgnoreCase);
@@ -667,9 +893,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
                 : id.Trim();
         }
 
-        private static string SerializeJson(string value)
+        internal static string SerializeJson(string value)
         {
-            return JsonSerializer.Serialize(value ?? string.Empty);
+            return FirstContactPromptJson.SerializeString(value);
         }
 
         private sealed class EvaluationSession
@@ -677,17 +903,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
             public EvaluationSession(
                 FirstContactSemanticEvaluationRequest request,
                 List<EvaluationWorkItem> items,
-                RoutingEditorLlmService service)
+                RoutingEditorLlmService service,
+                PromptPipelineAsset groupMembershipPipeline)
             {
                 Request = request;
                 Items = items;
                 Service = service;
+                GroupMembershipPipeline = groupMembershipPipeline;
                 StartedUtc = DateTime.UtcNow;
             }
 
             public FirstContactSemanticEvaluationRequest Request { get; }
             public List<EvaluationWorkItem> Items { get; }
             public RoutingEditorLlmService Service { get; }
+            public PromptPipelineAsset GroupMembershipPipeline { get; }
             public DateTime StartedUtc { get; }
             public List<FirstContactSemanticEvaluationCaseResult> Results { get; } = new();
             public int NextIndex { get; set; }
@@ -736,6 +965,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor
     public sealed class FirstContactSemanticEvaluationRequest
     {
         public string runId = string.Empty;
+        public string[] includeKinds = Array.Empty<string>();
         public FirstContactBootstrapEvaluationSet[] bootstrapSets =
             Array.Empty<FirstContactBootstrapEvaluationSet>();
         public FirstContactBootstrapEvaluationCase[] bootstrapCases =

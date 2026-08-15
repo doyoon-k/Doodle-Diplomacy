@@ -18,7 +18,7 @@
     {
       "idPrefix": "bootstrap-food",
       "categoryDefinition": "사람이 일반적으로 먹거나 마시는 음식 또는 식재료인 구체적이고 눈에 보이는 대상",
-      "ordinaryMatches": ["바나나", "寿司", "خبز", "queso", "김치", "🍎"],
+      "ordinaryMatches": ["바나나", "寿司", "خبز", "queso", "김치", "pomme"],
       "mismatches": ["권총", "구름", "망치", "플라스틱 의자", "모래시계", "위성"],
       "uncertainSubjects": ["date"]
     },
@@ -32,35 +32,35 @@
     {
       "idPrefix": "bootstrap-vehicle",
       "categoryDefinition": "사람이나 화물을 한 장소에서 다른 장소로 운반하도록 만들어진 탈것인 구체적이고 눈에 보이는 대상",
-      "ordinaryMatches": ["자동차", "자전거", "잠수함", "rickshaw", "🚁", "船"],
+      "ordinaryMatches": ["자동차", "자전거", "잠수함", "rickshaw", "helicóptero", "船"],
       "mismatches": ["도로", "차고", "여권", "지도", "파도", "휘발유"],
       "uncertainSubjects": ["tank", "crane"]
     },
     {
       "idPrefix": "bootstrap-animal",
       "categoryDefinition": "생물학적으로 동물계에 속하는 살아 있는 생물",
-      "ordinaryMatches": ["고양이", "고래", "オオカミ", "أسد", "🐙", "ornithorhynchus"],
+      "ordinaryMatches": ["고양이", "고래", "オオカミ", "أسد", "pulpo", "ornithorhynchus"],
       "mismatches": ["버섯", "로봇", "산", "바이러스", "자동차", "민들레"],
       "uncertainSubjects": ["bat", "crane", "seal"]
     },
     {
       "idPrefix": "bootstrap-plant",
       "categoryDefinition": "생물학적으로 식물계에 속하며 광합성을 하는 살아 있는 생물",
-      "ordinaryMatches": ["장미", "참나무", "竹", "cactus", "🌻", "baobab"],
+      "ordinaryMatches": ["장미", "참나무", "竹", "cactus", "tournesol", "baobab"],
       "mismatches": ["산호", "버섯", "해파리", "이끼 낀 돌", "종이", "나무 의자"],
       "uncertainSubjects": ["palm", "iris", "은행"]
     },
     {
       "idPrefix": "bootstrap-clothing",
       "categoryDefinition": "사람이 몸에 입거나 걸치는 의복인 구체적이고 눈에 보이는 대상",
-      "ordinaryMatches": ["재킷", "양말", "着物", "sombrero", "🧤", "sari"],
+      "ordinaryMatches": ["재킷", "양말", "着物", "sombrero", "gant", "sari"],
       "mismatches": ["방패", "옷장", "세탁기", "향수", "우산", "수건"],
       "uncertainSubjects": ["jersey", "trainer"]
     },
     {
       "idPrefix": "bootstrap-musical-instrument",
       "categoryDefinition": "연주하여 음악적 소리를 내도록 만들어진 악기인 구체적이고 눈에 보이는 대상",
-      "ordinaryMatches": ["기타", "피아노", "violin", "طبلة", "尺八", "🎺"],
+      "ordinaryMatches": ["기타", "피아노", "violin", "طبلة", "尺八", "trompette"],
       "mismatches": ["악보", "가수", "콘서트홀", "헤드폰", "노래", "메트로놈"],
       "uncertainSubjects": ["organ", "bass", "horn"]
     },
@@ -195,9 +195,9 @@
     {"id":"seed-positive-057","newMeaning":"manzana","existingMembers":["バナナ","사과"],"expectedCategoryPresence":"non_empty"},
     {"id":"seed-positive-058","newMeaning":"猫","existingMembers":["dog","고양이"],"expectedCategoryPresence":"non_empty"},
     {"id":"seed-positive-059","newMeaning":"خبز","existingMembers":["rice","김치"],"expectedCategoryPresence":"non_empty"},
-    {"id":"seed-positive-060","newMeaning":"🚗","existingMembers":["🚲","bus"],"expectedCategoryPresence":"non_empty"},
-    {"id":"seed-positive-061","newMeaning":"🎻","existingMembers":["piano","피아노"],"expectedCategoryPresence":"non_empty"},
-    {"id":"seed-positive-062","newMeaning":"🛡️","existingMembers":["helmet","방탄조끼"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-060","newMeaning":"coche","existingMembers":["bicicleta","bus"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-061","newMeaning":"violon","existingMembers":["piano","피아노"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-062","newMeaning":"bouclier","existingMembers":["helmet","방탄조끼"],"expectedCategoryPresence":"non_empty"},
     {"id":"seed-positive-063","newMeaning":"α","existingMembers":["β","γ"],"expectedCategoryPresence":"non_empty"},
     {"id":"seed-positive-064","newMeaning":"KRW","existingMembers":["USD","EUR"],"expectedCategoryPresence":"non_empty"},
     {"id":"seed-positive-065","newMeaning":"비숍","existingMembers":["룩","나이트"],"expectedCategoryPresence":"non_empty"},
@@ -252,7 +252,7 @@
     {
       "idPrefix": "membership-fruit",
       "existingCategory": "과일",
-      "joins": ["사과", "수박", "mango", "バナナ", "تفاحة", "🍐"],
+      "joins": ["사과", "수박", "mango", "バナナ", "تفاحة", "pera"],
       "rejects": ["총", "감자", "버섯", "망치", "구름", "우유"],
       "uncertainMeanings": ["date"]
     },
@@ -273,49 +273,49 @@
     {
       "idPrefix": "membership-vehicle",
       "existingCategory": "탈것",
-      "joins": ["자동차", "자전거", "잠수함", "rickshaw", "🚁", "船"],
+      "joins": ["자동차", "자전거", "잠수함", "rickshaw", "helicóptero", "船"],
       "rejects": ["도로", "차고", "지도", "휘발유", "파도", "정류장"],
       "uncertainMeanings": ["tank", "crane"]
     },
     {
       "idPrefix": "membership-animal",
       "existingCategory": "동물",
-      "joins": ["고양이", "고래", "オオカミ", "أسد", "🐙", "ornithorhynchus"],
+      "joins": ["고양이", "고래", "オオカミ", "أسد", "pulpo", "ornithorhynchus"],
       "rejects": ["버섯", "로봇", "바이러스", "민들레", "산호초", "자동차"],
       "uncertainMeanings": ["bat", "crane", "seal"]
     },
     {
       "idPrefix": "membership-bird",
       "existingCategory": "새",
-      "joins": ["참새", "독수리", "펭귄", "타조", "フクロウ", "🦆"],
+      "joins": ["참새", "독수리", "펭귄", "타조", "フクロウ", "canard"],
       "rejects": ["박쥐", "나비", "날치", "비행기", "깃털", "둥지"],
       "uncertainMeanings": ["kiwi"]
     },
     {
       "idPrefix": "membership-fish",
       "existingCategory": "어류",
-      "joins": ["연어", "참치", "상어", "해마", "鯉", "🐟"],
+      "joins": ["연어", "참치", "상어", "해마", "鯉", "poisson"],
       "rejects": ["고래", "돌고래", "문어", "해파리", "물개", "새우"],
       "uncertainMeanings": ["bass"]
     },
     {
       "idPrefix": "membership-plant",
       "existingCategory": "식물",
-      "joins": ["장미", "참나무", "竹", "cactus", "🌻", "baobab"],
+      "joins": ["장미", "참나무", "竹", "cactus", "tournesol", "baobab"],
       "rejects": ["버섯", "산호", "해파리", "종이", "나무 의자", "바이러스"],
       "uncertainMeanings": ["palm", "iris", "은행"]
     },
     {
       "idPrefix": "membership-clothing",
       "existingCategory": "의복",
-      "joins": ["재킷", "양말", "着物", "sombrero", "🧤", "sari"],
+      "joins": ["재킷", "양말", "着物", "sombrero", "gant", "sari"],
       "rejects": ["방패", "옷장", "세탁기", "향수", "우산", "수건"],
       "uncertainMeanings": ["jersey", "trainer"]
     },
     {
       "idPrefix": "membership-instrument",
       "existingCategory": "악기",
-      "joins": ["기타", "피아노", "violin", "طبلة", "尺八", "🎺"],
+      "joins": ["기타", "피아노", "violin", "طبلة", "尺八", "trompette"],
       "rejects": ["악보", "가수", "헤드폰", "노래", "메트로놈", "콘서트홀"],
       "uncertainMeanings": ["organ", "bass", "horn"]
     },

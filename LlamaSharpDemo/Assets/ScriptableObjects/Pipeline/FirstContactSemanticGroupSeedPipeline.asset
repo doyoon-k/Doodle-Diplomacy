@@ -19,13 +19,9 @@ MonoBehaviour:
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: feab5fd8159c412a8aa7118b0986249d, type: 2}
     embeddingProfile: {fileID: 0}
-    userPromptTemplate: 'NEW_MEANING_JSON:
+    userPromptTemplate: 'MEMBERS_JSON:
 
-      {{new_meaning_json}}
-
-      EXISTING_MEMBERS_JSON:
-
-      {{existing_members_json}}'
+      {{seed_members_json}}'
     embeddingOutputKey: embedding
     failOnEmptyEmbeddingInput: 1
     jsonMaxRetries: 1
@@ -54,5 +50,5 @@ MonoBehaviour:
     viewScale: {x: 1, y: 1, z: 1}
     viewInitialized: 1
     snapshotPositions:
-    - {x: 0, y: 0}
+    - {x: -160, y: -40}
     snapshotPositionsInitialized: 1

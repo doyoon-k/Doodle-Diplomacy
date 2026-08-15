@@ -2,8 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using DoodleDiplomacy.Gameplay;
 using DoodleDiplomacy.Localization;
 using UnityEngine;
@@ -43,11 +41,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
     public sealed class FirstContactProbeProcessor
     {
         private const int MaxSemanticGroupFitCacheEntries = 128;
-
-        private static readonly JsonSerializerOptions PromptJsonOptions = new JsonSerializerOptions
-        {
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        };
 
         private readonly GamePipelineRunner _pipelineRunner;
         private readonly FirstContactVlmSettings _settings;
@@ -366,6 +359,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield break;
             }
 
+            if (requiresCategorySeed && _settings?.semanticGroupFitPipeline == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticGroupFitResult.Failed(
+                    "Semantic group seed verification pipeline is not assigned."));
+                yield break;
+            }
+
             if (_pipelineRunner == null)
             {
                 onComplete?.Invoke(FirstContactSemanticGroupFitResult.Failed(
@@ -381,13 +381,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             var state = new PipelineState();
-            state.SetString("new_meaning_json", SerializePromptLabel(ResolveOriginalLabel(card)));
             if (requiresCategorySeed)
             {
-                state.SetString("existing_members_json", SerializePromptLabels(representativeMembers));
+                state.SetString(
+                    "seed_members_json",
+                    SerializePromptLabels(card, representativeMembers));
             }
             else
             {
+                state.SetString("new_meaning_json", SerializePromptLabel(ResolveOriginalLabel(card)));
                 state.SetString(
                     "existing_category_json",
                     SerializePromptLabel(existingCategory));
@@ -413,6 +415,58 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     out fitResult);
             if (parsed)
             {
+                if (requiresCategorySeed && fitResult.JoinsGroup)
+                {
+                    List<string> memberLabels = BuildPromptLabels(card, representativeMembers);
+                    var memberResults = new List<FirstContactSemanticGroupFitResult>(
+                        memberLabels.Count);
+                    for (int i = 0; i < memberLabels.Count; i++)
+                    {
+                        var membershipState = new PipelineState();
+                        membershipState.SetString(
+                            "new_meaning_json",
+                            SerializePromptLabel(memberLabels[i]));
+                        membershipState.SetString(
+                            "existing_category_json",
+                            SerializePromptLabel(fitResult.Category));
+
+                        bool membershipDone = false;
+                        PipelineState membershipFinalState = null;
+                        _pipelineRunner.RunPipeline(
+                            _settings.semanticGroupFitPipeline,
+                            membershipState,
+                            result =>
+                            {
+                                membershipFinalState = result;
+                                membershipDone = true;
+                            });
+                        yield return new WaitUntil(() => membershipDone);
+
+                        if (!FirstContactSemanticGroupFitResult.TryFromMembershipPipelineState(
+                                membershipFinalState,
+                                fitResult.Category,
+                                out FirstContactSemanticGroupFitResult memberResult))
+                        {
+                            fitResult = memberResult ?? FirstContactSemanticGroupFitResult.Failed(
+                                "Semantic group seed member verification was unstable.");
+                            break;
+                        }
+
+                        memberResults.Add(memberResult);
+                        if (!memberResult.JoinsGroup)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (fitResult.IsSuccess)
+                    {
+                        fitResult = FirstContactSemanticGroupFitResult.ResolveSeedMemberVerifications(
+                            fitResult.Category,
+                            memberResults);
+                    }
+                }
+
                 CacheSemanticGroupFit(cacheKey, fitResult);
                 onComplete?.Invoke(fitResult);
                 yield break;
@@ -426,17 +480,27 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private static string SerializePromptLabel(string label)
         {
-            return JsonSerializer.Serialize(label ?? string.Empty, PromptJsonOptions);
+            return FirstContactPromptJson.SerializeString(label);
         }
 
-        private static string SerializePromptLabels(IReadOnlyList<SemanticCardRecord> cards)
+        private static string SerializePromptLabels(
+            SemanticCardRecord newCard,
+            IReadOnlyList<SemanticCardRecord> existingCards)
         {
-            var labels = new List<string>(cards?.Count ?? 0);
-            if (cards != null)
+            return FirstContactPromptJson.SerializeStringArray(
+                BuildPromptLabels(newCard, existingCards));
+        }
+
+        private static List<string> BuildPromptLabels(
+            SemanticCardRecord newCard,
+            IReadOnlyList<SemanticCardRecord> existingCards)
+        {
+            var labels = new List<string>((existingCards?.Count ?? 0) + 1);
+            if (existingCards != null)
             {
-                for (int i = 0; i < cards.Count; i++)
+                for (int i = 0; i < existingCards.Count; i++)
                 {
-                    string label = ResolveOriginalLabel(cards[i]);
+                    string label = ResolveOriginalLabel(existingCards[i]);
                     if (!string.IsNullOrWhiteSpace(label))
                     {
                         labels.Add(label);
@@ -444,7 +508,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
             }
 
-            return JsonSerializer.Serialize(labels, PromptJsonOptions);
+            string newLabel = ResolveOriginalLabel(newCard);
+            if (!string.IsNullOrWhiteSpace(newLabel))
+            {
+                labels.Add(newLabel);
+            }
+
+            return labels;
         }
 
         private static string BuildSemanticGroupFitCacheKey(

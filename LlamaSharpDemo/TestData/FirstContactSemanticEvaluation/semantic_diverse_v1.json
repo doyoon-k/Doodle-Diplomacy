@@ -1,0 +1,463 @@
+{
+  "runId": "semantic-diverse-v1",
+  "bootstrapSets": [
+    {
+      "idPrefix": "bootstrap-danger",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 위해, 공격, 중독, 화재 또는 폭발을 직접 일으키는 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["권총", "폭탄", "독약", "지뢰", "화염방사기", "수류탄"],
+      "mismatches": ["바나나", "베개", "바이올린", "무지개", "공책", "비누"],
+      "uncertainSubjects": ["배트"]
+    },
+    {
+      "idPrefix": "bootstrap-protection",
+      "categoryDefinition": "일반적인 정체성과 주된 기능이 사람이나 사물을 위해로부터 보호하거나 충격을 막는 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["방패", "헬멧", "갑옷", "방탄조끼", "구명조끼", "안전벨트"],
+      "mismatches": ["케이크", "피아노", "연필", "구름", "꽃병", "망원경"],
+      "uncertainSubjects": ["마스크"]
+    },
+    {
+      "idPrefix": "bootstrap-food",
+      "categoryDefinition": "사람이 일반적으로 먹거나 마시는 음식 또는 식재료인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["바나나", "寿司", "خبز", "queso", "김치", "🍎"],
+      "mismatches": ["권총", "구름", "망치", "플라스틱 의자", "모래시계", "위성"],
+      "uncertainSubjects": ["date"]
+    },
+    {
+      "idPrefix": "bootstrap-tool",
+      "categoryDefinition": "사람이 작업을 수행하거나 재료를 가공하기 위해 직접 사용하는 도구인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["망치", "렌치", "드라이버", "톱", "pliers", "鑿"],
+      "mismatches": ["돌고래", "케이크", "은하", "양말", "비", "소설"],
+      "uncertainSubjects": ["drill", "file", "plane"]
+    },
+    {
+      "idPrefix": "bootstrap-vehicle",
+      "categoryDefinition": "사람이나 화물을 한 장소에서 다른 장소로 운반하도록 만들어진 탈것인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["자동차", "자전거", "잠수함", "rickshaw", "🚁", "船"],
+      "mismatches": ["도로", "차고", "여권", "지도", "파도", "휘발유"],
+      "uncertainSubjects": ["tank", "crane"]
+    },
+    {
+      "idPrefix": "bootstrap-animal",
+      "categoryDefinition": "생물학적으로 동물계에 속하는 살아 있는 생물",
+      "ordinaryMatches": ["고양이", "고래", "オオカミ", "أسد", "🐙", "ornithorhynchus"],
+      "mismatches": ["버섯", "로봇", "산", "바이러스", "자동차", "민들레"],
+      "uncertainSubjects": ["bat", "crane", "seal"]
+    },
+    {
+      "idPrefix": "bootstrap-plant",
+      "categoryDefinition": "생물학적으로 식물계에 속하며 광합성을 하는 살아 있는 생물",
+      "ordinaryMatches": ["장미", "참나무", "竹", "cactus", "🌻", "baobab"],
+      "mismatches": ["산호", "버섯", "해파리", "이끼 낀 돌", "종이", "나무 의자"],
+      "uncertainSubjects": ["palm", "iris", "은행"]
+    },
+    {
+      "idPrefix": "bootstrap-clothing",
+      "categoryDefinition": "사람이 몸에 입거나 걸치는 의복인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["재킷", "양말", "着物", "sombrero", "🧤", "sari"],
+      "mismatches": ["방패", "옷장", "세탁기", "향수", "우산", "수건"],
+      "uncertainSubjects": ["jersey", "trainer"]
+    },
+    {
+      "idPrefix": "bootstrap-musical-instrument",
+      "categoryDefinition": "연주하여 음악적 소리를 내도록 만들어진 악기인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["기타", "피아노", "violin", "طبلة", "尺八", "🎺"],
+      "mismatches": ["악보", "가수", "콘서트홀", "헤드폰", "노래", "메트로놈"],
+      "uncertainSubjects": ["organ", "bass", "horn"]
+    },
+    {
+      "idPrefix": "bootstrap-container",
+      "categoryDefinition": "다른 물질이나 물건을 내부에 담거나 보관하도록 만들어진 용기인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["병", "상자", "항아리", "beaker", "보온병", "旅行箱"],
+      "mismatches": ["책상", "강", "주머니가 없는 셔츠", "벽", "사과", "그림자"],
+      "uncertainSubjects": ["can", "case", "tank"]
+    },
+    {
+      "idPrefix": "bootstrap-weather",
+      "categoryDefinition": "대기에서 발생하는 날씨 현상",
+      "ordinaryMatches": ["비", "눈보라", "토네이도", "안개", "hail", "monsoon"],
+      "mismatches": ["바다", "우산", "일기예보", "기후", "온도계", "구름 그림"],
+      "uncertainSubjects": []
+    },
+    {
+      "idPrefix": "bootstrap-medical-equipment",
+      "categoryDefinition": "환자의 진단, 치료, 수술 또는 신체 보조에 사용하도록 만들어진 의료 장비나 기구인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["청진기", "주사기", "제세동기", "목발", "메스", "thermometer"],
+      "mismatches": ["의사", "병원", "두통", "처방전", "비타민", "구급차"],
+      "uncertainSubjects": ["monitor", "brace"]
+    },
+    {
+      "idPrefix": "bootstrap-building",
+      "categoryDefinition": "사람이 내부를 사용하거나 거주하도록 지어진 건축물인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["주택", "학교", "사원", "마천루", "igloo", "مسجد"],
+      "mismatches": ["도로", "텐트", "동굴", "도시", "건축가", "벽돌"],
+      "uncertainSubjects": ["bank", "station"]
+    },
+    {
+      "idPrefix": "bootstrap-computing-device",
+      "categoryDefinition": "디지털 정보를 입력, 처리, 저장 또는 전달하도록 만들어진 전자 컴퓨팅 장치인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["노트북", "서버", "라우터", "키보드", "GPU", "Raspberry Pi"],
+      "mismatches": ["Python", "알고리즘", "클라우드", "웹사이트", "비밀번호", "데이터"],
+      "uncertainSubjects": ["tablet", "terminal", "switch"]
+    },
+    {
+      "idPrefix": "bootstrap-celestial-body",
+      "categoryDefinition": "우주 공간에 자연적으로 존재하는 천체",
+      "ordinaryMatches": ["지구", "태양", "혜성", "블랙홀", "Europa", "pulsar"],
+      "mismatches": ["망원경", "우주선", "별자리 지도", "천문학", "진공", "로켓"],
+      "uncertainSubjects": ["Mercury", "Io"]
+    },
+    {
+      "idPrefix": "bootstrap-weapon",
+      "categoryDefinition": "공격하거나 상해를 입히기 위한 무기인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["검", "총", "창", "활", "어뢰", "광선검"],
+      "mismatches": ["방패", "사과", "붕대", "경보기", "왕관", "나침반"],
+      "uncertainSubjects": ["망치", "axe", "baseball bat"]
+    },
+    {
+      "idPrefix": "bootstrap-geometric-shape",
+      "categoryDefinition": "수학에서 경계와 공간적 형태로 정의되는 기하학적 도형",
+      "ordinaryMatches": ["원", "정사각형", "삼각형", "hexagon", "구", "torus"],
+      "mismatches": ["빨강", "일곱", "길이", "방향", "방정식", "숫자 0"],
+      "uncertainSubjects": ["diamond", "ring"]
+    },
+    {
+      "idPrefix": "bootstrap-written-work",
+      "categoryDefinition": "주로 글로 구성되어 저술된 하나의 작품이나 문서",
+      "ordinaryMatches": ["소설", "시", "essay", "사용 설명서", "screenplay", "학위 논문"],
+      "mismatches": ["연설", "멜로디", "작가", "도서관", "잉크", "대화"],
+      "uncertainSubjects": ["paper", "letter", "script"]
+    },
+    {
+      "idPrefix": "bootstrap-communication-device",
+      "categoryDefinition": "멀리 있는 사람이나 장치 사이에 정보를 송수신하도록 만들어진 통신 장치인 구체적이고 눈에 보이는 대상",
+      "ordinaryMatches": ["스마트폰", "무전기", "전화기", "radio", "modem", "pager"],
+      "mismatches": ["편지", "소문", "언어", "우체국", "대화", "신문 기사"],
+      "uncertainSubjects": ["tablet", "terminal"]
+    }
+  ],
+  "groupSeedCases": [
+    {"id":"seed-positive-001","newMeaning":"사과","existingMembers":["바나나"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-002","newMeaning":"수박","existingMembers":["사과","바나나"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-003","newMeaning":"자몽","existingMembers":["오렌지","레몬"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-004","newMeaning":"블루베리","existingMembers":["딸기","라즈베리"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-005","newMeaning":"총","existingMembers":["검"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-006","newMeaning":"폭탄","existingMembers":["총","검"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-007","newMeaning":"렌치","existingMembers":["망치","드라이버"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-008","newMeaning":"가위","existingMembers":["칼","톱"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-009","newMeaning":"버스","existingMembers":["자동차","자전거"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-010","newMeaning":"헬리콥터","existingMembers":["비행기","글라이더"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-011","newMeaning":"카누","existingMembers":["배","잠수함"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-012","newMeaning":"고래","existingMembers":["돌고래","개"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-013","newMeaning":"호랑이","existingMembers":["사자","표범"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-014","newMeaning":"올빼미","existingMembers":["독수리","펭귄"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-015","newMeaning":"개미","existingMembers":["벌","나비"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-016","newMeaning":"연어","existingMembers":["참치","대구"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-017","newMeaning":"장미","existingMembers":["튤립","해바라기"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-018","newMeaning":"가문비나무","existingMembers":["소나무","전나무"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-019","newMeaning":"재킷","existingMembers":["셔츠","바지"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-020","newMeaning":"부츠","existingMembers":["샌들","운동화"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-021","newMeaning":"기타","existingMembers":["바이올린","첼로"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-022","newMeaning":"드럼","existingMembers":["실로폰","탬버린"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-023","newMeaning":"병","existingMembers":["항아리","상자"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-024","newMeaning":"헬멧","existingMembers":["방패","갑옷"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-025","newMeaning":"병원","existingMembers":["학교","도서관"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-026","newMeaning":"비","existingMembers":["눈","우박"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-027","newMeaning":"빨강","existingMembers":["파랑","초록"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-028","newMeaning":"원","existingMembers":["정사각형","삼각형"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-029","newMeaning":"철","existingMembers":["구리","금"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-030","newMeaning":"산소","existingMembers":["탄소","헬륨"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-031","newMeaning":"양성자","existingMembers":["중성자","전자"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-032","newMeaning":"지구","existingMembers":["화성","토성"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-033","newMeaning":"Europa","existingMembers":["Ganymede","Callisto"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-034","newMeaning":"Python","existingMembers":["Rust","C#"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-035","newMeaning":"Linux","existingMembers":["Windows","macOS"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-036","newMeaning":"JPEG","existingMembers":["PNG","GIF"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-037","newMeaning":"MP3","existingMembers":["WAV","FLAC"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-038","newMeaning":"HTTP","existingMembers":["FTP","SMTP"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-039","newMeaning":"PostgreSQL","existingMembers":["MySQL","SQLite"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-040","newMeaning":"quicksort","existingMembers":["mergesort","heapsort"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-041","newMeaning":"하이쿠","existingMembers":["소네트","리머릭"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-042","newMeaning":"군주제","existingMembers":["독재정","과두정"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-043","newMeaning":"기쁨","existingMembers":["분노","슬픔"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-044","newMeaning":"미터","existingMembers":["인치","마일"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-045","newMeaning":"섭씨","existingMembers":["켈빈","화씨"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-046","newMeaning":"월요일","existingMembers":["화요일","금요일"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-047","newMeaning":"1월","existingMembers":["3월","10월"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-048","newMeaning":"체스","existingMembers":["바둑","쇼기"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-049","newMeaning":"용","existingMembers":["유니콘","그리핀"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-050","newMeaning":"마법 지팡이","existingMembers":["주문서","마법 물약"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-051","newMeaning":"흡혈귀","existingMembers":["좀비","늑대인간"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-052","newMeaning":"나트륨","existingMembers":["칼륨","리튬"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-053","newMeaning":"미토콘드리아","existingMembers":["세포핵","리보솜"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-054","newMeaning":"현무암","existingMembers":["화강암","대리암"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-055","newMeaning":"직사각형","existingMembers":["오각형","육각형"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-056","newMeaning":"USB-C","existingMembers":["HDMI","DisplayPort"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-057","newMeaning":"manzana","existingMembers":["バナナ","사과"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-058","newMeaning":"猫","existingMembers":["dog","고양이"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-059","newMeaning":"خبز","existingMembers":["rice","김치"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-060","newMeaning":"🚗","existingMembers":["🚲","bus"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-061","newMeaning":"🎻","existingMembers":["piano","피아노"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-062","newMeaning":"🛡️","existingMembers":["helmet","방탄조끼"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-063","newMeaning":"α","existingMembers":["β","γ"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-064","newMeaning":"KRW","existingMembers":["USD","EUR"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-065","newMeaning":"비숍","existingMembers":["룩","나이트"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-066","newMeaning":"적운","existingMembers":["권운","층운"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-067","newMeaning":"티라노사우루스","existingMembers":["트리케라톱스","스테고사우루스"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-068","newMeaning":"박테리아","existingMembers":["효모","아메바"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-069","newMeaning":"발레","existingMembers":["탱고","살사"],"expectedCategoryPresence":"non_empty"},
+    {"id":"seed-positive-070","newMeaning":"고딕","existingMembers":["바로크","바우하우스"],"expectedCategoryPresence":"non_empty"},
+
+    {"id":"seed-negative-001","newMeaning":"사과","existingMembers":["검"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-002","newMeaning":"바이올린","existingMembers":["화산"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-003","newMeaning":"구름","existingMembers":["드라이버"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-004","newMeaning":"기쁨","existingMembers":["망치"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-005","newMeaning":"민주주의","existingMembers":["바나나"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-006","newMeaning":"일곱","existingMembers":["빨강"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-007","newMeaning":"고양이","existingMembers":["TCP"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-008","newMeaning":"달","existingMembers":["양말"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-009","newMeaning":"비","existingMembers":["피아노"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-010","newMeaning":"양성자","existingMembers":["시"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-011","newMeaning":"열쇠","existingMembers":["자물쇠"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-012","newMeaning":"커피","existingMembers":["아침"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-013","newMeaning":"의사","existingMembers":["병원"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-014","newMeaning":"불","existingMembers":["소화기"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-015","newMeaning":"벌","existingMembers":["꿀"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-016","newMeaning":"새","existingMembers":["둥지"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-017","newMeaning":"책","existingMembers":["도서관"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-018","newMeaning":"요리사","existingMembers":["칼"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-019","newMeaning":"신발","existingMembers":["발"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-020","newMeaning":"달","existingMembers":["망원경"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-021","newMeaning":"물고기","existingMembers":["바다"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-022","newMeaning":"나무","existingMembers":["숲"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-023","newMeaning":"우주비행사","existingMembers":["로켓"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-024","newMeaning":"화가","existingMembers":["붓"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-025","newMeaning":"개","existingMembers":["목줄"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-026","newMeaning":"왕","existingMembers":["왕관"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-027","newMeaning":"편지","existingMembers":["봉투"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-028","newMeaning":"배터리","existingMembers":["전기"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-029","newMeaning":"카메라","existingMembers":["사진"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-030","newMeaning":"질문","existingMembers":["대답"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-031","newMeaning":"북쪽","existingMembers":["나침반"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-032","newMeaning":"우유","existingMembers":["소"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-033","newMeaning":"빨강","existingMembers":["사과"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-034","newMeaning":"빠름","existingMembers":["치타"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-035","newMeaning":"잠","existingMembers":["침대"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-036","newMeaning":"음악","existingMembers":["헤드폰"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-037","newMeaning":"전쟁","existingMembers":["무기"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-038","newMeaning":"시간","existingMembers":["시계"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-039","newMeaning":"블로프","existingMembers":["Zyphor-9"],"expectedCategoryPresence":"empty"},
+    {"id":"seed-negative-040","newMeaning":"행복","existingMembers":["화강암","USB-C"],"expectedCategoryPresence":"empty"}
+  ],
+  "groupMembershipSets": [
+    {
+      "idPrefix": "membership-fruit",
+      "existingCategory": "과일",
+      "joins": ["사과", "수박", "mango", "バナナ", "تفاحة", "🍐"],
+      "rejects": ["총", "감자", "버섯", "망치", "구름", "우유"],
+      "uncertainMeanings": ["date"]
+    },
+    {
+      "idPrefix": "membership-weapon",
+      "existingCategory": "무기",
+      "joins": ["검", "권총", "창", "어뢰", "수류탄", "lightsaber"],
+      "rejects": ["방패", "붕대", "경보기", "사과", "의자", "나침반"],
+      "uncertainMeanings": ["망치", "axe", "bat"]
+    },
+    {
+      "idPrefix": "membership-tool",
+      "existingCategory": "도구",
+      "joins": ["망치", "렌치", "드라이버", "pliers", "鑿", "자"],
+      "rejects": ["고래", "비", "교향곡", "민주주의", "양말", "목성"],
+      "uncertainMeanings": ["file", "drill", "plane"]
+    },
+    {
+      "idPrefix": "membership-vehicle",
+      "existingCategory": "탈것",
+      "joins": ["자동차", "자전거", "잠수함", "rickshaw", "🚁", "船"],
+      "rejects": ["도로", "차고", "지도", "휘발유", "파도", "정류장"],
+      "uncertainMeanings": ["tank", "crane"]
+    },
+    {
+      "idPrefix": "membership-animal",
+      "existingCategory": "동물",
+      "joins": ["고양이", "고래", "オオカミ", "أسد", "🐙", "ornithorhynchus"],
+      "rejects": ["버섯", "로봇", "바이러스", "민들레", "산호초", "자동차"],
+      "uncertainMeanings": ["bat", "crane", "seal"]
+    },
+    {
+      "idPrefix": "membership-bird",
+      "existingCategory": "새",
+      "joins": ["참새", "독수리", "펭귄", "타조", "フクロウ", "🦆"],
+      "rejects": ["박쥐", "나비", "날치", "비행기", "깃털", "둥지"],
+      "uncertainMeanings": ["kiwi"]
+    },
+    {
+      "idPrefix": "membership-fish",
+      "existingCategory": "어류",
+      "joins": ["연어", "참치", "상어", "해마", "鯉", "🐟"],
+      "rejects": ["고래", "돌고래", "문어", "해파리", "물개", "새우"],
+      "uncertainMeanings": ["bass"]
+    },
+    {
+      "idPrefix": "membership-plant",
+      "existingCategory": "식물",
+      "joins": ["장미", "참나무", "竹", "cactus", "🌻", "baobab"],
+      "rejects": ["버섯", "산호", "해파리", "종이", "나무 의자", "바이러스"],
+      "uncertainMeanings": ["palm", "iris", "은행"]
+    },
+    {
+      "idPrefix": "membership-clothing",
+      "existingCategory": "의복",
+      "joins": ["재킷", "양말", "着物", "sombrero", "🧤", "sari"],
+      "rejects": ["방패", "옷장", "세탁기", "향수", "우산", "수건"],
+      "uncertainMeanings": ["jersey", "trainer"]
+    },
+    {
+      "idPrefix": "membership-instrument",
+      "existingCategory": "악기",
+      "joins": ["기타", "피아노", "violin", "طبلة", "尺八", "🎺"],
+      "rejects": ["악보", "가수", "헤드폰", "노래", "메트로놈", "콘서트홀"],
+      "uncertainMeanings": ["organ", "bass", "horn"]
+    },
+    {
+      "idPrefix": "membership-container",
+      "existingCategory": "용기",
+      "joins": ["병", "상자", "항아리", "beaker", "보온병", "旅行箱"],
+      "rejects": ["책상", "강", "벽", "사과", "그림자", "셔츠"],
+      "uncertainMeanings": ["can", "case", "tank"]
+    },
+    {
+      "idPrefix": "membership-protection",
+      "existingCategory": "보호 장비",
+      "joins": ["방패", "헬멧", "갑옷", "방탄조끼", "구명조끼", "보안경"],
+      "rejects": ["총", "케이크", "망원경", "연필", "피아노", "모래시계"],
+      "uncertainMeanings": ["마스크"]
+    },
+    {
+      "idPrefix": "membership-weather",
+      "existingCategory": "날씨 현상",
+      "joins": ["비", "눈보라", "토네이도", "안개", "hail", "monsoon"],
+      "rejects": ["바다", "우산", "기후", "온도계", "일기예보", "파도"],
+      "uncertainMeanings": []
+    },
+    {
+      "idPrefix": "membership-medical-equipment",
+      "existingCategory": "의료 기구",
+      "joins": ["청진기", "주사기", "제세동기", "목발", "메스", "thermometer"],
+      "rejects": ["의사", "병원", "두통", "처방전", "비타민", "구급차"],
+      "uncertainMeanings": ["monitor", "brace"]
+    },
+    {
+      "idPrefix": "membership-building",
+      "existingCategory": "건축물",
+      "joins": ["주택", "학교", "사원", "마천루", "igloo", "مسجد"],
+      "rejects": ["도로", "텐트", "동굴", "도시", "건축가", "벽돌"],
+      "uncertainMeanings": ["bank", "station"]
+    },
+    {
+      "idPrefix": "membership-programming-language",
+      "existingCategory": "programming language",
+      "joins": ["Python", "Rust", "C#", "Haskell", "자바", "R"],
+      "rejects": ["HTML", "PostgreSQL", "Linux", "Git", "JSON", "Photoshop"],
+      "uncertainMeanings": ["Go", "Scratch"]
+    },
+    {
+      "idPrefix": "membership-operating-system",
+      "existingCategory": "운영체제",
+      "joins": ["Linux", "Windows", "macOS", "Android", "iOS", "FreeBSD"],
+      "rejects": ["Chrome", "Intel", "Python", "Docker", "GitHub", "PlayStation"],
+      "uncertainMeanings": ["Unix"]
+    },
+    {
+      "idPrefix": "membership-image-format",
+      "existingCategory": "래스터 이미지 파일 형식",
+      "joins": ["JPEG", "PNG", "GIF", "WebP", "TIFF", "BMP"],
+      "rejects": ["SVG", "MP3", "PDF", "H.264", "ZIP", "DOCX"],
+      "uncertainMeanings": ["RAW"]
+    },
+    {
+      "idPrefix": "membership-network-protocol",
+      "existingCategory": "network protocol",
+      "joins": ["HTTP", "TCP", "DNS", "SSH", "MQTT", "WebSocket"],
+      "rejects": ["HTML", "Ethernet cable", "Chrome", "router", "JSON", "Linux"],
+      "uncertainMeanings": ["IP"]
+    },
+    {
+      "idPrefix": "membership-planet",
+      "existingCategory": "행성",
+      "joins": ["지구", "화성", "토성", "Venus", "木星", "Neptune"],
+      "rejects": ["태양", "달", "명왕성", "Europa", "혜성", "은하수"],
+      "uncertainMeanings": ["Mercury"]
+    },
+    {
+      "idPrefix": "membership-emotion",
+      "existingCategory": "감정",
+      "joins": ["기쁨", "분노", "슬픔", "fear", "nostalgia", "嫉妬"],
+      "rejects": ["생각", "기억", "두통", "미소", "성격", "꿈"],
+      "uncertainMeanings": ["love"]
+    },
+    {
+      "idPrefix": "membership-color",
+      "existingCategory": "색",
+      "joins": ["빨강", "파랑", "초록", "cyan", "magenta", "紫"],
+      "rejects": ["투명", "밝음", "무지개", "패턴", "그림자", "빛"],
+      "uncertainMeanings": ["orange", "amber"]
+    },
+    {
+      "idPrefix": "membership-shape",
+      "existingCategory": "기하학적 도형",
+      "joins": ["원", "정사각형", "삼각형", "hexagon", "구", "torus"],
+      "rejects": ["빨강", "일곱", "길이", "방향", "방정식", "숫자 0"],
+      "uncertainMeanings": ["diamond", "ring"]
+    },
+    {
+      "idPrefix": "membership-mythical-creature",
+      "existingCategory": "mythical creature",
+      "joins": ["용", "유니콘", "그리핀", "凤凰", "كائن الجني", "centaur"],
+      "rejects": ["호랑이", "마법 지팡이", "기사", "성", "전설", "화석"],
+      "uncertainMeanings": ["Titan"]
+    },
+    {
+      "idPrefix": "membership-board-game",
+      "existingCategory": "보드게임",
+      "joins": ["체스", "바둑", "쇼기", "Monopoly", "Scrabble", "Catan"],
+      "rejects": ["축구", "포커", "퍼즐", "PlayStation", "주사위", "카드"],
+      "uncertainMeanings": ["Go"]
+    },
+    {
+      "idPrefix": "membership-chemical-element",
+      "existingCategory": "화학 원소",
+      "joins": ["산소", "철", "금", "sodium", "水素", "الكربون"],
+      "rejects": ["물", "소금", "강철", "공기", "전자", "다이아몬드"],
+      "uncertainMeanings": ["Mercury"]
+    },
+    {
+      "idPrefix": "membership-subatomic-particle",
+      "existingCategory": "아원자 입자",
+      "joins": ["양성자", "중성자", "전자", "quark", "neutrino", "muon"],
+      "rejects": ["원자", "분자", "광자총", "세포", "먼지", "행성"],
+      "uncertainMeanings": ["string"]
+    },
+    {
+      "idPrefix": "membership-length-unit",
+      "existingCategory": "길이 단위",
+      "joins": ["미터", "인치", "마일", "nanometer", "里", "ذراع"],
+      "rejects": ["킬로그램", "초", "리터", "섭씨", "제곱미터", "속도"],
+      "uncertainMeanings": ["foot"]
+    },
+    {
+      "idPrefix": "membership-weekday",
+      "existingCategory": "요일",
+      "joins": ["월요일", "Tuesday", "水曜日", "الخميس", "viernes", "Sunday"],
+      "rejects": ["1월", "주말", "오늘", "정오", "크리스마스", "봄"],
+      "uncertainMeanings": ["Fri"]
+    },
+    {
+      "idPrefix": "membership-hot-beverage",
+      "existingCategory": "뜨겁게 마시는 음료",
+      "joins": ["커피", "홍차", "hot chocolate", "녹차", "شاي", "espresso"],
+      "rejects": ["아이스크림", "수프", "콜라", "와인잔", "주전자", "커피콩"],
+      "uncertainMeanings": ["tea"]
+    }
+  ]
+}

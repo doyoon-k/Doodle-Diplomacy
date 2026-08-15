@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.IO;
 using NUnit.Framework;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact.Editor.Tests
@@ -55,6 +56,55 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor.Tests
 
             Assert.IsFalse(parsed);
             StringAssert.Contains("no cases", error);
+        }
+
+        [Test]
+        public void RequestContractCountsCompactEvaluationSets()
+        {
+            const string json = @"{
+              ""runId"": ""set-contract-test"",
+              ""bootstrapSets"": [{
+                ""idPrefix"": ""food"",
+                ""categoryDefinition"": ""food"",
+                ""ordinaryMatches"": [""사과"", ""bread""],
+                ""mismatches"": [""hammer""],
+                ""uncertainSubjects"": [""date""]
+              }],
+              ""groupMembershipSets"": [{
+                ""idPrefix"": ""fruit"",
+                ""existingCategory"": ""과일"",
+                ""joins"": [""사과"", ""mango""],
+                ""rejects"": [""총""],
+                ""uncertainMeanings"": [""date""]
+              }]
+            }";
+
+            bool parsed = FirstContactSemanticEvaluationRunner.TryDeserializeRequest(
+                json,
+                out FirstContactSemanticEvaluationRequest request,
+                out string error);
+
+            Assert.IsTrue(parsed, error);
+            Assert.AreEqual(8, FirstContactSemanticEvaluationRunner.CountCases(request));
+        }
+
+        [Test]
+        public void DiverseDatasetParsesWithExpectedCoverage()
+        {
+            string path = FirstContactSemanticEvaluationRunner.DiverseDatasetPath;
+            Assert.IsTrue(File.Exists(path), $"Dataset not found: {path}");
+
+            bool parsed = FirstContactSemanticEvaluationRunner.TryDeserializeRequest(
+                File.ReadAllText(path),
+                out FirstContactSemanticEvaluationRequest request,
+                out string error);
+
+            Assert.IsTrue(parsed, error);
+            Assert.AreEqual("semantic-diverse-v1", request.runId);
+            Assert.AreEqual(19, request.bootstrapSets.Length);
+            Assert.AreEqual(110, request.groupSeedCases.Length);
+            Assert.AreEqual(30, request.groupMembershipSets.Length);
+            Assert.AreEqual(787, FirstContactSemanticEvaluationRunner.CountCases(request));
         }
 
         [TestCase("non_empty", "fruit", true)]

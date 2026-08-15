@@ -32,6 +32,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public char Marker;
         public string BootstrapCategoryId;
         public bool IsBootstrapDetached;
+        public bool IsSemanticGroupPending;
         public int TraceCount;
         public int RequiredTraceCount;
         public bool IsBootstrapCategoryStable;
@@ -188,7 +189,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 IsActive = string.Equals(id, activeCardNodeId, StringComparison.Ordinal),
                 Marker = string.Equals(id, activeCardNodeId, StringComparison.Ordinal) ? '@' : 'o',
                 BootstrapCategoryId = card.BootstrapCategoryId,
-                IsBootstrapDetached = card.BootstrapCategoryEvaluated && !card.BootstrapCategoryAccepted
+                IsBootstrapDetached = card.BootstrapCategoryEvaluated && !card.BootstrapCategoryAccepted,
+                IsSemanticGroupPending =
+                    card.SemanticGroupAssignment == FirstContactSemanticGroupAssignmentState.Pending
             });
         }
 
@@ -561,6 +564,1039 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
+    }
+
+    public enum FirstContactResponseChannelKind
+    {
+        Category,
+        Pattern
+    }
+
+    public sealed class FirstContactResponseChannelEntry
+    {
+        public string Id;
+        public string SourceId;
+        public string Label;
+        public string SecondaryLabel;
+        public FirstContactResponseChannelKind Kind;
+        public bool IsActive;
+        public bool IsStable;
+        public int TraceCount;
+        public int RequiredTraceCount;
+        public int DisplayNumber;
+    }
+
+    /// <summary>
+    /// Flattens the semantic graph into a bounded, terminal-friendly channel view.
+    /// Membership remains explicit: only accepted members of the active channel
+    /// can enter TraceNodes. Rejected probes are routed to a PATTERN entry instead.
+    /// </summary>
+    public sealed class FirstContactResponseChannelPresentation
+    {
+        private const string UnknownPatternId = "__UNASSIGNED_PATTERN__";
+
+        private readonly Dictionary<string, FirstContactResponseChannelEntry> _entriesById =
+            new(StringComparer.Ordinal);
+        private readonly List<FirstContactResponseChannelEntry> _entryPool = new();
+        private int _entryPoolIndex;
+
+        public readonly List<FirstContactResponseChannelEntry> DirectoryEntries = new();
+        public readonly List<FirstContactSemanticMapNode> TraceNodes = new();
+
+        public FirstContactResponseChannelEntry ActiveEntry { get; private set; }
+        public FirstContactResponseChannelEntry RecentRouteEntry { get; private set; }
+        public FirstContactSemanticMapNode RecentProbe { get; private set; }
+        public bool RecentProbeMatchesActiveEntry { get; private set; }
+        public int DirectoryPage { get; private set; }
+        public int DirectoryPageCount { get; private set; }
+        public int VisibleDirectoryStart { get; private set; }
+        public int VisibleDirectoryCount { get; private set; }
+
+        public void Build(
+            FirstContactSemanticMapSnapshot snapshot,
+            int maximumTraceRows,
+            int maximumDirectoryRows)
+        {
+            DirectoryEntries.Clear();
+            TraceNodes.Clear();
+            _entriesById.Clear();
+            _entryPoolIndex = 0;
+            ActiveEntry = null;
+            RecentRouteEntry = null;
+            RecentProbe = null;
+            RecentProbeMatchesActiveEntry = false;
+            DirectoryPage = 0;
+            DirectoryPageCount = 1;
+            VisibleDirectoryStart = 0;
+            VisibleDirectoryCount = 0;
+
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            AddDeclaredChannels(snapshot);
+            AddInferredPatternChannels(snapshot);
+            AssignDisplayNumbers();
+            ResolveRecentProbe(snapshot);
+            ActiveEntry = ResolveActiveEntry();
+            for (int i = 0; i < DirectoryEntries.Count; i++)
+            {
+                DirectoryEntries[i].IsActive = ReferenceEquals(DirectoryEntries[i], ActiveEntry);
+            }
+
+            PopulateTraceRows(snapshot, Mathf.Max(1, maximumTraceRows));
+            ResolveRecentProbeRoute();
+            ResolveDirectoryPage(Mathf.Max(1, maximumDirectoryRows));
+        }
+
+        private void AddDeclaredChannels(FirstContactSemanticMapSnapshot snapshot)
+        {
+            for (int i = 0; i < snapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                if (node == null)
+                {
+                    continue;
+                }
+
+                if (node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory)
+                {
+                    AddEntry(
+                        BuildCategoryEntryId(node.BootstrapCategoryId, node.Id),
+                        node.BootstrapCategoryId,
+                        node.Label,
+                        node.SecondaryLabel,
+                        FirstContactResponseChannelKind.Category,
+                        node.IsActive,
+                        node.IsBootstrapCategoryStable,
+                        node.TraceCount,
+                        node.RequiredTraceCount);
+                }
+                else if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster)
+                {
+                    string sourceId = TrimClusterNodePrefix(node.Id);
+                    AddEntry(
+                        BuildPatternEntryId(sourceId),
+                        sourceId,
+                        node.SecondaryLabel,
+                        node.Label,
+                        FirstContactResponseChannelKind.Pattern,
+                        node.IsActive,
+                        true,
+                        0,
+                        0);
+                }
+            }
+        }
+
+        private void AddInferredPatternChannels(FirstContactSemanticMapSnapshot snapshot)
+        {
+            for (int i = 0; i < snapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                if (node?.Kind != FirstContactSemanticMapNodeKind.Card)
+                {
+                    continue;
+                }
+
+                if (node.IsSemanticGroupPending)
+                {
+                    continue;
+                }
+
+                string categoryEntryId = BuildCategoryEntryId(
+                    node.BootstrapCategoryId,
+                    string.Empty);
+                bool belongsToDeclaredCategory =
+                    !node.IsBootstrapDetached &&
+                    !string.IsNullOrWhiteSpace(node.BootstrapCategoryId) &&
+                    _entriesById.ContainsKey(categoryEntryId);
+                if (belongsToDeclaredCategory)
+                {
+                    continue;
+                }
+
+                string sourceId = string.IsNullOrWhiteSpace(node.SecondaryLabel)
+                    ? UnknownPatternId
+                    : node.SecondaryLabel.Trim();
+                string entryId = BuildPatternEntryId(sourceId);
+                if (_entriesById.TryGetValue(entryId, out FirstContactResponseChannelEntry entry))
+                {
+                    entry.TraceCount++;
+                    continue;
+                }
+
+                AddEntry(
+                    entryId,
+                    sourceId,
+                    string.Empty,
+                    string.Empty,
+                    FirstContactResponseChannelKind.Pattern,
+                    false,
+                    false,
+                    1,
+                    0);
+            }
+        }
+
+        private void AddEntry(
+            string id,
+            string sourceId,
+            string label,
+            string secondaryLabel,
+            FirstContactResponseChannelKind kind,
+            bool isActive,
+            bool isStable,
+            int traceCount,
+            int requiredTraceCount)
+        {
+            if (_entriesById.TryGetValue(id, out FirstContactResponseChannelEntry existing))
+            {
+                existing.IsActive |= isActive;
+                existing.IsStable |= isStable;
+                existing.TraceCount = Mathf.Max(existing.TraceCount, traceCount);
+                existing.RequiredTraceCount = Mathf.Max(existing.RequiredTraceCount, requiredTraceCount);
+                if (string.IsNullOrWhiteSpace(existing.Label) && !string.IsNullOrWhiteSpace(label))
+                {
+                    existing.Label = label;
+                }
+
+                if (string.IsNullOrWhiteSpace(existing.SecondaryLabel) && !string.IsNullOrWhiteSpace(secondaryLabel))
+                {
+                    existing.SecondaryLabel = secondaryLabel;
+                }
+
+                return;
+            }
+
+            FirstContactResponseChannelEntry entry = RentEntry();
+            entry.Id = id;
+            entry.SourceId = sourceId ?? string.Empty;
+            entry.Label = label ?? string.Empty;
+            entry.SecondaryLabel = secondaryLabel ?? string.Empty;
+            entry.Kind = kind;
+            entry.IsActive = isActive;
+            entry.IsStable = isStable;
+            entry.TraceCount = Mathf.Max(0, traceCount);
+            entry.RequiredTraceCount = Mathf.Max(0, requiredTraceCount);
+            entry.DisplayNumber = 0;
+            DirectoryEntries.Add(entry);
+            _entriesById[id] = entry;
+        }
+
+        private FirstContactResponseChannelEntry RentEntry()
+        {
+            if (_entryPoolIndex >= _entryPool.Count)
+            {
+                _entryPool.Add(new FirstContactResponseChannelEntry());
+            }
+
+            return _entryPool[_entryPoolIndex++];
+        }
+
+        private void AssignDisplayNumbers()
+        {
+            int categoryNumber = 0;
+            int patternNumber = 0;
+            for (int i = 0; i < DirectoryEntries.Count; i++)
+            {
+                FirstContactResponseChannelEntry entry = DirectoryEntries[i];
+                entry.DisplayNumber = entry.Kind == FirstContactResponseChannelKind.Category
+                    ? ++categoryNumber
+                    : ++patternNumber;
+            }
+        }
+
+        private void ResolveRecentProbe(FirstContactSemanticMapSnapshot snapshot)
+        {
+            for (int i = 0; i < snapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                if (node?.Kind == FirstContactSemanticMapNodeKind.Card && node.IsActive)
+                {
+                    RecentProbe = node;
+                    return;
+                }
+            }
+        }
+
+        private FirstContactResponseChannelEntry ResolveActiveEntry()
+        {
+            for (int i = 0; i < DirectoryEntries.Count; i++)
+            {
+                if (DirectoryEntries[i].Kind == FirstContactResponseChannelKind.Category &&
+                    IsDeclaredActive(DirectoryEntries[i]))
+                {
+                    return DirectoryEntries[i];
+                }
+            }
+
+            if (RecentProbe != null && !RecentProbe.IsBootstrapDetached)
+            {
+                string categoryId = BuildCategoryEntryId(
+                    RecentProbe.BootstrapCategoryId,
+                    string.Empty);
+                if (_entriesById.TryGetValue(categoryId, out FirstContactResponseChannelEntry category))
+                {
+                    return category;
+                }
+
+                string patternId = BuildPatternEntryId(RecentProbe.SecondaryLabel);
+                if (_entriesById.TryGetValue(patternId, out FirstContactResponseChannelEntry pattern))
+                {
+                    return pattern;
+                }
+            }
+
+            for (int i = 0; i < DirectoryEntries.Count; i++)
+            {
+                if (IsDeclaredActive(DirectoryEntries[i]))
+                {
+                    return DirectoryEntries[i];
+                }
+            }
+
+            return DirectoryEntries.Count > 0 ? DirectoryEntries[0] : null;
+        }
+
+        private bool IsDeclaredActive(FirstContactResponseChannelEntry entry)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.Id))
+            {
+                return false;
+            }
+
+            if (RecentProbe != null &&
+                entry.Kind == FirstContactResponseChannelKind.Category &&
+                string.Equals(entry.SourceId, RecentProbe.BootstrapCategoryId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return entry.IsActive;
+        }
+
+        private void PopulateTraceRows(
+            FirstContactSemanticMapSnapshot snapshot,
+            int maximumTraceRows)
+        {
+            if (ActiveEntry == null)
+            {
+                return;
+            }
+
+            if (RecentProbe != null && IsMemberOfActiveEntry(RecentProbe))
+            {
+                TraceNodes.Add(RecentProbe);
+            }
+
+            for (int i = 0; i < snapshot.Nodes.Count && TraceNodes.Count < maximumTraceRows; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                if (node == null || ReferenceEquals(node, RecentProbe) || !IsMemberOfActiveEntry(node))
+                {
+                    continue;
+                }
+
+                TraceNodes.Add(node);
+            }
+        }
+
+        private bool IsMemberOfActiveEntry(FirstContactSemanticMapNode node)
+        {
+            if (node?.Kind != FirstContactSemanticMapNodeKind.Card || ActiveEntry == null)
+            {
+                return false;
+            }
+
+            if (node.IsSemanticGroupPending)
+            {
+                return false;
+            }
+
+            if (ActiveEntry.Kind == FirstContactResponseChannelKind.Category)
+            {
+                return !node.IsBootstrapDetached &&
+                       string.Equals(
+                           node.BootstrapCategoryId,
+                           ActiveEntry.SourceId,
+                           StringComparison.Ordinal);
+            }
+
+            string patternSource = string.IsNullOrWhiteSpace(node.SecondaryLabel)
+                ? UnknownPatternId
+                : node.SecondaryLabel.Trim();
+            return string.Equals(patternSource, ActiveEntry.SourceId, StringComparison.Ordinal);
+        }
+
+        private void ResolveRecentProbeRoute()
+        {
+            if (RecentProbe == null || ActiveEntry == null)
+            {
+                return;
+            }
+
+            if (RecentProbe.IsSemanticGroupPending)
+            {
+                return;
+            }
+
+            RecentProbeMatchesActiveEntry = IsMemberOfActiveEntry(RecentProbe);
+            if (RecentProbeMatchesActiveEntry)
+            {
+                RecentRouteEntry = ActiveEntry;
+                return;
+            }
+
+            string patternSource = string.IsNullOrWhiteSpace(RecentProbe.SecondaryLabel)
+                ? UnknownPatternId
+                : RecentProbe.SecondaryLabel.Trim();
+            _entriesById.TryGetValue(BuildPatternEntryId(patternSource), out FirstContactResponseChannelEntry route);
+            RecentRouteEntry = route;
+        }
+
+        private void ResolveDirectoryPage(int maximumDirectoryRows)
+        {
+            DirectoryPageCount = Mathf.Max(
+                1,
+                Mathf.CeilToInt(DirectoryEntries.Count / (float)maximumDirectoryRows));
+            int activeIndex = ActiveEntry != null ? DirectoryEntries.IndexOf(ActiveEntry) : 0;
+            DirectoryPage = Mathf.Clamp(activeIndex / maximumDirectoryRows, 0, DirectoryPageCount - 1);
+            VisibleDirectoryStart = DirectoryPage * maximumDirectoryRows;
+            VisibleDirectoryCount = Mathf.Min(
+                maximumDirectoryRows,
+                Mathf.Max(0, DirectoryEntries.Count - VisibleDirectoryStart));
+        }
+
+        private static string BuildCategoryEntryId(string sourceId, string fallbackNodeId)
+        {
+            string value = string.IsNullOrWhiteSpace(sourceId) ? fallbackNodeId : sourceId;
+            return $"CATEGORY:{value?.Trim() ?? string.Empty}";
+        }
+
+        private static string BuildPatternEntryId(string sourceId)
+        {
+            string value = string.IsNullOrWhiteSpace(sourceId) ? UnknownPatternId : sourceId.Trim();
+            return $"PATTERN:{value}";
+        }
+
+        private static string TrimClusterNodePrefix(string nodeId)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId))
+            {
+                return string.Empty;
+            }
+
+            return nodeId.StartsWith("K:", StringComparison.Ordinal)
+                ? nodeId.Substring(2)
+                : nodeId;
+        }
+    }
+
+    public readonly struct FirstContactResponseChannelLayout
+    {
+        public FirstContactResponseChannelLayout(
+            Rect scope,
+            Rect scopePlot,
+            Rect directory,
+            Rect recentProbe,
+            float headerHeight,
+            float gap,
+            bool hasRecentProbe)
+        {
+            Scope = scope;
+            ScopePlot = scopePlot;
+            Directory = directory;
+            RecentProbe = recentProbe;
+            HeaderHeight = headerHeight;
+            Gap = gap;
+            HasRecentProbe = hasRecentProbe;
+        }
+
+        public Rect Scope { get; }
+        public Rect ScopePlot { get; }
+        public Rect Directory { get; }
+        public Rect RecentProbe { get; }
+        public float HeaderHeight { get; }
+        public float Gap { get; }
+        public bool HasRecentProbe { get; }
+
+        public Rect GetDirectoryHeaderRect()
+        {
+            return new Rect(
+                Directory.xMin + Gap,
+                Directory.yMax - HeaderHeight,
+                Mathf.Max(1f, Directory.width - Gap * 2f),
+                HeaderHeight);
+        }
+
+        public Rect GetDirectoryRowRect(int row, int rowCount)
+        {
+            int safeRows = Mathf.Max(1, rowCount);
+            float contentTop = Directory.yMax - HeaderHeight;
+            float contentHeight = Mathf.Max(1f, Directory.height - HeaderHeight - Gap);
+            float rowHeight = contentHeight / safeRows;
+            return new Rect(
+                Directory.xMin + Gap,
+                contentTop - (row + 1) * rowHeight,
+                Mathf.Max(1f, Directory.width - Gap * 2f),
+                rowHeight);
+        }
+
+        public Rect GetTraceRowRect(int row, int rowCount)
+        {
+            int safeRows = Mathf.Max(1, rowCount);
+            float rowHeight = ScopePlot.height / safeRows;
+            return new Rect(
+                ScopePlot.xMin,
+                ScopePlot.yMax - (row + 1) * rowHeight,
+                ScopePlot.width,
+                rowHeight);
+        }
+
+        public static FirstContactResponseChannelLayout Resolve(
+            Rect rect,
+            bool fullMode,
+            FirstContactSemanticMapStyle configuredStyle)
+        {
+            FirstContactSemanticMapStyle style =
+                FirstContactSemanticMapStyle.GetOrDefault(configuredStyle);
+            float padding = Mathf.Min(
+                Mathf.Max(0f, style.analyzerPanelPadding),
+                Mathf.Min(rect.width, rect.height) * 0.12f);
+            float gap = Mathf.Max(2f, style.analyzerPanelGap);
+            Rect content = new(
+                rect.xMin + padding,
+                rect.yMin + padding,
+                Mathf.Max(1f, rect.width - padding * 2f),
+                Mathf.Max(1f, rect.height - padding * 2f));
+            bool showRecent = fullMode && content.height >= 120f;
+            float recentHeight = showRecent
+                ? Mathf.Max(42f, content.height * style.analyzerRecentProbeHeightRatio)
+                : 0f;
+            Rect recent = showRecent
+                ? new Rect(content.xMin, content.yMin, content.width, recentHeight)
+                : new Rect();
+            float mainYMin = showRecent ? recent.yMax + gap : content.yMin;
+            float mainHeight = Mathf.Max(1f, content.yMax - mainYMin);
+            float directoryWidth = Mathf.Clamp(
+                content.width * style.analyzerDirectoryWidthRatio,
+                96f,
+                Mathf.Max(96f, content.width - 120f));
+            Rect directory = new(
+                content.xMax - directoryWidth,
+                mainYMin,
+                directoryWidth,
+                mainHeight);
+            Rect scope = new(
+                content.xMin,
+                mainYMin,
+                Mathf.Max(1f, directory.xMin - gap - content.xMin),
+                mainHeight);
+            float headerHeight = Mathf.Min(
+                Mathf.Max(12f, style.analyzerHeaderHeight),
+                Mathf.Max(12f, scope.height * 0.38f));
+            Rect plot = new(
+                scope.xMin + gap,
+                scope.yMin + gap,
+                Mathf.Max(1f, scope.width - gap * 2f),
+                Mathf.Max(1f, scope.height - headerHeight - gap * 2f));
+            return new FirstContactResponseChannelLayout(
+                scope,
+                plot,
+                directory,
+                recent,
+                headerHeight,
+                gap,
+                showRecent);
+        }
+    }
+
+    public sealed class FirstContactSemanticMapScreenLayout
+    {
+        private readonly List<Vector2> _workingPositions = new();
+        private readonly List<Vector2> _sourcePositions = new();
+        private readonly List<Footprint> _footprints = new();
+        private readonly List<Vector2> _cachedMapPositions = new();
+        private int _cachedSignature;
+        private bool _hasCachedLayout;
+
+        public void Invalidate()
+        {
+            _hasCachedLayout = false;
+            _cachedSignature = 0;
+            _cachedMapPositions.Clear();
+        }
+
+        public FirstContactSemanticMapSnapshot Resolve(
+            FirstContactSemanticMapSnapshot snapshot,
+            Rect rect,
+            bool fullMode,
+            FirstContactSemanticMapStyle configuredStyle,
+            IReadOnlyList<Vector2> labelSizes)
+        {
+            FirstContactSemanticMapStyle style =
+                FirstContactSemanticMapStyle.GetOrDefault(configuredStyle);
+            if (snapshot == null ||
+                snapshot.Nodes.Count == 0 ||
+                !style.enableFootprintPacking ||
+                rect.width <= 1f ||
+                rect.height <= 1f)
+            {
+                return CloneSnapshot(snapshot, null);
+            }
+
+            FirstContactSemanticMapModeStyle mode = style.GetMode(fullMode);
+            int signature = BuildSignature(snapshot, rect, fullMode, style, mode, labelSizes);
+            if (_hasCachedLayout &&
+                signature == _cachedSignature &&
+                _cachedMapPositions.Count == snapshot.Nodes.Count)
+            {
+                return CloneSnapshot(snapshot, _cachedMapPositions);
+            }
+
+            PrepareWorkingState(snapshot, rect, style, mode, labelSizes);
+            ResolveOverlaps(snapshot, rect, style);
+
+            _cachedMapPositions.Clear();
+            EnsureCapacity(_cachedMapPositions, snapshot.Nodes.Count);
+            for (int i = 0; i < snapshot.Nodes.Count; i++)
+            {
+                _cachedMapPositions.Add(LocalToMap(_workingPositions[i], rect, style));
+            }
+
+            _cachedSignature = signature;
+            _hasCachedLayout = true;
+            return CloneSnapshot(snapshot, _cachedMapPositions);
+        }
+
+        private void PrepareWorkingState(
+            FirstContactSemanticMapSnapshot snapshot,
+            Rect rect,
+            FirstContactSemanticMapStyle style,
+            FirstContactSemanticMapModeStyle mode,
+            IReadOnlyList<Vector2> labelSizes)
+        {
+            int count = snapshot.Nodes.Count;
+            _workingPositions.Clear();
+            _sourcePositions.Clear();
+            _footprints.Clear();
+            EnsureCapacity(_workingPositions, count);
+            EnsureCapacity(_sourcePositions, count);
+            EnsureCapacity(_footprints, count);
+
+            float baseSize = Mathf.Min(rect.width, rect.height);
+            float labelGap = style.labelOffset * mode.labelOffsetMultiplier;
+            for (int i = 0; i < count; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                Vector2 position = FirstContactSemanticMapGraphic.MapToLocal(
+                    node?.Position ?? Vector2.zero,
+                    rect,
+                    style);
+                Vector2 labelSize = labelSizes != null && i < labelSizes.Count
+                    ? labelSizes[i]
+                    : Vector2.zero;
+                float radius = ResolveVisualRadius(node, baseSize, style, mode);
+
+                _workingPositions.Add(position);
+                _sourcePositions.Add(position);
+                _footprints.Add(BuildFootprint(radius, labelSize, labelGap));
+            }
+        }
+
+        private void ResolveOverlaps(
+            FirstContactSemanticMapSnapshot snapshot,
+            Rect rect,
+            FirstContactSemanticMapStyle style)
+        {
+            int count = snapshot.Nodes.Count;
+            int iterations = Mathf.Max(1, style.footprintPackingIterations);
+            float epsilon = Mathf.Max(0.01f, style.footprintConvergenceEpsilon);
+            for (int iteration = 0; iteration < iterations; iteration++)
+            {
+                ApplyAnchorForce(style.footprintAnchorStrength);
+
+                int overlapCount = 0;
+                float largestCorrection = 0f;
+                for (int i = 0; i < count; i++)
+                {
+                    for (int j = i + 1; j < count; j++)
+                    {
+                        if (!TryResolvePair(
+                                snapshot.Nodes[i],
+                                snapshot.Nodes[j],
+                                i,
+                                j,
+                                style.footprintSpacing,
+                                out float correction))
+                        {
+                            continue;
+                        }
+
+                        overlapCount++;
+                        largestCorrection = Mathf.Max(largestCorrection, correction);
+                    }
+                }
+
+                ClampAllToBounds(rect, style);
+                if (overlapCount == 0 || largestCorrection <= epsilon)
+                {
+                    break;
+                }
+            }
+        }
+
+        private void ApplyAnchorForce(float strength)
+        {
+            float safeStrength = Mathf.Clamp01(strength);
+            if (safeStrength <= 0f)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _workingPositions.Count; i++)
+            {
+                _workingPositions[i] = Vector2.Lerp(
+                    _workingPositions[i],
+                    _sourcePositions[i],
+                    safeStrength);
+            }
+        }
+
+        private bool TryResolvePair(
+            FirstContactSemanticMapNode firstNode,
+            FirstContactSemanticMapNode secondNode,
+            int firstIndex,
+            int secondIndex,
+            float spacing,
+            out float correctionMagnitude)
+        {
+            Footprint first = _footprints[firstIndex];
+            Footprint second = _footprints[secondIndex];
+            Vector2 firstCenter = _workingPositions[firstIndex] + first.CenterOffset;
+            Vector2 secondCenter = _workingPositions[secondIndex] + second.CenterOffset;
+            Vector2 delta = secondCenter - firstCenter;
+            float overlapX = first.HalfSize.x + second.HalfSize.x + spacing - Mathf.Abs(delta.x);
+            float overlapY = first.HalfSize.y + second.HalfSize.y + spacing - Mathf.Abs(delta.y);
+            if (overlapX <= 0f || overlapY <= 0f)
+            {
+                correctionMagnitude = 0f;
+                return false;
+            }
+
+            bool separateHorizontally = overlapX < overlapY;
+            float signedDirection;
+            if (separateHorizontally)
+            {
+                signedDirection = Mathf.Abs(delta.x) > 0.001f
+                    ? Mathf.Sign(delta.x)
+                    : ResolveDeterministicDirection(firstNode, secondNode, firstIndex, secondIndex);
+                correctionMagnitude = overlapX;
+            }
+            else
+            {
+                signedDirection = Mathf.Abs(delta.y) > 0.001f
+                    ? Mathf.Sign(delta.y)
+                    : ResolveDeterministicDirection(firstNode, secondNode, firstIndex, secondIndex);
+                correctionMagnitude = overlapY;
+            }
+
+            Vector2 axis = separateHorizontally ? Vector2.right : Vector2.up;
+            Vector2 correction = axis * signedDirection * correctionMagnitude;
+            float firstMobility = ResolveMobility(firstNode);
+            float secondMobility = ResolveMobility(secondNode);
+            float totalMobility = Mathf.Max(0.0001f, firstMobility + secondMobility);
+            _workingPositions[firstIndex] -= correction * (firstMobility / totalMobility);
+            _workingPositions[secondIndex] += correction * (secondMobility / totalMobility);
+            return true;
+        }
+
+        private void ClampAllToBounds(Rect rect, FirstContactSemanticMapStyle style)
+        {
+            float boundaryPadding = Mathf.Max(0f, style.footprintBoundaryPadding);
+            float mapPaddingX = Mathf.Max(
+                style.minimumMapPadding,
+                rect.width * style.mapHorizontalPaddingRatio);
+            float mapPaddingY = Mathf.Max(
+                style.minimumMapPadding,
+                rect.height * style.mapVerticalPaddingRatio);
+            for (int i = 0; i < _workingPositions.Count; i++)
+            {
+                Footprint footprint = _footprints[i];
+                float minX = Mathf.Max(
+                    rect.xMin + mapPaddingX,
+                    rect.xMin + boundaryPadding - footprint.MinOffset.x);
+                float maxX = Mathf.Min(
+                    rect.xMax - mapPaddingX,
+                    rect.xMax - boundaryPadding - footprint.MaxOffset.x);
+                float minY = Mathf.Max(
+                    rect.yMin + mapPaddingY,
+                    rect.yMin + boundaryPadding - footprint.MinOffset.y);
+                float maxY = Mathf.Min(
+                    rect.yMax - mapPaddingY,
+                    rect.yMax - boundaryPadding - footprint.MaxOffset.y);
+                Vector2 position = _workingPositions[i];
+                position.x = ClampToRange(position.x, minX, maxX);
+                position.y = ClampToRange(position.y, minY, maxY);
+                _workingPositions[i] = position;
+            }
+        }
+
+        private static Footprint BuildFootprint(
+            float visualRadius,
+            Vector2 labelSize,
+            float labelGap)
+        {
+            float radius = Mathf.Max(0f, visualRadius);
+            float halfWidth = Mathf.Max(radius, Mathf.Max(0f, labelSize.x) * 0.5f);
+            float minY = labelSize.y > 0f
+                ? -radius - Mathf.Max(0f, labelGap) - labelSize.y
+                : -radius;
+            Vector2 minOffset = new(-halfWidth, minY);
+            Vector2 maxOffset = new(halfWidth, radius);
+            return new Footprint(
+                (minOffset + maxOffset) * 0.5f,
+                (maxOffset - minOffset) * 0.5f,
+                minOffset,
+                maxOffset);
+        }
+
+        internal static float ResolveVisualRadius(
+            FirstContactSemanticMapNode node,
+            float baseSize,
+            FirstContactSemanticMapStyle style,
+            FirstContactSemanticMapModeStyle mode)
+        {
+            if (node == null)
+            {
+                return 0f;
+            }
+
+            if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster ||
+                node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory)
+            {
+                float clusterRadius = baseSize * mode.clusterRadiusRatio;
+                float pulseScale = Mathf.Max(
+                    1f,
+                    style.clusterLockRingBaseScale + style.clusterLockRingPulseScale);
+                return clusterRadius * pulseScale;
+            }
+
+            float radius = baseSize * mode.cardNodeRadiusRatio;
+            if (node.IsActive)
+            {
+                radius *= style.activeNodeBaseScale + style.activeNodePulseScale;
+            }
+
+            float outerScale = Mathf.Max(
+                1f,
+                style.nodeOuterPulseRingBaseScale + style.nodeOuterPulseRingPulseScale);
+            return radius * outerScale;
+        }
+
+        private static float ResolveMobility(FirstContactSemanticMapNode node)
+        {
+            if (node == null)
+            {
+                return 1f;
+            }
+
+            return node.Kind switch
+            {
+                FirstContactSemanticMapNodeKind.BootstrapCategory => node.IsActive ? 0.18f : 0.28f,
+                FirstContactSemanticMapNodeKind.StableCluster => 0.42f,
+                FirstContactSemanticMapNodeKind.Card => node.IsActive ? 0.68f : 1f,
+                _ => 1f
+            };
+        }
+
+        private static float ResolveDeterministicDirection(
+            FirstContactSemanticMapNode first,
+            FirstContactSemanticMapNode second,
+            int firstIndex,
+            int secondIndex)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                hash = AppendStableHash(hash, first?.Id, firstIndex);
+                hash = AppendStableHash(hash, second?.Id, secondIndex);
+                return (hash & 1u) == 0u ? 1f : -1f;
+            }
+        }
+
+        private static uint AppendStableHash(uint hash, string value, int fallback)
+        {
+            unchecked
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    hash ^= (uint)fallback;
+                    return hash * 16777619u;
+                }
+
+                for (int i = 0; i < value.Length; i++)
+                {
+                    hash ^= value[i];
+                    hash *= 16777619u;
+                }
+
+                return hash;
+            }
+        }
+
+        private static float ClampToRange(float value, float minimum, float maximum)
+        {
+            if (minimum > maximum)
+            {
+                return (minimum + maximum) * 0.5f;
+            }
+
+            return Mathf.Clamp(value, minimum, maximum);
+        }
+
+        private static Vector2 LocalToMap(
+            Vector2 localPosition,
+            Rect rect,
+            FirstContactSemanticMapStyle style)
+        {
+            float paddingX = Mathf.Max(
+                style.minimumMapPadding,
+                rect.width * style.mapHorizontalPaddingRatio);
+            float paddingY = Mathf.Max(
+                style.minimumMapPadding,
+                rect.height * style.mapVerticalPaddingRatio);
+            float usableWidth = Mathf.Max(1f, rect.width - paddingX * 2f);
+            float usableHeight = Mathf.Max(1f, rect.height - paddingY * 2f);
+            float normalizedX = Mathf.Clamp01((localPosition.x - rect.xMin - paddingX) / usableWidth);
+            float normalizedY = Mathf.Clamp01((localPosition.y - rect.yMin - paddingY) / usableHeight);
+            return new Vector2(normalizedX * 2f - 1f, normalizedY * 2f - 1f);
+        }
+
+        private static int BuildSignature(
+            FirstContactSemanticMapSnapshot snapshot,
+            Rect rect,
+            bool fullMode,
+            FirstContactSemanticMapStyle style,
+            FirstContactSemanticMapModeStyle mode,
+            IReadOnlyList<Vector2> labelSizes)
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + rect.width.GetHashCode();
+                hash = hash * 31 + rect.height.GetHashCode();
+                hash = hash * 31 + fullMode.GetHashCode();
+                hash = hash * 31 + style.GetInstanceID();
+                hash = hash * 31 + style.footprintPackingIterations;
+                hash = hash * 31 + style.footprintSpacing.GetHashCode();
+                hash = hash * 31 + style.footprintBoundaryPadding.GetHashCode();
+                hash = hash * 31 + style.footprintAnchorStrength.GetHashCode();
+                hash = hash * 31 + style.footprintConvergenceEpsilon.GetHashCode();
+                hash = hash * 31 + style.minimumMapPadding.GetHashCode();
+                hash = hash * 31 + style.mapHorizontalPaddingRatio.GetHashCode();
+                hash = hash * 31 + style.mapVerticalPaddingRatio.GetHashCode();
+                hash = hash * 31 + style.labelOffset.GetHashCode();
+                hash = hash * 31 + style.activeNodeBaseScale.GetHashCode();
+                hash = hash * 31 + style.activeNodePulseScale.GetHashCode();
+                hash = hash * 31 + style.clusterLockRingBaseScale.GetHashCode();
+                hash = hash * 31 + style.clusterLockRingPulseScale.GetHashCode();
+                hash = hash * 31 + style.nodeOuterPulseRingBaseScale.GetHashCode();
+                hash = hash * 31 + style.nodeOuterPulseRingPulseScale.GetHashCode();
+                hash = hash * 31 + mode.clusterRadiusRatio.GetHashCode();
+                hash = hash * 31 + mode.cardNodeRadiusRatio.GetHashCode();
+                hash = hash * 31 + mode.labelOffsetMultiplier.GetHashCode();
+                for (int i = 0; i < snapshot.Nodes.Count; i++)
+                {
+                    FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                    Vector2 labelSize = labelSizes != null && i < labelSizes.Count
+                        ? labelSizes[i]
+                        : Vector2.zero;
+                    hash = hash * 31 + (node?.Id?.GetHashCode() ?? 0);
+                    hash = hash * 31 + (node?.Position.GetHashCode() ?? 0);
+                    hash = hash * 31 + (node?.Kind.GetHashCode() ?? 0);
+                    hash = hash * 31 + (node?.IsActive.GetHashCode() ?? 0);
+                    hash = hash * 31 + labelSize.GetHashCode();
+                }
+
+                return hash;
+            }
+        }
+
+        private static FirstContactSemanticMapSnapshot CloneSnapshot(
+            FirstContactSemanticMapSnapshot snapshot,
+            IReadOnlyList<Vector2> positions)
+        {
+            var clone = new FirstContactSemanticMapSnapshot();
+            if (snapshot == null)
+            {
+                return clone;
+            }
+
+            for (int i = 0; i < snapshot.Nodes.Count; i++)
+            {
+                FirstContactSemanticMapNode node = snapshot.Nodes[i];
+                if (node == null)
+                {
+                    continue;
+                }
+
+                clone.Nodes.Add(new FirstContactSemanticMapNode
+                {
+                    Id = node.Id,
+                    Label = node.Label,
+                    SecondaryLabel = node.SecondaryLabel,
+                    Kind = node.Kind,
+                    Position = positions != null && i < positions.Count ? positions[i] : node.Position,
+                    Embedding = node.Embedding,
+                    IsActive = node.IsActive,
+                    Marker = node.Marker,
+                    BootstrapCategoryId = node.BootstrapCategoryId,
+                    IsBootstrapDetached = node.IsBootstrapDetached,
+                    TraceCount = node.TraceCount,
+                    RequiredTraceCount = node.RequiredTraceCount,
+                    IsBootstrapCategoryStable = node.IsBootstrapCategoryStable,
+                    Pulse = node.Pulse
+                });
+            }
+
+            for (int i = 0; i < snapshot.Links.Count; i++)
+            {
+                clone.Links.Add(snapshot.Links[i]);
+            }
+
+            return clone;
+        }
+
+        private static void EnsureCapacity<T>(List<T> list, int capacity)
+        {
+            if (list.Capacity < capacity)
+            {
+                list.Capacity = capacity;
+            }
+        }
+
+        private readonly struct Footprint
+        {
+            public Footprint(
+                Vector2 centerOffset,
+                Vector2 halfSize,
+                Vector2 minOffset,
+                Vector2 maxOffset)
+            {
+                CenterOffset = centerOffset;
+                HalfSize = halfSize;
+                MinOffset = minOffset;
+                MaxOffset = maxOffset;
+            }
+
+            public Vector2 CenterOffset { get; }
+            public Vector2 HalfSize { get; }
+            public Vector2 MinOffset { get; }
+            public Vector2 MaxOffset { get; }
+        }
     }
 
 }

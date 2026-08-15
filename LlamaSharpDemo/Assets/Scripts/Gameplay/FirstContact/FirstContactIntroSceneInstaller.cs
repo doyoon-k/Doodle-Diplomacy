@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Data;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -38,9 +40,29 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [Tooltip("Facility-only presentation roots hidden when the embedded meeting gameplay begins.")]
         [SerializeField] private GameObject[] introPresentationRoots = Array.Empty<GameObject>();
 
+        [Header("Embedded Gameplay Camera Poses")]
+        [Tooltip("The stationary gameplay cameras whose authored room pose changes between briefing practice and the meeting.")]
+        [SerializeField] private Transform[] transferableGameplayCameras = Array.Empty<Transform>();
+        [Tooltip("Authored briefing-room poses paired with Transferable Gameplay Cameras.")]
+        [SerializeField] private Transform[] briefingGameplayCameraPoses = Array.Empty<Transform>();
+        [Tooltip("Authored meeting-room poses paired with Transferable Gameplay Cameras.")]
+        [SerializeField] private Transform[] meetingGameplayCameraPoses = Array.Empty<Transform>();
+
         private bool _embeddedGameplayPrepared;
+        private bool _briefingPracticeActive;
+        private bool _briefingPracticePresentationSuspended;
+        private bool _briefingPracticeCameraWasEnabled;
+        private AudioListener _briefingPracticeAudioListener;
+        private bool _briefingPracticeAudioListenerWasEnabled;
 
         public string SceneId => string.IsNullOrWhiteSpace(sceneId) ? gameObject.scene.name : sceneId;
+        public FirstContactTranslationMode EmbeddedTranslationMode =>
+            embeddedGameplayReferences != null
+                ? embeddedGameplayReferences.DefaultModeBehaviour as FirstContactTranslationMode
+                : null;
+        public IReadOnlyList<Transform> TransferableGameplayCameras => transferableGameplayCameras;
+        public IReadOnlyList<Transform> BriefingGameplayCameraPoses => briefingGameplayCameraPoses;
+        public IReadOnlyList<Transform> MeetingGameplayCameraPoses => meetingGameplayCameraPoses;
 
         private void Awake()
         {
@@ -72,7 +94,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void PrepareEntry(FlowEntryDefinition entry)
         {
+            RestoreBriefingPracticePresentation();
+            _briefingPracticeActive = false;
             _embeddedGameplayPrepared = IsEmbeddedGameplayEntry(entry);
+            if (_embeddedGameplayPrepared)
+            {
+                PlaceGameplayCamerasAt(meetingGameplayCameraPoses);
+            }
+
             if (embeddedGameplayRoot != null)
             {
                 embeddedGameplayRoot.SetActive(_embeddedGameplayPrepared);
@@ -131,6 +160,210 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 null);
         }
 
+        public bool TryBeginBriefingPractice(
+            out GameplayModeContext context,
+            out FirstContactTranslationMode translationMode)
+        {
+            context = null;
+            translationMode = EmbeddedTranslationMode;
+            if (embeddedGameplayReferences == null ||
+                embeddedGameplayRoot == null ||
+                translationMode == null)
+            {
+                Debug.LogError(
+                    "[FirstContactIntroSceneInstaller] Embedded gameplay references are incomplete " +
+                    $"for briefing practice. hub={embeddedGameplayReferences != null}, " +
+                    $"root={embeddedGameplayRoot != null}, mode={translationMode != null}",
+                    this);
+                return false;
+            }
+
+            if (!PlaceGameplayCamerasAt(briefingGameplayCameraPoses))
+            {
+                return false;
+            }
+
+            GameplayModeHost host = GameplayModeHost.Instance;
+            if (host == null && !TryCreateDirectPreviewHost(out host))
+            {
+                PlaceGameplayCamerasAt(meetingGameplayCameraPoses);
+                return false;
+            }
+
+            // Bind input/UI consumers before activating the dormant hierarchy so
+            // every OnEnable observes the intro mode that delegates practice input.
+            embeddedGameplayReferences.ConfigureRuntime(host);
+            _briefingPracticeActive = true;
+            _briefingPracticePresentationSuspended = false;
+            embeddedGameplayRoot.SetActive(true);
+            context = embeddedGameplayReferences.CreateContext(host);
+            if (context != null)
+            {
+                return true;
+            }
+
+            EndBriefingPractice();
+            Debug.LogError(
+                "[FirstContactIntroSceneInstaller] Failed to create the briefing practice context.",
+                this);
+            return false;
+        }
+
+        public void EndBriefingPractice()
+        {
+            if (!_briefingPracticeActive)
+            {
+                return;
+            }
+
+            RestoreBriefingPracticePresentation();
+            _briefingPracticeActive = false;
+            PlaceGameplayCamerasAt(meetingGameplayCameraPoses);
+            if (embeddedGameplayRoot != null)
+            {
+                embeddedGameplayRoot.SetActive(_embeddedGameplayPrepared);
+            }
+        }
+
+        public bool SuspendBriefingPracticePresentation()
+        {
+            if (!_briefingPracticeActive)
+            {
+                return false;
+            }
+
+            if (_briefingPracticePresentationSuspended)
+            {
+                return true;
+            }
+
+            UnityEngine.Camera gameplayCamera =
+                embeddedGameplayReferences?.CameraController?.TargetCamera;
+            if (gameplayCamera == null)
+            {
+                Debug.LogError(
+                    "[FirstContactIntroSceneInstaller] The briefing practice camera is unavailable.",
+                    this);
+                return false;
+            }
+
+            _briefingPracticeCameraWasEnabled = gameplayCamera.enabled;
+            gameplayCamera.enabled = false;
+            _briefingPracticeAudioListener = gameplayCamera.GetComponent<AudioListener>();
+            _briefingPracticeAudioListenerWasEnabled =
+                _briefingPracticeAudioListener != null &&
+                _briefingPracticeAudioListener.enabled;
+            if (_briefingPracticeAudioListener != null)
+            {
+                _briefingPracticeAudioListener.enabled = false;
+            }
+
+            _briefingPracticePresentationSuspended = true;
+            return true;
+        }
+
+        public bool ResumeBriefingPracticePresentation()
+        {
+            if (!_briefingPracticeActive)
+            {
+                return false;
+            }
+
+            RestoreBriefingPracticePresentation();
+            return true;
+        }
+
+        private void RestoreBriefingPracticePresentation()
+        {
+            if (!_briefingPracticePresentationSuspended)
+            {
+                return;
+            }
+
+            UnityEngine.Camera gameplayCamera =
+                embeddedGameplayReferences?.CameraController?.TargetCamera;
+            if (gameplayCamera != null)
+            {
+                gameplayCamera.enabled = _briefingPracticeCameraWasEnabled;
+            }
+
+            if (_briefingPracticeAudioListener != null)
+            {
+                _briefingPracticeAudioListener.enabled =
+                    _briefingPracticeAudioListenerWasEnabled;
+            }
+
+            _briefingPracticePresentationSuspended = false;
+            _briefingPracticeCameraWasEnabled = false;
+            _briefingPracticeAudioListener = null;
+            _briefingPracticeAudioListenerWasEnabled = false;
+        }
+
+        private bool PlaceGameplayCamerasAt(Transform[] poses)
+        {
+            if (transferableGameplayCameras == null ||
+                poses == null ||
+                transferableGameplayCameras.Length == 0 ||
+                transferableGameplayCameras.Length != poses.Length)
+            {
+                Debug.LogError(
+                    "[FirstContactIntroSceneInstaller] Briefing and meeting camera pose references are incomplete.",
+                    this);
+                return false;
+            }
+
+            for (int i = 0; i < transferableGameplayCameras.Length; i++)
+            {
+                Transform gameplayCamera = transferableGameplayCameras[i];
+                Transform pose = poses[i];
+                if (gameplayCamera == null || pose == null)
+                {
+                    Debug.LogError(
+                        $"[FirstContactIntroSceneInstaller] Camera pose pair {i} is incomplete.",
+                        this);
+                    return false;
+                }
+
+                gameplayCamera.SetPositionAndRotation(pose.position, pose.rotation);
+            }
+
+            CameraController cameraController = embeddedGameplayRoot != null
+                ? embeddedGameplayRoot.GetComponentInChildren<CameraController>(true)
+                : null;
+            cameraController?.RefreshAuthoredCameraPoses();
+            return true;
+        }
+
+        private bool TryCreateDirectPreviewHost(out GameplayModeHost host)
+        {
+            host = null;
+            if (defaultModeBehaviour == null)
+            {
+                Debug.LogError(
+                    "[FirstContactIntroSceneInstaller] Direct Facility preview requires the intro mode.",
+                    this);
+                return false;
+            }
+
+            var hostObject = new GameObject("DirectPreview_GameplayModeHost")
+            {
+                hideFlags = HideFlags.DontSave
+            };
+            host = hostObject.AddComponent<GameplayModeHost>();
+            GameplayModeContext introContext = CreateContext(host);
+            if (host.EnterMode(defaultModeBehaviour, introContext))
+            {
+                Debug.Log(
+                    "[FirstContactIntroSceneInstaller] Created an intro-mode host for direct Facility preview.",
+                    this);
+                return true;
+            }
+
+            Destroy(hostObject);
+            host = null;
+            return false;
+        }
+
         public MonoBehaviour GetDefaultModeBehaviour()
         {
             return defaultModeBehaviour;
@@ -157,7 +390,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         }
 
 #if UNITY_EDITOR
-        public bool TryStartEmbeddedGameplayForDirectPreview()
+        public bool TryStartEmbeddedGameplayForDirectPreview(
+            bool startWithIntro = true,
+            bool suppressNarrativeCues = false)
         {
             const string meetingEntryPath =
                 "Assets/Data/FirstContact/FlowEntry_FirstContactTranslationAfterIntro.asset";
@@ -202,7 +437,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             GameplayModeContext context = CreateContext(host);
             context.Services.Register(directPreviewMeetingEntry);
-            if (!host.EnterMode(modeBehaviour, context))
+            if (!host.EnterMode(
+                    modeBehaviour,
+                    context,
+                    GameplayModeExitReason.Completed))
             {
                 PrepareEntry(null);
                 if (createdPreviewHost)
@@ -215,11 +453,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             if (directPreviewMeetingEntry.autoStartSession)
             {
-                session.StartGame(directPreviewMeetingEntry.startSessionWithIntro);
+                if (suppressNarrativeCues && modeBehaviour is FirstContactTranslationMode translationMode)
+                {
+                    translationMode.StartGameplayTest();
+                }
+                else
+                {
+                    session.StartGame(
+                        startWithIntro && directPreviewMeetingEntry.startSessionWithIntro);
+                }
             }
 
             Debug.Log(
-                "[FirstContactIntroSceneInstaller] Entered embedded meeting mode for direct Facility preview.",
+                suppressNarrativeCues
+                    ? "[FirstContactIntroSceneInstaller] Entered dialogue-free gameplay test mode in the Facility."
+                    : "[FirstContactIntroSceneInstaller] Entered embedded meeting mode for direct Facility preview.",
                 this);
             return true;
         }

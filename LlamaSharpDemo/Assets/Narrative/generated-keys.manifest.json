@@ -551,6 +551,16 @@
             "beatId": "briefing_banana_example_0101"
         },
         {
+            "key": "first_contact.intro.facility.briefing.practice_transition",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_practice_transition_0101a"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.first_response_debrief",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_first_response_debrief_0101b"
+        },
+        {
             "key": "first_contact.intro.facility.briefing.database_limit",
             "scenarioId": "first_contact_day1",
             "beatId": "briefing_database_limit_0102"
@@ -594,6 +604,11 @@
             "key": "first_contact.intro.facility.briefing.unseen_translation",
             "scenarioId": "first_contact_day1",
             "beatId": "briefing_unseen_translation_0110"
+        },
+        {
+            "key": "first_contact.intro.facility.briefing.pattern_practice_transition",
+            "scenarioId": "first_contact_day1",
+            "beatId": "briefing_pattern_practice_transition_0110a"
         },
         {
             "key": "first_contact.intro.facility.briefing.magic",

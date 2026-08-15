@@ -81,7 +81,7 @@ namespace DoodleDiplomacy.Gameplay
 
         private void OnDestroy()
         {
-            ExitActiveMode();
+            ExitActiveMode(GameplayModeExitReason.HostDestroyed);
             if (Instance == this)
             {
                 Instance = null;
@@ -90,7 +90,7 @@ namespace DoodleDiplomacy.Gameplay
 
         public bool EnterMode(MonoBehaviour modeBehaviour)
         {
-            return EnterMode(modeBehaviour, null);
+            return EnterMode(modeBehaviour, null, GameplayModeExitReason.Replaced);
         }
 
         public bool EnsureDefaultModeEntered()
@@ -109,6 +109,17 @@ namespace DoodleDiplomacy.Gameplay
         }
 
         public bool EnterMode(MonoBehaviour modeBehaviour, GameplayModeContext contextOverride)
+        {
+            return EnterMode(
+                modeBehaviour,
+                contextOverride,
+                GameplayModeExitReason.Replaced);
+        }
+
+        public bool EnterMode(
+            MonoBehaviour modeBehaviour,
+            GameplayModeContext contextOverride,
+            GameplayModeExitReason outgoingExitReason)
         {
             if (modeBehaviour == null)
             {
@@ -129,7 +140,7 @@ namespace DoodleDiplomacy.Gameplay
                 return false;
             }
 
-            ExitActiveMode();
+            ExitActiveMode(outgoingExitReason);
             _activeMode = mode;
             _activeContext = context;
             _activeStateObservable = mode as IGameplayStateObservable;
@@ -147,6 +158,11 @@ namespace DoodleDiplomacy.Gameplay
 
         public void ExitActiveMode()
         {
+            ExitActiveMode(GameplayModeExitReason.Cancelled);
+        }
+
+        public void ExitActiveMode(GameplayModeExitReason reason)
+        {
             if (_activeStateObservable != null)
             {
                 _activeStateObservable.StateChanged -= HandleActiveModeStateChanged;
@@ -155,7 +171,14 @@ namespace DoodleDiplomacy.Gameplay
 
             if (_activeMode != null)
             {
-                _activeMode.Exit();
+                if (_activeMode is IGameplayModeExitHandler exitHandler)
+                {
+                    exitHandler.Exit(reason);
+                }
+                else
+                {
+                    _activeMode.Exit();
+                }
             }
 
             _activeMode = null;

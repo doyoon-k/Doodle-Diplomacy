@@ -1,15 +1,20 @@
-
 using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
+    /// <summary>
+    /// A bounded CRT response-channel renderer. Semantic membership is expressed as
+    /// discrete traces and directory rows instead of spatial containment.
+    /// </summary>
     public sealed class FirstContactSemanticMapGraphic : MaskableGraphic
     {
-        private FirstContactSemanticMapStyle _style;
+        private readonly FirstContactResponseChannelPresentation _ownedPresentation = new();
 
+        private FirstContactSemanticMapStyle _style;
         private FirstContactSemanticMapSnapshot _snapshot;
+        private FirstContactResponseChannelPresentation _presentation;
         private bool _fullMode;
 
         private FirstContactSemanticMapStyle Style =>
@@ -38,7 +43,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void Show(FirstContactSemanticMapSnapshot snapshot, bool fullMode)
         {
+            FirstContactSemanticMapStyle style = Style;
+            _ownedPresentation.Build(
+                snapshot,
+                style.analyzerTraceRows,
+                fullMode ? style.analyzerFullDirectoryRows : style.analyzerMiniDirectoryRows);
+            Show(snapshot, fullMode, _ownedPresentation);
+        }
+
+        public void Show(
+            FirstContactSemanticMapSnapshot snapshot,
+            bool fullMode,
+            FirstContactResponseChannelPresentation presentation)
+        {
             _snapshot = snapshot;
+            _presentation = presentation;
             _fullMode = fullMode;
             SetVerticesDirty();
         }
@@ -46,9 +65,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public void Clear()
         {
             _snapshot = null;
+            _presentation = null;
             SetVerticesDirty();
         }
 
+        // Retained for compatibility with semantic layout utilities and editor tooling.
         public static Vector2 MapToLocal(
             Vector2 position,
             Rect rect,
@@ -69,11 +90,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 Mathf.Lerp(rect.yMin + paddingY, rect.yMax - paddingY, normalizedY));
         }
 
-        private Vector2 MapPoint(Vector2 position, Rect rect)
-        {
-            return MapToLocal(position, rect, Style);
-        }
-
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
@@ -84,535 +100,250 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             DrawRect(vh, rect.min, rect.max, Style.backgroundColor);
-            DrawGrid(vh, rect);
-
-            if (_snapshot == null || _snapshot.Nodes.Count == 0)
+            if (_snapshot == null || _presentation == null)
             {
                 return;
             }
 
-            DrawBootstrapCategoryFields(vh, rect);
-            DrawLinks(vh, rect);
-            DrawClusters(vh, rect);
-            DrawNodes(vh, rect);
+            FirstContactResponseChannelLayout layout =
+                FirstContactResponseChannelLayout.Resolve(rect, _fullMode, Style);
+            DrawPanel(vh, layout.Scope, Style.analyzerPanelColor);
+            DrawPanel(vh, layout.Directory, Style.analyzerPanelColor);
+            if (layout.HasRecentProbe)
+            {
+                Color recentColor = _presentation.RecentProbe != null &&
+                                    !_presentation.RecentProbeMatchesActiveEntry
+                    ? Style.detachedActiveCardColor
+                    : Style.analyzerPanelColor;
+                DrawPanel(vh, layout.RecentProbe, recentColor);
+            }
+
+            DrawScopeGrid(vh, layout);
+            DrawDirectorySelection(vh, layout);
+            DrawWaveforms(vh, layout);
         }
 
-        private void DrawGrid(VertexHelper vh, Rect rect)
+        private void DrawPanel(VertexHelper vh, Rect rect, Color panelColor)
         {
-            int verticalLines = Mode.gridVerticalLineCount;
-            int horizontalLines = Mode.gridHorizontalLineCount;
-            float thickness = Mode.gridLineThickness;
+            DrawOutline(
+                vh,
+                rect,
+                Style.analyzerPanelLineThickness,
+                panelColor);
+        }
 
+        private void DrawScopeGrid(VertexHelper vh, FirstContactResponseChannelLayout layout)
+        {
+            Rect plot = layout.ScopePlot;
+            Color grid = Style.gridColor;
+            int verticalLines = Mathf.Max(2, Mode.gridVerticalLineCount);
             for (int i = 1; i < verticalLines; i++)
             {
-                float x = Mathf.Lerp(rect.xMin, rect.xMax, i / (float)verticalLines);
-                DrawLine(vh, new Vector2(x, rect.yMin), new Vector2(x, rect.yMax), thickness, Style.gridColor);
+                float x = Mathf.Lerp(plot.xMin, plot.xMax, i / (float)verticalLines);
+                DrawLine(
+                    vh,
+                    new Vector2(x, plot.yMin),
+                    new Vector2(x, plot.yMax),
+                    Mode.gridLineThickness,
+                    grid);
             }
 
-            for (int i = 1; i < horizontalLines; i++)
+            int traceRows = Mathf.Max(1, Style.analyzerTraceRows);
+            Color baseline = Style.analyzerPanelColor;
+            baseline.a *= Style.analyzerBaselineAlpha;
+            for (int row = 0; row < traceRows; row++)
             {
-                float y = Mathf.Lerp(rect.yMin, rect.yMax, i / (float)horizontalLines);
-                DrawLine(vh, new Vector2(rect.xMin, y), new Vector2(rect.xMax, y), thickness, Style.gridColor);
+                Rect rowRect = layout.GetTraceRowRect(row, traceRows);
+                DrawLine(
+                    vh,
+                    new Vector2(rowRect.xMin, rowRect.center.y),
+                    new Vector2(rowRect.xMax, rowRect.center.y),
+                    Mathf.Max(0.5f, Mode.gridLineThickness),
+                    baseline);
             }
+
+            float dividerY = layout.Scope.yMax - layout.HeaderHeight;
+            DrawLine(
+                vh,
+                new Vector2(layout.Scope.xMin, dividerY),
+                new Vector2(layout.Scope.xMax, dividerY),
+                Style.analyzerPanelLineThickness,
+                Style.analyzerPanelColor);
+            float directoryDividerY = layout.Directory.yMax - layout.HeaderHeight;
+            DrawLine(
+                vh,
+                new Vector2(layout.Directory.xMin, directoryDividerY),
+                new Vector2(layout.Directory.xMax, directoryDividerY),
+                Style.analyzerPanelLineThickness,
+                Style.analyzerPanelColor);
         }
 
-        private void DrawLinks(VertexHelper vh, Rect rect)
-        {
-            for (int i = 0; i < _snapshot.Links.Count; i++)
-            {
-                FirstContactSemanticMapLink link = _snapshot.Links[i];
-                FirstContactSemanticMapNode from = _snapshot.FindNode(link.FromId);
-                FirstContactSemanticMapNode to = _snapshot.FindNode(link.ToId);
-                if (from == null || to == null)
-                {
-                    continue;
-                }
-
-                if (link.Kind != FirstContactSemanticMapLinkKind.Normal)
-                {
-                    DrawFormationLink(vh, rect, from, to, link);
-                    continue;
-                }
-
-                if (TryResolveBootstrapCategoryLink(from, to, out FirstContactSemanticMapNode categoryNode))
-                {
-                    float normalizedSignal = Mathf.Clamp01(link.Strength);
-                    Color categoryColor = ResolveBootstrapFieldColor(categoryNode);
-                    Color signalColor = new(
-                        categoryColor.r,
-                        categoryColor.g,
-                        categoryColor.b,
-                        Mathf.Lerp(
-                            Style.bootstrapSignalMinimumAlpha,
-                            Style.bootstrapSignalMaximumAlpha,
-                            normalizedSignal));
-                    float signalThickness = Mathf.Lerp(
-                        Mode.bootstrapSignalMinimumThickness,
-                        Mode.bootstrapSignalMaximumThickness,
-                        normalizedSignal);
-                    DrawLine(vh, MapPoint(from.Position, rect), MapPoint(to.Position, rect), signalThickness, signalColor);
-                    continue;
-                }
-
-                float normalized = Mathf.Clamp01((link.Strength + 1f) * 0.5f);
-                Color color = Color.Lerp(Style.weakLinkColor, Style.strongLinkColor, normalized);
-                if (from.IsActive || to.IsActive)
-                {
-                    color.a = Mathf.Max(color.a, Style.activeLinkMinimumAlpha);
-                }
-
-                float thickness = Mathf.Lerp(
-                    Mode.normalLinkMinimumThickness,
-                    Mode.normalLinkMaximumThickness,
-                    normalized);
-                if (from.IsActive || to.IsActive)
-                {
-                    thickness += Mode.activeLinkThicknessBonus;
-                }
-
-                DrawLine(vh, MapPoint(from.Position, rect), MapPoint(to.Position, rect), thickness, color);
-            }
-        }
-
-        private void DrawFormationLink(
+        private void DrawDirectorySelection(
             VertexHelper vh,
-            Rect rect,
-            FirstContactSemanticMapNode from,
-            FirstContactSemanticMapNode to,
-            FirstContactSemanticMapLink link)
+            FirstContactResponseChannelLayout layout)
         {
-            float normalized = Mathf.Clamp01(link.Strength);
-            Color color;
-            float thickness;
-            switch (link.Kind)
+            int rowCount = _fullMode
+                ? Style.analyzerFullDirectoryRows
+                : Style.analyzerMiniDirectoryRows;
+            for (int row = 0; row < _presentation.VisibleDirectoryCount; row++)
             {
-                case FirstContactSemanticMapLinkKind.Confirmed:
-                    color = Color.Lerp(
-                        Style.confirmedFormationLinkColor,
-                        Style.strongLinkColor,
-                        normalized);
-                    color.a = Mathf.Max(color.a, Style.confirmedFormationMinimumAlpha);
-                    thickness = Mathf.Lerp(
-                        Mode.confirmedLinkMinimumThickness,
-                        Mode.confirmedLinkMaximumThickness,
-                        normalized);
-                    break;
-                case FirstContactSemanticMapLinkKind.Rejected:
-                    color = new Color(
-                        Style.rejectedFormationLinkColor.r,
-                        Style.rejectedFormationLinkColor.g,
-                        Style.rejectedFormationLinkColor.b,
-                        Mathf.Lerp(
-                            Style.rejectedFormationMinimumAlpha,
-                            Style.rejectedFormationMaximumAlpha,
-                            normalized));
-                    thickness = Mathf.Lerp(
-                        Mode.rejectedLinkMinimumThickness,
-                        Mode.rejectedLinkMaximumThickness,
-                        normalized);
-                    break;
-                default:
-                    color = new Color(
-                        Style.candidateFormationLinkColor.r,
-                        Style.candidateFormationLinkColor.g,
-                        Style.candidateFormationLinkColor.b,
-                        Mathf.Lerp(
-                            Style.candidateFormationMinimumAlpha,
-                            Style.candidateFormationMaximumAlpha,
-                            normalized));
-                    thickness = Mathf.Lerp(
-                        Mode.candidateLinkMinimumThickness,
-                        Mode.candidateLinkMaximumThickness,
-                        normalized);
-                    break;
-            }
-
-            DrawLine(vh, MapPoint(from.Position, rect), MapPoint(to.Position, rect), thickness, color);
-        }
-
-        private void DrawBootstrapCategoryFields(VertexHelper vh, Rect rect)
-        {
-            for (int i = 0; i < _snapshot.Nodes.Count; i++)
-            {
-                FirstContactSemanticMapNode categoryNode = _snapshot.Nodes[i];
-                if (categoryNode == null ||
-                    categoryNode.Kind != FirstContactSemanticMapNodeKind.BootstrapCategory ||
-                    string.IsNullOrWhiteSpace(categoryNode.BootstrapCategoryId))
+                int entryIndex = _presentation.VisibleDirectoryStart + row;
+                FirstContactResponseChannelEntry entry =
+                    _presentation.DirectoryEntries[entryIndex];
+                Rect rowRect = layout.GetDirectoryRowRect(row, rowCount);
+                if (ReferenceEquals(entry, _presentation.ActiveEntry))
                 {
-                    continue;
-                }
-
-                if (!TryResolveBootstrapFieldBounds(
-                        categoryNode,
-                        rect,
-                        out Vector2 center,
-                        out Vector2 radii,
-                        out int acceptedCount))
-                {
-                    continue;
-                }
-
-                Color fieldColor = ResolveBootstrapFieldColor(categoryNode);
-                float traceRatio = categoryNode.RequiredTraceCount > 0
-                    ? Mathf.Clamp01(categoryNode.TraceCount / (float)categoryNode.RequiredTraceCount)
-                    : 1f;
-                float fillAlpha = Mathf.Lerp(
-                    Style.categoryFieldMinimumFillAlpha,
-                    categoryNode.IsBootstrapCategoryStable
-                        ? Style.stableCategoryFieldFillAlpha
-                        : Style.categoryFieldFillAlpha,
-                    traceRatio);
-                DrawFilledEllipse(
-                    vh,
-                    center,
-                    radii,
-                    new Color(fieldColor.r, fieldColor.g, fieldColor.b, fillAlpha),
-                    Geometry.categoryFieldFillSegments);
-
-                float ringAlpha = Mathf.Lerp(
-                    Style.categoryFieldMinimumRingAlpha,
-                    categoryNode.IsBootstrapCategoryStable
-                        ? Style.stableCategoryFieldRingAlpha
-                        : Style.categoryFieldRingAlpha,
-                    traceRatio);
-                DrawEllipseRing(
-                    vh,
-                    center,
-                    radii,
-                    Mode.categoryFieldRingThickness,
-                    new Color(fieldColor.r, fieldColor.g, fieldColor.b, ringAlpha),
-                    Geometry.categoryFieldRingSegments);
-
-                if (acceptedCount > 1)
-                {
-                    Vector2 innerRadii = radii * Style.categoryFieldInnerRingRadiusMultiplier;
-                    DrawEllipseRing(
+                    Color selected = entry.Kind == FirstContactResponseChannelKind.Pattern
+                        ? Style.analyzerPatternColor
+                        : Style.activeCardColor;
+                    selected.a = Style.analyzerSelectionFillAlpha;
+                    DrawRect(
                         vh,
-                        center,
-                        innerRadii,
-                        Mode.categoryFieldInnerRingThickness,
-                        new Color(
-                            fieldColor.r,
-                            fieldColor.g,
-                            fieldColor.b,
-                            Mathf.Min(
-                                Style.categoryFieldInnerRingMaximumAlpha,
-                                ringAlpha * Style.categoryFieldInnerRingAlphaMultiplier)),
-                        Geometry.categoryFieldRingSegments);
+                        new Vector2(rowRect.xMin, rowRect.yMin + 1f),
+                        new Vector2(rowRect.xMax, rowRect.yMax - 1f),
+                        selected);
                 }
+
+                Color tickColor = entry.Kind == FirstContactResponseChannelKind.Pattern
+                    ? Style.analyzerPatternColor
+                    : entry.IsStable
+                        ? Style.stableBootstrapCategoryColor
+                        : Style.bootstrapCategoryColor;
+                float tickSize = Mathf.Clamp(rowRect.height * 0.18f, 2f, 6f);
+                Vector2 tickCenter = new(rowRect.xMax - tickSize * 1.5f, rowRect.center.y);
+                DrawRect(
+                    vh,
+                    tickCenter - Vector2.one * tickSize * 0.5f,
+                    tickCenter + Vector2.one * tickSize * 0.5f,
+                    tickColor);
             }
         }
 
-        private bool TryResolveBootstrapFieldBounds(
-            FirstContactSemanticMapNode categoryNode,
-            Rect rect,
-            out Vector2 center,
-            out Vector2 radii,
-            out int acceptedCount)
+        private void DrawWaveforms(
+            VertexHelper vh,
+            FirstContactResponseChannelLayout layout)
         {
-            Vector2 categoryCenter = MapPoint(categoryNode.Position, rect);
-            Vector2 min = categoryCenter;
-            Vector2 max = categoryCenter;
-            acceptedCount = 0;
-
-            for (int i = 0; i < _snapshot.Nodes.Count; i++)
+            int traceRows = Mathf.Max(1, Style.analyzerTraceRows);
+            int visibleTraces = Mathf.Min(traceRows, _presentation.TraceNodes.Count);
+            for (int row = 0; row < visibleTraces; row++)
             {
-                FirstContactSemanticMapNode node = _snapshot.Nodes[i];
-                if (node == null ||
-                    node.Kind != FirstContactSemanticMapNodeKind.Card ||
-                    node.IsBootstrapDetached ||
-                    !string.Equals(node.BootstrapCategoryId, categoryNode.BootstrapCategoryId, StringComparison.Ordinal))
+                FirstContactSemanticMapNode node = _presentation.TraceNodes[row];
+                if (node == null)
                 {
                     continue;
                 }
 
-                Vector2 point = MapPoint(node.Position, rect);
-                min = Vector2.Min(min, point);
-                max = Vector2.Max(max, point);
-                acceptedCount++;
+                Rect rowRect = layout.GetTraceRowRect(row, traceRows);
+                DrawWaveform(vh, rowRect, node, row);
             }
-
-            center = (min + max) * 0.5f;
-            float baseSize = Mathf.Min(rect.width, rect.height);
-            float padding = baseSize * Mode.categoryFieldPaddingRatio;
-            float minRadius = baseSize * Mode.categoryFieldMinimumRadiusRatio;
-            radii = new Vector2(
-                Mathf.Max(minRadius, (max.x - min.x) * 0.5f + padding),
-                Mathf.Max(
-                    minRadius * Mode.categoryFieldMinimumVerticalRadiusMultiplier,
-                    (max.y - min.y) * 0.5f + padding));
-
-            return true;
         }
 
-        private static bool TryResolveBootstrapCategoryLink(
-            FirstContactSemanticMapNode first,
-            FirstContactSemanticMapNode second,
-            out FirstContactSemanticMapNode categoryNode)
+        private void DrawWaveform(
+            VertexHelper vh,
+            Rect rowRect,
+            FirstContactSemanticMapNode node,
+            int row)
         {
-            categoryNode = null;
-            if (first == null || second == null)
+            int samples = Mathf.Clamp(Style.analyzerWaveformSamples, 12, 72);
+            uint hash = StableHash(node.Id);
+            float phase = (hash & 1023u) / 1023f * Mathf.PI * 2f;
+            float primaryCycles = 1.8f + ((hash >> 10) & 7u) * 0.22f;
+            float secondaryCycles = 6f + ((hash >> 14) & 7u) * 0.46f;
+            float pulse = Mathf.Clamp01(node.Pulse);
+            float amplitude = rowRect.height * Style.analyzerWaveformAmplitudeRatio *
+                              (node.IsActive ? 1.08f + pulse * 0.18f : 0.82f);
+            Color waveformColor = _presentation.ActiveEntry != null &&
+                                  _presentation.ActiveEntry.Kind == FirstContactResponseChannelKind.Pattern
+                ? Style.analyzerPatternColor
+                : node.IsActive
+                    ? Style.activeCardColor
+                    : Style.analyzerWaveformColor;
+            waveformColor.a = Mathf.Clamp01(waveformColor.a + pulse * 0.08f);
+
+            Vector2 previous = ResolveWavePoint(
+                rowRect,
+                node,
+                0f,
+                phase,
+                primaryCycles,
+                secondaryCycles,
+                amplitude,
+                row);
+            for (int sample = 1; sample <= samples; sample++)
             {
-                return false;
-            }
-
-            if (first.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory &&
-                second.Kind == FirstContactSemanticMapNodeKind.Card)
-            {
-                categoryNode = first;
-                return true;
-            }
-
-            if (second.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory &&
-                first.Kind == FirstContactSemanticMapNodeKind.Card)
-            {
-                categoryNode = second;
-                return true;
-            }
-
-            return false;
-        }
-
-        private void DrawClusters(VertexHelper vh, Rect rect)
-        {
-            for (int i = 0; i < _snapshot.Nodes.Count; i++)
-            {
-                FirstContactSemanticMapNode node = _snapshot.Nodes[i];
-                if (node.Kind != FirstContactSemanticMapNodeKind.StableCluster &&
-                    node.Kind != FirstContactSemanticMapNodeKind.BootstrapCategory)
-                {
-                    continue;
-                }
-
-                Vector2 center = MapPoint(node.Position, rect);
-                float radius = Mathf.Min(rect.width, rect.height) * Mode.clusterRadiusRatio;
-                Color cluster = ResolveNodeColor(node);
-                float traceRatio = node.RequiredTraceCount > 0
-                    ? Mathf.Clamp01(node.TraceCount / (float)node.RequiredTraceCount)
-                    : 1f;
-                float fillAlpha = node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory
-                    ? Mathf.Lerp(
-                        Style.categoryFieldMinimumFillAlpha,
-                        Style.stableCategoryFieldFillAlpha,
-                        traceRatio)
-                    : Style.stableClusterFillAlpha;
-                DrawFilledCircle(
+                float t = sample / (float)samples;
+                Vector2 next = ResolveWavePoint(
+                    rowRect,
+                    node,
+                    t,
+                    phase,
+                    primaryCycles,
+                    secondaryCycles,
+                    amplitude,
+                    row);
+                DrawLine(
                     vh,
-                    center,
-                    radius,
-                    new Color(cluster.r, cluster.g, cluster.b, fillAlpha),
-                    Geometry.clusterSegments);
-                DrawRing(
-                    vh,
-                    center,
-                    radius,
-                    Mode.clusterRingThickness,
-                    cluster,
-                    Geometry.clusterSegments);
-                if (node.Pulse > Style.pulseVisibilityThreshold)
-                {
-                    Color pulseColor = new(
-                        cluster.r,
-                        cluster.g,
-                        cluster.b,
-                        Mathf.Clamp01(Style.clusterPulseAlpha * node.Pulse));
-                    DrawRing(
-                        vh,
-                        center,
-                        radius * (
-                            Style.clusterPulseRingBaseScale +
-                            Style.clusterPulseRingPulseScale * node.Pulse),
-                        Mode.clusterPulseRingThickness,
-                        pulseColor,
-                        Geometry.clusterPulseSegments);
-                    if (node.Pulse > Style.clusterLockPulseThreshold)
-                    {
-                        Color lockColor = new(
-                            cluster.r,
-                            cluster.g,
-                            cluster.b,
-                            Mathf.Clamp01(Style.clusterLockPulseAlpha * node.Pulse));
-                        DrawRing(
-                            vh,
-                            center,
-                            radius * (
-                                Style.clusterLockRingBaseScale +
-                                Style.clusterLockRingPulseScale * node.Pulse),
-                            Mode.clusterLockRingThickness,
-                            lockColor,
-                            Geometry.clusterLockSegments);
-                    }
-                }
-            }
-        }
-
-        private void DrawNodes(VertexHelper vh, Rect rect)
-        {
-            for (int pass = 0; pass < 3; pass++)
-            {
-                for (int i = 0; i < _snapshot.Nodes.Count; i++)
-                {
-                    FirstContactSemanticMapNode node = _snapshot.Nodes[i];
-                    if (GetNodePass(node) != pass)
-                    {
-                        continue;
-                    }
-
-                    DrawNode(vh, rect, node);
-                }
-            }
-        }
-
-        private static int GetNodePass(FirstContactSemanticMapNode node)
-        {
-            if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster ||
-                node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory)
-            {
-                return 0;
+                    previous,
+                    next,
+                    Style.analyzerWaveformThickness + pulse * 0.55f,
+                    waveformColor);
+                previous = next;
             }
 
-            return node.IsActive ? 2 : 1;
-        }
-
-        private void DrawNode(VertexHelper vh, Rect rect, FirstContactSemanticMapNode node)
-        {
-            Vector2 center = MapPoint(node.Position, rect);
-            float baseRadius = Mathf.Min(rect.width, rect.height);
-            float radius = node.Kind switch
+            if (!node.IsActive && pulse <= 0.001f)
             {
-                FirstContactSemanticMapNodeKind.StableCluster =>
-                    baseRadius * Mode.stableClusterNodeRadiusRatio,
-                FirstContactSemanticMapNodeKind.BootstrapCategory =>
-                    baseRadius * Mode.bootstrapCategoryNodeRadiusRatio,
-                _ => baseRadius * Mode.cardNodeRadiusRatio
-            };
-
-            if (node.IsActive)
-            {
-                radius *= Style.activeNodeBaseScale + node.Pulse * Style.activeNodePulseScale;
-            }
-
-            Color nodeColor = ResolveNodeColor(node);
-            if (node.Kind == FirstContactSemanticMapNodeKind.StableCluster ||
-                node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory)
-            {
-                DrawFilledCircle(vh, center, radius, nodeColor, Geometry.nodeSegments);
-                if (node.Kind == FirstContactSemanticMapNodeKind.BootstrapCategory && node.TraceCount > 0)
-                {
-                    DrawRing(
-                        vh,
-                        center,
-                        radius * Style.categoryTraceRingRadiusMultiplier,
-                        Mathf.Max(
-                            Style.categoryTraceRingMinimumThickness,
-                            radius * Style.categoryTraceRingThicknessMultiplier),
-                        nodeColor,
-                        Geometry.categoryTraceRingSegments);
-                }
                 return;
             }
 
-            DrawFilledCircle(vh, center, radius, nodeColor, Geometry.nodeSegments);
-            if (node.Pulse > Style.pulseVisibilityThreshold)
-            {
-                Color glowColor = new(
-                    nodeColor.r,
-                    nodeColor.g,
-                    nodeColor.b,
-                    Mathf.Clamp01(Style.nodeGlowAlpha * node.Pulse));
-                Color pulseColor = new(
-                    nodeColor.r,
-                    nodeColor.g,
-                    nodeColor.b,
-                    Mathf.Clamp01(Style.nodePulseAlpha * node.Pulse));
-                DrawFilledCircle(
-                    vh,
-                    center,
-                    radius * (
-                        Style.nodeGlowBaseScale +
-                        Style.nodeGlowPulseScale * node.Pulse),
-                    glowColor,
-                    Geometry.nodeGlowSegments);
-                DrawRing(
-                    vh,
-                    center,
-                    radius * (
-                        Style.nodePulseRingBaseScale +
-                        Style.nodePulseRingPulseScale * node.Pulse),
-                    Mathf.Max(
-                        Style.nodePulseRingMinimumThickness,
-                        radius * Style.nodePulseRingThicknessMultiplier),
-                    pulseColor,
-                    Geometry.nodePulseSegments);
-                DrawRing(
-                    vh,
-                    center,
-                    radius * (
-                        Style.nodeOuterPulseRingBaseScale +
-                        Style.nodeOuterPulseRingPulseScale * node.Pulse),
-                    Mathf.Max(
-                        Style.nodeOuterPulseRingMinimumThickness,
-                        radius * Style.nodeOuterPulseRingThicknessMultiplier),
-                    new Color(
-                        pulseColor.r,
-                        pulseColor.g,
-                        pulseColor.b,
-                        pulseColor.a * Style.nodeOuterPulseAlphaMultiplier),
-                    Geometry.nodeOuterPulseSegments);
-            }
-
-            if (node.IsActive)
-            {
-                DrawRing(
-                    vh,
-                    center,
-                    radius * Style.activeNodeRingScale,
-                    Mathf.Max(
-                        Style.activeNodeRingMinimumThickness,
-                        radius * Style.activeNodeRingThicknessMultiplier),
-                    Style.activeCardColor,
-                    Geometry.activeNodeRingSegments);
-            }
+            float cursorX = Mathf.Lerp(rowRect.xMin, rowRect.xMax, 0.94f);
+            Color cursor = Style.activeCardColor;
+            cursor.a *= 0.72f + pulse * 0.28f;
+            DrawLine(
+                vh,
+                new Vector2(cursorX, rowRect.yMin + rowRect.height * 0.18f),
+                new Vector2(cursorX, rowRect.yMax - rowRect.height * 0.18f),
+                Style.analyzerWaveformThickness,
+                cursor);
         }
 
-        private Color ResolveNodeColor(FirstContactSemanticMapNode node)
+        private static Vector2 ResolveWavePoint(
+            Rect rowRect,
+            FirstContactSemanticMapNode node,
+            float t,
+            float phase,
+            float primaryCycles,
+            float secondaryCycles,
+            float amplitude,
+            int row)
         {
-            if (node.IsActive)
-            {
-                if (node.IsBootstrapDetached)
-                {
-                    return Style.detachedActiveCardColor;
-                }
-
-                return Style.activeCardColor;
-            }
-
-            if (node.IsBootstrapDetached)
-            {
-                return Style.detachedCardColor;
-            }
-
-            return node.Kind switch
-            {
-                FirstContactSemanticMapNodeKind.StableCluster => Style.clusterColor,
-                FirstContactSemanticMapNodeKind.BootstrapCategory => node.IsBootstrapCategoryStable
-                    ? Style.stableBootstrapCategoryColor
-                    : Style.bootstrapCategoryColor,
-                FirstContactSemanticMapNodeKind.Card => Style.cardColor,
-                _ => Style.fallbackNodeColor
-            };
+            float first = Mathf.Sin(t * Mathf.PI * 2f * primaryCycles + phase) * 0.62f;
+            float second = Mathf.Sin(t * Mathf.PI * 2f * secondaryCycles + phase * 0.37f) * 0.23f;
+            float embedding = ResolveEmbeddingSample(node.Embedding, t, row) * 0.28f;
+            return new Vector2(
+                Mathf.Lerp(rowRect.xMin, rowRect.xMax, t),
+                rowRect.center.y + (first + second + embedding) * amplitude);
         }
 
-        private Color ResolveBootstrapFieldColor(FirstContactSemanticMapNode node)
+        private static float ResolveEmbeddingSample(float[] embedding, float t, int row)
         {
-            if (node == null)
+            if (embedding == null || embedding.Length == 0)
             {
-                return Style.bootstrapCategoryColor;
+                return 0f;
             }
 
-            return node.IsBootstrapCategoryStable
-                ? Style.stableBootstrapCategoryColor
-                : Style.bootstrapCategoryColor;
+            int index = Mathf.Clamp(
+                Mathf.FloorToInt(t * embedding.Length + row * 7) % embedding.Length,
+                0,
+                embedding.Length - 1);
+            return Mathf.Clamp(embedding[index], -1f, 1f);
+        }
+
+        private void DrawOutline(VertexHelper vh, Rect rect, float thickness, Color drawColor)
+        {
+            DrawLine(vh, new Vector2(rect.xMin, rect.yMin), new Vector2(rect.xMax, rect.yMin), thickness, drawColor);
+            DrawLine(vh, new Vector2(rect.xMax, rect.yMin), new Vector2(rect.xMax, rect.yMax), thickness, drawColor);
+            DrawLine(vh, new Vector2(rect.xMax, rect.yMax), new Vector2(rect.xMin, rect.yMax), thickness, drawColor);
+            DrawLine(vh, new Vector2(rect.xMin, rect.yMax), new Vector2(rect.xMin, rect.yMin), thickness, drawColor);
         }
 
         private static void DrawRect(VertexHelper vh, Vector2 min, Vector2 max, Color drawColor)
@@ -626,7 +357,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             vh.AddTriangle(start, start + 2, start + 3);
         }
 
-        private void DrawLine(VertexHelper vh, Vector2 start, Vector2 end, float thickness, Color drawColor)
+        private void DrawLine(
+            VertexHelper vh,
+            Vector2 start,
+            Vector2 end,
+            float thickness,
+            Color drawColor)
         {
             Vector2 delta = end - start;
             if (delta.sqrMagnitude <= 0.0001f)
@@ -634,7 +370,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return;
             }
 
-            Vector2 normal = new Vector2(-delta.y, delta.x).normalized * (Mathf.Max(Geometry.minimumLineThickness, thickness) * 0.5f);
+            float safeThickness = Mathf.Max(Geometry.minimumLineThickness, thickness);
+            Vector2 normal = new Vector2(-delta.y, delta.x).normalized * (safeThickness * 0.5f);
             int first = vh.currentVertCount;
             AddVert(vh, start - normal, drawColor);
             AddVert(vh, start + normal, drawColor);
@@ -644,92 +381,19 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             vh.AddTriangle(first, first + 2, first + 3);
         }
 
-        private void DrawFilledCircle(
-            VertexHelper vh,
-            Vector2 center,
-            float radius,
-            Color drawColor,
-            int segments)
+        private static uint StableHash(string value)
         {
-            int safeSegments = Mathf.Max(Geometry.minimumSegments, segments);
-            int centerIndex = vh.currentVertCount;
-            AddVert(vh, center, drawColor);
-            for (int i = 0; i <= safeSegments; i++)
+            unchecked
             {
-                float angle = (i / (float)safeSegments) * Mathf.PI * 2f;
-                AddVert(vh, center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius, drawColor);
-            }
+                uint hash = 2166136261u;
+                string safeValue = value ?? string.Empty;
+                for (int i = 0; i < safeValue.Length; i++)
+                {
+                    hash ^= safeValue[i];
+                    hash *= 16777619u;
+                }
 
-            for (int i = 1; i <= safeSegments; i++)
-            {
-                vh.AddTriangle(centerIndex, centerIndex + i, centerIndex + i + 1);
-            }
-        }
-
-        private void DrawFilledEllipse(
-            VertexHelper vh,
-            Vector2 center,
-            Vector2 radii,
-            Color drawColor,
-            int segments)
-        {
-            int safeSegments = Mathf.Max(Geometry.minimumSegments, segments);
-            Vector2 safeRadii = new(
-                Mathf.Max(Geometry.minimumEllipseRadius, radii.x),
-                Mathf.Max(Geometry.minimumEllipseRadius, radii.y));
-            int centerIndex = vh.currentVertCount;
-            AddVert(vh, center, drawColor);
-            for (int i = 0; i <= safeSegments; i++)
-            {
-                float angle = (i / (float)safeSegments) * Mathf.PI * 2f;
-                Vector2 point = center + new Vector2(Mathf.Cos(angle) * safeRadii.x, Mathf.Sin(angle) * safeRadii.y);
-                AddVert(vh, point, drawColor);
-            }
-
-            for (int i = 1; i <= safeSegments; i++)
-            {
-                vh.AddTriangle(centerIndex, centerIndex + i, centerIndex + i + 1);
-            }
-        }
-
-        private void DrawRing(
-            VertexHelper vh,
-            Vector2 center,
-            float radius,
-            float thickness,
-            Color drawColor,
-            int segments)
-        {
-            int safeSegments = Mathf.Max(Geometry.minimumSegments, segments);
-            Vector2 previous = center + new Vector2(radius, 0f);
-            for (int i = 1; i <= safeSegments; i++)
-            {
-                float angle = (i / (float)safeSegments) * Mathf.PI * 2f;
-                Vector2 next = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                DrawLine(vh, previous, next, thickness, drawColor);
-                previous = next;
-            }
-        }
-
-        private void DrawEllipseRing(
-            VertexHelper vh,
-            Vector2 center,
-            Vector2 radii,
-            float thickness,
-            Color drawColor,
-            int segments)
-        {
-            int safeSegments = Mathf.Max(Geometry.minimumSegments, segments);
-            Vector2 safeRadii = new(
-                Mathf.Max(Geometry.minimumEllipseRadius, radii.x),
-                Mathf.Max(Geometry.minimumEllipseRadius, radii.y));
-            Vector2 previous = center + new Vector2(safeRadii.x, 0f);
-            for (int i = 1; i <= safeSegments; i++)
-            {
-                float angle = (i / (float)safeSegments) * Mathf.PI * 2f;
-                Vector2 next = center + new Vector2(Mathf.Cos(angle) * safeRadii.x, Mathf.Sin(angle) * safeRadii.y);
-                DrawLine(vh, previous, next, thickness, drawColor);
-                previous = next;
+                return hash == 0u ? 1u : hash;
             }
         }
 
@@ -742,4 +406,3 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         }
     }
 }
-

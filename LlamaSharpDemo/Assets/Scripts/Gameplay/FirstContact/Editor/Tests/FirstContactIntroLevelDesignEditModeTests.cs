@@ -316,6 +316,53 @@ namespace DoodleDiplomacy.Gameplay.FirstContact.Editor.Tests
         }
 
         [Test]
+        public void PlayerExternalPointerInput_ReleasesAndRestoresCursorCapture()
+        {
+            GameObject playerObject = new("Player");
+            try
+            {
+                FirstContactIntroPlayerController player =
+                    playerObject.AddComponent<FirstContactIntroPlayerController>();
+
+                player.SetControlEnabled(true);
+                Assert.That(player.CursorCaptured, Is.True);
+
+                player.SetExternalPointerInputActive(true);
+                Assert.That(player.ExternalPointerInputActive, Is.True);
+                Assert.That(player.CursorCaptured, Is.False);
+
+                player.SetExternalPointerInputActive(false);
+                Assert.That(player.ExternalPointerInputActive, Is.False);
+                Assert.That(player.CursorCaptured, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
+        [Test]
+        public void PlayerExternalPointerInput_DoesNotCaptureWhenControlWasDisabled()
+        {
+            GameObject playerObject = new("Player");
+            try
+            {
+                FirstContactIntroPlayerController player =
+                    playerObject.AddComponent<FirstContactIntroPlayerController>();
+
+                player.SetControlEnabled(false);
+                player.SetExternalPointerInputActive(true);
+                player.SetExternalPointerInputActive(false);
+
+                Assert.That(player.CursorCaptured, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
+        [Test]
         public void PlayerTeleport_RestoresAuthoredCameraPoseWhenStanding()
         {
             GameObject playerObject = new("Player");

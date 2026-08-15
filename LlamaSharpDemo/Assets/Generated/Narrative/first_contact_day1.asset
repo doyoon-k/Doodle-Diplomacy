@@ -56,10 +56,10 @@ MonoBehaviour:
     summary: Dr. Hwang explains the translator prototype, calibration task, and why
       the aliens will only respond to the president.
   - id: preflight
-    title: Tablet preflight
+    title: Retired tablet preflight
     order: 8
-    summary: Dr. Hwang checks the president's drawing and walks through the local
-      probe controls before the delegation enters.
+    summary: Legacy cues retained for migration only. The playable tutorial now runs
+      as FOOD practice inside the Facility briefing.
   - id: meeting_room_arrival
     title: Meeting room arrival
     order: 7
@@ -357,8 +357,8 @@ MonoBehaviour:
     situation: The delegation is about to arrive.
     beforeAction: 
     afterAction: 
-    stageDirection: The president turns toward Dr. Hwang before control passes to
-      preflight.
+    stageDirection: The president turns toward Dr. Hwang before the delegation entrance
+      begins.
     tags:
     - meeting
     - hwang
@@ -1132,7 +1132,7 @@ MonoBehaviour:
     minimumSeconds: 0.9
     situation: Dr. Hwang finishes the briefing immediately before gameplay.
     beforeAction: The party enters the underground briefing room.
-    afterAction: Cut to the live meeting room and begin the tablet preflight.
+    afterAction: Continue into the live Facility briefing and its FOOD practice.
     stageDirection: Projector silhouette and translator diagram.
     tags:
     - intro
@@ -1145,7 +1145,7 @@ MonoBehaviour:
   - id: preflight_intro
     sectionId: preflight
     order: 0
-    enabled: 1
+    enabled: 0
     type: dialogue
     status: final
     runtimeCue: PreflightIntro
@@ -1179,7 +1179,7 @@ MonoBehaviour:
   - id: tablet_tools
     sectionId: preflight
     order: 10
-    enabled: 1
+    enabled: 0
     type: dialogue
     status: final
     runtimeCue: TabletTools
@@ -1211,7 +1211,7 @@ MonoBehaviour:
   - id: tablet_style
     sectionId: preflight
     order: 20
-    enabled: 1
+    enabled: 0
     type: dialogue
     status: final
     runtimeCue: TabletStyle
@@ -1245,7 +1245,7 @@ MonoBehaviour:
   - id: tablet_history_and_send
     sectionId: preflight
     order: 30
-    enabled: 1
+    enabled: 0
     type: dialogue
     status: final
     runtimeCue: TabletHistoryAndSend
@@ -1278,7 +1278,7 @@ MonoBehaviour:
   - id: preflight_drawing
     sectionId: preflight
     order: 40
-    enabled: 1
+    enabled: 0
     type: dialogue
     status: final
     runtimeCue: PreflightDrawing
@@ -1312,7 +1312,7 @@ MonoBehaviour:
   - id: preflight_passed
     sectionId: preflight
     order: 50
-    enabled: 1
+    enabled: 0
     type: dialogue
     status: final
     runtimeCue: PreflightPassed
@@ -1693,8 +1693,8 @@ MonoBehaviour:
     speakerLocalizationKey: speaker.doctor_hwang
     speakerFallback: Dr. Hwang
     localizationKey: first_contact.doctor_hwang.bootstrap_category_mismatch
-    sourceText: The aliens responded and the data was recorded, but the drawing does
-      not appear to belong to {category}.
+    sourceText: A response was detected and recorded, but the drawing does not appear
+      to belong to {category}. Try another object that fits the active category.
     advance: player
     minimumSeconds: 0
     situation: Any category mismatch, contextual-only relation, or uncertain relation
@@ -1708,9 +1708,10 @@ MonoBehaviour:
     - category
     localizedTexts:
     - locale: ko-KR
-      text: "\uADF8\uB9BC\uC5D0 \uBC18\uC751\uD574\uC11C \uB370\uC774\uD130\uB3C4
-        \uC218\uC9D1\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uD558\uC9C0\uB9CC {category}\uC5D0
-        \uD574\uB2F9\uD558\uB294 \uADF8\uB9BC\uC740 \uC544\uB2CC \uBAA8\uC591\uC785\uB2C8\uB2E4."
+      text: "\uBC18\uC751\uC740 \uAC10\uC9C0\uB418\uC5B4 \uAE30\uB85D\uB410\uC2B5\uB2C8\uB2E4.
+        \uD558\uC9C0\uB9CC \uC774 \uADF8\uB9BC\uC740 {category}\uC5D0 \uD574\uB2F9\uD558\uC9C0
+        \uC54A\uB294 \uAC83\uC73C\uB85C \uBCF4\uC785\uB2C8\uB2E4. \uD604\uC7AC \uBD84\uB958\uC5D0
+        \uB9DE\uB294 \uB2E4\uB978 \uC0AC\uBB3C\uC744 \uADF8\uB824\uC8FC\uC2ED\uC2DC\uC624."
       status: final
   - id: doctor_hwang_pattern_meaning_requested
     sectionId: reactive_guidance
@@ -3613,6 +3614,72 @@ MonoBehaviour:
         \uBC14\uB098\uB098\uB97C \uBCF8 \uC21C\uAC04\uC758 \uBC18\uC751 \uD30C\uD615\uC744
         \uC5BB\uC744 \uC218 \uC788\uACA0\uC9C0\uC694."
       status: final
+  - id: briefing_practice_transition_0101a
+    sectionId: facility_briefing
+    order: 235
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingLookHwangPresentation
+    briefingLookTarget: 3
+    meetingLookTarget: 0
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.intro.facility.briefing.practice_transition
+    sourceText: It will be clearer if we test that principle now. I will be the subject.
+      Draw something that belongs to FOOD, and the terminal will record my response
+      while I look at it.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC9C0\uAE08 \uADF8 \uC6D0\uB9AC\uB97C \uC9C1\uC811 \uC2DC\uD5D8\uD574
+        \uBCF4\uB294 \uD3B8\uC774 \uBE60\uB974\uACA0\uAD70\uC694. \uC81C\uAC00 \uD45C\uBCF8\uC774
+        \uB418\uACA0\uC2B5\uB2C8\uB2E4. FOOD\uC5D0 \uD574\uB2F9\uD558\uB294 \uADF8\uB9BC\uC744
+        \uADF8\uB824 \uC8FC\uC2DC\uBA74, \uC81C\uAC00 \uBCF4\uB294 \uB3D9\uC548 \uB2E8\uB9D0\uAE30\uAC00
+        \uC81C \uBC18\uC751\uC744 \uAE30\uB85D\uD560 \uAC81\uB2C8\uB2E4."
+      status: final
+  - id: briefing_first_response_debrief_0101b
+    sectionId: facility_briefing
+    order: 238
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingLookHwangPresentation
+    briefingLookTarget: 3
+    meetingLookTarget: 0
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.intro.facility.briefing.first_response_debrief
+    sourceText: Good. One response waveform was recorded while I looked at your drawing.
+      That is the measurement step I just described.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC88B\uC2B5\uB2C8\uB2E4. \uADF8\uB9BC\uC744 \uBCF4\uB294 \uB3D9\uC548
+        \uC81C \uBC18\uC751 \uD30C\uD615 \uD558\uB098\uAC00 \uAE30\uB85D\uB410\uC2B5\uB2C8\uB2E4.
+        \uC5EC\uAE30\uAE4C\uC9C0\uAC00 \uBC29\uAE08 \uC124\uBA85\uB4DC\uB9B0 \uCE21\uC815
+        \uB2E8\uACC4\uC785\uB2C8\uB2E4."
+      status: final
   - id: briefing_database_limit_0102
     sectionId: facility_briefing
     order: 240
@@ -3885,6 +3952,38 @@ MonoBehaviour:
         \uCC98\uC74C \uBCF4\uB294 \uC2E0\uD638\uC5D0\uC11C\uB3C4 \uC774\uBBF8 \uD559\uC2B5\uD55C
         \uBD84\uB958\uC5D0 \uD574\uB2F9\uD558\uB294 \uC758\uBBF8\uB97C \uCC3E\uC544\uB0BC
         \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+      status: final
+  - id: briefing_pattern_practice_transition_0110a
+    sectionId: facility_briefing
+    order: 325
+    enabled: 1
+    type: dialogue
+    status: final
+    runtimeCue: BriefingLookHwangPresentation
+    briefingLookTarget: 3
+    meetingLookTarget: 0
+    triggerEvent: intro.facility.briefing
+    condition: 
+    repeat: once-per-session
+    speakerId: doctor_hwang
+    speakerLocalizationKey: speaker.doctor_hwang
+    speakerFallback: Dr. Hwang
+    localizationKey: first_contact.intro.facility.briefing.pattern_practice_transition
+    sourceText: Now show me more drawings that belong to FOOD in the same way. Let
+      us see whether the repeated responses form a shared pattern.
+    advance: player
+    minimumSeconds: 0.35
+    situation: 
+    beforeAction: 
+    afterAction: 
+    stageDirection: 
+    tags: []
+    localizedTexts:
+    - locale: ko-KR
+      text: "\uC774\uC81C \uAC19\uC740 \uBC29\uC2DD\uC73C\uB85C FOOD\uC5D0 \uD574\uB2F9\uD558\uB294
+        \uADF8\uB9BC\uB4E4\uC744 \uB354 \uBCF4\uC5EC\uC8FC\uC2ED\uC2DC\uC624. \uBC18\uBCF5\uB418\uB294
+        \uBC18\uC751\uC5D0\uC11C \uC2E4\uC81C\uB85C \uACF5\uD1B5 \uD328\uD134\uC774
+        \uB9CC\uB4E4\uC5B4\uC9C0\uB294\uC9C0 \uD655\uC778\uD574 \uBCF4\uC8E0."
       status: final
   - id: briefing_magic_0111
     sectionId: facility_briefing

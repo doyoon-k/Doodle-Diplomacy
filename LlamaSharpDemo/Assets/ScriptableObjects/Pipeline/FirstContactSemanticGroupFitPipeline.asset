@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
+  m_Name: FirstContactSemanticGroupFitPipeline
+  m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
+  displayName: FirstContactSemanticGroupFitPipeline
+  description: Tests one off-CATEGORY MEANING against an established internal GROUP category.
+  steps:
+  - stepName: FirstContactSemanticGroupFit
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: c4d9a7c84a7b4ff59a90f173521ed5c1, type: 2}
+    embeddingProfile: {fileID: 0}
+    userPromptTemplate: 'NEW_MEANING_JSON:
+
+      {{new_meaning_json}}
+
+      EXISTING_CATEGORY_JSON:
+
+      {{existing_category_json}}'
+    embeddingOutputKey: embedding
+    failOnEmptyEmbeddingInput: 1
+    jsonMaxRetries: 1
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: DoodleDiplomacy.Gameplay.FirstContact.FirstContactLabelAnalysisChainLink,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: parameters
+      value: 
+    - key: service
+      value: 
+    editorPosition: {x: -160, y: -40}
+    guid: 2d951a77-d2e5-45ef-ad60-8e776a4dc66b
+    nextStepGuid: 
+  layoutSettings:
+    inputNodePosition: {x: -420, y: 0}
+    outputNodePosition: {x: 680, y: -40}
+    inputPositionInitialized: 1
+    outputPositionInitialized: 1
+    viewPosition: {x: 0, y: 0, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
+    viewInitialized: 1
+    snapshotPositions:
+    - {x: 0, y: 0}
+    snapshotPositionsInitialized: 1

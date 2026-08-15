@@ -18,6 +18,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         IGameplayStateObservable
     {
         private const string DefaultModeId = "first-contact-translation";
+        private const string BriefingPracticeCategoryId = "food";
         private const string DoctorHwangSpeakerKey = "speaker.doctor_hwang";
         private const int MaxProbeLabelLength = 32;
         private const int MaxPatternMeaningLength = 24;
@@ -67,14 +68,114 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private FirstContactSemanticMapSnapshot _pendingMeaningMapSnapshot;
         private bool _patternMeaningSubmitted;
         private FirstContactBootstrapSession _bootstrapSession;
+        private IReadOnlyList<FirstContactBootstrapCategoryDefinition> _sessionCategoryDefinitions =
+            Array.Empty<FirstContactBootstrapCategoryDefinition>();
         private bool _startWithIntro;
+        private bool _suppressNarrativeCues;
         private bool _isPreflightTutorial;
+        private bool _isBriefingPractice;
+        private bool _briefingPracticeCompleted;
+        private bool _briefingPracticeFirstResponseRecorded;
+        private bool _briefingPracticeInterludeReady;
 
         public string ModeId => string.IsNullOrWhiteSpace(modeId) ? DefaultModeId : modeId.Trim();
         public GameState CurrentState => _currentGameState;
+        public bool IsBriefingPracticeActive => _isBriefingPractice;
+        public bool IsBriefingPracticeComplete => _briefingPracticeCompleted;
+        public bool IsBriefingPracticeInterludeReady =>
+            _isBriefingPractice && _briefingPracticeInterludeReady;
+        public bool BriefingFoodPracticeEnabled =>
+            config == null ||
+            config.narrativeSettings == null ||
+            config.narrativeSettings.enableBriefingFoodPractice;
+
+        public bool BeginBriefingFoodPractice(GameplayModeContext context)
+        {
+            if (!BriefingFoodPracticeEnabled)
+            {
+                _briefingPracticeCompleted = true;
+                return true;
+            }
+
+            if (context == null || !isActiveAndEnabled)
+            {
+                Debug.LogError(
+                    "[FirstContactTranslationMode] Briefing FOOD practice requires an active embedded gameplay context.",
+                    this);
+                return false;
+            }
+
+            if (config == null ||
+                !config.TryGetBootstrapCategory(
+                    BriefingPracticeCategoryId,
+                    out FirstContactBootstrapCategoryDefinition foodCategory))
+            {
+                Debug.LogError(
+                    "[FirstContactTranslationMode] Briefing FOOD practice requires the existing 'food' bootstrap CATEGORY.",
+                    this);
+                return false;
+            }
+
+            StopActiveRoutine();
+            _context = context;
+            ResolveRuntimeServices();
+            _startWithIntro = false;
+            _suppressNarrativeCues = false;
+            _isPreflightTutorial = false;
+            _isBriefingPractice = true;
+            _briefingPracticeCompleted = false;
+            _briefingPracticeFirstResponseRecorded = false;
+            _briefingPracticeInterludeReady = false;
+            _routine = StartCoroutine(StartBriefingFoodPracticeRoutine(foodCategory));
+            return true;
+        }
+
+        public bool ResumeBriefingFoodPractice()
+        {
+            if (!_isBriefingPractice || !_briefingPracticeInterludeReady)
+            {
+                return false;
+            }
+
+            _briefingPracticeInterludeReady = false;
+            StopActiveRoutine();
+            _routine = StartCoroutine(StartBootstrapProbeSequenceRoutine());
+            return true;
+        }
+
+        public void EndBriefingFoodPractice()
+        {
+            if (!_isBriefingPractice && !_briefingPracticeCompleted && _context == null)
+            {
+                return;
+            }
+
+            StopActiveRoutine();
+            _encounterDirector?.StopPresentation();
+            _tabletControls?.ClearTutorialHighlight();
+            EndTerminalProbeLabelInput();
+            HideGuidanceLine(force: true);
+            _context?.Drawing?.SetInteractionLocked(true);
+            _context?.Drawing?.ClearRecognitionLabel();
+            _context?.Drawing?.ClearInstructionLabel();
+            _terminalPresenter?.Clear();
+            DisableTerminalChoices();
+            ClearTechnicalFailureState();
+            ClearProbeSessionData();
+            _isPreflightTutorial = false;
+            _isBriefingPractice = false;
+            _briefingPracticeFirstResponseRecorded = false;
+            _briefingPracticeInterludeReady = false;
+            _context = null;
+            ChangeState(FirstContactModeState.Inactive);
+        }
 
         public void Enter(GameplayModeContext context)
         {
+            _isBriefingPractice = false;
+            _briefingPracticeCompleted = false;
+            _briefingPracticeFirstResponseRecorded = false;
+            _briefingPracticeInterludeReady = false;
             _context = context;
             ResolveRuntimeServices();
             _context?.Drawing?.SetInteractionLocked(true);
@@ -96,6 +197,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             // A preflight probe validates the real authoring path but must never seed
             // semantic memory, response traces, or bootstrap category progress.
             _isPreflightTutorial = false;
+            _isBriefingPractice = false;
+            _briefingPracticeFirstResponseRecorded = false;
+            _briefingPracticeInterludeReady = false;
             EndTerminalProbeLabelInput();
             GamePipelineRunner.Instance?.StopGeneration();
             HideGuidanceLine(force: true);
@@ -106,6 +210,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             DisableTerminalChoices();
             ClearTechnicalFailureState();
             _context = null;
+            ClearProbeSessionData();
             ChangeState(FirstContactModeState.Inactive);
         }
 
@@ -171,9 +276,22 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void StartGame(bool isFirstPlay = true)
         {
+            StartGameInternal(isFirstPlay, suppressNarrativeCues: false);
+        }
+
+#if UNITY_EDITOR
+        public void StartGameplayTest()
+        {
+            StartGameInternal(isFirstPlay: false, suppressNarrativeCues: true);
+        }
+#endif
+
+        private void StartGameInternal(bool isFirstPlay, bool suppressNarrativeCues)
+        {
             StopActiveRoutine();
             HideGuidanceLine(force: true);
             _startWithIntro = isFirstPlay;
+            _suppressNarrativeCues = suppressNarrativeCues;
             _routine = StartCoroutine(StartFirstContactRoutine());
         }
 
@@ -235,6 +353,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             ResolveRuntimeServices();
             ClearTechnicalFailureState();
+            _isBriefingPractice = false;
+            _briefingPracticeCompleted = false;
             if (_meetingArrival != null &&
                 _meetingArrival.ShouldPlay(_context, _startWithIntro))
             {
@@ -245,37 +365,21 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                         : null);
             }
 
-            _runtimeWaveformSessionSeed = UnityEngine.Random.Range(1, int.MaxValue);
-            _bootstrapMapBuilder.Reset(_runtimeWaveformSessionSeed);
-            _session = new FirstContactSessionContext();
-            _hasShownBootstrapDuplicateGuidanceLine = false;
-            ClearPendingPatternMeaning();
             InitializeBootstrapSession();
-            _semanticMemory = new FirstContactSemanticMemory(
-                _embeddingService,
-                GetSemanticSettings(),
-                GetDebugSettings(),
-                config.bootstrapCategories);
+            InitializeProbeSessionState();
             _context?.Drawing?.SetInteractionLocked(true);
             _context?.Drawing?.ClearRecognitionLabel();
             _context?.Drawing?.ClearInstructionLabel();
             _context?.SharedMonitorDisplay?.SetIdle();
             _terminalPresenter?.Clear();
             DisableTerminalChoices();
-            _encounterDirector?.BeginSession();
+            _encounterDirector?.BeginSession(_suppressNarrativeCues);
             if (_encounterDirector != null)
             {
                 yield return _encounterDirector.PlayOpeningPreludeRoutine(_startWithIntro);
             }
 
             yield return PrepareBootstrapCategoryDescriptorsRoutine();
-            if (_encounterDirector?.ShouldRunPreflightTutorial(_startWithIntro) == true)
-            {
-                yield return StartPreflightTutorialRoutine();
-                _routine = null;
-                yield break;
-            }
-
             if (_encounterDirector != null)
             {
                 yield return _encounterDirector.PlayDelegationArrivalRoutine(_startWithIntro);
@@ -283,6 +387,42 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             yield return StartBootstrapProbeSequenceRoutine();
             _routine = null;
+        }
+
+        private IEnumerator StartBriefingFoodPracticeRoutine(
+            FirstContactBootstrapCategoryDefinition foodCategory)
+        {
+            ClearTechnicalFailureState();
+            _sessionCategoryDefinitions = new[] { foodCategory };
+            _bootstrapSession = new FirstContactBootstrapSession(
+                _sessionCategoryDefinitions,
+                GetBootstrapRequiredTraceCount());
+            InitializeProbeSessionState();
+            _context?.Drawing?.SetInteractionLocked(true);
+            _context?.Drawing?.ClearRecognitionLabel();
+            _context?.Drawing?.ClearInstructionLabel();
+            _context?.SharedMonitorDisplay?.SetIdle();
+            _terminalPresenter?.Clear();
+            DisableTerminalChoices();
+            _encounterDirector?.BeginBriefingPracticeSession();
+
+            yield return PrepareBootstrapCategoryDescriptorsRoutine();
+            yield return StartBootstrapProbeSequenceRoutine();
+            _routine = null;
+        }
+
+        private void InitializeProbeSessionState()
+        {
+            _runtimeWaveformSessionSeed = UnityEngine.Random.Range(1, int.MaxValue);
+            _bootstrapMapBuilder.Reset(_runtimeWaveformSessionSeed);
+            _session = new FirstContactSessionContext();
+            _hasShownBootstrapDuplicateGuidanceLine = false;
+            ClearPendingPatternMeaning();
+            _semanticMemory = new FirstContactSemanticMemory(
+                _embeddingService,
+                GetSemanticSettings(),
+                GetDebugSettings(),
+                _sessionCategoryDefinitions);
         }
 
         private IEnumerator StartPreflightTutorialRoutine()
@@ -344,6 +484,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _bootstrapSession = new FirstContactBootstrapSession(
                 categories,
                 GetBootstrapRequiredTraceCount());
+            _sessionCategoryDefinitions = categories;
         }
 
         private IEnumerator PrepareBootstrapCategoryDescriptorsRoutine()
@@ -400,6 +541,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactBootstrapCategoryState category = GetActiveBootstrapCategory();
             if (category == null)
             {
+                if (_isBriefingPractice)
+                {
+                    CompleteBriefingFoodPractice();
+                    yield break;
+                }
+
                 ChangeState(FirstContactModeState.BootstrapComplete);
                 _terminalPresenter?.ShowBootstrapComplete(instant: false);
                 if (_encounterDirector != null)
@@ -480,16 +627,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactBootstrapCategoryState category = GetCurrentProbeCategory();
             if (_encounterDirector != null)
             {
-                if (_isPreflightTutorial)
-                {
-                    yield return _encounterDirector.PlayPreflightDrawingRoutine();
-                }
-                else
-                {
-                    yield return _encounterDirector.PlayDrawingOpenedRoutine(
-                        category?.Id ?? string.Empty,
-                        category?.DisplayName ?? string.Empty);
-                }
+                yield return _encounterDirector.PlayDrawingOpenedRoutine(
+                    category?.Id ?? string.Empty,
+                    category?.DisplayName ?? string.Empty);
             }
 
             _context?.Drawing?.SetInteractionLocked(false);
@@ -762,7 +902,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield return new WaitForSeconds(presentation.labelRevealDelay);
             }
 
-            if (_encounterDirector != null)
+            if (_encounterDirector != null && !_isBriefingPractice)
             {
                 yield return _encounterDirector.PlayProbeTransmissionRoutine(
                     _workingProbe.Texture,
@@ -814,6 +954,48 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             yield return StartBootstrapProbeSequenceRoutine();
         }
 
+        private void CompleteBriefingFoodPractice()
+        {
+            DisableTerminalChoices();
+            EndTerminalProbeLabelInput();
+            _context?.Drawing?.SetInteractionLocked(true);
+            _context?.Drawing?.ClearRecognitionLabel();
+            _context?.Drawing?.ClearInstructionLabel();
+            _context?.Camera?.SetMode(CameraMode.TerminalZoom);
+            _tabletControls?.ClearTutorialHighlight();
+            _briefingPracticeCompleted = true;
+            _isBriefingPractice = false;
+            _briefingPracticeInterludeReady = false;
+            ClearProbeSessionData();
+            ChangeState(FirstContactModeState.Ready);
+        }
+
+        private void PauseBriefingFoodPracticeForInterlude()
+        {
+            DisableTerminalChoices();
+            EndTerminalProbeLabelInput();
+            HideGuidanceLine(force: true);
+            _context?.Drawing?.SetInteractionLocked(true);
+            _context?.Drawing?.ClearRecognitionLabel();
+            _context?.Drawing?.ClearInstructionLabel();
+            _tabletControls?.ClearTutorialHighlight();
+            _briefingPracticeFirstResponseRecorded = true;
+            _briefingPracticeInterludeReady = true;
+            ChangeState(FirstContactModeState.Ready);
+        }
+
+        private void ClearProbeSessionData()
+        {
+            _session = null;
+            _semanticMemory = null;
+            _bootstrapSession = null;
+            _sessionCategoryDefinitions = Array.Empty<FirstContactBootstrapCategoryDefinition>();
+            _currentProbeLabelInput = string.Empty;
+            _terminalProbeLabelStatus = string.Empty;
+            _workingProbe.Reset(FirstContactCardSource.BootstrapProbe);
+            ClearPendingPatternMeaning();
+        }
+
         private IEnumerator CapturePendingDrawingWithRetries(Action<bool, string> onComplete)
         {
             if (_probeCaptureService == null)
@@ -862,6 +1044,86 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 category,
                 L10n.CurrentLocale,
                 onComplete);
+        }
+
+        private IEnumerator EvaluateDetachedSemanticGroupRoutine(
+            SemanticCardRecord card,
+            Action<FirstContactSemanticGroupResolution,
+                IReadOnlyList<FirstContactSemanticGroupCandidate>> onComplete)
+        {
+            FirstContactSemanticSettings settings = GetSemanticSettings();
+            IReadOnlyList<FirstContactSemanticGroupCandidate> candidates =
+                _semanticMemory?.FindGroupCandidates(
+                    card,
+                    settings.semanticGroupCandidateCount) ??
+                Array.Empty<FirstContactSemanticGroupCandidate>();
+            if (candidates.Count == 0)
+            {
+                onComplete?.Invoke(
+                    new FirstContactSemanticGroupResolution(
+                        FirstContactSemanticGroupResolutionKind.CreateNewGroup,
+                        null),
+                    candidates);
+                yield break;
+            }
+
+            var evaluatedCandidates = new List<FirstContactSemanticGroupCandidate>();
+            var results = new List<FirstContactSemanticGroupFitResult>();
+            float? joinedSimilarity = null;
+            float ambiguityMargin = settings.semanticGroupJoinAmbiguityMargin;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                FirstContactSemanticGroupCandidate candidate = candidates[i];
+                if (joinedSimilarity.HasValue &&
+                    candidate.SemanticSimilarity < joinedSimilarity.Value - ambiguityMargin)
+                {
+                    break;
+                }
+
+                bool requiresCategorySeed =
+                    string.IsNullOrWhiteSpace(candidate.Cluster?.CategoryHypothesis);
+                IReadOnlyList<SemanticCardRecord> representatives = requiresCategorySeed
+                    ? _semanticMemory.BuildRepresentativeMembers(
+                        candidate.Cluster,
+                        settings.semanticGroupRepresentativeLimit)
+                    : Array.Empty<SemanticCardRecord>();
+                FirstContactSemanticGroupFitResult result = null;
+                yield return _probeProcessor.EvaluateSemanticGroupFit(
+                    card,
+                    candidate.Cluster,
+                    representatives,
+                    value => result = value);
+
+                evaluatedCandidates.Add(candidate);
+                results.Add(result ?? FirstContactSemanticGroupFitResult.Failed(
+                    "Semantic group fit returned no result."));
+
+                if (GetDebugSettings().logSimilarityScores)
+                {
+                    Debug.Log(
+                        $"[FirstContactTranslationMode] Semantic GROUP candidate " +
+                        $"similarity={candidate.SemanticSimilarity:0.000} " +
+                        $"candidate='{card?.OriginalLabel}' group='{candidate.Cluster?.Id}' " +
+                        $"mode='{(requiresCategorySeed ? "seed" : "membership")}' " +
+                        $"decision='{result?.Decision ?? "missing"}' " +
+                        $"category='{result?.Category ?? string.Empty}'.",
+                        this);
+                }
+
+                if (result?.JoinsGroup == true && !joinedSimilarity.HasValue)
+                {
+                    joinedSimilarity = candidate.SemanticSimilarity;
+                }
+
+                if (result != null && !result.IsSuccess)
+                {
+                    break;
+                }
+            }
+
+            onComplete?.Invoke(
+                FirstContactSemanticGroupDecision.Resolve(evaluatedCandidates, results),
+                evaluatedCandidates);
         }
 
         private IEnumerator PreparePendingProbeLabelRoutine(
@@ -967,17 +1229,89 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             IReadOnlyList<FirstContactClusterTransitionSnapshot> beforeClusterStates =
                 FirstContactClusterFormationTracker.Capture(_semanticMemory?.Clusters);
-            _semanticMemory.AddCard(card);
+            SemanticClusterRecord cluster = null;
+            if (card.BootstrapCategoryAccepted)
+            {
+                _semanticMemory.RegisterAcceptedCard(card);
+            }
+            else
+            {
+                FirstContactSemanticGroupResolution groupResolution = default;
+                IReadOnlyList<FirstContactSemanticGroupCandidate> evaluatedCandidates =
+                    Array.Empty<FirstContactSemanticGroupCandidate>();
+                yield return EvaluateDetachedSemanticGroupRoutine(
+                    card,
+                    (resolution, candidates) =>
+                    {
+                        groupResolution = resolution;
+                        evaluatedCandidates = candidates;
+                    });
+
+                switch (groupResolution.Kind)
+                {
+                    case FirstContactSemanticGroupResolutionKind.JoinExistingGroup:
+                        cluster = _semanticMemory.JoinDetachedGroup(
+                            card,
+                            groupResolution.TargetCluster,
+                            FindCandidateSimilarity(
+                                evaluatedCandidates,
+                                groupResolution.TargetCluster),
+                            groupResolution.CategoryHypothesis);
+                        if (cluster == null)
+                        {
+                            _semanticMemory.RegisterPendingCard(
+                                card,
+                                evaluatedCandidates);
+                        }
+                        break;
+
+                    case FirstContactSemanticGroupResolutionKind.Pending:
+                        _semanticMemory.RegisterPendingCard(
+                            card,
+                            evaluatedCandidates,
+                            groupResolution.IntegrityConflictClusters);
+                        break;
+
+                    default:
+                        cluster = _semanticMemory.CreateDetachedGroup(card);
+                        break;
+                }
+            }
+
             _session?.RecentCards.Add(card);
-            SemanticClusterRecord cluster = _semanticMemory.FindCluster(card.ClusterId);
+            cluster ??= _semanticMemory.FindCluster(card.ClusterId);
             FirstContactClusterFormationEvent clusterFormation =
                 FirstContactClusterFormationTracker.BuildFormation(
-                card,
+                    card,
                 cluster,
                 beforeClusterStates,
                 _semanticMemory?.LastFormationEdges);
             yield return StoreBootstrapProbeCardRoutine(card, cluster, clusterFormation, categoryFitResult);
             _routine = null;
+        }
+
+        private static float FindCandidateSimilarity(
+            IReadOnlyList<FirstContactSemanticGroupCandidate> candidates,
+            SemanticClusterRecord cluster)
+        {
+            if (candidates == null || cluster == null)
+            {
+                return 0f;
+            }
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                if (ReferenceEquals(candidates[i].Cluster, cluster) ||
+                    string.Equals(
+                        candidates[i].Cluster?.Id,
+                        cluster.Id,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return candidates[i].SemanticSimilarity;
+                }
+            }
+
+            return 0f;
         }
 
         private IEnumerator StoreBootstrapDuplicateProbeCardRoutine(
@@ -1096,7 +1430,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 semanticFormation,
                 requiresMeaningAssignment,
                 instant: false);
-            if (_encounterDirector != null)
+            bool pauseForBriefingInterlude =
+                _isBriefingPractice && !_briefingPracticeFirstResponseRecorded;
+            if (_encounterDirector != null && !pauseForBriefingInterlude)
             {
                 yield return _encounterDirector.PlayTraceRecordedRoutine(
                     category.Id,
@@ -1118,6 +1454,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 yield return AssignPatternMeaningRoutine(card, category, cluster);
             }
 
+            if (pauseForBriefingInterlude)
+            {
+                PauseBriefingFoodPracticeForInterlude();
+                yield break;
+            }
+
             if (!stable)
             {
                 yield return StartBootstrapProbeSequenceRoutine();
@@ -1134,9 +1476,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 instant: false);
             if (_encounterDirector != null)
             {
-                yield return _encounterDirector.PlayCategoryCalibratedRoutine(
-                    category.Id,
-                    category.DisplayName);
+                if (_isBriefingPractice)
+                {
+                    yield return _encounterDirector.PlayBriefingPracticeCategoryCalibratedRoutine(
+                        category.Id,
+                        category.DisplayName);
+                }
+                else
+                {
+                    yield return _encounterDirector.PlayCategoryCalibratedRoutine(
+                        category.Id,
+                        category.DisplayName);
+                }
             }
 
             yield return WaitForTerminalContinueRoutine();
@@ -1192,20 +1543,45 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     candidate.Card,
                     result => review = result);
 
-                if (review?.ConfirmsDuplicate == true)
+                if (review?.ClaimsEquivalentName == true)
                 {
-                    if (GetDebugSettings().logSimilarityScores)
+                    FirstContactSemanticDuplicateChallengeResult challenge = null;
+                    yield return _probeProcessor.ChallengeSemanticDuplicate(
+                        card,
+                        candidate.Card,
+                        result => challenge = result);
+
+                    if (FirstContactSemanticDuplicateDecision.ConfirmsDuplicate(review, challenge))
                     {
-                        Debug.Log(
-                            $"[FirstContactTranslationMode] Duplicate confirmed by gray-zone review. " +
-                            $"similarity={candidate.SemanticSimilarity:0.000} " +
-                            $"candidate='{card?.OriginalLabel}' recorded='{candidate.Card?.OriginalLabel}' " +
-                            $"reason='{review.Reason}'.",
-                            this);
+                        if (GetDebugSettings().logSimilarityScores)
+                        {
+                            Debug.Log(
+                                $"[FirstContactTranslationMode] Duplicate confirmed by semantic identity review. " +
+                                $"similarity={candidate.SemanticSimilarity:0.000} " +
+                                $"candidate='{card?.OriginalLabel}' recorded='{candidate.Card?.OriginalLabel}' " +
+                                $"relation='{review.Relation}' distinctExample='{challenge.DistinctExampleExists}'.",
+                                this);
+                        }
+
+                        onComplete?.Invoke(candidate.Card);
+                        yield break;
                     }
 
-                    onComplete?.Invoke(candidate.Card);
-                    yield break;
+                    if (challenge != null && !challenge.IsSuccess)
+                    {
+                        Debug.LogWarning(
+                            $"[FirstContactTranslationMode] Optional semantic duplicate challenge failed: {challenge.Error}",
+                            this);
+                    }
+                    else if (GetDebugSettings().logSimilarityScores)
+                    {
+                        Debug.Log(
+                            $"[FirstContactTranslationMode] Semantic duplicate claim rejected by challenge. " +
+                            $"similarity={candidate.SemanticSimilarity:0.000} " +
+                            $"candidate='{card?.OriginalLabel}' recorded='{candidate.Card?.OriginalLabel}' " +
+                            $"distinctExample='{challenge?.DistinctExampleExists ?? "missing"}'.",
+                            this);
+                    }
                 }
 
                 if (review != null && !review.IsSuccess)

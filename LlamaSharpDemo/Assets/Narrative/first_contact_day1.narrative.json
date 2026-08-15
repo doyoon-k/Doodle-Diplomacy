@@ -53,9 +53,9 @@
     },
     {
       "id": "preflight",
-      "title": "Tablet preflight",
+      "title": "Retired tablet preflight",
       "order": 8,
-      "summary": "Dr. Hwang checks the president's drawing and walks through the local probe controls before the delegation enters."
+      "summary": "Legacy cues retained for migration only. The playable tutorial now runs as FOOD practice inside the Facility briefing."
     },
     {
       "id": "meeting_room_arrival",
@@ -382,7 +382,7 @@
       "situation": "The delegation is about to arrive.",
       "beforeAction": "",
       "afterAction": "",
-      "stageDirection": "The president turns toward Dr. Hwang before control passes to preflight.",
+      "stageDirection": "The president turns toward Dr. Hwang before the delegation entrance begins.",
       "tags": ["meeting", "hwang"],
       "localizedTexts": [
         {
@@ -1188,7 +1188,7 @@
       "minimumSeconds": 0.9,
       "situation": "Dr. Hwang finishes the briefing immediately before gameplay.",
       "beforeAction": "The party enters the underground briefing room.",
-      "afterAction": "Cut to the live meeting room and begin the tablet preflight.",
+      "afterAction": "Continue into the live Facility briefing and its FOOD practice.",
       "stageDirection": "Projector silhouette and translator diagram.",
       "tags": [
         "intro",
@@ -1207,7 +1207,7 @@
       "id": "preflight_intro",
       "sectionId": "preflight",
       "order": 0,
-      "enabled": true,
+      "enabled": false,
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "PreflightIntro",
@@ -1242,7 +1242,7 @@
       "id": "tablet_tools",
       "sectionId": "preflight",
       "order": 10,
-      "enabled": true,
+      "enabled": false,
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "TabletTools",
@@ -1277,7 +1277,7 @@
       "id": "tablet_style",
       "sectionId": "preflight",
       "order": 20,
-      "enabled": true,
+      "enabled": false,
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "TabletStyle",
@@ -1312,7 +1312,7 @@
       "id": "tablet_history_and_send",
       "sectionId": "preflight",
       "order": 30,
-      "enabled": true,
+      "enabled": false,
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "TabletHistoryAndSend",
@@ -1347,7 +1347,7 @@
       "id": "preflight_drawing",
       "sectionId": "preflight",
       "order": 40,
-      "enabled": true,
+      "enabled": false,
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "PreflightDrawing",
@@ -1382,7 +1382,7 @@
       "id": "preflight_passed",
       "sectionId": "preflight",
       "order": 50,
-      "enabled": true,
+      "enabled": false,
       "type": "dialogue",
       "status": "final",
       "runtimeCue": "PreflightPassed",
@@ -1767,7 +1767,7 @@
       "speakerLocalizationKey": "speaker.doctor_hwang",
       "speakerFallback": "Dr. Hwang",
       "localizationKey": "first_contact.doctor_hwang.bootstrap_category_mismatch",
-      "sourceText": "The aliens responded and the data was recorded, but the drawing does not appear to belong to {category}.",
+      "sourceText": "A response was detected and recorded, but the drawing does not appear to belong to {category}. Try another object that fits the active category.",
       "advance": "player",
       "minimumSeconds": 0,
       "situation": "Any category mismatch, contextual-only relation, or uncertain relation is recorded without advancing the active category trace.",
@@ -1779,7 +1779,7 @@
       "localizedTexts": [
         {
           "locale": "ko-KR",
-          "text": "그림에 반응해서 데이터도 수집되었습니다. 하지만 {category}에 해당하는 그림은 아닌 모양입니다.",
+          "text": "반응은 감지되어 기록됐습니다. 하지만 이 그림은 {category}에 해당하지 않는 것으로 보입니다. 현재 분류에 맞는 다른 사물을 그려주십시오.",
           "status": "final"
         }
       ]
@@ -3525,6 +3525,58 @@
       "briefingLookTarget": 1
     },
     {
+      "id": "briefing_practice_transition_0101a",
+      "sectionId": "facility_briefing",
+      "order": 235,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "BriefingLookHwangPresentation",
+      "triggerEvent": "intro.facility.briefing",
+      "repeat": "once-per-session",
+      "speakerId": "doctor_hwang",
+      "speakerLocalizationKey": "speaker.doctor_hwang",
+      "speakerFallback": "Dr. Hwang",
+      "localizationKey": "first_contact.intro.facility.briefing.practice_transition",
+      "sourceText": "It will be clearer if we test that principle now. I will be the subject. Draw something that belongs to FOOD, and the terminal will record my response while I look at it.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "지금 그 원리를 직접 시험해 보는 편이 빠르겠군요. 제가 표본이 되겠습니다. FOOD에 해당하는 그림을 그려 주시면, 제가 보는 동안 단말기가 제 반응을 기록할 겁니다.",
+          "status": "final"
+        }
+      ],
+      "briefingLookTarget": 3
+    },
+    {
+      "id": "briefing_first_response_debrief_0101b",
+      "sectionId": "facility_briefing",
+      "order": 238,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "BriefingLookHwangPresentation",
+      "triggerEvent": "intro.facility.briefing",
+      "repeat": "once-per-session",
+      "speakerId": "doctor_hwang",
+      "speakerLocalizationKey": "speaker.doctor_hwang",
+      "speakerFallback": "Dr. Hwang",
+      "localizationKey": "first_contact.intro.facility.briefing.first_response_debrief",
+      "sourceText": "Good. One response waveform was recorded while I looked at your drawing. That is the measurement step I just described.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "좋습니다. 그림을 보는 동안 제 반응 파형 하나가 기록됐습니다. 여기까지가 방금 설명드린 측정 단계입니다.",
+          "status": "final"
+        }
+      ],
+      "briefingLookTarget": 3
+    },
+    {
       "id": "briefing_database_limit_0102",
       "sectionId": "facility_briefing",
       "order": 240,
@@ -3757,6 +3809,32 @@
         }
       ],
       "briefingLookTarget": 1
+    },
+    {
+      "id": "briefing_pattern_practice_transition_0110a",
+      "sectionId": "facility_briefing",
+      "order": 325,
+      "enabled": true,
+      "type": "dialogue",
+      "status": "final",
+      "runtimeCue": "BriefingLookHwangPresentation",
+      "triggerEvent": "intro.facility.briefing",
+      "repeat": "once-per-session",
+      "speakerId": "doctor_hwang",
+      "speakerLocalizationKey": "speaker.doctor_hwang",
+      "speakerFallback": "Dr. Hwang",
+      "localizationKey": "first_contact.intro.facility.briefing.pattern_practice_transition",
+      "sourceText": "Now show me more drawings that belong to FOOD in the same way. Let us see whether the repeated responses form a shared pattern.",
+      "advance": "player",
+      "minimumSeconds": 0.35,
+      "localizedTexts": [
+        {
+          "locale": "ko-KR",
+          "text": "이제 같은 방식으로 FOOD에 해당하는 그림들을 더 보여주십시오. 반복되는 반응에서 실제로 공통 패턴이 만들어지는지 확인해 보죠.",
+          "status": "final"
+        }
+      ],
+      "briefingLookTarget": 3
     },
     {
       "id": "briefing_magic_0111",

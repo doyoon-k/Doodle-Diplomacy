@@ -26,6 +26,9 @@ MonoBehaviour:
   minClusterMembers: 3
   minClusterCohesion: 0.72
   minClusterPairwiseSimilarity: 0.75
+  semanticGroupCandidateCount: 3
+  semanticGroupRepresentativeLimit: 6
+  semanticGroupJoinAmbiguityMargin: 0.04
   bootstrapMinTraceCount: 3
   bootstrapMinCategoryDescriptorFit: 0.6
   bootstrapDuplicateSemanticThreshold: 0.96

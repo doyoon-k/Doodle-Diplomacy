@@ -26,6 +26,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private AudioSource _signalAudio;
         private AudioClip _signalBeep;
         private int _presentationBlockDepth;
+        private bool _narrativeCuesSuppressed;
 
         public bool IsBlocking => _presentationBlockDepth > 0;
         public FirstContactCalibrationProfile CalibrationProfile => _calibrationProfile;
@@ -121,8 +122,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void BeginSession()
         {
+            BeginSession(suppressNarrativeCues: false);
+        }
+
+        public void BeginSession(bool suppressNarrativeCues)
+        {
             StopAllCoroutines();
             _presentationBlockDepth = 0;
+            _narrativeCuesSuppressed = suppressNarrativeCues;
             _onboardingMemory.Reset();
             _calibrationProfile = FirstContactCalibrationStore.BeginNewSession();
             _context?.Services?.Register(_calibrationProfile);
@@ -134,10 +141,22 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             SetSignalLightIntensity(0f);
         }
 
+        public void BeginBriefingPracticeSession()
+        {
+            StopAllCoroutines();
+            _presentationBlockDepth = 0;
+            _narrativeCuesSuppressed = false;
+            _onboardingMemory.Reset();
+            _calibrationProfile = null;
+            _context?.SharedMonitorDisplay?.SetIdle();
+            SetSignalLightIntensity(0f);
+        }
+
         public void StopPresentation()
         {
             StopAllCoroutines();
             _presentationBlockDepth = 0;
+            _narrativeCuesSuppressed = false;
             _context?.Subtitles?.Hide();
             if (_context != null && _context.DialogueSystem != null)
             {
@@ -157,12 +176,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public bool ShouldShowGuidance(string guidanceId)
         {
             return _onboardingMemory.TryMarkFirst("guidance:" + (guidanceId ?? string.Empty));
-        }
-
-        public bool ShouldRunPreflightTutorial(bool isFirstPlay)
-        {
-            FirstContactNarrativeSettings settings = GetSettings();
-            return isFirstPlay && settings.enableEncounterOpening && settings.enablePreflightTutorial;
         }
 
         public IEnumerator PlayOpeningRoutine(bool isFirstPlay)
@@ -395,6 +408,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
+        public IEnumerator PlayBriefingPracticeCategoryCalibratedRoutine(
+            string categoryId,
+            string categoryDisplayName)
+        {
+            yield return PlayCueRoutine(
+                FirstContactEncounterCue.CategoryCalibrated,
+                L10n.Arg("category", LocalizeCategory(categoryId, categoryDisplayName)));
+        }
+
         public IEnumerator PlayBootstrapCalibratedRoutine()
         {
             yield return PlayCueRoutine(
@@ -445,6 +467,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactEncounterCue cue,
             params L10nArg[] args)
         {
+            if (_narrativeCuesSuppressed)
+            {
+                yield break;
+            }
+
             FirstContactNarrativeSettings settings = GetSettings();
             NarrativeScenarioAsset scenario = settings.narrativeScenario;
             NarrativeBeat beat = null;

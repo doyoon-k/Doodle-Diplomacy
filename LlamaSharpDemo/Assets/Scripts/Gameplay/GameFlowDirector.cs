@@ -49,6 +49,11 @@ namespace DoodleDiplomacy.Gameplay
 
         public void LoadEntry(int index)
         {
+            LoadEntry(index, GameplayModeExitReason.Replaced);
+        }
+
+        private void LoadEntry(int index, GameplayModeExitReason outgoingExitReason)
+        {
             if (gameFlow == null || gameFlow.entries == null)
             {
                 Debug.LogError("[GameFlowDirector] Game flow is not assigned.", this);
@@ -66,17 +71,22 @@ namespace DoodleDiplomacy.Gameplay
                 StopCoroutine(_loadRoutine);
             }
 
-            _loadRoutine = StartCoroutine(LoadEntryRoutine(index));
+            _loadRoutine = StartCoroutine(
+                LoadEntryRoutine(index, outgoingExitReason));
         }
 
         public void LoadNextEntry()
         {
-            LoadEntry(_currentEntryIndex + 1);
+            LoadEntry(
+                _currentEntryIndex + 1,
+                GameplayModeExitReason.Completed);
         }
 
         public void CompleteCurrentEntry()
         {
-            LoadNextEntry();
+            LoadEntry(
+                _currentEntryIndex + 1,
+                GameplayModeExitReason.Completed);
         }
 
         public void PreloadNextEntry()
@@ -116,7 +126,9 @@ namespace DoodleDiplomacy.Gameplay
                 PreloadEntryRoutine(nextIndex, definition));
         }
 
-        private IEnumerator LoadEntryRoutine(int index)
+        private IEnumerator LoadEntryRoutine(
+            int index,
+            GameplayModeExitReason outgoingExitReason)
         {
             if (!TryGetEntry(index, out FlowEntryDefinition definition))
             {
@@ -140,7 +152,7 @@ namespace DoodleDiplomacy.Gameplay
                     definition.sceneName,
                     System.StringComparison.Ordinal))
             {
-                gameplayModeHost.ExitActiveMode();
+                gameplayModeHost.ExitActiveMode(outgoingExitReason);
                 if (!TryEnterLoadedEntry(
                         index,
                         definition,
@@ -171,12 +183,15 @@ namespace DoodleDiplomacy.Gameplay
 
             if (usePreloadedScene)
             {
-                yield return ActivatePreloadedEntryRoutine(index, definition);
+                yield return ActivatePreloadedEntryRoutine(
+                    index,
+                    definition,
+                    outgoingExitReason);
                 _loadRoutine = null;
                 yield break;
             }
 
-            gameplayModeHost.ExitActiveMode();
+            gameplayModeHost.ExitActiveMode(outgoingExitReason);
 
             if (_loadedEntryScene.IsValid() && definition.unloadPreviousScene)
             {
@@ -277,7 +292,8 @@ namespace DoodleDiplomacy.Gameplay
 
         private IEnumerator ActivatePreloadedEntryRoutine(
             int index,
-            FlowEntryDefinition definition)
+            FlowEntryDefinition definition,
+            GameplayModeExitReason outgoingExitReason)
         {
             Scene previousScene = _loadedEntryScene;
             IGameplaySceneInstaller previousInstaller = previousScene.IsValid()
@@ -286,7 +302,7 @@ namespace DoodleDiplomacy.Gameplay
             object handoffState =
                 (previousInstaller as IGameplaySceneHandoff)?.CaptureHandoffState();
 
-            gameplayModeHost.ExitActiveMode();
+            gameplayModeHost.ExitActiveMode(outgoingExitReason);
             if (previousScene.IsValid() && definition.unloadPreviousScene)
             {
                 SuspendSceneRoots(previousScene, activeRoots: null);

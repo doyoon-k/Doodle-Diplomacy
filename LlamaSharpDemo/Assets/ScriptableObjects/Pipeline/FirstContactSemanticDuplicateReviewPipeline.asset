@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FirstContactSemanticDuplicateReviewPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: FirstContactSemanticDuplicateReviewPipeline
-  description: Reviews embedding gray-zone label pairs for concrete-subject equivalence.
+  description: Reviews embedding candidates for interchangeable concrete-subject names.
   steps:
   - stepName: FirstContactSemanticDuplicateReview
     stepKind: 0

@@ -90,26 +90,63 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         [Header("Labels")]
         public bool showMiniMapLabels = true;
+        [Tooltip("노드의 시각적 외곽과 아래쪽 라벨 사이의 기본 간격입니다.")]
         [Min(0f)] public float labelOffset = 12f;
         public FontStyles labelFontStyle = FontStyles.Bold;
-        public TextAlignmentOptions labelAlignment = TextAlignmentOptions.Left;
+        public TextAlignmentOptions labelAlignment = TextAlignmentOptions.Center;
         public bool labelAutoSizing = true;
         [Range(0.1f, 1f)] public float labelMinimumSizeRatio = 0.65f;
         [Min(1f)] public float labelMinimumFontSize = 5f;
         public TextOverflowModes labelOverflowMode = TextOverflowModes.Ellipsis;
         [Min(0f)] public float labelEdgePadding = 2f;
+        [Min(0f)] public float labelPreferredSizePadding = 4f;
         public Color activeLabelColor = new(0.95f, 1f, 0.68f, 0.98f);
         public Color clusterLabelColor = new(0.85f, 0.7f, 1f, 0.9f);
         public Color stableBootstrapCategoryLabelColor = new(0.98f, 0.9f, 0.48f, 0.96f);
         public Color bootstrapCategoryLabelColor = new(0.72f, 0.95f, 0.52f, 0.86f);
         public Color cardLabelColor = new(0.45f, 0.92f, 1f, 0.82f);
         public Color fallbackLabelColor = Color.white;
+        [HideInInspector]
         public Vector2 bootstrapDetachedLabelOffset = new(-4.2f, -0.25f);
+        [HideInInspector]
         public Vector2 bootstrapActiveLabelOffset = new(-2.8f, 1.05f);
+        [HideInInspector]
         public Vector2 bootstrapCardLabelOffset = new(-2.4f, 0.75f);
+        [HideInInspector]
         public Vector2 clusterLabelOffset = new(1f, -0.45f);
+        [HideInInspector]
         public Vector2 categoryLabelOffset = new(1.35f, -0.85f);
+        [HideInInspector]
         public Vector2 defaultLabelOffset = new(1f, 0f);
+
+        [Header("Screen-space Packing")]
+        [Tooltip("노드와 아래쪽 라벨을 하나의 화면 좌표 AABB로 취급해 겹침을 해소합니다.")]
+        public bool enableFootprintPacking = true;
+        [Range(1, 48)] public int footprintPackingIterations = 18;
+        [Min(0f)] public float footprintSpacing = 12f;
+        [Min(0f)] public float footprintBoundaryPadding = 4f;
+        [Range(0f, 0.25f)] public float footprintAnchorStrength = 0.035f;
+        [Min(0.01f)] public float footprintConvergenceEpsilon = 0.2f;
+
+        [Header("Response Channel Analyzer")]
+        [Tooltip("분석기 외곽과 패널 사이의 화면 좌표 여백입니다.")]
+        [Min(0f)] public float analyzerPanelPadding = 10f;
+        [Min(0f)] public float analyzerPanelGap = 8f;
+        [Range(0.2f, 0.48f)] public float analyzerDirectoryWidthRatio = 0.32f;
+        [Range(0.16f, 0.42f)] public float analyzerRecentProbeHeightRatio = 0.25f;
+        [Min(8f)] public float analyzerHeaderHeight = 28f;
+        [Range(1, 4)] public int analyzerTraceRows = 3;
+        [Range(1, 8)] public int analyzerMiniDirectoryRows = 3;
+        [Range(1, 12)] public int analyzerFullDirectoryRows = 6;
+        [Range(12, 72)] public int analyzerWaveformSamples = 36;
+        [Range(0.05f, 0.48f)] public float analyzerWaveformAmplitudeRatio = 0.3f;
+        [Min(0f)] public float analyzerPanelLineThickness = 1.25f;
+        [Min(0f)] public float analyzerWaveformThickness = 1.5f;
+        [Range(0f, 1f)] public float analyzerSelectionFillAlpha = 0.18f;
+        [Range(0f, 1f)] public float analyzerBaselineAlpha = 0.25f;
+        public Color analyzerPanelColor = new(0.18f, 0.78f, 0.34f, 0.62f);
+        public Color analyzerWaveformColor = new(0.42f, 1f, 0.55f, 0.92f);
+        public Color analyzerPatternColor = new(0.5f, 0.82f, 1f, 0.9f);
 
         [Header("Geometry Quality")]
         public FirstContactSemanticMapGeometryStyle geometry = new();
@@ -156,6 +193,26 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             labelMinimumSizeRatio = Mathf.Clamp(labelMinimumSizeRatio, 0.1f, 1f);
             labelMinimumFontSize = Mathf.Max(1f, labelMinimumFontSize);
             labelEdgePadding = Mathf.Max(0f, labelEdgePadding);
+            labelPreferredSizePadding = Mathf.Max(0f, labelPreferredSizePadding);
+            footprintPackingIterations = Mathf.Clamp(footprintPackingIterations, 1, 48);
+            footprintSpacing = Mathf.Max(0f, footprintSpacing);
+            footprintBoundaryPadding = Mathf.Max(0f, footprintBoundaryPadding);
+            footprintAnchorStrength = Mathf.Clamp(footprintAnchorStrength, 0f, 0.25f);
+            footprintConvergenceEpsilon = Mathf.Max(0.01f, footprintConvergenceEpsilon);
+            analyzerPanelPadding = Mathf.Max(0f, analyzerPanelPadding);
+            analyzerPanelGap = Mathf.Max(0f, analyzerPanelGap);
+            analyzerDirectoryWidthRatio = Mathf.Clamp(analyzerDirectoryWidthRatio, 0.2f, 0.48f);
+            analyzerRecentProbeHeightRatio = Mathf.Clamp(analyzerRecentProbeHeightRatio, 0.16f, 0.42f);
+            analyzerHeaderHeight = Mathf.Max(8f, analyzerHeaderHeight);
+            analyzerTraceRows = Mathf.Clamp(analyzerTraceRows, 1, 4);
+            analyzerMiniDirectoryRows = Mathf.Clamp(analyzerMiniDirectoryRows, 1, 8);
+            analyzerFullDirectoryRows = Mathf.Clamp(analyzerFullDirectoryRows, 1, 12);
+            analyzerWaveformSamples = Mathf.Clamp(analyzerWaveformSamples, 12, 72);
+            analyzerWaveformAmplitudeRatio = Mathf.Clamp(analyzerWaveformAmplitudeRatio, 0.05f, 0.48f);
+            analyzerPanelLineThickness = Mathf.Max(0f, analyzerPanelLineThickness);
+            analyzerWaveformThickness = Mathf.Max(0f, analyzerWaveformThickness);
+            analyzerSelectionFillAlpha = Mathf.Clamp01(analyzerSelectionFillAlpha);
+            analyzerBaselineAlpha = Mathf.Clamp01(analyzerBaselineAlpha);
             miniMap.Validate();
             fullMap.Validate();
             geometry.Validate();

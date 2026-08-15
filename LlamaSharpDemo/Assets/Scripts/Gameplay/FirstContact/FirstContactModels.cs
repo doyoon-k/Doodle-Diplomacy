@@ -11,6 +11,14 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         PreflightProbe
     }
 
+    public enum FirstContactSemanticGroupAssignmentState
+    {
+        Unprocessed,
+        NotApplicable,
+        Assigned,
+        Pending
+    }
+
     internal static class FirstContactTerminalLocalization
     {
         public static string LocalizeBootstrapCategory(string category)
@@ -100,6 +108,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public bool BootstrapCategoryDuplicate;
         public string DuplicateOfCardId;
         public string ClusterId;
+        public FirstContactSemanticGroupAssignmentState SemanticGroupAssignment;
         public int ProbeIndex;
 
         // Compatibility aliases for older callers and save migrations. The player-entered
@@ -134,14 +143,32 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public string Id;
         public readonly List<SemanticCardRecord> Members = new();
         public float[] Centroid;
+        // Internal classifier state. This must never be used as player-facing MEANING text.
+        public string CategoryHypothesis;
         public string ProvisionalName;
         public bool MeaningAssignedByPlayer;
         public bool IsStable;
         public float Cohesion;
+        public int Version;
+        public bool HasIntegrityConflict;
 
         public bool HasMeaning => !string.IsNullOrWhiteSpace(ProvisionalName);
         public bool RequiresMeaningAssignment => IsStable && !HasMeaning;
         public string DisplayName => HasMeaning ? ProvisionalName.Trim() : "[PATTERN-??]";
+    }
+
+    public readonly struct FirstContactSemanticGroupCandidate
+    {
+        public FirstContactSemanticGroupCandidate(
+            SemanticClusterRecord cluster,
+            float semanticSimilarity)
+        {
+            Cluster = cluster;
+            SemanticSimilarity = Mathf.Clamp(semanticSimilarity, -1f, 1f);
+        }
+
+        public SemanticClusterRecord Cluster { get; }
+        public float SemanticSimilarity { get; }
     }
 
     public readonly struct FirstContactClusterFormationEdge
@@ -254,8 +281,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             None,
             IdenticalImage,
-            SameLabelReuse,
-            StrongSemanticMatch
+            SameLabelReuse
         }
 
         public readonly struct MatchEvidence
@@ -314,9 +340,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 return false;
             }
 
-            float semanticThreshold = settings != null
-                ? settings.bootstrapDuplicateSemanticThreshold
-                : 0.96f;
             string candidateLabel = ResolveNormalizedLabel(candidate);
 
             for (int i = 0; i < recordedCards.Count; i++)
@@ -342,18 +365,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     return true;
                 }
 
-                if (embeddingService != null &&
-                    candidate.Embedding != null &&
-                    recorded.Embedding != null)
-                {
-                    float similarity = embeddingService.Similarity(candidate.Embedding, recorded.Embedding);
-                    if (similarity >= semanticThreshold)
-                    {
-                        duplicate = recorded;
-                        evidence = new MatchEvidence(MatchKind.StrongSemanticMatch, similarity);
-                        return true;
-                    }
-                }
             }
 
             return false;
@@ -378,7 +389,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             float reviewThreshold = Mathf.Min(
                 settings.bootstrapDuplicateSemanticReviewThreshold,
                 settings.bootstrapDuplicateSemanticThreshold);
-            float certainThreshold = settings.bootstrapDuplicateSemanticThreshold;
             for (int i = 0; i < recordedCards.Count; i++)
             {
                 SemanticCardRecord recorded = recordedCards[i];
@@ -389,7 +399,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 }
 
                 float similarity = embeddingService.Similarity(candidate.Embedding, recorded.Embedding);
-                if (similarity >= reviewThreshold && similarity < certainThreshold)
+                if (similarity >= reviewThreshold)
                 {
                     candidates.Add(new ReviewCandidate(recorded, similarity));
                 }

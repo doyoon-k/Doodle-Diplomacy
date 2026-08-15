@@ -38,6 +38,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private NavMeshAgent _agent;
         private bool _destinationAssigned;
         private bool _navigationFailureReported;
+        private bool _navigationSuspendedForScriptedMotion;
 
         public event Action<int> ReachedManualHoldPoint;
         public event Action<FirstContactIntroGuidePoint> ReachedNamedHoldPoint;
@@ -210,6 +211,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _moving = pathPoints != null && pathPoints.Length > 0;
             _destinationAssigned = false;
             _navigationFailureReported = false;
+            _navigationSuspendedForScriptedMotion = false;
 
             if (!_moving)
             {
@@ -247,6 +249,56 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             AssignCurrentDestination();
         }
 
+        /// <summary>
+        /// Temporarily releases this actor from its NavMeshAgent so an authored
+        /// sequence can move it without changing the current route/hold state.
+        /// </summary>
+        public void SuspendNavigationForScriptedMotion()
+        {
+            if (_navigationSuspendedForScriptedMotion)
+            {
+                return;
+            }
+
+            _navigationSuspendedForScriptedMotion = true;
+            DisableAgent();
+        }
+
+        /// <summary>
+        /// Restores NavMesh control after scripted movement while preserving
+        /// the route index and any narrative hold that was active beforehand.
+        /// </summary>
+        public bool ResumeNavigationAfterScriptedMotion()
+        {
+            if (!_navigationSuspendedForScriptedMotion)
+            {
+                return true;
+            }
+
+            _navigationSuspendedForScriptedMotion = false;
+            if (!Application.isPlaying || !_moving)
+            {
+                return true;
+            }
+
+            if (!ActivateAgent(transform.position))
+            {
+                _moving = false;
+                return false;
+            }
+
+            if (_waitingForRelease || _pauseRemaining > 0f)
+            {
+                SetAgentPaused(true);
+            }
+            else
+            {
+                AssignCurrentDestination();
+            }
+
+            return true;
+        }
+
         public void AddManualHoldPoint(int pointIndex)
         {
             if (pointIndex >= 0)
@@ -274,6 +326,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _waitingAtPoint = null;
             _player = null;
             _destinationAssigned = false;
+            _navigationSuspendedForScriptedMotion = false;
             DisableAgent();
             RestoreVisualForwardRotation();
         }

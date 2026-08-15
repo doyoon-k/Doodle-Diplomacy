@@ -62,6 +62,34 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             categories = bootstrapCategories;
             return true;
         }
+
+        public bool TryGetBootstrapCategory(
+            string categoryId,
+            out FirstContactBootstrapCategoryDefinition category)
+        {
+            category = null;
+            if (string.IsNullOrWhiteSpace(categoryId) ||
+                !TryGetBootstrapCategories(
+                    out IReadOnlyList<FirstContactBootstrapCategoryDefinition> categories,
+                    out _))
+            {
+                return false;
+            }
+
+            string normalizedId = categoryId.Trim();
+            for (int i = 0; i < categories.Count; i++)
+            {
+                FirstContactBootstrapCategoryDefinition candidate = categories[i];
+                if (candidate != null &&
+                    string.Equals(candidate.Id, normalizedId, StringComparison.Ordinal))
+                {
+                    category = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     [Serializable]

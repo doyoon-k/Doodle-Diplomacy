@@ -42,6 +42,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
     public sealed class FirstContactProbeProcessor
     {
+        private const int MaxSemanticGroupFitCacheEntries = 128;
+
         private static readonly JsonSerializerOptions PromptJsonOptions = new JsonSerializerOptions
         {
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -49,6 +51,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private readonly GamePipelineRunner _pipelineRunner;
         private readonly FirstContactVlmSettings _settings;
+        private readonly Dictionary<string, FirstContactSemanticGroupFitResult> _semanticGroupFitCache =
+            new(StringComparer.Ordinal);
+        private readonly Queue<string> _semanticGroupFitCacheOrder = new();
 
         public FirstContactProbeProcessor(
             GamePipelineRunner pipelineRunner,
@@ -280,9 +285,202 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 "Semantic duplicate review pipeline unstable."));
         }
 
+        public IEnumerator ChallengeSemanticDuplicate(
+            SemanticCardRecord left,
+            SemanticCardRecord right,
+            Action<FirstContactSemanticDuplicateChallengeResult> onComplete)
+        {
+            if (left == null || right == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticDuplicateChallengeResult.Failed(
+                    "Semantic duplicate challenge candidates are missing."));
+                yield break;
+            }
+
+            if (_settings?.semanticDuplicateChallengePipeline == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticDuplicateChallengeResult.Failed(
+                    "Semantic duplicate challenge pipeline is not assigned."));
+                yield break;
+            }
+
+            if (_pipelineRunner == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticDuplicateChallengeResult.Failed(
+                    "GamePipelineRunner is missing."));
+                yield break;
+            }
+
+            var state = new PipelineState();
+            state.SetString("left_label_json", SerializePromptLabel(ResolveOriginalLabel(left)));
+            state.SetString("right_label_json", SerializePromptLabel(ResolveOriginalLabel(right)));
+
+            bool done = false;
+            PipelineState finalState = null;
+            _pipelineRunner.RunPipeline(_settings.semanticDuplicateChallengePipeline, state, result =>
+            {
+                finalState = result;
+                done = true;
+            });
+            yield return new WaitUntil(() => done);
+
+            if (FirstContactSemanticDuplicateChallengeResult.TryFromPipelineState(
+                    finalState,
+                    out FirstContactSemanticDuplicateChallengeResult challengeResult))
+            {
+                onComplete?.Invoke(challengeResult);
+                yield break;
+            }
+
+            onComplete?.Invoke(challengeResult ?? FirstContactSemanticDuplicateChallengeResult.Failed(
+                "Semantic duplicate challenge pipeline unstable."));
+        }
+
+        public IEnumerator EvaluateSemanticGroupFit(
+            SemanticCardRecord card,
+            SemanticClusterRecord cluster,
+            IReadOnlyList<SemanticCardRecord> representativeMembers,
+            Action<FirstContactSemanticGroupFitResult> onComplete)
+        {
+            string existingCategory =
+                FirstContactSemanticCategory.Normalize(cluster?.CategoryHypothesis);
+            bool requiresCategorySeed = existingCategory.Length == 0;
+            if (card == null || cluster == null ||
+                (requiresCategorySeed &&
+                 (representativeMembers == null || representativeMembers.Count == 0)))
+            {
+                onComplete?.Invoke(FirstContactSemanticGroupFitResult.Failed(
+                    "Semantic group fit candidates are missing."));
+                yield break;
+            }
+
+            PromptPipelineAsset pipeline = requiresCategorySeed
+                ? _settings?.semanticGroupSeedPipeline
+                : _settings?.semanticGroupFitPipeline;
+            if (pipeline == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticGroupFitResult.Failed(
+                    requiresCategorySeed
+                        ? "Semantic group seed pipeline is not assigned."
+                        : "Semantic group membership pipeline is not assigned."));
+                yield break;
+            }
+
+            if (_pipelineRunner == null)
+            {
+                onComplete?.Invoke(FirstContactSemanticGroupFitResult.Failed(
+                    "GamePipelineRunner is missing."));
+                yield break;
+            }
+
+            string cacheKey = BuildSemanticGroupFitCacheKey(card, cluster);
+            if (_semanticGroupFitCache.TryGetValue(cacheKey, out FirstContactSemanticGroupFitResult cached))
+            {
+                onComplete?.Invoke(cached);
+                yield break;
+            }
+
+            var state = new PipelineState();
+            state.SetString("new_meaning_json", SerializePromptLabel(ResolveOriginalLabel(card)));
+            if (requiresCategorySeed)
+            {
+                state.SetString("existing_members_json", SerializePromptLabels(representativeMembers));
+            }
+            else
+            {
+                state.SetString(
+                    "existing_category_json",
+                    SerializePromptLabel(existingCategory));
+            }
+
+            bool done = false;
+            PipelineState finalState = null;
+            _pipelineRunner.RunPipeline(pipeline, state, result =>
+            {
+                finalState = result;
+                done = true;
+            });
+            yield return new WaitUntil(() => done);
+
+            FirstContactSemanticGroupFitResult fitResult;
+            bool parsed = requiresCategorySeed
+                ? FirstContactSemanticGroupFitResult.TryFromSeedPipelineState(
+                    finalState,
+                    out fitResult)
+                : FirstContactSemanticGroupFitResult.TryFromMembershipPipelineState(
+                    finalState,
+                    existingCategory,
+                    out fitResult);
+            if (parsed)
+            {
+                CacheSemanticGroupFit(cacheKey, fitResult);
+                onComplete?.Invoke(fitResult);
+                yield break;
+            }
+
+            onComplete?.Invoke(fitResult ?? FirstContactSemanticGroupFitResult.Failed(
+                requiresCategorySeed
+                    ? "Semantic group seed pipeline unstable."
+                    : "Semantic group membership pipeline unstable."));
+        }
+
         private static string SerializePromptLabel(string label)
         {
             return JsonSerializer.Serialize(label ?? string.Empty, PromptJsonOptions);
+        }
+
+        private static string SerializePromptLabels(IReadOnlyList<SemanticCardRecord> cards)
+        {
+            var labels = new List<string>(cards?.Count ?? 0);
+            if (cards != null)
+            {
+                for (int i = 0; i < cards.Count; i++)
+                {
+                    string label = ResolveOriginalLabel(cards[i]);
+                    if (!string.IsNullOrWhiteSpace(label))
+                    {
+                        labels.Add(label);
+                    }
+                }
+            }
+
+            return JsonSerializer.Serialize(labels, PromptJsonOptions);
+        }
+
+        private static string BuildSemanticGroupFitCacheKey(
+            SemanticCardRecord card,
+            SemanticClusterRecord cluster)
+        {
+            string label = NormalizeProbeLabel(ResolveOriginalLabel(card));
+            string clusterId = cluster?.Id?.Trim().ToLowerInvariant() ?? string.Empty;
+            string category = NormalizeProbeLabel(
+                FirstContactSemanticCategory.Normalize(cluster?.CategoryHypothesis));
+            return $"{label}\u001f{clusterId}\u001f{Math.Max(0, cluster?.Version ?? 0)}\u001f{category}";
+        }
+
+        private void CacheSemanticGroupFit(
+            string key,
+            FirstContactSemanticGroupFitResult result)
+        {
+            if (string.IsNullOrWhiteSpace(key) || result?.IsSuccess != true)
+            {
+                return;
+            }
+
+            if (_semanticGroupFitCache.ContainsKey(key))
+            {
+                _semanticGroupFitCache[key] = result;
+                return;
+            }
+
+            while (_semanticGroupFitCache.Count >= MaxSemanticGroupFitCacheEntries &&
+                   _semanticGroupFitCacheOrder.Count > 0)
+            {
+                _semanticGroupFitCache.Remove(_semanticGroupFitCacheOrder.Dequeue());
+            }
+
+            _semanticGroupFitCache[key] = result;
+            _semanticGroupFitCacheOrder.Enqueue(key);
         }
 
         public static string NormalizeProbeLabel(string label)

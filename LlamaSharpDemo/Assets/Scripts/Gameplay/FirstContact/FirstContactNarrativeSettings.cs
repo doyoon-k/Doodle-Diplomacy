@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DoodleDiplomacy.Data;
 using DoodleDiplomacy.Narrative;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
@@ -64,8 +65,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public bool playPlaceholderIntroMontage = true;
         [Tooltip("Create temporary doorway, neckties, and signal-light geometry when final art is unavailable.")]
         public bool createPlaceholderGeometry = true;
-        [Tooltip("Before the delegation enters, run the real drawing and label checks as a local preflight tutorial.")]
-        public bool enablePreflightTutorial = true;
+        [FormerlySerializedAs("enablePreflightTutorial")]
+        [Tooltip("During the Facility briefing, run a FOOD calibration with Doctor Hwang through the real probe pipeline.")]
+        public bool enableBriefingFoodPractice = true;
         [Min(0.1f)] public float placeholderIntroCardSeconds = 0.9f;
         [Min(0.1f)] public float delegationEntranceSeconds = 1.8f;
         [Min(0f)] public float delegationEntranceDistance = 1.75f;

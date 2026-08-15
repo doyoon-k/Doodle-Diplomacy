@@ -8,9 +8,20 @@ using UnityEngine.InputSystem;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
 {
+    public enum FirstContactSequenceExitDisposition
+    {
+        ResetToEntryState,
+        CommitForGameplayHandoff
+    }
+
     [DisallowMultipleComponent]
     public sealed class FirstContactIntroSequenceController : MonoBehaviour
     {
+        private const int BriefingPracticeLeadInLastOrder = 235;
+        private const int BriefingPracticeInterludeFirstOrder = 238;
+        private const int BriefingPracticeInterludeLastOrder = 325;
+        private const int BriefingPracticeDebriefFirstOrder = 330;
+
         [Serializable]
         private sealed class BriefingVisualCueEvent : UnityEvent<string>
         {
@@ -78,6 +89,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         [SerializeField, Min(0f)] private float briefingExitBlendSeconds = 0.55f;
         [Tooltip("Raised for BriefingSlide* runtime cues. Add the projector image swap here when slide resources are ready.")]
         [SerializeField] private BriefingVisualCueEvent briefingVisualCue = new();
+        [Header("Briefing Equipment")]
+        [Tooltip("Existing authored terminal and tablet roots. No equipment is instantiated at runtime.")]
+        [SerializeField] private Transform[] transferableEquipment = Array.Empty<Transform>();
+        [SerializeField] private Transform[] briefingEquipmentPoses = Array.Empty<Transform>();
+        [SerializeField] private Transform[] meetingEquipmentPoses = Array.Empty<Transform>();
+        [Tooltip("Authored world-space pickup poses followed by the director after the briefing.")]
+        [SerializeField] private Transform[] directorEquipmentPickupPath = Array.Empty<Transform>();
+        [Tooltip("Authored world-space pickup poses followed by Doctor Hwang after the briefing.")]
+        [SerializeField] private Transform[] hwangEquipmentPickupPath = Array.Empty<Transform>();
+        [Tooltip("One authored carry socket per transferable device, in matching order.")]
+        [SerializeField] private Transform[] equipmentCarrySockets = Array.Empty<Transform>();
+        [SerializeField, Min(0.1f)] private float equipmentPickupWalkSpeed = 2.1f;
+        [SerializeField, Min(0f)] private float equipmentPickupSeconds = 0.4f;
+        [SerializeField, Min(0f)] private float equipmentSetDownSeconds = 0.45f;
         [Header("Facility Meeting Room")]
         [SerializeField] private FirstContactMeetingArrivalController meetingArrival;
         [Tooltip("The same Doctor Hwang actor used during the Facility briefing.")]
@@ -137,11 +162,13 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private bool _receivedPersistentPlayerHandoff;
         private bool _surfaceVehicleExitCompleted;
         private bool _surfaceElevatorCalled;
+        private bool _introViewTemporarilyDisabled;
         private FirstContactIntroNarrativeZone _pizzaApproachZone;
         private FirstContactIntroNarrativeZone _citizenEncounterZone;
         private FirstContactIntroNarrativeZone _privateExchangeZone;
         private FirstContactIntroNarrativeZone _secretDoorRevealZone;
         private FirstContactIntroNarrativeZone _elevatorBoardZone;
+        private FirstContactEquipmentContinuity _equipmentContinuity;
 
         public bool IsBusy => _busy;
         public FirstContactIntroSegment Segment => segment;
@@ -149,6 +176,19 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public FirstContactIntroPlayerController Player => player;
         public FirstContactIntroGuideController Guide => guide;
         public Transform DoctorHwangActor => meetingHwangActor;
+        public IReadOnlyList<Transform> TransferableEquipment => transferableEquipment;
+        public IReadOnlyList<Transform> BriefingEquipmentPoses => briefingEquipmentPoses;
+        public IReadOnlyList<Transform> MeetingEquipmentPoses => meetingEquipmentPoses;
+        public IReadOnlyList<Transform> EquipmentCarrySockets => equipmentCarrySockets;
+        public IReadOnlyList<Transform> DirectorEquipmentPickupPath => directorEquipmentPickupPath;
+        public IReadOnlyList<Transform> HwangEquipmentPickupPath => hwangEquipmentPickupPath;
+
+        private FirstContactEquipmentContinuity EquipmentContinuity =>
+            _equipmentContinuity ??= new FirstContactEquipmentContinuity(
+                transferableEquipment,
+                briefingEquipmentPoses,
+                meetingEquipmentPoses,
+                equipmentCarrySockets);
 
         public void RebindMeetingCastContinuity()
         {
@@ -371,6 +411,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 #endif
         }
 
+        private void LateUpdate()
+        {
+            FollowCarriedEquipment();
+        }
+
         private void OnDisable()
         {
             UnsubscribeNewsPlaybackClock();
@@ -431,6 +476,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             else
             {
                 RebindMeetingCastContinuity();
+                ResetEquipmentToBriefingPose();
                 FirstContactTemporaryAudio.StartFacilityAmbience();
                 _facilityGuideAtBriefing = false;
                 _facilityCorridorDialogueComplete = false;
@@ -451,8 +497,15 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public void Stop()
         {
+            Stop(FirstContactSequenceExitDisposition.ResetToEntryState);
+        }
+
+        public void Stop(FirstContactSequenceExitDisposition disposition)
+        {
             _begun = false;
             _busy = false;
+            SetIntroViewTemporarilyDisabled(false);
+            player?.SetExternalPointerInputActive(false);
             if (_seatRoutine != null)
             {
                 StopCoroutine(_seatRoutine);
@@ -560,6 +613,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _surfaceVehicleExitCompleted = false;
             _surfaceElevatorCalled = false;
             _activeBriefingCameraAnchor = null;
+            if (segment == FirstContactIntroSegment.Facility)
+            {
+                if (disposition ==
+                    FirstContactSequenceExitDisposition.CommitForGameplayHandoff)
+                {
+                    EquipmentContinuity.CommitMeetingPlacement();
+                }
+                else
+                {
+                    ResetEquipmentToBriefingPose();
+                }
+            }
 
             UnsubscribeNewsPlaybackClock();
             FirstContactTemporaryAudio.StopSurfaceAudio();
@@ -714,7 +779,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private IEnumerator PlayDialogueEventRoutine(
             string triggerEvent,
             bool playWhileSequenceBusy = false,
-            bool preserveLastLineForSceneHandoff = false)
+            bool preserveLastLineForSceneHandoff = false,
+            int minimumOrder = int.MinValue,
+            int maximumOrder = int.MaxValue)
         {
             NarrativeScenarioAsset scenario = GetNarrativeScenario();
             if (scenario == null || string.IsNullOrWhiteSpace(triggerEvent))
@@ -732,7 +799,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     string.Equals(
                         beat.triggerEvent,
                         triggerEvent,
-                        StringComparison.OrdinalIgnoreCase))
+                        StringComparison.OrdinalIgnoreCase) &&
+                    beat.order >= minimumOrder &&
+                    beat.order <= maximumOrder)
                 {
                     _activeDialogueBeats.Add(beat);
                 }
@@ -1190,6 +1259,10 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             briefingPresentation?.EndPresentation();
             _activeBriefingCameraAnchor = null;
             player.RestoreView();
+            if (!AttachEquipmentToCarriersImmediate())
+            {
+                PlaceEquipmentAt(meetingEquipmentPoses);
+            }
             CompleteBriefingState(player, exitTarget);
 
             Debug.Log(
@@ -1499,6 +1572,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                     meetingHwangPose.position,
                     meetingHwangPose.rotation);
             }
+
+            yield return SetDownEquipmentInMeetingRoomRoutine();
         }
 
         private static void ApplyPoseProgress(
@@ -1838,11 +1913,87 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 _activeBriefingCameraAnchor = briefingWideCameraAnchor;
             }
 
+            bool shouldRunBriefingPractice =
+                mode?.ShouldRunBriefingFoodPractice() == true;
             yield return PlayDialogueEventRoutine(
                 "intro.facility.briefing",
-                playWhileSequenceBusy: true);
+                playWhileSequenceBusy: true,
+                maximumOrder: shouldRunBriefingPractice
+                    ? BriefingPracticeLeadInLastOrder
+                    : 230);
+
+            if (shouldRunBriefingPractice)
+            {
+                _dialogueDisplay?.Hide();
+                briefingPresentation?.EndPresentation();
+                _activeBriefingCameraAnchor = null;
+                yield return RunBriefingFoodPracticeSegmentRoutine(
+                    mode.PlayBriefingFoodPracticeFirstProbeRoutine());
+
+                if (!mode.BriefingPracticeInterludeReady)
+                {
+                    Debug.LogError(
+                        "[FirstContactIntro] Briefing practice did not record its first response; " +
+                        "the pattern briefing will not be played.",
+                        this);
+                    yield break;
+                }
+
+                briefingPresentation?.BeginPresentation();
+                if (briefingWideCameraAnchor != null)
+                {
+                    yield return sourcePlayer.BlendViewToAnchor(
+                        briefingWideCameraAnchor,
+                        briefingCameraBlendSeconds);
+                    _activeBriefingCameraAnchor = briefingWideCameraAnchor;
+                }
+
+                yield return PlayDialogueEventRoutine(
+                    "intro.facility.briefing",
+                    playWhileSequenceBusy: true,
+                    minimumOrder: BriefingPracticeInterludeFirstOrder,
+                    maximumOrder: BriefingPracticeInterludeLastOrder);
+
+                _dialogueDisplay?.Hide();
+                briefingPresentation?.EndPresentation();
+                _activeBriefingCameraAnchor = null;
+                yield return RunBriefingFoodPracticeSegmentRoutine(
+                    mode.ResumeBriefingFoodPracticeRoutine());
+
+                if (!mode.BriefingPracticeCompletedSuccessfully)
+                {
+                    Debug.LogError(
+                        "[FirstContactIntro] Briefing practice did not complete; " +
+                        "the post-practice briefing will not be played.",
+                        this);
+                    yield break;
+                }
+
+                briefingPresentation?.BeginPresentation();
+                if (briefingWideCameraAnchor != null)
+                {
+                    yield return sourcePlayer.BlendViewToAnchor(
+                        briefingWideCameraAnchor,
+                        briefingCameraBlendSeconds);
+                    _activeBriefingCameraAnchor = briefingWideCameraAnchor;
+                }
+            }
+            else
+            {
+                yield return PlayDialogueEventRoutine(
+                    "intro.facility.briefing",
+                    playWhileSequenceBusy: true,
+                    minimumOrder: 240,
+                    maximumOrder: 320);
+            }
+
+            yield return PlayDialogueEventRoutine(
+                "intro.facility.briefing",
+                playWhileSequenceBusy: true,
+                minimumOrder: BriefingPracticeDebriefFirstOrder);
 
             _dialogueDisplay?.Hide();
+            yield return PrepareEquipmentCarryRoutine();
             briefingPresentation?.EndPresentation();
             _activeBriefingCameraAnchor = null;
             yield return sourcePlayer.BlendToRestoredView(
@@ -1867,6 +2018,208 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 "Follow the director to the meeting room.");
             _busy = false;
             _seatRoutine = null;
+        }
+
+        private IEnumerator RunBriefingFoodPracticeSegmentRoutine(IEnumerator segmentRoutine)
+        {
+            player?.SetExternalPointerInputActive(true);
+            SetIntroViewTemporarilyDisabled(true);
+            try
+            {
+                if (segmentRoutine != null)
+                {
+                    yield return segmentRoutine;
+                }
+            }
+            finally
+            {
+                SetIntroViewTemporarilyDisabled(false);
+                player?.SetExternalPointerInputActive(false);
+            }
+        }
+
+        private void SetIntroViewTemporarilyDisabled(bool disabled)
+        {
+            if (player?.ViewCamera == null)
+            {
+                _introViewTemporarilyDisabled = false;
+                return;
+            }
+
+            if (disabled)
+            {
+                if (_introViewTemporarilyDisabled)
+                {
+                    return;
+                }
+
+                _introViewTemporarilyDisabled = true;
+                player.ViewCamera.gameObject.SetActive(false);
+                return;
+            }
+
+            if (_introViewTemporarilyDisabled)
+            {
+                player.ViewCamera.gameObject.SetActive(true);
+            }
+
+            _introViewTemporarilyDisabled = false;
+        }
+
+        private void PlaceEquipmentAt(IReadOnlyList<Transform> poses)
+        {
+            EquipmentContinuity.PlaceAt(poses);
+        }
+
+        private void ResetEquipmentToBriefingPose()
+        {
+            EquipmentContinuity.ResetToBriefingPlacement();
+        }
+
+        private IEnumerator PrepareEquipmentCarryRoutine()
+        {
+            if (!HasCompleteEquipmentCarryConfiguration())
+            {
+                Debug.LogError(
+                    "[FirstContactIntro] The briefing equipment carry sequence is not fully authored. " +
+                    "Falling back to the meeting equipment poses.",
+                    this);
+                PlaceEquipmentAt(meetingEquipmentPoses);
+                yield break;
+            }
+
+            guide.SuspendNavigationForScriptedMotion();
+            yield return MoveBriefingCastToEquipmentRoutine();
+            yield return MoveEquipmentToCarrySocketsRoutine();
+            guide.ResumeNavigationAfterScriptedMotion();
+        }
+
+        private IEnumerator MoveBriefingCastToEquipmentRoutine()
+        {
+            Transform director = guide != null ? guide.transform : null;
+            Transform hwang = meetingHwangActor;
+            int stageCount = Mathf.Max(
+                directorEquipmentPickupPath?.Length ?? 0,
+                hwangEquipmentPickupPath?.Length ?? 0);
+
+            for (int stage = 0; stage < stageCount; stage++)
+            {
+                Transform directorTarget = director != null &&
+                                           directorEquipmentPickupPath != null &&
+                                           stage < directorEquipmentPickupPath.Length
+                    ? directorEquipmentPickupPath[stage]
+                    : null;
+                Transform hwangTarget = hwang != null &&
+                                        hwangEquipmentPickupPath != null &&
+                                        stage < hwangEquipmentPickupPath.Length
+                    ? hwangEquipmentPickupPath[stage]
+                    : null;
+
+                Vector3 directorStartPosition = director != null
+                    ? director.position
+                    : Vector3.zero;
+                Quaternion directorStartRotation = director != null
+                    ? director.rotation
+                    : Quaternion.identity;
+                Vector3 hwangStartPosition = hwang != null
+                    ? hwang.position
+                    : Vector3.zero;
+                Quaternion hwangStartRotation = hwang != null
+                    ? hwang.rotation
+                    : Quaternion.identity;
+                float duration = Mathf.Max(
+                    directorTarget != null
+                        ? Vector3.Distance(directorStartPosition, directorTarget.position) /
+                          Mathf.Max(0.1f, equipmentPickupWalkSpeed)
+                        : 0f,
+                    hwangTarget != null
+                        ? Vector3.Distance(hwangStartPosition, hwangTarget.position) /
+                          Mathf.Max(0.1f, equipmentPickupWalkSpeed)
+                        : 0f);
+                float elapsed = 0f;
+
+                while (elapsed < duration)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    if (directorTarget != null)
+                    {
+                        ApplyPoseProgress(
+                            director,
+                            directorStartPosition,
+                            directorStartRotation,
+                            directorTarget,
+                            duration,
+                            elapsed);
+                    }
+
+                    if (hwangTarget != null)
+                    {
+                        ApplyPoseProgress(
+                            hwang,
+                            hwangStartPosition,
+                            hwangStartRotation,
+                            hwangTarget,
+                            duration,
+                            elapsed);
+                    }
+
+                    yield return null;
+                }
+
+                if (directorTarget != null)
+                {
+                    director.SetPositionAndRotation(
+                        directorTarget.position,
+                        directorTarget.rotation);
+                    guide.ApplyVisualForwardCorrection();
+                }
+
+                if (hwangTarget != null)
+                {
+                    hwang.SetPositionAndRotation(
+                        hwangTarget.position,
+                        hwangTarget.rotation);
+                }
+            }
+        }
+
+        private IEnumerator MoveEquipmentToCarrySocketsRoutine()
+        {
+            yield return EquipmentContinuity.MoveToCarrySocketsRoutine(
+                equipmentPickupSeconds);
+        }
+
+        private bool AttachEquipmentToCarriersImmediate()
+        {
+            return HasCompleteEquipmentCarryConfiguration() &&
+                   EquipmentContinuity.AttachToCarriersImmediate();
+        }
+
+        private IEnumerator SetDownEquipmentInMeetingRoomRoutine()
+        {
+            yield return EquipmentContinuity.SetDownInMeetingRoutine(
+                equipmentSetDownSeconds);
+        }
+
+        private void FollowCarriedEquipment()
+        {
+            _equipmentContinuity?.FollowCarriers();
+        }
+
+        private bool HasCompleteEquipmentCarryConfiguration()
+        {
+            if (!EquipmentContinuity.HasCompleteConfiguration ||
+                guide == null ||
+                meetingHwangActor == null ||
+                directorEquipmentPickupPath == null ||
+                directorEquipmentPickupPath.Length == 0 ||
+                hwangEquipmentPickupPath == null ||
+                hwangEquipmentPickupPath.Length == 0)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private void StartHwangMeetingApproach()

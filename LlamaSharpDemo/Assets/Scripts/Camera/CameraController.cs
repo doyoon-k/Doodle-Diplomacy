@@ -160,6 +160,18 @@ namespace DoodleDiplomacy.Camera
             return GetModeCamera(mode) != null;
         }
 
+        public void RefreshAuthoredCameraPoses()
+        {
+            CinemachineCamera authoredFreeLookCamera = GetModeCamera(CameraMode.FreeLook);
+            if (authoredFreeLookCamera != null)
+            {
+                _freeLookAuthoredRotation = authoredFreeLookCamera.transform.rotation;
+            }
+
+            ResetHoverFocusState();
+            brain?.ResetState();
+        }
+
         public bool ValidateConfiguration(bool logErrors = true)
         {
             ResolveOutputReferences();
@@ -189,6 +201,19 @@ namespace DoodleDiplomacy.Camera
                 }
             }
 
+            valid &= ValidateStableShotHierarchy(logErrors);
+            return valid;
+        }
+
+        public bool ValidateStableShotHierarchy(bool logErrors = true)
+        {
+            bool valid = true;
+            valid &= ValidateStableShotCamera(defaultCamera, CameraMode.Default, logErrors);
+            valid &= ValidateStableShotCamera(freeLookCamera, CameraMode.FreeLook, logErrors);
+            valid &= ValidateStableShotCamera(
+                alienReactionCamera,
+                CameraMode.AlienReaction,
+                logErrors);
             return valid;
         }
 
@@ -203,6 +228,27 @@ namespace DoodleDiplomacy.Camera
             {
                 brain = targetCamera.GetComponent<CinemachineBrain>();
             }
+        }
+
+        private bool ValidateStableShotCamera(
+            CinemachineCamera shotCamera,
+            CameraMode mode,
+            bool logErrors)
+        {
+            if (shotCamera == null || shotCamera.transform.IsChildOf(transform))
+            {
+                return true;
+            }
+
+            if (logErrors)
+            {
+                Debug.LogError(
+                    $"[CameraController] The fixed {mode} camera must remain under " +
+                    "the stable camera rig instead of a moving actor or prop.",
+                    shotCamera);
+            }
+
+            return false;
         }
 
         private void ActivateInitialMode()

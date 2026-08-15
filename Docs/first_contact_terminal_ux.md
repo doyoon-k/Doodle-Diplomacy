@@ -236,6 +236,25 @@ CALIBRATION COMPLETE
 PRESS ENTER TO CONTINUE
 ```
 
+### Response Channel Analyzer
+
+The persistent semantic display is a response-channel analyzer, not a spatial node map. It uses fixed panels so channel membership cannot be mistaken for geometric containment.
+
+```text
+[RESPONSE ANALYZER / CH-01]       [CHANNEL DIRECTORY 01/03]
+01  FIRE      ~~~/\/~~~~          > CH-01  THREAT  02/03
+02  KNIFE     ~/\~~/\~~~            CH-02  FOOD    01/03
+03  BOMB      ~~\/~~~~~~             PT-01  [PATTERN-??]
+
+[RECENT PROBE]
+PROBE: HAND  |  CATEGORY: THREAT  |  TRACE: NO MATCH  ->  PATTERN: [PATTERN-??]
+```
+
+- The waveform area shows only accepted members of the active `CATEGORY` or `PATTERN` channel.
+- An off-category probe appears in `RECENT PROBE` and routes to a separate `PATTERN`; it never appears as a trace inside the active category channel.
+- The directory is paged and automatically follows the active channel. Do not shrink rows or render every accumulated channel at once.
+- Keep visible work bounded: at most three waveform rows and six full-view directory rows (three in the mini view).
+
 ### New Response Pattern
 
 Shown when off-category probes form a stable response pattern that is not connected to a known bootstrap meaning. This does not advance the active `CATEGORY` calibration.

@@ -16,6 +16,12 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         public PromptPipelineAsset bootstrapCategoryFitPipeline;
         [Tooltip("임베딩 점수가 중간 구간인 가까운 라벨 두 개가 같은 구체적 의미인지 제한적으로 확인하는 파이프라인입니다.")]
         public PromptPipelineAsset semanticDuplicateReviewPipeline;
+        [Tooltip("두 라벨이 등가 명칭으로 판단됐을 때, 서로 다른 구체 대상이 존재하는지 반증하는 파이프라인입니다.")]
+        public PromptPipelineAsset semanticDuplicateChallengePipeline;
+        [Tooltip("내부 CATEGORY가 아직 없는 PATTERN GROUP과 새 MEANING에서 공유 CATEGORY를 유도하는 파이프라인입니다.")]
+        public PromptPipelineAsset semanticGroupSeedPipeline;
+        [Tooltip("새 MEANING이 PATTERN GROUP의 확정된 내부 CATEGORY에 속하는지 판정하는 파이프라인입니다.")]
+        public PromptPipelineAsset semanticGroupFitPipeline;
         [Tooltip("VLM 파이프라인에 그림 이미지를 넣을 때 사용할 state key입니다.")]
         public string imageStateKey = "reference_image";
         [Tooltip("PNG 캡처가 일시적으로 실패했을 때 내부적으로 다시 시도할 횟수입니다. 플레이어에게는 표시하지 않습니다.")]

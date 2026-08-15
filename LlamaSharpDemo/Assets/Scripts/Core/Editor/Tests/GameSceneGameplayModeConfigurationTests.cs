@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using DoodleDiplomacy.Camera;
 using DoodleDiplomacy.Devices;
@@ -20,7 +21,11 @@ namespace DoodleDiplomacy.Core.Editor.Tests
         private const string GameScenePath = "Assets/Scenes/GameScene.unity";
         private const string IntroSurfaceScenePath = "Assets/Scenes/FirstContact/FC_Intro_Surface.unity";
         private const string IntroFacilityScenePath = "Assets/Scenes/FirstContact/FC_Intro_Facility.unity";
+        private const string GameplayTestScenePath =
+            "Assets/Scenes/FirstContact/FC_Gameplay_Test.unity";
         private const string GameFlowPath = "Assets/Data/FirstContact/FirstContactGameFlow.asset";
+        private const string FirstContactModeConfigPath =
+            "Assets/Data/FirstContact/FirstContactModeConfig.asset";
         private const string NarrativeScenarioPath =
             "Assets/Generated/Narrative/first_contact_day1.asset";
 
@@ -472,13 +477,29 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.IsFalse(
                 flow.entries[2].unloadPreviousScene,
                 "The in-scene meeting transition must not request a scene unload.");
-            Assert.IsTrue(flow.entries[2].startSessionWithIntro, "Dr. Hwang's preflight tutorial must still run after the completed 3D intro.");
+            Assert.IsTrue(flow.entries[2].startSessionWithIntro, "The delegation session must still play its authored opening after the completed 3D intro.");
+
+            FirstContactModeConfig modeConfig =
+                AssetDatabase.LoadAssetAtPath<FirstContactModeConfig>(FirstContactModeConfigPath);
+            Assert.IsNotNull(modeConfig);
+            Assert.IsTrue(modeConfig.TryGetBootstrapCategories(
+                out IReadOnlyList<FirstContactBootstrapCategoryDefinition> categories,
+                out string categoryError), categoryError);
+            CollectionAssert.AreEqual(
+                new[] { "danger", "protection", "food", "tool" },
+                categories.Select(category => category.Id).ToArray(),
+                "The delegation must still begin at DANGER and use the authored four-CATEGORY order.");
+            Assert.IsTrue(modeConfig.TryGetBootstrapCategory("food", out _));
+            Assert.AreEqual(
+                3,
+                modeConfig.semanticSettings.bootstrapMinTraceCount,
+                "Briefing FOOD practice and delegation categories must use the same 00/03 stability target.");
 
             var narrativeSettings = AssetDatabase.LoadAssetAtPath<FirstContactNarrativeSettings>(
                 "Assets/Data/FirstContact/FirstContactNarrativeSettings.asset");
             Assert.IsNotNull(narrativeSettings);
             Assert.IsFalse(narrativeSettings.playPlaceholderIntroMontage, "The 3D intro replaces only the old placeholder montage.");
-            Assert.IsTrue(narrativeSettings.enablePreflightTutorial, "The terminal preflight tutorial must remain enabled.");
+            Assert.IsTrue(narrativeSettings.enableBriefingFoodPractice, "Dr. Hwang's FOOD practice must remain enabled during the Facility briefing.");
         }
 
         [Test]
@@ -521,6 +542,30 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             AssertSceneEnabled(GameRootScenePath);
             AssertSceneEnabled(IntroSurfaceScenePath);
             AssertSceneEnabled(IntroFacilityScenePath);
+        }
+
+        [Test]
+        public void GameplayTestSceneLaunchesCanonicalFacilityAndStaysOutOfReleaseBuild()
+        {
+            Assert.IsNotNull(
+                AssetDatabase.LoadAssetAtPath<SceneAsset>(GameplayTestScenePath),
+                "The direct First Contact gameplay test scene must exist.");
+
+            Scene testScene = EditorSceneManager.OpenScene(GameplayTestScenePath);
+            GameTestStarter launcher = FindComponentInScene<GameTestStarter>(testScene);
+            Assert.IsNotNull(launcher);
+
+            var serializedLauncher = new SerializedObject(launcher);
+            Assert.AreEqual(
+                "FC_Intro_Facility",
+                serializedLauncher.FindProperty("firstContactFacilitySceneName").stringValue,
+                "The test entry must load the canonical Facility instead of a copied environment.");
+            Assert.IsTrue(
+                serializedLauncher.FindProperty("launchFirstContactFacilityGameplay").boolValue);
+            Assert.IsFalse(
+                EditorBuildSettings.scenes.Any(scene =>
+                    string.Equals(scene.path, GameplayTestScenePath, System.StringComparison.Ordinal)),
+                "The editor-only test scene must not be included in release Build Settings.");
         }
 
         [Test]
@@ -613,6 +658,161 @@ namespace DoodleDiplomacy.Core.Editor.Tests
                 Object.FindFirstObjectByType<FirstContactIntroSequenceController>(
                     FindObjectsInactive.Include);
             Assert.IsNotNull(introSequence);
+            Assert.AreEqual(2, introSequence.TransferableEquipment.Count);
+            Assert.AreEqual(2, introSequence.BriefingEquipmentPoses.Count);
+            Assert.AreEqual(2, introSequence.MeetingEquipmentPoses.Count);
+            Assert.IsTrue(introSequence.TransferableEquipment.All(item => item != null));
+            Assert.IsTrue(introSequence.BriefingEquipmentPoses.All(item => item != null));
+            Assert.IsTrue(introSequence.MeetingEquipmentPoses.All(item => item != null));
+            Assert.AreEqual("BriefingTerminalPose", introSequence.BriefingEquipmentPoses[0].name);
+            Assert.AreEqual("BriefingTabletPose", introSequence.BriefingEquipmentPoses[1].name);
+            Assert.AreEqual("MeetingTerminalPose", introSequence.MeetingEquipmentPoses[0].name);
+            Assert.AreEqual("MeetingTabletPose", introSequence.MeetingEquipmentPoses[1].name);
+            Assert.AreEqual(2, introSequence.EquipmentCarrySockets.Count);
+            Assert.AreEqual(2, introSequence.DirectorEquipmentPickupPath.Count);
+            Assert.AreEqual(2, introSequence.HwangEquipmentPickupPath.Count);
+            Assert.IsTrue(introSequence.EquipmentCarrySockets.All(item => item != null));
+            Assert.IsTrue(introSequence.DirectorEquipmentPickupPath.All(item => item != null));
+            Assert.IsTrue(introSequence.HwangEquipmentPickupPath.All(item => item != null));
+            Assert.IsTrue(
+                introSequence.EquipmentCarrySockets[0].IsChildOf(introSequence.Guide.transform),
+                "The terminal carry socket must travel with the persistent director actor.");
+            Assert.IsTrue(
+                introSequence.EquipmentCarrySockets[1].IsChildOf(introSequence.DoctorHwangActor),
+                "The tablet carry socket must travel with the same Doctor Hwang actor used in the briefing.");
+            for (int i = 0; i < introSequence.TransferableEquipment.Count; i++)
+            {
+                Assert.That(
+                    Vector3.Distance(
+                        introSequence.TransferableEquipment[i].position,
+                        introSequence.BriefingEquipmentPoses[i].position),
+                    Is.LessThan(0.001f),
+                    "The saved scene must begin with the existing equipment on the briefing table.");
+                Assert.That(
+                    Quaternion.Angle(
+                        introSequence.TransferableEquipment[i].rotation,
+                        introSequence.BriefingEquipmentPoses[i].rotation),
+                    Is.LessThan(0.01f),
+                    "The saved equipment must begin facing the authored briefing pose.");
+                Assert.That(
+                    Vector3.Distance(
+                        introSequence.BriefingEquipmentPoses[i].position,
+                        introSequence.MeetingEquipmentPoses[i].position),
+                    Is.GreaterThan(10f),
+                    "Each existing device needs a distinct authored meeting-table destination.");
+
+                foreach (Transform equipmentPart in
+                         introSequence.TransferableEquipment[i]
+                             .GetComponentsInChildren<Transform>(true))
+                {
+                    Assert.AreEqual(
+                        0,
+                        (int)GameObjectUtility.GetStaticEditorFlags(equipmentPart.gameObject),
+                        $"Moving briefing equipment cannot be static: {equipmentPart.name}");
+                }
+            }
+
+            FirstContactIntroInteractable briefingSeat = Object
+                .FindObjectsByType<FirstContactIntroInteractable>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None)
+                .Single(item => item.Action == FirstContactIntroInteractionAction.TakeBriefingSeat);
+            FirstContactIntroInteractable meetingSeat = Object
+                .FindObjectsByType<FirstContactIntroInteractable>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None)
+                .Single(item => item.Action == FirstContactIntroInteractionAction.TakeMeetingSeat);
+            Vector3 briefingForward = Vector3.ProjectOnPlane(
+                briefingSeat.Target.forward,
+                Vector3.up).normalized;
+            Vector3 briefingRight = Vector3.ProjectOnPlane(
+                briefingSeat.Target.right,
+                Vector3.up).normalized;
+            Vector3 meetingForward = Vector3.ProjectOnPlane(
+                meetingSeat.Target.forward,
+                Vector3.up).normalized;
+            Vector3 meetingRight = Vector3.ProjectOnPlane(
+                meetingSeat.Target.right,
+                Vector3.up).normalized;
+            Quaternion meetingToBriefing = Quaternion.FromToRotation(
+                meetingForward,
+                briefingForward);
+            for (int i = 0; i < introSequence.BriefingEquipmentPoses.Count; i++)
+            {
+                Transform meetingPose = introSequence.MeetingEquipmentPoses[i];
+                Transform briefingPose = introSequence.BriefingEquipmentPoses[i];
+                Vector3 meetingOffset = meetingPose.position - meetingSeat.Target.position;
+                float lateral = Vector3.Dot(meetingOffset, meetingRight);
+                float depth = Vector3.Dot(meetingOffset, meetingForward);
+                Vector3 expectedBriefingPosition = briefingSeat.Target.position +
+                                                   briefingRight * lateral +
+                                                   briefingForward * depth;
+                expectedBriefingPosition.y = briefingPose.position.y;
+
+                Assert.That(
+                    Vector3.Distance(briefingPose.position, expectedBriefingPosition),
+                    Is.LessThan(0.01f),
+                    "Briefing equipment must preserve the meeting-table left/right layout " +
+                    "relative to the briefing seat.");
+                Assert.That(
+                    Quaternion.Angle(
+                        briefingPose.rotation,
+                        meetingToBriefing * meetingPose.rotation),
+                    Is.LessThan(0.05f),
+                    "Briefing equipment must face the briefing seat instead of retaining " +
+                    "the meeting-room orientation.");
+            }
+            CameraController equipmentCameraController =
+                Object.FindFirstObjectByType<CameraController>(FindObjectsInactive.Include);
+            Assert.IsNotNull(equipmentCameraController);
+            var serializedEquipmentCamera = new SerializedObject(equipmentCameraController);
+            Transform tabletViewCamera = (serializedEquipmentCamera
+                .FindProperty("tabletViewCamera").objectReferenceValue as Component)?.transform;
+            Transform terminalViewCamera = (serializedEquipmentCamera
+                .FindProperty("terminalZoomCamera").objectReferenceValue as Component)?.transform;
+            Transform alienReactionCamera = (serializedEquipmentCamera
+                .FindProperty("alienReactionCamera").objectReferenceValue as Component)?.transform;
+            Assert.IsNotNull(tabletViewCamera);
+            Assert.IsNotNull(terminalViewCamera);
+            Assert.IsNotNull(alienReactionCamera);
+            Assert.IsTrue(
+                tabletViewCamera.IsChildOf(introSequence.TransferableEquipment[1]),
+                "The existing tablet view must travel with the authored tablet during briefing practice.");
+            Assert.IsTrue(
+                terminalViewCamera.IsChildOf(introSequence.TransferableEquipment[0]),
+                "The existing terminal view must travel with the authored terminal during briefing practice.");
+            Assert.IsTrue(
+                alienReactionCamera.IsChildOf(equipmentCameraController.transform),
+                "The fixed alien-reaction shot must stay under the stable gameplay camera rig.");
+            Assert.IsTrue(
+                equipmentCameraController.ValidateStableShotHierarchy(logErrors: false),
+                "Fixed gameplay shots cannot inherit motion from actors or props.");
+            Assert.AreEqual(4, installer.TransferableGameplayCameras.Count);
+            Assert.AreEqual(4, installer.BriefingGameplayCameraPoses.Count);
+            Assert.AreEqual(4, installer.MeetingGameplayCameraPoses.Count);
+            Assert.IsTrue(installer.TransferableGameplayCameras.All(item => item != null));
+            Assert.IsTrue(installer.BriefingGameplayCameraPoses.All(item => item != null));
+            Assert.IsTrue(installer.MeetingGameplayCameraPoses.All(item => item != null));
+            for (int i = 0; i < installer.TransferableGameplayCameras.Count; i++)
+            {
+                Transform gameplayCamera = installer.TransferableGameplayCameras[i];
+                Transform briefingPose = installer.BriefingGameplayCameraPoses[i];
+                Transform meetingPose = installer.MeetingGameplayCameraPoses[i];
+                Assert.That(
+                    Vector3.Distance(gameplayCamera.position, meetingPose.position),
+                    Is.LessThan(0.01f),
+                    $"The saved gameplay camera {gameplayCamera.name} must retain its meeting-room pose.");
+                Assert.That(
+                    Quaternion.Angle(gameplayCamera.rotation, meetingPose.rotation),
+                    Is.LessThan(0.05f),
+                    $"The saved gameplay camera {gameplayCamera.name} must retain its meeting-room rotation.");
+                Assert.That(
+                    Vector3.Distance(briefingPose.position, meetingPose.position),
+                    Is.GreaterThan(10f),
+                    "Each stationary gameplay camera needs distinct authored poses for both rooms.");
+                Assert.That(briefingPose.position.z, Is.InRange(34f, 39f));
+                Assert.That(meetingPose.position.z, Is.InRange(50f, 57f));
+            }
             var serializedIntroSequence = new SerializedObject(introSequence);
             Assert.IsTrue(
                 serializedIntroSequence.FindProperty("enableDebugShortcuts").boolValue);
@@ -649,6 +849,9 @@ namespace DoodleDiplomacy.Core.Editor.Tests
             Assert.AreEqual(
                 "intro.facility.briefing",
                 finalBriefingBeat.triggerEvent);
+            Assert.AreEqual(
+                "In any case, we can move on when you are ready.",
+                finalBriefingBeat.sourceText);
         }
 
         private static void AssertSceneEnabled(string scenePath)

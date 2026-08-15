@@ -13,16 +13,14 @@ MonoBehaviour:
   m_Name: FirstContactBootstrapCategoryFitPipeline
   m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
   displayName: FirstContactBootstrapCategoryFitPipeline
-  description: First Contact bootstrap category judge. Checks whether a concrete
-    probe label reasonably fits the current CATEGORY.
+  description: First Contact bootstrap category judge. Checks strict membership
+    of a concrete probe label in the current CATEGORY.
   steps:
   - stepName: FirstContactBootstrapCategoryFit
     stepKind: 0
     llmProfile: {fileID: 11400000, guid: 7b71e3b89bb347b4b8e226c42e178c1c, type: 2}
     embeddingProfile: {fileID: 0}
-    userPromptTemplate: 'CATEGORY_NAME: {{category_display_name}}
-
-      CATEGORY_DEFINITION:
+    userPromptTemplate: 'CATEGORY_DEFINITION:
       {{category_definition}}
 
       SUBJECT_LABEL_JSON: {{probe_display_label_json}}'

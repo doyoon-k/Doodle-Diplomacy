@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using DoodleDiplomacy.Devices;
 using UnityEngine;
@@ -11,10 +10,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private readonly FirstContactEmbeddingService _embeddingService;
         private readonly FirstContactSemanticSettings _settings;
         private readonly FirstContactDebugSettings _debugSettings;
-        private readonly IReadOnlyList<FirstContactBootstrapCategoryDefinition> _bootstrapCategories;
         private readonly List<SemanticCardRecord> _cards = new();
         private readonly List<SemanticClusterRecord> _clusters = new();
-        private FirstContactClusterFormationEdge[] _lastFormationEdges = Array.Empty<FirstContactClusterFormationEdge>();
+        private readonly List<SemanticCardRecord> _pendingCards = new();
+        private FirstContactClusterFormationEdge[] _lastFormationEdges =
+            Array.Empty<FirstContactClusterFormationEdge>();
 
         private int _nextCardIndex = 1;
         private int _nextClusterIndex = 1;
@@ -28,11 +28,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _embeddingService = embeddingService;
             _settings = settings;
             _debugSettings = debugSettings;
-            _bootstrapCategories = bootstrapCategories ?? Array.Empty<FirstContactBootstrapCategoryDefinition>();
         }
 
         public IReadOnlyList<SemanticCardRecord> Cards => _cards;
         public IReadOnlyList<SemanticClusterRecord> Clusters => _clusters;
+        public IReadOnlyList<SemanticCardRecord> PendingCards => _pendingCards;
         public IReadOnlyList<FirstContactClusterFormationEdge> LastFormationEdges => _lastFormationEdges;
 
         public IReadOnlyList<SemanticClusterRecord> StableClusters
@@ -52,35 +52,189 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
-        public void AddCard(SemanticCardRecord card)
+        public void RegisterAcceptedCard(SemanticCardRecord card)
         {
-            if (card == null)
+            if (!RegisterCard(card))
             {
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(card.Id))
+            card.ClusterId = string.Empty;
+            card.SemanticGroupAssignment = FirstContactSemanticGroupAssignmentState.NotApplicable;
+            _lastFormationEdges = Array.Empty<FirstContactClusterFormationEdge>();
+            LogAssignment(card, null, "CATEGORY");
+        }
+
+        public SemanticClusterRecord CreateDetachedGroup(SemanticCardRecord card)
+        {
+            if (!RegisterCard(card))
             {
-                card.Id = $"CARD-{_nextCardIndex:000}";
+                return FindCluster(card?.ClusterId);
             }
 
-            _nextCardIndex++;
-            _cards.Add(card);
+            SemanticClusterRecord cluster = CreateCluster();
+            AddMember(cluster, card);
+            _clusters.Add(cluster);
+            _lastFormationEdges = Array.Empty<FirstContactClusterFormationEdge>();
+            LogAssignment(card, cluster, "NEW");
+            return cluster;
+        }
 
-            if (card.Embedding == null || card.Embedding.Length == 0 || _embeddingService == null)
+        public SemanticClusterRecord JoinDetachedGroup(
+            SemanticCardRecord card,
+            SemanticClusterRecord targetCluster,
+            float semanticSimilarity,
+            string categoryHypothesis = null)
+        {
+            SemanticClusterRecord cluster = ResolveOwnedCluster(targetCluster);
+            if (cluster == null || !RegisterCard(card))
+            {
+                return cluster;
+            }
+
+            SemanticCardRecord edgeMember = FindClosestMember(card, cluster);
+            string storedCategory =
+                FirstContactSemanticCategory.Normalize(cluster.CategoryHypothesis);
+            if (storedCategory.Length > 0)
+            {
+                cluster.CategoryHypothesis = storedCategory;
+            }
+            else
+            {
+                string joinedCategory =
+                    FirstContactSemanticCategory.Normalize(categoryHypothesis);
+                if (joinedCategory.Length > 0)
+                {
+                    cluster.CategoryHypothesis = joinedCategory;
+                }
+            }
+            AddMember(cluster, card);
+            _lastFormationEdges = edgeMember == null
+                ? Array.Empty<FirstContactClusterFormationEdge>()
+                : new[]
+                {
+                    new FirstContactClusterFormationEdge(
+                        FirstContactSemanticMapLayout.BuildCardNodeId(card),
+                        FirstContactSemanticMapLayout.BuildCardNodeId(edgeMember),
+                        semanticSimilarity,
+                        confirmed: true)
+                };
+            LogAssignment(card, cluster, "JOIN");
+            return cluster;
+        }
+
+        public void RegisterPendingCard(
+            SemanticCardRecord card,
+            IReadOnlyList<FirstContactSemanticGroupCandidate> candidates,
+            IReadOnlyList<SemanticClusterRecord> integrityConflictClusters = null)
+        {
+            if (!RegisterCard(card))
             {
                 return;
             }
 
-            RebuildClustersFromGraph(card);
-            SemanticClusterRecord cluster = FindCluster(card.ClusterId);
+            card.ClusterId = string.Empty;
+            card.SemanticGroupAssignment = FirstContactSemanticGroupAssignmentState.Pending;
+            _pendingCards.Add(card);
+            _lastFormationEdges = BuildCandidateEdges(card, candidates);
 
-            if (_debugSettings != null && _debugSettings.logClusterUpdates)
+            if (integrityConflictClusters != null)
             {
-                Debug.Log(
-                    $"[FirstContactSemanticMemory] Card '{card.OriginalLabel}' mapped to {cluster?.Id ?? "NO-CLUSTER"} " +
-                    $"members={cluster?.Members.Count ?? 0} stable={cluster?.IsStable ?? false}");
+                for (int i = 0; i < integrityConflictClusters.Count; i++)
+                {
+                    if (integrityConflictClusters[i] != null)
+                    {
+                        integrityConflictClusters[i].HasIntegrityConflict = true;
+                        integrityConflictClusters[i].IsStable = false;
+                    }
+                }
             }
+
+            LogAssignment(
+                card,
+                null,
+                integrityConflictClusters?.Count > 1 ? "PENDING-CONFLICT" : "PENDING");
+        }
+
+        public IReadOnlyList<FirstContactSemanticGroupCandidate> FindGroupCandidates(
+            SemanticCardRecord card,
+            int maximumCandidates)
+        {
+            var candidates = new List<FirstContactSemanticGroupCandidate>();
+            if (card?.Embedding == null || card.Embedding.Length == 0 || _embeddingService == null)
+            {
+                return candidates;
+            }
+
+            for (int i = 0; i < _clusters.Count; i++)
+            {
+                SemanticClusterRecord cluster = _clusters[i];
+                if (cluster == null || cluster.Members.Count == 0)
+                {
+                    continue;
+                }
+
+                float similarity = cluster.Centroid != null
+                    ? _embeddingService.Similarity(card.Embedding, cluster.Centroid)
+                    : FindBestMemberSimilarity(card, cluster);
+                candidates.Add(new FirstContactSemanticGroupCandidate(cluster, similarity));
+            }
+
+            candidates.Sort((left, right) =>
+                right.SemanticSimilarity.CompareTo(left.SemanticSimilarity));
+            int limit = Mathf.Max(1, maximumCandidates);
+            if (candidates.Count > limit)
+            {
+                candidates.RemoveRange(limit, candidates.Count - limit);
+            }
+
+            return candidates;
+        }
+
+        public IReadOnlyList<SemanticCardRecord> BuildRepresentativeMembers(
+            SemanticClusterRecord cluster,
+            int maximumMembers)
+        {
+            var representatives = new List<SemanticCardRecord>();
+            if (cluster == null || cluster.Members.Count == 0)
+            {
+                return representatives;
+            }
+
+            int limit = Mathf.Clamp(maximumMembers, 1, cluster.Members.Count);
+            if (cluster.Members.Count <= limit || cluster.Centroid == null || _embeddingService == null)
+            {
+                for (int i = 0; i < limit; i++)
+                {
+                    representatives.Add(cluster.Members[i]);
+                }
+
+                return representatives;
+            }
+
+            var ranked = new List<MemberSimilarity>(cluster.Members.Count);
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                SemanticCardRecord member = cluster.Members[i];
+                float similarity = member?.Embedding == null
+                    ? -1f
+                    : _embeddingService.Similarity(member.Embedding, cluster.Centroid);
+                ranked.Add(new MemberSimilarity(member, similarity));
+            }
+
+            ranked.Sort((left, right) => left.Similarity.CompareTo(right.Similarity));
+            int low = 0;
+            int high = ranked.Count - 1;
+            while (representatives.Count < limit && low <= high)
+            {
+                representatives.Add(ranked[high--].Card);
+                if (representatives.Count < limit && low <= high)
+                {
+                    representatives.Add(ranked[low++].Card);
+                }
+            }
+
+            return representatives;
         }
 
         public SemanticClusterRecord FindCluster(string clusterId)
@@ -113,498 +267,6 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             cluster.ProvisionalName = normalizedMeaning;
             cluster.MeaningAssignedByPlayer = true;
             return true;
-        }
-
-        private void RebuildClustersFromGraph(SemanticCardRecord activeCard)
-        {
-            if (_embeddingService == null)
-            {
-                return;
-            }
-
-            var candidates = new List<SemanticCardRecord>();
-            for (int i = 0; i < _cards.Count; i++)
-            {
-                SemanticCardRecord card = _cards[i];
-                if (card?.Embedding != null && card.Embedding.Length > 0)
-                {
-                    candidates.Add(card);
-                }
-            }
-
-            if (candidates.Count == 0)
-            {
-                _lastFormationEdges = Array.Empty<FirstContactClusterFormationEdge>();
-                return;
-            }
-
-            List<SemanticClusterRecord> previousClusters = new(_clusters);
-            bool[,] linked = BuildClusterGraph(candidates, out float[,] scores);
-            CaptureFormationEdges(activeCard, candidates, scores, linked);
-            List<List<int>> components = BuildConnectedComponents(candidates.Count, linked);
-            var reusedClusterIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            _clusters.Clear();
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                candidates[i].ClusterId = string.Empty;
-            }
-
-            for (int i = 0; i < components.Count; i++)
-            {
-                List<int> component = components[i];
-                SemanticClusterRecord cluster = FindReusableCluster(component, candidates, previousClusters, reusedClusterIds);
-                if (cluster == null)
-                {
-                    cluster = CreateCluster();
-                }
-
-                ResetCluster(cluster);
-                for (int c = 0; c < component.Count; c++)
-                {
-                    SemanticCardRecord member = candidates[component[c]];
-                    member.ClusterId = cluster.Id;
-                    cluster.Members.Add(member);
-                }
-
-                RecalculateCluster(cluster);
-                TryStabilizeCluster(cluster);
-                _clusters.Add(cluster);
-            }
-        }
-
-        private bool[,] BuildClusterGraph(
-            IReadOnlyList<SemanticCardRecord> candidates,
-            out float[,] scores)
-        {
-            int count = candidates.Count;
-            var linked = new bool[count, count];
-            scores = new float[count, count];
-            if (count <= 1)
-            {
-                return linked;
-            }
-
-            FirstContactSemanticSettings settings = GetSettings();
-            float threshold = settings.clusterJoinThreshold;
-            int neighborCount = Mathf.Max(1, settings.clusterNeighborCount);
-            var nearest = new bool[count, count];
-
-            for (int i = 0; i < count; i++)
-            {
-                for (int j = i + 1; j < count; j++)
-                {
-                    float score = _embeddingService.Similarity(candidates[i].Embedding, candidates[j].Embedding);
-                    scores[i, j] = score;
-                    scores[j, i] = score;
-                }
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                SelectNearestNeighbors(i, scores, nearest, threshold, neighborCount);
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                for (int j = i + 1; j < count; j++)
-                {
-                    if (scores[i, j] >= threshold && nearest[i, j] && nearest[j, i])
-                    {
-                        linked[i, j] = true;
-                        linked[j, i] = true;
-                    }
-                }
-            }
-
-            return linked;
-        }
-
-        private void CaptureFormationEdges(
-            SemanticCardRecord activeCard,
-            IReadOnlyList<SemanticCardRecord> candidates,
-            float[,] scores,
-            bool[,] linked)
-        {
-            _lastFormationEdges = Array.Empty<FirstContactClusterFormationEdge>();
-            if (activeCard == null || candidates == null || scores == null || linked == null)
-            {
-                return;
-            }
-
-            int activeIndex = -1;
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                if (ReferenceEquals(activeCard, candidates[i]) ||
-                    (!string.IsNullOrWhiteSpace(activeCard.Id) &&
-                     string.Equals(activeCard.Id, candidates[i]?.Id, StringComparison.OrdinalIgnoreCase)))
-                {
-                    activeIndex = i;
-                    break;
-                }
-            }
-
-            if (activeIndex < 0)
-            {
-                return;
-            }
-
-            FirstContactSemanticSettings settings = GetSettings();
-            float scanThreshold = Mathf.Min(settings.clusterJoinThreshold, settings.semanticMapAttractionThreshold);
-            int maxCandidates = 3;
-            var indices = new List<int>();
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                if (i == activeIndex)
-                {
-                    continue;
-                }
-
-                if (scores[activeIndex, i] >= scanThreshold)
-                {
-                    indices.Add(i);
-                }
-            }
-
-            indices.Sort((a, b) => scores[activeIndex, b].CompareTo(scores[activeIndex, a]));
-            int count = Mathf.Min(maxCandidates, indices.Count);
-            if (count <= 0)
-            {
-                return;
-            }
-
-            var edges = new FirstContactClusterFormationEdge[count];
-            string activeNodeId = FirstContactSemanticMapLayout.BuildCardNodeId(activeCard);
-            for (int i = 0; i < count; i++)
-            {
-                int candidateIndex = indices[i];
-                edges[i] = new FirstContactClusterFormationEdge(
-                    activeNodeId,
-                    FirstContactSemanticMapLayout.BuildCardNodeId(candidates[candidateIndex]),
-                    scores[activeIndex, candidateIndex],
-                    linked[activeIndex, candidateIndex]);
-            }
-
-            _lastFormationEdges = edges;
-        }
-
-        private static void SelectNearestNeighbors(
-            int source,
-            float[,] scores,
-            bool[,] nearest,
-            float threshold,
-            int neighborCount)
-        {
-            int count = scores.GetLength(0);
-            var selected = new bool[count];
-            for (int n = 0; n < neighborCount; n++)
-            {
-                int bestIndex = -1;
-                float bestScore = threshold;
-                for (int i = 0; i < count; i++)
-                {
-                    if (i == source || selected[i])
-                    {
-                        continue;
-                    }
-
-                    float score = scores[source, i];
-                    if (score >= bestScore)
-                    {
-                        bestScore = score;
-                        bestIndex = i;
-                    }
-                }
-
-                if (bestIndex < 0)
-                {
-                    break;
-                }
-
-                selected[bestIndex] = true;
-                nearest[source, bestIndex] = true;
-            }
-        }
-
-        private static List<List<int>> BuildConnectedComponents(int count, bool[,] linked)
-        {
-            var components = new List<List<int>>();
-            var visited = new bool[count];
-            for (int i = 0; i < count; i++)
-            {
-                if (visited[i])
-                {
-                    continue;
-                }
-
-                var component = new List<int>();
-                var stack = new Stack<int>();
-                stack.Push(i);
-                visited[i] = true;
-                while (stack.Count > 0)
-                {
-                    int current = stack.Pop();
-                    component.Add(current);
-                    for (int next = 0; next < count; next++)
-                    {
-                        if (visited[next] || !linked[current, next])
-                        {
-                            continue;
-                        }
-
-                        visited[next] = true;
-                        stack.Push(next);
-                    }
-                }
-
-                component.Sort();
-                components.Add(component);
-            }
-
-            return components;
-        }
-
-        private static SemanticClusterRecord FindReusableCluster(
-            IReadOnlyList<int> component,
-            IReadOnlyList<SemanticCardRecord> candidates,
-            IReadOnlyList<SemanticClusterRecord> previousClusters,
-            ISet<string> reusedClusterIds)
-        {
-            SemanticClusterRecord best = null;
-            int bestOverlap = 0;
-            for (int i = 0; i < previousClusters.Count; i++)
-            {
-                SemanticClusterRecord cluster = previousClusters[i];
-                if (cluster == null ||
-                    string.IsNullOrWhiteSpace(cluster.Id) ||
-                    reusedClusterIds.Contains(cluster.Id))
-                {
-                    continue;
-                }
-
-                int overlap = CountMemberOverlap(component, candidates, cluster);
-                if (overlap > bestOverlap)
-                {
-                    bestOverlap = overlap;
-                    best = cluster;
-                }
-            }
-
-            if (best != null)
-            {
-                reusedClusterIds.Add(best.Id);
-            }
-
-            return best;
-        }
-
-        private static int CountMemberOverlap(
-            IReadOnlyList<int> component,
-            IReadOnlyList<SemanticCardRecord> candidates,
-            SemanticClusterRecord cluster)
-        {
-            int overlap = 0;
-            for (int i = 0; i < component.Count; i++)
-            {
-                SemanticCardRecord candidate = candidates[component[i]];
-                for (int m = 0; m < cluster.Members.Count; m++)
-                {
-                    if (ReferenceEquals(candidate, cluster.Members[m]) ||
-                        (!string.IsNullOrWhiteSpace(candidate.Id) &&
-                         string.Equals(candidate.Id, cluster.Members[m]?.Id, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        overlap++;
-                        break;
-                    }
-                }
-            }
-
-            return overlap;
-        }
-
-        private static void ResetCluster(SemanticClusterRecord cluster)
-        {
-            cluster.Members.Clear();
-            cluster.Centroid = null;
-            if (!cluster.MeaningAssignedByPlayer)
-            {
-                cluster.ProvisionalName = string.Empty;
-            }
-            cluster.IsStable = false;
-            cluster.Cohesion = 0f;
-        }
-
-        private SemanticClusterRecord CreateCluster()
-        {
-            return new SemanticClusterRecord
-            {
-                Id = $"CLUSTER-{_nextClusterIndex++:00}",
-                ProvisionalName = string.Empty,
-                MeaningAssignedByPlayer = false,
-                IsStable = false,
-                Cohesion = 0f
-            };
-        }
-
-        private void RecalculateCluster(SemanticClusterRecord cluster)
-        {
-            if (cluster == null || _embeddingService == null)
-            {
-                return;
-            }
-
-            var vectors = new List<float[]>();
-            for (int i = 0; i < cluster.Members.Count; i++)
-            {
-                if (cluster.Members[i].Embedding != null)
-                {
-                    vectors.Add(cluster.Members[i].Embedding);
-                }
-            }
-
-            _embeddingService.TryBuildCentroid(vectors, out cluster.Centroid);
-            cluster.Cohesion = CalculateCohesion(cluster);
-        }
-
-        private float CalculateCohesion(SemanticClusterRecord cluster)
-        {
-            if (cluster == null || cluster.Centroid == null || cluster.Members.Count == 0)
-            {
-                return 0f;
-            }
-
-            float sum = 0f;
-            int count = 0;
-            for (int i = 0; i < cluster.Members.Count; i++)
-            {
-                float[] embedding = cluster.Members[i].Embedding;
-                if (embedding == null)
-                {
-                    continue;
-                }
-
-                sum += _embeddingService.Similarity(embedding, cluster.Centroid);
-                count++;
-            }
-
-            return count > 0 ? sum / count : 0f;
-        }
-
-        private float CalculatePairwiseSimilarity(SemanticClusterRecord cluster)
-        {
-            if (cluster == null || cluster.Members.Count < 2)
-            {
-                return 0f;
-            }
-
-            float sum = 0f;
-            int count = 0;
-            for (int i = 0; i < cluster.Members.Count; i++)
-            {
-                float[] first = cluster.Members[i].Embedding;
-                if (first == null)
-                {
-                    continue;
-                }
-
-                for (int j = i + 1; j < cluster.Members.Count; j++)
-                {
-                    float[] second = cluster.Members[j].Embedding;
-                    if (second == null)
-                    {
-                        continue;
-                    }
-
-                    sum += _embeddingService.Similarity(first, second);
-                    count++;
-                }
-            }
-
-            return count > 0 ? sum / count : 0f;
-        }
-
-        private void TryStabilizeCluster(SemanticClusterRecord cluster)
-        {
-            if (cluster == null || cluster.IsStable)
-            {
-                return;
-            }
-
-            FirstContactSemanticSettings settings = GetSettings();
-            if (cluster.Members.Count < settings.minClusterMembers ||
-                cluster.Cohesion < settings.minClusterCohesion ||
-                CalculatePairwiseSimilarity(cluster) < settings.minClusterPairwiseSimilarity)
-            {
-                return;
-            }
-
-            cluster.IsStable = true;
-            if (!cluster.MeaningAssignedByPlayer)
-            {
-                cluster.ProvisionalName = InferClusterName(cluster);
-            }
-        }
-
-        private string InferClusterName(SemanticClusterRecord cluster)
-        {
-            string dominantCategoryId = FindDominantAcceptedBootstrapCategoryId(cluster);
-            if (!string.IsNullOrWhiteSpace(dominantCategoryId))
-            {
-                for (int categoryIndex = 0; categoryIndex < _bootstrapCategories.Count; categoryIndex++)
-                {
-                    FirstContactBootstrapCategoryDefinition category = _bootstrapCategories[categoryIndex];
-                    if (category != null &&
-                        string.Equals(category.Id, dominantCategoryId, StringComparison.Ordinal))
-                    {
-                        return category.MeaningDisplayName;
-                    }
-                }
-            }
-
-            return string.Empty;
-        }
-
-        private static string FindDominantAcceptedBootstrapCategoryId(SemanticClusterRecord cluster)
-        {
-            if (cluster?.Members == null || cluster.Members.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            var counts = new Dictionary<string, int>(StringComparer.Ordinal);
-            int categorizedMemberCount = 0;
-            string dominantId = string.Empty;
-            int dominantCount = 0;
-            for (int i = 0; i < cluster.Members.Count; i++)
-            {
-                SemanticCardRecord member = cluster.Members[i];
-                if (member == null ||
-                    !member.BootstrapCategoryEvaluated ||
-                    !member.BootstrapCategoryAccepted)
-                {
-                    continue;
-                }
-
-                string categoryId = member.BootstrapCategoryId?.Trim() ?? string.Empty;
-                if (categoryId.Length == 0)
-                {
-                    continue;
-                }
-
-                categorizedMemberCount++;
-                counts.TryGetValue(categoryId, out int count);
-                count++;
-                counts[categoryId] = count;
-                if (count > dominantCount)
-                {
-                    dominantId = categoryId;
-                    dominantCount = count;
-                }
-            }
-
-            return dominantCount > 0 && dominantCount * 2 > categorizedMemberCount
-                ? dominantId
-                : string.Empty;
         }
 
         public bool TryCreateWaveformProfile(
@@ -673,6 +335,209 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 out profile);
         }
 
+        private bool RegisterCard(SemanticCardRecord card)
+        {
+            if (card == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                if (ReferenceEquals(_cards[i], card))
+                {
+                    return false;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(card.Id))
+            {
+                card.Id = $"CARD-{_nextCardIndex++:000}";
+            }
+
+            _cards.Add(card);
+            return true;
+        }
+
+        private SemanticClusterRecord CreateCluster()
+        {
+            return new SemanticClusterRecord
+            {
+                Id = $"CLUSTER-{_nextClusterIndex++:00}",
+                CategoryHypothesis = string.Empty,
+                ProvisionalName = string.Empty,
+                MeaningAssignedByPlayer = false,
+                IsStable = false,
+                Cohesion = 0f,
+                Version = 0,
+                HasIntegrityConflict = false
+            };
+        }
+
+        private void AddMember(SemanticClusterRecord cluster, SemanticCardRecord card)
+        {
+            cluster.Members.Add(card);
+            cluster.Version++;
+            card.ClusterId = cluster.Id;
+            card.SemanticGroupAssignment = FirstContactSemanticGroupAssignmentState.Assigned;
+            RecalculateCluster(cluster);
+            if (!cluster.HasIntegrityConflict &&
+                cluster.Members.Count >= GetSettings().minClusterMembers)
+            {
+                cluster.IsStable = true;
+            }
+        }
+
+        private void RecalculateCluster(SemanticClusterRecord cluster)
+        {
+            var vectors = new List<float[]>();
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                if (cluster.Members[i]?.Embedding != null)
+                {
+                    vectors.Add(cluster.Members[i].Embedding);
+                }
+            }
+
+            cluster.Centroid = null;
+            if (_embeddingService != null)
+            {
+                _embeddingService.TryBuildCentroid(vectors, out cluster.Centroid);
+            }
+            cluster.Cohesion = CalculateCohesion(cluster);
+        }
+
+        private float CalculateCohesion(SemanticClusterRecord cluster)
+        {
+            if (_embeddingService == null || cluster?.Centroid == null || cluster.Members.Count == 0)
+            {
+                return 0f;
+            }
+
+            float sum = 0f;
+            int count = 0;
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                float[] embedding = cluster.Members[i]?.Embedding;
+                if (embedding == null)
+                {
+                    continue;
+                }
+
+                sum += _embeddingService.Similarity(embedding, cluster.Centroid);
+                count++;
+            }
+
+            return count > 0 ? sum / count : 0f;
+        }
+
+        private SemanticClusterRecord ResolveOwnedCluster(SemanticClusterRecord cluster)
+        {
+            if (cluster == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _clusters.Count; i++)
+            {
+                if (ReferenceEquals(_clusters[i], cluster) ||
+                    string.Equals(_clusters[i].Id, cluster.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return _clusters[i];
+                }
+            }
+
+            return null;
+        }
+
+        private SemanticCardRecord FindClosestMember(
+            SemanticCardRecord card,
+            SemanticClusterRecord cluster)
+        {
+            SemanticCardRecord best = null;
+            float bestScore = float.NegativeInfinity;
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                SemanticCardRecord member = cluster.Members[i];
+                if (member?.Embedding == null || card?.Embedding == null)
+                {
+                    continue;
+                }
+
+                float score = _embeddingService.Similarity(card.Embedding, member.Embedding);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = member;
+                }
+            }
+
+            return best ?? (cluster.Members.Count > 0 ? cluster.Members[0] : null);
+        }
+
+        private float FindBestMemberSimilarity(
+            SemanticCardRecord card,
+            SemanticClusterRecord cluster)
+        {
+            float best = -1f;
+            for (int i = 0; i < cluster.Members.Count; i++)
+            {
+                if (cluster.Members[i]?.Embedding != null)
+                {
+                    best = Mathf.Max(
+                        best,
+                        _embeddingService.Similarity(card.Embedding, cluster.Members[i].Embedding));
+                }
+            }
+
+            return best;
+        }
+
+        private static FirstContactClusterFormationEdge[] BuildCandidateEdges(
+            SemanticCardRecord card,
+            IReadOnlyList<FirstContactSemanticGroupCandidate> candidates)
+        {
+            if (card == null || candidates == null || candidates.Count == 0)
+            {
+                return Array.Empty<FirstContactClusterFormationEdge>();
+            }
+
+            var edges = new List<FirstContactClusterFormationEdge>(candidates.Count);
+            string activeNodeId = FirstContactSemanticMapLayout.BuildCardNodeId(card);
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                SemanticClusterRecord cluster = candidates[i].Cluster;
+                if (cluster == null || cluster.Members.Count == 0)
+                {
+                    continue;
+                }
+
+                edges.Add(new FirstContactClusterFormationEdge(
+                    activeNodeId,
+                    FirstContactSemanticMapLayout.BuildCardNodeId(cluster.Members[0]),
+                    candidates[i].SemanticSimilarity,
+                    confirmed: false));
+            }
+
+            return edges.ToArray();
+        }
+
+        private void LogAssignment(
+            SemanticCardRecord card,
+            SemanticClusterRecord cluster,
+            string decision)
+        {
+            if (_debugSettings?.logClusterUpdates != true)
+            {
+                return;
+            }
+
+            Debug.Log(
+                $"[FirstContactSemanticMemory] Card '{card?.OriginalLabel}' decision={decision} " +
+                $"group={cluster?.Id ?? "NONE"} members={cluster?.Members.Count ?? 0} " +
+                $"stable={cluster?.IsStable ?? false}");
+        }
+
         private FirstContactSemanticSettings GetSettings()
         {
             return _settings != null ? _settings : ScriptableObject.CreateInstance<FirstContactSemanticSettings>();
@@ -723,6 +588,18 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 hash ^= hash >> 16;
                 return ((hash & 0x00FFFFFFu) / 8388607.5f) - 1f;
             }
+        }
+
+        private readonly struct MemberSimilarity
+        {
+            public MemberSimilarity(SemanticCardRecord card, float similarity)
+            {
+                Card = card;
+                Similarity = similarity;
+            }
+
+            public SemanticCardRecord Card { get; }
+            public float Similarity { get; }
         }
     }
 }

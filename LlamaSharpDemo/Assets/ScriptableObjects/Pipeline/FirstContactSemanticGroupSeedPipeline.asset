@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03b52acd3da64abbb58ffeef4a98a876, type: 3}
+  m_Name: FirstContactSemanticGroupSeedPipeline
+  m_EditorClassIdentifier: Assembly-CSharp::PromptPipelineAsset
+  displayName: FirstContactSemanticGroupSeedPipeline
+  description: Infers the internal category that seeds one PATTERN GROUP.
+  steps:
+  - stepName: FirstContactSemanticGroupSeed
+    stepKind: 0
+    llmProfile: {fileID: 11400000, guid: feab5fd8159c412a8aa7118b0986249d, type: 2}
+    embeddingProfile: {fileID: 0}
+    userPromptTemplate: 'NEW_MEANING_JSON:
+
+      {{new_meaning_json}}
+
+      EXISTING_MEMBERS_JSON:
+
+      {{existing_members_json}}'
+    embeddingOutputKey: embedding
+    failOnEmptyEmbeddingInput: 1
+    jsonMaxRetries: 1
+    jsonRetryDelaySeconds: 0.1
+    useVision: 0
+    imageStateKey: 
+    requireImage: 0
+    resizeLongestSide: 1024
+    customLinkTypeName: DoodleDiplomacy.Gameplay.FirstContact.FirstContactLabelAnalysisChainLink,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    customAsset: {fileID: 0}
+    customLinkParameters:
+    - key: parameters
+      value: 
+    - key: service
+      value: 
+    editorPosition: {x: -160, y: -40}
+    guid: 93450427-2884-49af-99ac-8ff5ef8c81b0
+    nextStepGuid: 
+  layoutSettings:
+    inputNodePosition: {x: -420, y: 0}
+    outputNodePosition: {x: 680, y: -40}
+    inputPositionInitialized: 1
+    outputPositionInitialized: 1
+    viewPosition: {x: 0, y: 0, z: 0}
+    viewScale: {x: 1, y: 1, z: 1}
+    viewInitialized: 1
+    snapshotPositions:
+    - {x: 0, y: 0}
+    snapshotPositionsInitialized: 1

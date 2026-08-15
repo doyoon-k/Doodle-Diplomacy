@@ -16,7 +16,7 @@ MonoBehaviour:
   enableEncounterOpening: 1
   playPlaceholderIntroMontage: 0
   createPlaceholderGeometry: 1
-  enablePreflightTutorial: 1
+  enableBriefingFoodPractice: 1
   placeholderIntroCardSeconds: 0.9
   delegationEntranceSeconds: 1.8
   delegationEntranceDistance: 1.75

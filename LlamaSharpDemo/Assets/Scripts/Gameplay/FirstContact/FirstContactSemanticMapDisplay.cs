@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using DoodleDiplomacy.Devices;
+using DoodleDiplomacy.Localization;
 using UnityEngine;
 
 namespace DoodleDiplomacy.Gameplay.FirstContact
@@ -23,6 +24,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private readonly FirstContactSemanticMapLabelLayer _labelLayer = new();
         private RectTransform _mapRect;
         private RectTransform _labelRoot;
+        private FirstContactSemanticMapSnapshot _sourceSnapshot;
         private FirstContactSemanticMapSnapshot _currentSnapshot;
         private FirstContactSemanticMapStyle _style;
         private bool _fullMode;
@@ -31,6 +33,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private Coroutine _transitionRoutine;
         private string _persistentPulseNodeId;
         private float _persistentPulseStartTime;
+        private Vector2 _lastMapRectSize;
 
         private void Reset()
         {
@@ -44,8 +47,24 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             SetVisible(false);
         }
 
+        private void OnEnable()
+        {
+            L10n.LocaleChanged += OnLocaleChanged;
+        }
+
+        private void OnDisable()
+        {
+            L10n.LocaleChanged -= OnLocaleChanged;
+        }
+
+        private void OnDestroy()
+        {
+            L10n.LocaleChanged -= OnLocaleChanged;
+        }
+
         private void Update()
         {
+            RefreshLayoutForRectChange();
             if (string.IsNullOrWhiteSpace(_persistentPulseNodeId) ||
                 _currentSnapshot == null ||
                 mapGraphic == null ||
@@ -62,7 +81,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             node.Pulse = FirstContactSemanticMapTransitionBuilder.BuildPersistentNodePulse(Time.time - _persistentPulseStartTime);
-            mapGraphic.Show(_currentSnapshot, _fullMode);
+            mapGraphic.Show(_currentSnapshot, _fullMode, _labelLayer.Presentation);
         }
 
         public void SetStyle(FirstContactSemanticMapStyle style)
@@ -74,11 +93,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
             _style = style;
             _displayLayoutApplied = false;
+            _labelLayer.InvalidateLayout();
             mapGraphic?.ApplyStyle(_style);
-            if (_currentSnapshot != null)
+            if (_sourceSnapshot != null)
             {
-                ApplyDisplayLayoutIfNeeded(_fullMode);
-                RebuildLabels(_currentSnapshot, _fullMode);
+                Show(_sourceSnapshot, _fullMode, rebuildLabels: true, resolveLayout: true, rememberSource: true);
             }
         }
 
@@ -144,6 +163,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         {
             StopTransition();
             ClearPersistentPulse();
+            _sourceSnapshot = null;
             _currentSnapshot = null;
             _displayLayoutApplied = false;
             mapGraphic?.Clear();
@@ -163,25 +183,45 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             bool accepted,
             bool becameStable)
         {
+            if (!TryPrepareTransitionLayouts(
+                    beforeSnapshot,
+                    afterSnapshot,
+                    out FirstContactSemanticMapSnapshot beforeLayout,
+                    out FirstContactSemanticMapSnapshot afterLayout))
+            {
+                _transitionRoutine = null;
+                yield break;
+            }
+
             const float duration = 1.35f;
             float elapsed = 0f;
             while (elapsed < duration)
             {
                 float progress = duration <= 0.0001f ? 1f : Mathf.Clamp01(elapsed / duration);
                 FirstContactSemanticMapSnapshot frame = FirstContactSemanticMapTransitionBuilder.BuildBootstrapResultFrame(
-                    beforeSnapshot,
-                    afterSnapshot,
+                    beforeLayout,
+                    afterLayout,
                     activeCardNodeId,
                     categoryNodeId,
                     accepted,
                     becameStable,
                     progress);
-                Show(frame, fullMode: true, rebuildLabels: true);
+                Show(
+                    frame,
+                    fullMode: true,
+                    rebuildLabels: true,
+                    resolveLayout: false,
+                    rememberSource: false);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
-            Show(afterSnapshot, fullMode: true, rebuildLabels: true);
+            Show(
+                afterLayout,
+                fullMode: true,
+                rebuildLabels: true,
+                resolveLayout: false,
+                rememberSource: false);
             StartPersistentPulse(activeCardNodeId);
             _transitionRoutine = null;
         }
@@ -191,22 +231,42 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             FirstContactSemanticMapSnapshot afterSnapshot,
             FirstContactClusterFormationEvent formation)
         {
+            if (!TryPrepareTransitionLayouts(
+                    beforeSnapshot,
+                    afterSnapshot,
+                    out FirstContactSemanticMapSnapshot beforeLayout,
+                    out FirstContactSemanticMapSnapshot afterLayout))
+            {
+                _transitionRoutine = null;
+                yield break;
+            }
+
             float duration = formation.BecameStable ? 2.12f : formation.IsIsolated ? 1.28f : 1.62f;
             float elapsed = 0f;
             while (elapsed < duration)
             {
                 float progress = duration <= 0.0001f ? 1f : Mathf.Clamp01(elapsed / duration);
                 FirstContactSemanticMapSnapshot frame = FirstContactSemanticMapTransitionBuilder.BuildClusterFormationFrame(
-                    beforeSnapshot,
-                    afterSnapshot,
+                    beforeLayout,
+                    afterLayout,
                     formation,
                     progress);
-                Show(frame, fullMode: true, rebuildLabels: true);
+                Show(
+                    frame,
+                    fullMode: true,
+                    rebuildLabels: true,
+                    resolveLayout: false,
+                    rememberSource: false);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
-            Show(afterSnapshot, fullMode: true, rebuildLabels: true);
+            Show(
+                afterLayout,
+                fullMode: true,
+                rebuildLabels: true,
+                resolveLayout: false,
+                rememberSource: false);
             StartPersistentPulse(formation.IsStable && !string.IsNullOrWhiteSpace(formation.ClusterNodeId)
                 ? formation.ClusterNodeId
                 : formation.ActiveCardNodeId);
@@ -226,13 +286,20 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void Show(FirstContactSemanticMapSnapshot snapshot, bool fullMode)
         {
-            Show(snapshot, fullMode, rebuildLabels: true);
+            Show(
+                snapshot,
+                fullMode,
+                rebuildLabels: true,
+                resolveLayout: true,
+                rememberSource: true);
         }
 
         private void Show(
             FirstContactSemanticMapSnapshot snapshot,
             bool fullMode,
-            bool rebuildLabels)
+            bool rebuildLabels,
+            bool resolveLayout,
+            bool rememberSource)
         {
             if (snapshot == null || snapshot.Nodes.Count == 0)
             {
@@ -247,14 +314,52 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
 
             _fullMode = fullMode;
-            _currentSnapshot = snapshot;
+            if (rememberSource)
+            {
+                _sourceSnapshot = snapshot;
+            }
+
             ApplyDisplayLayoutIfNeeded(fullMode);
-            graphic.Show(snapshot, fullMode);
             SetVisible(true);
+            FirstContactSemanticMapSnapshot displaySnapshot = snapshot;
             if (rebuildLabels)
             {
-                RebuildLabels(snapshot, fullMode);
+                displaySnapshot = _labelLayer.Render(
+                    snapshot,
+                    fullMode,
+                    _style,
+                    resolveLayout);
             }
+
+            _currentSnapshot = displaySnapshot;
+            graphic.Show(displaySnapshot, fullMode, _labelLayer.Presentation);
+            TrackMapRectSize();
+        }
+
+        private bool TryPrepareTransitionLayouts(
+            FirstContactSemanticMapSnapshot beforeSnapshot,
+            FirstContactSemanticMapSnapshot afterSnapshot,
+            out FirstContactSemanticMapSnapshot beforeLayout,
+            out FirstContactSemanticMapSnapshot afterLayout)
+        {
+            beforeLayout = null;
+            afterLayout = null;
+            FirstContactSemanticMapGraphic graphic = EnsureMapGraphic();
+            if (graphic == null || afterSnapshot == null || afterSnapshot.Nodes.Count == 0)
+            {
+                return false;
+            }
+
+            _fullMode = true;
+            _sourceSnapshot = afterSnapshot;
+            ApplyDisplayLayoutIfNeeded(fullMode: true);
+            SetVisible(true);
+            beforeLayout = beforeSnapshot != null
+                ? _labelLayer.ResolveLayout(beforeSnapshot, fullMode: true, configuredStyle: _style)
+                : null;
+            afterLayout = _labelLayer.ResolveLayout(afterSnapshot, fullMode: true, configuredStyle: _style);
+            TrackMapRectSize();
+            return afterLayout != null && afterLayout.Nodes.Count > 0;
         }
 
         private void StartPersistentPulse(string nodeId)
@@ -420,9 +525,54 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             }
         }
 
-        private void RebuildLabels(FirstContactSemanticMapSnapshot snapshot, bool fullMode)
+        private void RefreshLayoutForRectChange()
         {
-            _labelLayer.Render(snapshot, fullMode, _style);
+            if (_transitionRoutine != null ||
+                _sourceSnapshot == null ||
+                _mapRect == null ||
+                mapGraphic == null ||
+                !mapGraphic.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            Vector2 currentSize = _mapRect.rect.size;
+            if (Mathf.Abs(currentSize.x - _lastMapRectSize.x) <= 0.5f &&
+                Mathf.Abs(currentSize.y - _lastMapRectSize.y) <= 0.5f)
+            {
+                return;
+            }
+
+            _labelLayer.InvalidateLayout();
+            Show(
+                _sourceSnapshot,
+                _fullMode,
+                rebuildLabels: true,
+                resolveLayout: true,
+                rememberSource: true);
+        }
+
+        private void TrackMapRectSize()
+        {
+            _lastMapRectSize = _mapRect != null ? _mapRect.rect.size : Vector2.zero;
+        }
+
+        private void OnLocaleChanged(string _)
+        {
+            _labelLayer.InvalidateLayout();
+            if (_sourceSnapshot == null)
+            {
+                return;
+            }
+
+            StopTransition();
+            ClearPersistentPulse();
+            Show(
+                _sourceSnapshot,
+                _fullMode,
+                rebuildLabels: true,
+                resolveLayout: true,
+                rememberSource: true);
         }
 
         private void ClearLabels()

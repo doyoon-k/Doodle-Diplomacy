@@ -16,6 +16,9 @@ MonoBehaviour:
   probeValidationPipeline: {fileID: 11400000, guid: fb60b97b08c34d63af5af7c32fa1802e, type: 2}
   bootstrapCategoryFitPipeline: {fileID: 11400000, guid: a5fd0e6ceab346c5a58da20b1fe90ec0, type: 2}
   semanticDuplicateReviewPipeline: {fileID: 11400000, guid: 5bb2caf92c4d4353b21a651a9bcc4ef8, type: 2}
+  semanticDuplicateChallengePipeline: {fileID: 11400000, guid: 28e33766aa354e568f851488bfc3f253, type: 2}
+  semanticGroupSeedPipeline: {fileID: 11400000, guid: fabc7c00b9474795b75923f3b4951727, type: 2}
+  semanticGroupFitPipeline: {fileID: 11400000, guid: d63af8e9b68b47b7a6141fc46ec713a2, type: 2}
   imageStateKey: reference_image
   captureRetryCount: 2
   validatorRetryCount: 1

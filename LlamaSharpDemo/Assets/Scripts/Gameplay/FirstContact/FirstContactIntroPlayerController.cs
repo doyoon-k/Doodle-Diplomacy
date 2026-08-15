@@ -37,6 +37,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
         private bool _movementEnabled;
         private bool _interactionEnabled;
         private bool _cursorCaptured;
+        private bool _externalPointerInputActive;
+        private bool _restoreCursorCaptureAfterExternalInput;
         private FirstContactIntroInteractable _contextualInteraction;
         private Transform _lockedViewAnchor;
         private Vector3 _savedCameraLocalPosition;
@@ -57,6 +59,8 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         public UnityCamera ViewCamera => viewCamera;
         public bool ControlEnabled => _controlEnabled;
+        public bool CursorCaptured => _cursorCaptured;
+        public bool ExternalPointerInputActive => _externalPointerInputActive;
         public bool IsViewLocked => _lockedViewAnchor != null || _gazeViewLocked;
 
         public void Configure(UnityCamera camera, FirstContactIntroHud introHud)
@@ -89,6 +93,9 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             {
                 ReleaseCursor();
             }
+
+            _externalPointerInputActive = false;
+            _restoreCursorCaptureAfterExternalInput = false;
         }
 
         private void Update()
@@ -122,7 +129,7 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
             _interactionEnabled = enabled;
             _verticalVelocity = 0f;
 
-            if (enabled)
+            if (enabled && !_externalPointerInputActive)
             {
                 CaptureCursor();
             }
@@ -131,6 +138,30 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
                 hud?.ClearPrompt();
                 ReleaseCursor();
             }
+        }
+
+        public void SetExternalPointerInputActive(bool active)
+        {
+            if (_externalPointerInputActive == active)
+            {
+                return;
+            }
+
+            if (active)
+            {
+                _restoreCursorCaptureAfterExternalInput = _cursorCaptured;
+                _externalPointerInputActive = true;
+                ReleaseCursor();
+                return;
+            }
+
+            _externalPointerInputActive = false;
+            if (_restoreCursorCaptureAfterExternalInput && _controlEnabled)
+            {
+                CaptureCursor();
+            }
+
+            _restoreCursorCaptureAfterExternalInput = false;
         }
 
         public void SetMovementEnabled(bool enabled)
@@ -685,6 +716,11 @@ namespace DoodleDiplomacy.Gameplay.FirstContact
 
         private void HandleCursorInput()
         {
+            if (_externalPointerInputActive)
+            {
+                return;
+            }
+
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
             {
